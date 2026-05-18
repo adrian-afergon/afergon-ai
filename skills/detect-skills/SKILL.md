@@ -10,6 +10,7 @@ Scan the project for relevant AI skills using `autoskills`, install them, and re
 ## When to Use This Skill
 
 Use this skill when:
+
 - Starting work on a project with no project-specific skills yet detected
 - The orchestrator recommends it at session start
 - The project's tech stack has changed and skills may be stale
@@ -30,6 +31,7 @@ npx autoskills --dry-run
 ```
 
 Present the full output to the user. Include:
+
 - Technologies detected
 - Skills that would be installed (name, source, matched technology)
 
@@ -69,6 +71,7 @@ After installation, update `.atl/skill-registry.md` to include the newly install
 #### Read installed skills
 
 Scan `.agents/skills/` for `SKILL.md` files. For each one, extract:
+
 - Skill name (from frontmatter `name:` or directory name)
 - Description (from frontmatter `description:` or first non-empty line after the heading)
 - Path (absolute path to `SKILL.md`)
@@ -97,7 +100,7 @@ Last updated: <YYYY-MM-DD>
 ## Project Skills (auto-detected)
 
 | Skill | Trigger / description | Scope | Path |
-| --- | --- | --- | --- |
+| ----- | --------------------- | ----- | ---- |
 ```
 
 ### Step 5 — Report
