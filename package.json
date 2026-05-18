@@ -4,6 +4,17 @@
   "description": "afergon-ai: a Pi-native development harness with a disciplined debate-to-implementation pipeline, Gherkin-first specs, TDD enforcement, and Stitch design integration.",
   "license": "MIT",
   "type": "module",
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
   "bin": {
     "afergon-ai": "./bin/afergon-ai",
     "afergon-ai.cmd": "./bin/afergon-ai.cmd"
@@ -20,9 +31,18 @@
     "debate",
     "agent-harness"
   ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.75.3",
+    "@types/node": "^25.9.0"
+  },
   "files": [
     "adapters/",
     "bin/",
+    "extensions/",
     "prompts/",
     "scripts/",
     "skills/"

@@ -1,2 +1,7 @@
 # Local Pi runtime state
 .atl/
+
+# Dependencies
+node_modules/
+package-lock.json
+.pi-lens/

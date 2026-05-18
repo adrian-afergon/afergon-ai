@@ -23,11 +23,13 @@ It provides:
 ### Step 1 — Get the CLI
 
 **From npm** (once published):
+
 ```bash
 npm install -g afergon-ai
 ```
 
 **From the repo:**
+
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
@@ -45,6 +47,7 @@ afergon-ai init
 Select which tools to configure (Pi, Claude Code, OpenCode, or all) and which memory system to use. The command creates `openspec/config.yaml` and sets up each tool.
 
 **Flags (skips interactive selection):**
+
 ```bash
 afergon-ai init --pi
 afergon-ai init --claude
@@ -94,16 +97,16 @@ debate → breakdown → specify → plannify → implement → review
 
 ### Stages
 
-| Stage            | What it does                                      | Artifact                                        |
-| ---------------- | ------------------------------------------------- | ----------------------------------------------- |
-| `debate`         | Socratic session to explore and define requirements | `openspec/debate/debate-summary-<topic>.md`   |
-| `breakdown`      | Decompose debate summary into validated tasks     | `openspec/tasks/`                               |
-| `specify`        | Transform a task into Gherkin implementation specs | `openspec/specs/<task-slug>/`                  |
-| `plannify`       | Build an executable technical plan               | `openspec/plans/<task-slug>/PLAN.md`            |
-| `implement`      | Execute the plan with strict TDD/TPP             | project source files + commits                  |
-| `design`         | UI/UX design in Google Stitch                    | Stitch (external)                               |
-| `afergon-review` | Adversarial post-implementation review           | `openspec/results/<task-slug>/RESULT.md`        |
-| `detect-skills`  | Auto-detect and install project skills           | `.agents/skills/` + `.atl/skill-registry.md`   |
+| Stage            | What it does                                        | Artifact                                     |
+| ---------------- | --------------------------------------------------- | -------------------------------------------- |
+| `debate`         | Socratic session to explore and define requirements | `openspec/debate/debate-summary-<topic>.md`  |
+| `breakdown`      | Decompose debate summary into validated tasks       | `openspec/tasks/`                            |
+| `specify`        | Transform a task into Gherkin implementation specs  | `openspec/specs/<task-slug>/`                |
+| `plannify`       | Build an executable technical plan                  | `openspec/plans/<task-slug>/PLAN.md`         |
+| `implement`      | Execute the plan with strict TDD/TPP                | project source files + commits               |
+| `design`         | UI/UX design in Google Stitch                       | Stitch (external)                            |
+| `afergon-review` | Adversarial post-implementation review              | `openspec/results/<task-slug>/RESULT.md`     |
+| `detect-skills`  | Auto-detect and install project skills              | `.agents/skills/` + `.atl/skill-registry.md` |
 
 ### Work routing
 
@@ -143,12 +146,12 @@ memory:
   system: engram | obsidian | memory-md | none
 ```
 
-| System | Behavior |
-|---|---|
-| `engram` | Pi-native persistent memory. Requires Engram installed; in Claude Code requires Engram MCP. Searches context at session start, saves after each pipeline stage. |
-| `obsidian` | Appends structured entries to a configured vault folder. |
-| `memory-md` | Appends to `openspec/MEMORY.md`. Simple and tool-agnostic. |
-| `none` | No memory operations. |
+| System      | Behavior                                                                                                                                                        |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engram`    | Pi-native persistent memory. Requires Engram installed; in Claude Code requires Engram MCP. Searches context at session start, saves after each pipeline stage. |
+| `obsidian`  | Appends structured entries to a configured vault folder.                                                                                                        |
+| `memory-md` | Appends to `openspec/MEMORY.md`. Simple and tool-agnostic.                                                                                                      |
+| `none`      | No memory operations.                                                                                                                                           |
 
 ---
 
