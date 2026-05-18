@@ -5,7 +5,8 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "afergon-ai": "./bin/afergon-ai"
+    "afergon-ai": "./bin/afergon-ai",
+    "afergon-ai.cmd": "./bin/afergon-ai.cmd"
   },
   "keywords": [
     "pi-package",

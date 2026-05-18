@@ -28,31 +28,31 @@ echo ""
 
 APPEND_SYSTEM="$TARGET_DIR/.pi/APPEND_SYSTEM.md"
 if [ -f "$APPEND_SYSTEM" ]; then
-  awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" > "$APPEND_SYSTEM"
-  echo "✔ Pi: updated .pi/APPEND_SYSTEM.md"
-  UPDATED=$((UPDATED + 1))
+	awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
+	echo "✔ Pi: updated .pi/APPEND_SYSTEM.md"
+	UPDATED=$((UPDATED + 1))
 else
-  echo "  Pi: not installed in this project (skipped)"
-  SKIPPED=$((SKIPPED + 1))
+	echo "  Pi: not installed in this project (skipped)"
+	SKIPPED=$((SKIPPED + 1))
 fi
 
 # ── Claude Code ───────────────────────────────────────────────────────────────
 
 CLAUDE_MD="$TARGET_DIR/CLAUDE.md"
 if [ -f "$CLAUDE_MD" ]; then
-  cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
-  echo "✔ Claude: updated CLAUDE.md"
-  UPDATED=$((UPDATED + 1))
+	cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
+	echo "✔ Claude: updated CLAUDE.md"
+	UPDATED=$((UPDATED + 1))
 else
-  echo "  Claude: not installed in this project (skipped)"
-  SKIPPED=$((SKIPPED + 1))
+	echo "  Claude: not installed in this project (skipped)"
+	SKIPPED=$((SKIPPED + 1))
 fi
 
 CLAUDE_SKILLS="$TARGET_DIR/.claude/skills"
 if [ -d "$CLAUDE_SKILLS" ]; then
-  cp -r "$PACKAGE_ROOT/skills/"* "$CLAUDE_SKILLS/"
-  echo "✔ Claude: updated .claude/skills/"
-  UPDATED=$((UPDATED + 1))
+	cp -r "$PACKAGE_ROOT/skills/"* "$CLAUDE_SKILLS/"
+	echo "✔ Claude: updated .claude/skills/"
+	UPDATED=$((UPDATED + 1))
 fi
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
@@ -63,20 +63,20 @@ ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
 OC_MARKER="$OC_AGENTS_DIR/orchestrator.md"
 
 if [ -f "$OC_MARKER" ]; then
-  # Overwrite all afergon-ai agents and commands silently
-  for src in "$ADAPTER_PATH"/agents/*.md; do
-    cp "$src" "$OC_AGENTS_DIR/$(basename "$src")"
-  done
-  echo "✔ OpenCode: updated ~/.config/opencode/agents/"
+	# Overwrite all afergon-ai agents and commands silently
+	for src in "$ADAPTER_PATH"/agents/*.md; do
+		cp "$src" "$OC_AGENTS_DIR/$(basename "$src")"
+	done
+	echo "✔ OpenCode: updated ~/.config/opencode/agents/"
 
-  for src in "$ADAPTER_PATH"/commands/*.md; do
-    cp "$src" "$OC_COMMANDS_DIR/$(basename "$src")"
-  done
-  echo "✔ OpenCode: updated ~/.config/opencode/commands/"
-  UPDATED=$((UPDATED + 1))
+	for src in "$ADAPTER_PATH"/commands/*.md; do
+		cp "$src" "$OC_COMMANDS_DIR/$(basename "$src")"
+	done
+	echo "✔ OpenCode: updated ~/.config/opencode/commands/"
+	UPDATED=$((UPDATED + 1))
 else
-  echo "  OpenCode: not installed globally (skipped)"
-  SKIPPED=$((SKIPPED + 1))
+	echo "  OpenCode: not installed globally (skipped)"
+	SKIPPED=$((SKIPPED + 1))
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -84,5 +84,5 @@ fi
 echo ""
 echo "Done. Updated: $UPDATED component(s), skipped: $SKIPPED."
 if [ "$SKIPPED" -gt 0 ]; then
-  echo "Run 'afergon-ai init' to install skipped tools."
+	echo "Run 'afergon-ai init' to install skipped tools."
 fi
