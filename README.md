@@ -137,6 +137,45 @@ Skills follow the [Agent Skills](https://agentskills.io) standard and are compat
 
 ---
 
+## Skill Discovery
+
+afergon-ai can auto-detect and install skills matched to your project's tech stack using [autoskills](https://www.npmjs.com/package/autoskills).
+
+### How it works
+
+1. `autoskills` scans the project (package.json, file extensions, frameworks detected)
+2. Matches technologies to a curated skill registry (React, TypeScript, Go, Bash, etc.)
+3. Installs matching skills to `.agents/skills/` — a path Pi, Claude Code, and OpenCode all discover automatically
+4. Updates `.atl/skill-registry.md` so the orchestrator can inject them into pipeline subagents
+
+### When to use it
+
+- Starting a new project with afergon-ai for the first time
+- After a significant tech stack change
+- When the orchestrator recommends it at session start (shown once if no project skills are found)
+
+### Running it
+
+In any supported tool:
+
+```
+/skill:detect-skills
+```
+
+The skill will show a dry-run preview first and ask for confirmation before installing anything.
+
+### Manual alternative
+
+```bash
+npx autoskills --dry-run   # preview without installing
+npx autoskills             # interactive install
+npx autoskills -y          # skip confirmation
+```
+
+Skills installed by `autoskills` follow the [Agent Skills](https://agentskills.io) standard and are immediately available in Pi, Claude Code, Cursor, and OpenCode once installed.
+
+---
+
 ## Memory
 
 Configure the memory system during `init` or manually in `openspec/config.yaml`:
