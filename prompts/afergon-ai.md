@@ -265,6 +265,25 @@ All rows marked **pause** follow the [User Clarification Protocol](#user-clarifi
 - If the work will produce > 400 lines of diff, warn the user before proceeding.
 - Preserve human control: user decisions beat agent momentum.
 
+## Startup: Project Skill Check
+
+At the start of any pipeline interaction (not inline direct tasks), check whether the project has project-scoped skills available:
+
+1. Read `.atl/skill-registry.md` if it exists.
+2. Count entries with `scope = project`.
+3. If **zero project-scoped skills are found**, surface a soft recommendation — once per session, not on every message:
+
+```
+Note: no project-specific skills detected for this project.
+Running `/skill:detect-skills` can auto-detect and install skills
+matched to your tech stack (React, TypeScript, Go, etc.).
+This is optional — the pipeline works without it.
+```
+
+Do not block the pipeline. Do not repeat the recommendation after the first time.
+
+If `.atl/skill-registry.md` does not exist, treat it as zero project-scoped skills.
+
 ## Skill Loading Protocol
 
 When delegating to a pipeline stage, instruct the executing agent to:

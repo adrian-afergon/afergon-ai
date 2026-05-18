@@ -22,16 +22,16 @@ mkdir -p "$PI_DIR"
 
 # Check for conflict
 if [ -f "$APPEND_SYSTEM" ]; then
-  echo "Warning: $APPEND_SYSTEM already exists."
-  read -r -p "Overwrite? [y/N] " confirm
-  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Aborted."
-    exit 0
-  fi
+	echo "Warning: $APPEND_SYSTEM already exists."
+	read -r -p "Overwrite? [y/N] " confirm
+	if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+		echo "Aborted."
+		exit 0
+	fi
 fi
 
 # Copy orchestrator content (strip frontmatter from prompt template)
-awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" > "$APPEND_SYSTEM"
+awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
 
 echo "Created $APPEND_SYSTEM"
 echo ""
