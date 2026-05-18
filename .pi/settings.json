@@ -1,0 +1,36 @@
+{
+	"subagents": {
+		"agentOverrides": {
+			"sdd-init": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-explore": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-proposal": {
+				"model": "openai-codex/gpt-5.5"
+			},
+			"sdd-spec": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-design": {
+				"model": "openai-codex/gpt-5.5"
+			},
+			"sdd-tasks": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-apply": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-verify": {
+				"model": "openai-codex/gpt-5.5"
+			},
+			"sdd-sync": {
+				"model": "openai-codex/gpt-5.3-codex"
+			},
+			"sdd-archive": {
+				"model": "github-copilot/gpt-5.4-mini"
+			}
+		}
+	}
+}
