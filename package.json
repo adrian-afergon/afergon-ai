@@ -4,6 +4,9 @@
   "description": "afergon-ai: a Pi-native development harness with a disciplined debate-to-implementation pipeline, Gherkin-first specs, TDD enforcement, and Stitch design integration.",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "afergon-ai": "./bin/afergon-ai"
+  },
   "keywords": [
     "pi-package",
     "pi",
@@ -17,7 +20,10 @@
     "agent-harness"
   ],
   "files": [
+    "adapters/",
+    "bin/",
     "prompts/",
+    "scripts/",
     "skills/"
   ]
 }

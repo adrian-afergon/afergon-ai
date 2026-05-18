@@ -48,24 +48,31 @@ Classify the request before planning: `create-project` · `create-screens` · `e
 ## Design Plan
 
 ### Mode(s)
+
 <modes>
 
 ### Stitch Project
+
 <existing name/ID or "new project">
 
 ### Design System
+
 <existing, new, or "None">
 
 ### Screens to Create or Modify
+
 - <screen name>: <brief description>
 
 ### What I will NOT change
+
 <explicit scope boundary>
 
 ### Rationale
+
 <why this fits the context and specs>
 
 ### Waiting for approval
+
 Please reply "yes" or "go ahead" to execute.
 ```
 

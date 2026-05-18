@@ -2,11 +2,7 @@
 # afergon-ai/scripts/init-project.sh
 #
 # Initialize afergon-ai in any project.
-# Configures the active orchestrator for one or more AI tools and sets up
-# the memory system. Writes openspec/config.yaml.
-#
-# Usage:
-#   bash /path/to/afergon-ai/scripts/init-project.sh [--pi] [--claude] [--opencode] [--all]
+# Prefer using the CLI: afergon-ai init [--pi] [--claude] [--opencode] [--all]
 #
 # Flags (combinable):
 #   --pi        Configure Pi (writes .pi/APPEND_SYSTEM.md)
@@ -29,12 +25,16 @@ SETUP_OPENCODE=false
 # ── Parse flags ───────────────────────────────────────────────────────────────
 
 for arg in "$@"; do
-  case $arg in
-    --pi)       SETUP_PI=true ;;
-    --claude)   SETUP_CLAUDE=true ;;
-    --opencode) SETUP_OPENCODE=true ;;
-    --all)      SETUP_PI=true; SETUP_CLAUDE=true; SETUP_OPENCODE=true ;;
-  esac
+	case $arg in
+	--pi) SETUP_PI=true ;;
+	--claude) SETUP_CLAUDE=true ;;
+	--opencode) SETUP_OPENCODE=true ;;
+	--all)
+		SETUP_PI=true
+		SETUP_CLAUDE=true
+		SETUP_OPENCODE=true
+		;;
+	esac
 done
 
 echo ""
@@ -47,23 +47,27 @@ echo ""
 # ── Interactive tool selection (no flags provided) ────────────────────────────
 
 if ! $SETUP_PI && ! $SETUP_CLAUDE && ! $SETUP_OPENCODE; then
-  echo "Which AI tools do you want to configure? (space-separated numbers)"
-  echo ""
-  echo "  1) Pi"
-  echo "  2) Claude Code"
-  echo "  3) OpenCode"
-  echo "  4) All"
-  echo ""
-  read -r -p "Select: " tool_input
+	echo "Which AI tools do you want to configure? (space-separated numbers)"
+	echo ""
+	echo "  1) Pi"
+	echo "  2) Claude Code"
+	echo "  3) OpenCode"
+	echo "  4) All"
+	echo ""
+	read -r -p "Select: " tool_input
 
-  for t in $tool_input; do
-    case $t in
-      1) SETUP_PI=true ;;
-      2) SETUP_CLAUDE=true ;;
-      3) SETUP_OPENCODE=true ;;
-      4) SETUP_PI=true; SETUP_CLAUDE=true; SETUP_OPENCODE=true ;;
-    esac
-  done
+	for t in $tool_input; do
+		case $t in
+		1) SETUP_PI=true ;;
+		2) SETUP_CLAUDE=true ;;
+		3) SETUP_OPENCODE=true ;;
+		4)
+			SETUP_PI=true
+			SETUP_CLAUDE=true
+			SETUP_OPENCODE=true
+			;;
+		esac
+	done
 fi
 
 # ── Memory system ─────────────────────────────────────────────────────────────
@@ -82,17 +86,26 @@ OBSIDIAN_VAULT=""
 OBSIDIAN_FOLDER=""
 
 case "${mem_choice:-4}" in
-  1) MEMORY_SYSTEM="engram"; echo "✔ Memory: Engram" ;;
-  2)
-    MEMORY_SYSTEM="obsidian"
-    read -r -p "Vault path (e.g. ~/Documents/Obsidian/MyVault): " OBSIDIAN_VAULT
-    OBSIDIAN_VAULT="${OBSIDIAN_VAULT/#\~/$HOME}"
-    read -r -p "Folder inside vault [default: Projects/$PROJECT_NAME]: " OBSIDIAN_FOLDER
-    OBSIDIAN_FOLDER="${OBSIDIAN_FOLDER:-Projects/$PROJECT_NAME}"
-    echo "✔ Memory: Obsidian ($OBSIDIAN_VAULT / $OBSIDIAN_FOLDER)"
-    ;;
-  3) MEMORY_SYSTEM="memory-md"; echo "✔ Memory: memory.md (openspec/MEMORY.md)" ;;
-  *) MEMORY_SYSTEM="none";      echo "✔ Memory: none" ;;
+1)
+	MEMORY_SYSTEM="engram"
+	echo "✔ Memory: Engram"
+	;;
+2)
+	MEMORY_SYSTEM="obsidian"
+	read -r -p "Vault path (e.g. ~/Documents/Obsidian/MyVault): " OBSIDIAN_VAULT
+	OBSIDIAN_VAULT="${OBSIDIAN_VAULT/#\~/$HOME}"
+	read -r -p "Folder inside vault [default: Projects/$PROJECT_NAME]: " OBSIDIAN_FOLDER
+	OBSIDIAN_FOLDER="${OBSIDIAN_FOLDER:-Projects/$PROJECT_NAME}"
+	echo "✔ Memory: Obsidian ($OBSIDIAN_VAULT / $OBSIDIAN_FOLDER)"
+	;;
+3)
+	MEMORY_SYSTEM="memory-md"
+	echo "✔ Memory: memory.md (openspec/MEMORY.md)"
+	;;
+*)
+	MEMORY_SYSTEM="none"
+	echo "✔ Memory: none"
+	;;
 esac
 
 # ── Write openspec/config.yaml ────────────────────────────────────────────────
@@ -102,12 +115,12 @@ CONFIG_FILE="$TARGET_DIR/openspec/config.yaml"
 
 write_config=true
 if [ -f "$CONFIG_FILE" ]; then
-  read -r -p "Warning: $CONFIG_FILE exists. Overwrite? [y/N] " c
-  [[ "$c" != "y" && "$c" != "Y" ]] && write_config=false
+	read -r -p "Warning: $CONFIG_FILE exists. Overwrite? [y/N] " c
+	[[ "$c" != "y" && "$c" != "Y" ]] && write_config=false
 fi
 
 if $write_config; then
-  cat > "$CONFIG_FILE" << EOF
+	cat >"$CONFIG_FILE" <<EOF
 # afergon-ai project configuration
 
 project:
@@ -116,90 +129,104 @@ project:
 memory:
   system: $MEMORY_SYSTEM
 EOF
-  [ "$MEMORY_SYSTEM" = "obsidian" ] && cat >> "$CONFIG_FILE" << EOF
+	[ "$MEMORY_SYSTEM" = "obsidian" ] && cat >>"$CONFIG_FILE" <<EOF
   vault: $OBSIDIAN_VAULT
   folder: $OBSIDIAN_FOLDER
 EOF
-  [ "$MEMORY_SYSTEM" = "memory-md" ] && printf "  path: openspec/MEMORY.md\n" >> "$CONFIG_FILE"
-  echo "✔ Created $CONFIG_FILE"
+	[ "$MEMORY_SYSTEM" = "memory-md" ] && printf "  path: openspec/MEMORY.md\n" >>"$CONFIG_FILE"
+	echo "✔ Created $CONFIG_FILE"
 fi
 
 # ── Pi ────────────────────────────────────────────────────────────────────────
 
 if $SETUP_PI; then
-  echo ""
-  echo "Pi setup"
-  echo "--------"
-  PI_DIR="$TARGET_DIR/.pi"
-  APPEND_SYSTEM="$PI_DIR/APPEND_SYSTEM.md"
-  mkdir -p "$PI_DIR"
+	echo ""
+	echo "Pi setup"
+	echo "--------"
+	PI_DIR="$TARGET_DIR/.pi"
+	APPEND_SYSTEM="$PI_DIR/APPEND_SYSTEM.md"
+	mkdir -p "$PI_DIR"
 
-  write_pi=true
-  if [ -f "$APPEND_SYSTEM" ]; then
-    read -r -p "Warning: $APPEND_SYSTEM exists. Overwrite? [y/N] " c
-    [[ "$c" != "y" && "$c" != "Y" ]] && write_pi=false
-  fi
+	write_pi=true
+	if [ -f "$APPEND_SYSTEM" ]; then
+		read -r -p "Warning: $APPEND_SYSTEM exists. Overwrite? [y/N] " c
+		[[ "$c" != "y" && "$c" != "Y" ]] && write_pi=false
+	fi
 
-  if $write_pi; then
-    awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" > "$APPEND_SYSTEM"
-    echo "✔ Created $APPEND_SYSTEM"
-  fi
+	if $write_pi; then
+		awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
+		echo "✔ Created $APPEND_SYSTEM"
+	fi
 fi
 
 # ── Claude Code ───────────────────────────────────────────────────────────────
 
 if $SETUP_CLAUDE; then
-  echo ""
-  echo "Claude Code setup"
-  echo "-----------------"
-  CLAUDE_MD="$TARGET_DIR/CLAUDE.md"
+	echo ""
+	echo "Claude Code setup"
+	echo "-----------------"
+	CLAUDE_MD="$TARGET_DIR/CLAUDE.md"
 
-  write_claude=true
-  if [ -f "$CLAUDE_MD" ]; then
-    read -r -p "Warning: $CLAUDE_MD exists. Overwrite? [y/N] " c
-    [[ "$c" != "y" && "$c" != "Y" ]] && write_claude=false
-  fi
+	write_claude=true
+	if [ -f "$CLAUDE_MD" ]; then
+		read -r -p "Warning: $CLAUDE_MD exists. Overwrite? [y/N] " c
+		[[ "$c" != "y" && "$c" != "Y" ]] && write_claude=false
+	fi
 
-  if $write_claude; then
-    cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
-    echo "✔ Created $CLAUDE_MD"
-  fi
+	if $write_claude; then
+		cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
+		echo "✔ Created $CLAUDE_MD"
+	fi
 
-  # Skills: suggest copying to .claude/skills/
-  if [ -d "$TARGET_DIR/.claude" ] || $write_claude; then
-    mkdir -p "$TARGET_DIR/.claude/skills"
-    if [ -d "$PACKAGE_ROOT/skills" ]; then
-      cp -rn "$PACKAGE_ROOT/skills/"* "$TARGET_DIR/.claude/skills/" 2>/dev/null || true
-      echo "✔ Copied skills → .claude/skills/"
-    fi
-  fi
+	# Skills: suggest copying to .claude/skills/
+	if [ -d "$TARGET_DIR/.claude" ] || $write_claude; then
+		mkdir -p "$TARGET_DIR/.claude/skills"
+		if [ -d "$PACKAGE_ROOT/skills" ]; then
+			cp -rn "$PACKAGE_ROOT/skills/"* "$TARGET_DIR/.claude/skills/" 2>/dev/null || true
+			echo "✔ Copied skills → .claude/skills/"
+		fi
+	fi
 fi
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 if $SETUP_OPENCODE; then
-  echo ""
-  echo "OpenCode setup"
-  echo "--------------"
-  ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
-  echo "OpenCode reads agents and commands from OPENCODE_CONFIG_DIR."
-  echo ""
-  echo "To use afergon-ai with OpenCode, set:"
-  echo "  export OPENCODE_CONFIG_DIR=\"$ADAPTER_PATH\""
-  echo ""
-  echo "Add to your shell profile (~/.zshrc or ~/.bashrc) to persist it."
-  echo ""
+	echo ""
+	echo "OpenCode setup"
+	echo "--------------"
+	ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
+	OC_AGENTS_DIR="${HOME}/.config/opencode/agents"
+	OC_COMMANDS_DIR="${HOME}/.config/opencode/commands"
 
-  # If there's already a project-level opencode.json, note the adapter path
-  if [ -f "$TARGET_DIR/opencode.json" ]; then
-    echo "Note: $TARGET_DIR/opencode.json already exists."
-    echo "Add MCP or other project-specific config there."
-  else
-    cp "$ADAPTER_PATH/opencode.json" "$TARGET_DIR/opencode.json"
-    echo "✔ Created $TARGET_DIR/opencode.json"
-  fi
+	mkdir -p "$OC_AGENTS_DIR" "$OC_COMMANDS_DIR"
 
-  echo "✔ OpenCode adapter path: $ADAPTER_PATH"
+	# Copy agents — ask on conflict
+	for src in "$ADAPTER_PATH"/agents/*.md; do
+		dest="$OC_AGENTS_DIR/$(basename "$src")"
+		if [ -f "$dest" ]; then
+			read -r -p "Warning: $(basename "$dest") exists in global agents. Overwrite? [y/N] " c
+			[[ "$c" != "y" && "$c" != "Y" ]] && continue
+		fi
+		cp "$src" "$dest" && echo "✔ agents/$(basename "$dest")"
+	done
+
+	# Copy commands — ask on conflict
+	for src in "$ADAPTER_PATH"/commands/*.md; do
+		dest="$OC_COMMANDS_DIR/$(basename "$src")"
+		if [ -f "$dest" ]; then
+			read -r -p "Warning: $(basename "$dest") exists in global commands. Overwrite? [y/N] " c
+			[[ "$c" != "y" && "$c" != "Y" ]] && continue
+		fi
+		cp "$src" "$dest" && echo "✔ commands/$(basename "$dest")"
+	done
+
+	# Project-level opencode.json (for MCP and project-specific config)
+	if [ ! -f "$TARGET_DIR/opencode.json" ]; then
+		cp "$ADAPTER_PATH/opencode.json" "$TARGET_DIR/opencode.json"
+		echo "✔ Created opencode.json"
+	else
+		echo "Note: opencode.json already exists — not overwritten."
+	fi
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -209,9 +236,9 @@ echo "====================================="
 echo "afergon-ai initialized"
 echo ""
 
-$SETUP_PI      && echo "  Pi        → .pi/APPEND_SYSTEM.md (active on next Pi session)"
-$SETUP_CLAUDE  && echo "  Claude    → CLAUDE.md + .claude/skills/"
-$SETUP_OPENCODE && echo "  OpenCode  → set OPENCODE_CONFIG_DIR=$PACKAGE_ROOT/adapters/opencode"
+$SETUP_PI && echo "  Pi        → .pi/APPEND_SYSTEM.md (active on next Pi session)"
+$SETUP_CLAUDE && echo "  Claude    → CLAUDE.md + .claude/skills/"
+$SETUP_OPENCODE && echo "  OpenCode  → ~/.config/opencode/agents/ + commands/"
 
 echo ""
 echo "Available skills (all tools):"

@@ -26,30 +26,34 @@ RED → GREEN (TPP) → TRIANGULATE → GREEN (TPP) × N → REFACTOR
 ```
 
 ### RED
+
 Write a single failing test defining the expected behavior. Fail for the right reason. One behavior at a time.
 
 ### GREEN (TPP enforcement)
+
 Write the minimum code using the **lowest-index TPP transformation** that makes the test pass:
 
-| # | Transformation | Description |
-|---|---|---|
-| 1 | `{} → nil` | Return nothing |
-| 2 | `nil → constant` | Return a fixed literal |
-| 3 | `constant → constant+` | Return one of several constants |
-| 4 | `constant → scalar` | Replace constant with a variable |
-| 5 | `statement → statements` | Add more statements |
-| 6 | `unconditional → if` | Introduce a conditional |
-| 7 | `scalar → array` | Replace scalar with collection |
-| 8 | `array → container` | Replace array with complex structure |
-| 9 | `statement → recursion` | Replace iteration with recursion |
-| 10 | `if → while` | Replace conditional with loop |
-| 11 | `expression → function` | Extract named function |
-| 12 | `variable → assignment` | Replace variable with mutation |
+| #   | Transformation           | Description                          |
+| --- | ------------------------ | ------------------------------------ |
+| 1   | `{} → nil`               | Return nothing                       |
+| 2   | `nil → constant`         | Return a fixed literal               |
+| 3   | `constant → constant+`   | Return one of several constants      |
+| 4   | `constant → scalar`      | Replace constant with a variable     |
+| 5   | `statement → statements` | Add more statements                  |
+| 6   | `unconditional → if`     | Introduce a conditional              |
+| 7   | `scalar → array`         | Replace scalar with collection       |
+| 8   | `array → container`      | Replace array with complex structure |
+| 9   | `statement → recursion`  | Replace iteration with recursion     |
+| 10  | `if → while`             | Replace conditional with loop        |
+| 11  | `expression → function`  | Extract named function               |
+| 12  | `variable → assignment`  | Replace variable with mutation       |
 
 Never skip to a higher transformation when a lower one suffices.
 
 ### TRIANGULATE
+
 After GREEN, find at least **2 scenarios** that break the current code:
+
 - Boundary values (zero, empty, max, min, off-by-one)
 - Variation in kind (different valid input → different output)
 - Failure conditions (invalid inputs, missing preconditions)
@@ -58,6 +62,7 @@ After GREEN, find at least **2 scenarios** that break the current code:
 Write each as a failing test → GREEN (lowest TPP) → repeat. If you cannot find 2, state why explicitly.
 
 ### REFACTOR
+
 Remove duplication, improve naming, extract abstractions. Do not change observable behavior. All tests must pass after every refactor step.
 
 ## Verification
@@ -91,28 +96,36 @@ Write to `openspec/results/<task-slug>/RESULT.md` AND return inline:
 
 ```markdown
 ## Implementation Status
+
 <state>
 
 ## Plan Reference
+
 - Plan: <path>
 - Execution Mode: <mode>
 
 ## Execution Summary
+
 <brief summary>
 
 ## Completed Steps
+
 - <checkbox text, or "None">
 
 ## Updated Plan Artifacts
+
 - <path, or "None">
 
 ## Commits Created
+
 - <sha> <message>
 
 ## Files Changed
+
 - <path>
 
 ## Verification Results
+
 - Step-level checks:
   - <check>: <passed | failed | not-run>
 - Final checks:
@@ -120,11 +133,14 @@ Write to `openspec/results/<task-slug>/RESULT.md` AND return inline:
   - Build: <passed | failed | not-run>
 
 ## Blockers or Deviations
+
 - <issue, or "None">
 
 ## Notes
+
 - <note, or "None">
 
 ## Next Step
+
 <what the orchestrator should do next>
 ```

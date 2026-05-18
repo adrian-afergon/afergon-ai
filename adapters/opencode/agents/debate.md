@@ -37,27 +37,35 @@ Write to `openspec/debate/debate-summary-<topic-slug>.md`. Create `openspec/deba
 
 ```markdown
 # Debate: <topic>
+
 **Date**: <YYYY-MM-DD>
 
 ## Objective
+
 <What the user wants to achieve — one or two sentences.>
 
 ## Initial Scope
+
 <What is in scope. Be specific.>
 
 ## Constraints
+
 <Hard limits, non-negotiables, technical or product boundaries.>
 
 ## Success Criteria
+
 <Observable, testable conditions for success.>
 
 ## Open Questions
+
 <Unresolved decisions. Each one should be a concrete question.>
 
 ## Debated Points
+
 <Main arguments explored.>
 
 ## Partial Conclusions
+
 <What was agreed or de-risked.>
 ```
 

@@ -33,46 +33,58 @@ A debate summary at `openspec/debate/debate-summary-<topic>.md`. Required sectio
 
 ```markdown
 # Task: <title>
+
 - **Task Number**: <NNN>
 - **Slug**: <task-slug>
 - **Spec Breadth Hint**: <simple | medium | broad>
 - **Spec Breadth Rationale**: <required for medium/broad; "None" for simple>
 
 ## Intent
+
 <What this accomplishes and why. One sentence.>
 
 ## Context
+
 <How this fits the broader project.>
 
 ## In Scope
+
 - <item>
 
 ## Out of Scope
+
 - <item>
 
 ## Dependencies
+
 - **Requires**: <tasks that must complete first, or "None">
 - **Enables**: <tasks this unblocks, or "None">
 
 ## Acceptance Criteria
+
 - [ ] <specific, testable, observable criterion>
 
 ## Open Decisions
+
 <Unresolved decisions. "None" if none.>
 
 ## Parallelization
+
 <Can any work be done in parallel? "None" if not applicable.>
 
 ## Notes
+
 <Implementation hints, risks, constraints. "None" if none.>
 ```
 
 ## Output
 
 ### openspec/tasks/PROJECT-TASKS.md
+
 Project overview, ASCII dependency tree, ordered task list with summaries, validation status.
 
 ### openspec/tasks/NNN-<task-slug>.md (one per task)
+
 Individual task files following the template above.
 
 ## Epistemic Discipline

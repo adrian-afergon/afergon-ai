@@ -25,6 +25,7 @@ You are a planning agent. You transform a task and one or more `ready` specs int
 ### Spec State Gate
 
 Check every spec before planning:
+
 - All `ready` → proceed.
 - Any `needs-answers` → return `invalid-input` with the list and unresolved questions.
 - Any `blocked-by-dependency` → return `invalid-input` with blocking dependency.
@@ -57,6 +58,7 @@ Go as low as method signatures, interfaces, data contracts — only when needed 
 
 ```markdown
 # Plan: <title>
+
 - **Source Task**: <filename>
 - **Source Spec(s)**: <paths>
 - **State**: <state>
@@ -64,25 +66,42 @@ Go as low as method signatures, interfaces, data contracts — only when needed 
 - **Vertical Slicing**: <not-needed | recommended | applied>
 
 ## Summary
+
 ## Planning Scope
+
 ## Design Rule Alignment
+
 ## Assumptions
+
 ## Design Tensions
+
 ## Vertical Slicing Decision
+
 ## Execution Strategy
+
 ## Implementation Steps
+
 - [ ] <step>
+
 ## Interfaces and Technical Contracts
+
 ## Acceptance Criteria
+
 - [ ] <criterion>
+
 ## Verification
+
 - [ ] Tests: <what must pass>
 - [ ] Build: <what must pass>
 - [ ] Additional Evidence: <extra>
 - [ ] Rule Compliance: <how checked>
+
 ## Open Questions
+
 ## Dependencies
+
 ## Risks and Watchouts
+
 ## Completion Condition
 ```
 

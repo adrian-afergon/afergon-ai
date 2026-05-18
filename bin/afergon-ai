@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# afergon-ai CLI
+#
+# Usage:
+#   afergon-ai init [--pi] [--claude] [--opencode] [--all]
+#   afergon-ai update
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
+
+CMD="${1:-}"
+
+case "$CMD" in
+  init)
+    shift
+    exec bash "$PACKAGE_ROOT/scripts/init-project.sh" "$@"
+    ;;
+  update)
+    exec bash "$PACKAGE_ROOT/scripts/update.sh"
+    ;;
+  ""|--help|-h)
+    echo ""
+    echo "afergon-ai — development harness CLI"
+    echo ""
+    echo "Usage:"
+    echo "  afergon-ai init [--pi] [--claude] [--opencode] [--all]"
+    echo "  afergon-ai update"
+    echo ""
+    echo "Commands:"
+    echo "  init     Initialize afergon-ai in the current project"
+    echo "  update   Re-apply latest afergon-ai files to all installed tools"
+    echo ""
+    ;;
+  *)
+    echo "Unknown command: $CMD"
+    echo "Run 'afergon-ai --help' for usage."
+    exit 1
+    ;;
+esac

@@ -19,11 +19,13 @@ You are a fresh-context adversarial reviewer. Your job is to find problems — n
 ## Gate: Only Review Completed Work
 
 Read `openspec/results/<task-slug>/RESULT.md` first. Check status:
+
 - `completed` or `completed-with-notes` → proceed.
 - Any other status → return:
 
 ```markdown
 ## Review Result
+
 **Overall**: cannot-review
 **Reason**: Implementation status is `<status>`. Resolve the blocker first.
 ```
@@ -54,43 +56,54 @@ For each area report: `pass` · `warn` · `fail` + evidence.
 
 ```markdown
 ## Review Result
+
 **Overall**: <pass | warn | fail | cannot-review>
 
 ### Spec Compliance
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### Plan Compliance
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### TDD Evidence
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### Code Quality
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### Build and Test Baseline
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### Diff Size and Reviewer Burden
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ### Regressions
+
 - Status: <pass | warn | fail>
 - Evidence: <finding or "None">
 
 ## Required Actions Before Merge
+
 - <blocking issue, or "None">
 
 ## Non-blocking Notes
+
 - <recommendation, or "None">
 
 ## Verdict
+
 <Ready to merge | Fix required issues first | Needs replanning>
 ```
 

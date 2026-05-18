@@ -39,15 +39,15 @@ ambiguous / risky / large     → full pipeline from /debate
 
 ## Pipeline Commands
 
-| Stage    | Command      | Artifact store                  |
-|----------|--------------|---------------------------------|
-| debate   | `/debate`    | `openspec/debate/`              |
-| breakdown| `/breakdown` | `openspec/tasks/`               |
-| specify  | `/specify`   | `openspec/specs/<task-slug>/`   |
-| plannify | `/plannify`  | `openspec/plans/<task-slug>/`   |
-| implement| `/implement` | project source files            |
-| design   | `/design`    | Stitch (external)               |
-| review   | `/review`    | `openspec/results/<task-slug>/` |
+| Stage     | Command      | Artifact store                  |
+| --------- | ------------ | ------------------------------- |
+| debate    | `/debate`    | `openspec/debate/`              |
+| breakdown | `/breakdown` | `openspec/tasks/`               |
+| specify   | `/specify`   | `openspec/specs/<task-slug>/`   |
+| plannify  | `/plannify`  | `openspec/plans/<task-slug>/`   |
+| implement | `/implement` | project source files            |
+| design    | `/design`    | Stitch (external)               |
+| review    | `/review`    | `openspec/results/<task-slug>/` |
 
 ## Artifact Store: openspec/
 
@@ -68,6 +68,7 @@ When a stage blocks, pause and ask using this format:
 Consolidate all questions in one message. Max 2 clarification rounds per blocking point.
 
 After 2 rounds without resolution:
+
 ```
 ## Pipeline blocked — persistent
 **Stage / Blocking point**: <detail>
@@ -78,36 +79,38 @@ Map free-text answers explicitly. Confirm ambiguous mappings. State resolved con
 
 ## Pipeline State Machine
 
-| Stage          | Output state                          | Action                                      |
-|----------------|---------------------------------------|---------------------------------------------|
-| debate         | summary written                       | advance to `/breakdown`                     |
-| breakdown      | no Open Decisions                     | advance to `/specify`                       |
-| breakdown      | Open Decisions present                | pause — unblock-and-advance                 |
-| specify        | all specs `ready`                     | advance to `/plannify`                      |
-| specify        | any `needs-answers`                   | pause — unblock-and-rerun                   |
-| specify        | any `blocked-by-dependency`           | pause — identify blocker                    |
-| specify        | any `invalid-task`                    | pause — return to `/breakdown`              |
-| plannify       | `ready` or `ready-with-assumptions`   | advance to `/implement`                     |
-| plannify       | `needs-answers`                       | pause — unblock-and-rerun                   |
-| plannify       | `needs-respecification`               | return to `/specify` with context           |
-| plannify       | `invalid-input`                       | check input artifacts                       |
-| implement      | `completed` or `completed-with-notes` | advance to `/review`                        |
-| implement      | `blocked`                             | pause — unblock-with-decision               |
-| implement      | `failed-verification`                 | pause — unblock-with-decision               |
-| afergon-review | `pass`                                | pipeline complete                           |
-| afergon-review | `warn`                                | surface notes — ask whether to merge or fix |
-| afergon-review | `fail`                                | return to `/implement` with required actions|
-| afergon-review | `cannot-review`                       | check implement status — do not merge       |
+| Stage          | Output state                          | Action                                       |
+| -------------- | ------------------------------------- | -------------------------------------------- |
+| debate         | summary written                       | advance to `/breakdown`                      |
+| breakdown      | no Open Decisions                     | advance to `/specify`                        |
+| breakdown      | Open Decisions present                | pause — unblock-and-advance                  |
+| specify        | all specs `ready`                     | advance to `/plannify`                       |
+| specify        | any `needs-answers`                   | pause — unblock-and-rerun                    |
+| specify        | any `blocked-by-dependency`           | pause — identify blocker                     |
+| specify        | any `invalid-task`                    | pause — return to `/breakdown`               |
+| plannify       | `ready` or `ready-with-assumptions`   | advance to `/implement`                      |
+| plannify       | `needs-answers`                       | pause — unblock-and-rerun                    |
+| plannify       | `needs-respecification`               | return to `/specify` with context            |
+| plannify       | `invalid-input`                       | check input artifacts                        |
+| implement      | `completed` or `completed-with-notes` | advance to `/review`                         |
+| implement      | `blocked`                             | pause — unblock-with-decision                |
+| implement      | `failed-verification`                 | pause — unblock-with-decision                |
+| afergon-review | `pass`                                | pipeline complete                            |
+| afergon-review | `warn`                                | surface notes — ask whether to merge or fix  |
+| afergon-review | `fail`                                | return to `/implement` with required actions |
+| afergon-review | `cannot-review`                       | check implement status — do not merge        |
 
 Re-entry rule: always pass reason and context when routing back to an earlier stage.
 
 ## Memory Protocol
 
 Read `openspec/config.yaml` at session start:
+
 ```yaml
 memory:
   system: engram | obsidian | memory-md | none
 ```
+
 If missing, suggest `init-project.sh` once without blocking.
 
 - **engram**: use Engram MCP tools if configured. Save after each stage, search at start.
