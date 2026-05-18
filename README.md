@@ -1,72 +1,176 @@
 # afergon-ai
 
-> A Pi-native development harness with a disciplined debate-to-implementation pipeline.
+> afergon's development harness. From debate to working code: Gherkin-first specs, strict TDD/TPP, and a pipeline that asks before it assumes.
 
 ## What is afergon-ai?
 
-afergon-ai is a Pi package that turns your coding agent into a **controlled development orchestrator**. It provides:
+afergon-ai is a development harness that turns your coding agent into a **controlled delivery orchestrator**. It works with **Pi**, **Claude Code**, and **OpenCode**.
+
+It provides:
 
 - A **work routing ladder**: small tasks execute directly; complex work follows the full pipeline.
-- A **7-stage pipeline**: `debate → breakdown → specify → plannify → implement → review` (+ `design` for UI/UX work with Stitch).
+- An **8-stage pipeline**: `debate → breakdown → specify → plannify → implement → review` (+ `design` for UI/UX with Stitch, + `detect-skills` for auto-discovery).
 - **Gherkin-first specs**: behavior as the primary implementation contract.
-- **TDD/TPP enforcement**: strict RED → GREEN → REFACTOR with step-level verification.
+- **Strict TDD/TPP**: RED → GREEN (lowest-complexity transformation) → TRIANGULATE (≥2 adversarial scenarios) → REFACTOR.
 - **Epistemic discipline**: agents never invent missing product decisions.
-- **openspec/ artifact store**: all pipeline artifacts live under `openspec/` in the project repo.
+- **`openspec/` artifact store**: all pipeline artifacts live in the project repo.
+- **Memory system**: optional integration with Engram, Obsidian, or a plain `memory.md` file.
+
+---
 
 ## Install
 
+### Step 1 — Get the CLI
+
+**From npm** (once published):
+```bash
+npm install -g afergon-ai
+```
+
+**From the repo:**
+```bash
+git clone https://github.com/adrian-afergon/afergon-ai.git
+cd afergon-ai
+npm install -g .
+```
+
+### Step 2 — Initialize a project
+
+Run from the root of any project:
+
+```bash
+afergon-ai init
+```
+
+Select which tools to configure (Pi, Claude Code, OpenCode, or all) and which memory system to use. The command creates `openspec/config.yaml` and sets up each tool.
+
+**Flags (skips interactive selection):**
+```bash
+afergon-ai init --pi
+afergon-ai init --claude
+afergon-ai init --opencode
+afergon-ai init --all
+```
+
+### Step 3 — Update after pulling changes
+
+```bash
+afergon-ai update
+```
+
+Re-applies the latest files to all tools already installed in the project. Detects which tools are active automatically.
+
+---
+
+## Per-tool setup
+
+### Pi
+
+`init --pi` writes `.pi/APPEND_SYSTEM.md`, which Pi reads automatically on startup from that directory. Skills are globally available once the package is installed via `pi install`.
+
 ```bash
 pi install /path/to/afergon-ai
-# or once published:
+# or:
 pi install npm:afergon-ai
 ```
+
+### Claude Code
+
+`init --claude` writes `CLAUDE.md` to the project root and copies skills to `.claude/skills/`. Claude Code reads both automatically.
+
+### OpenCode
+
+`init --opencode` copies agents and commands to `~/.config/opencode/agents/` and `~/.config/opencode/commands/`. These merge with your existing global OpenCode config — nothing is overwritten without confirmation.
+
+---
 
 ## Pipeline
 
 ```
 debate → breakdown → specify → plannify → implement → review
-                                    ↓
-                                 design (parallel, UI/UX only)
+                                               ↓
+                                           design  (parallel, UI/UX only)
 ```
 
-### Artifact store (openspec/)
+### Stages
 
-| Stage     | Artifact location                                                  |
-| --------- | ------------------------------------------------------------------ |
-| debate    | `openspec/debate/debate-summary-<topic>.md`                        |
-| breakdown | `openspec/tasks/PROJECT-TASKS.md` + `openspec/tasks/NNN-<slug>.md` |
-| specify   | `openspec/specs/<task-slug>/spec-NN-<slug>.md`                     |
-| plannify  | `openspec/plans/<task-slug>/PLAN.md`                               |
-| implement | project source files (commits)                                     |
-| design    | Stitch (external)                                                  |
-| review    | inline report                                                      |
+| Stage            | What it does                                      | Artifact                                        |
+| ---------------- | ------------------------------------------------- | ----------------------------------------------- |
+| `debate`         | Socratic session to explore and define requirements | `openspec/debate/debate-summary-<topic>.md`   |
+| `breakdown`      | Decompose debate summary into validated tasks     | `openspec/tasks/`                               |
+| `specify`        | Transform a task into Gherkin implementation specs | `openspec/specs/<task-slug>/`                  |
+| `plannify`       | Build an executable technical plan               | `openspec/plans/<task-slug>/PLAN.md`            |
+| `implement`      | Execute the plan with strict TDD/TPP             | project source files + commits                  |
+| `design`         | UI/UX design in Google Stitch                    | Stitch (external)                               |
+| `afergon-review` | Adversarial post-implementation review           | `openspec/results/<task-slug>/RESULT.md`        |
+| `detect-skills`  | Auto-detect and install project skills           | `.agents/skills/` + `.atl/skill-registry.md`   |
+
+### Work routing
+
+```
+small + clear + single-file   → inline (no pipeline)
+moderate / multi-file         → single stage
+ambiguous / risky / large     → full pipeline from debate
+```
+
+---
 
 ## Skills
 
-Each pipeline stage is a Pi skill. Load on demand:
-
-```bash
-/skill:debate       # start a Socratic debate session
-/skill:breakdown    # decompose a debate summary into tasks
-/skill:specify      # transform a task into Gherkin specs
-/skill:plannify     # build a technical execution plan
-/skill:implement    # execute a plan with TDD discipline
-/skill:design       # design in Google Stitch
-/skill:afergon-review  # adversarial post-implement review
-```
-
-## Work Routing
+Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In Claude Code and OpenCode, load the skill file or use the corresponding command.
 
 ```
-small + clear context     → inline direct (no pipeline)
-moderate / multi-file     → single skill phase
-ambiguous / risky / large → full pipeline from debate
+/skill:debate          Socratic debate session
+/skill:breakdown       Decompose a debate summary into tasks
+/skill:specify         Gherkin-first specs from a task
+/skill:plannify        Technical execution plan
+/skill:implement       TDD/TPP strict implementation
+/skill:design          UI/UX design in Google Stitch
+/skill:afergon-review  Adversarial post-implement review
+/skill:detect-skills   Auto-detect skills for your tech stack
 ```
+
+Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with Pi, Claude Code, Cursor, and OpenCode.
+
+---
+
+## Memory
+
+Configure the memory system during `init` or manually in `openspec/config.yaml`:
+
+```yaml
+memory:
+  system: engram | obsidian | memory-md | none
+```
+
+| System | Behavior |
+|---|---|
+| `engram` | Pi-native persistent memory. Requires Engram installed; in Claude Code requires Engram MCP. Searches context at session start, saves after each pipeline stage. |
+| `obsidian` | Appends structured entries to a configured vault folder. |
+| `memory-md` | Appends to `openspec/MEMORY.md`. Simple and tool-agnostic. |
+| `none` | No memory operations. |
+
+---
+
+## Project config
+
+`openspec/config.yaml` is the single source of truth for project-level afergon-ai settings:
+
+```yaml
+project:
+  name: my-project
+
+memory:
+  system: engram
+```
+
+---
 
 ## Philosophy
 
 - The AI is a tool directed by the human, never the decision-maker.
 - Never invent product decisions. Surface missing ones.
 - Gherkin scenarios are the behavioral contract, not documentation.
+- TDD is evidence: RED → GREEN → TRIANGULATE → REFACTOR, with proof at every step.
 - Implementation is only complete when tests pass and the build succeeds.
 - Review protects the human reviewer: never produce oversized diffs without warning.
