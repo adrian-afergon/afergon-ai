@@ -156,15 +156,15 @@ Maximum **2 rounds** per blocking point. After round 2, declare persistent block
 
 ### Answer Mapping
 
-Map free-text answers to specific questions. Confirm ambiguous mappings. State resolved context before continuing: *"Understood: [decisions]. Continuing with [next action]."*
+Map free-text answers to specific questions. Confirm ambiguous mappings. State resolved context before continuing: _"Understood: [decisions]. Continuing with [next action]."_
 
 ### Pause Types
 
-| Pause type                | Example trigger                        | Next action                                      |
-| ------------------------- | -------------------------------------- | ------------------------------------------------ |
-| **unblock-and-rerun**     | specify/plannify `needs-answers`       | Re-run same skill with answers as explicit input |
-| **unblock-and-advance**   | breakdown `Open Decisions` present     | Incorporate answers; advance to next stage       |
-| **unblock-with-decision** | implement `blocked`/`failed-verify`    | User chooses route; orchestrator follows         |
+| Pause type                | Example trigger                     | Next action                                      |
+| ------------------------- | ----------------------------------- | ------------------------------------------------ |
+| **unblock-and-rerun**     | specify/plannify `needs-answers`    | Re-run same skill with answers as explicit input |
+| **unblock-and-advance**   | breakdown `Open Decisions` present  | Incorporate answers; advance to next stage       |
+| **unblock-with-decision** | implement `blocked`/`failed-verify` | User chooses route; orchestrator follows         |
 
 ## Epistemic Discipline
 
@@ -177,29 +177,29 @@ Map free-text answers to specific questions. Confirm ambiguous mappings. State r
 
 All **pause** rows follow the User Clarification Protocol above.
 
-| Stage          | Output state                              | Orchestrator action                                                  |
-| -------------- | ----------------------------------------- | -------------------------------------------------------------------- |
-| debate         | summary written                           | advance to `breakdown`                                               |
-| debate         | summary not written                       | continue debate or ask user to request summary                       |
-| breakdown      | no Open Decisions                         | advance to `specify`                                                 |
-| breakdown      | Open Decisions present                    | pause — unblock-and-advance                                          |
-| specify        | all specs `ready`                         | advance to `plannify`                                                |
-| specify        | any `needs-answers`                       | pause — unblock-and-rerun                                            |
-| specify        | any `blocked-by-dependency`               | pause — identify what must complete first                            |
-| specify        | any `invalid-task`                        | pause — return to `breakdown`                                        |
-| plannify       | `ready` or `ready-with-assumptions`       | advance to `implement`                                               |
-| plannify       | `needs-answers`                           | pause — unblock-and-rerun                                            |
-| plannify       | `needs-respecification`                   | return to `specify` with context                                     |
-| plannify       | `blocked-by-dependency`                   | pause — identify blocker                                             |
-| plannify       | `invalid-input`                           | check input artifacts                                                |
-| implement      | `completed` or `completed-with-notes`     | advance to `afergon-review`                                          |
-| implement      | `blocked`                                 | pause — unblock-with-decision                                        |
-| implement      | `failed-verification`                     | pause — unblock-with-decision                                        |
-| implement      | `invalid-input`                           | return to `plannify`                                                 |
-| afergon-review | `pass`                                    | pipeline complete                                                    |
-| afergon-review | `warn`                                    | surface notes — ask whether to merge or fix                          |
-| afergon-review | `fail`                                    | return to `implement` with required actions                          |
-| afergon-review | `cannot-review`                           | check implement status — do not merge                                |
+| Stage          | Output state                          | Orchestrator action                            |
+| -------------- | ------------------------------------- | ---------------------------------------------- |
+| debate         | summary written                       | advance to `breakdown`                         |
+| debate         | summary not written                   | continue debate or ask user to request summary |
+| breakdown      | no Open Decisions                     | advance to `specify`                           |
+| breakdown      | Open Decisions present                | pause — unblock-and-advance                    |
+| specify        | all specs `ready`                     | advance to `plannify`                          |
+| specify        | any `needs-answers`                   | pause — unblock-and-rerun                      |
+| specify        | any `blocked-by-dependency`           | pause — identify what must complete first      |
+| specify        | any `invalid-task`                    | pause — return to `breakdown`                  |
+| plannify       | `ready` or `ready-with-assumptions`   | advance to `implement`                         |
+| plannify       | `needs-answers`                       | pause — unblock-and-rerun                      |
+| plannify       | `needs-respecification`               | return to `specify` with context               |
+| plannify       | `blocked-by-dependency`               | pause — identify blocker                       |
+| plannify       | `invalid-input`                       | check input artifacts                          |
+| implement      | `completed` or `completed-with-notes` | advance to `afergon-review`                    |
+| implement      | `blocked`                             | pause — unblock-with-decision                  |
+| implement      | `failed-verification`                 | pause — unblock-with-decision                  |
+| implement      | `invalid-input`                       | return to `plannify`                           |
+| afergon-review | `pass`                                | pipeline complete                              |
+| afergon-review | `warn`                                | surface notes — ask whether to merge or fix    |
+| afergon-review | `fail`                                | return to `implement` with required actions    |
+| afergon-review | `cannot-review`                       | check implement status — do not merge          |
 
 **Re-entry rule**: always pass the reason and context when routing back to an earlier stage.
 
