@@ -257,14 +257,14 @@ Use the callable Engram memory tools (`mem_save`, `mem_search`, `mem_context`, `
 
 **Save after each pipeline stage:**
 
-| Stage | What to save | type | topic_key |
-|---|---|---|---|
-| debate | Summary path + key decisions | `decision` | `<project>/debate/<topic>` |
-| breakdown | Task list summary + dependency graph | `architecture` | `<project>/tasks` |
-| specify | Unresolved questions surfaced | `discovery` | `<project>/specs/<task-slug>` |
-| plannify | Execution mode + key assumptions | `decision` | `<project>/plans/<task-slug>` |
-| implement | Bugs fixed, non-obvious discoveries | `bugfix` / `discovery` | `<project>/impl/<task-slug>` |
-| afergon-review | Review verdict + required actions | `decision` | `<project>/review/<task-slug>` |
+| Stage          | What to save                         | type                   | topic_key                      |
+| -------------- | ------------------------------------ | ---------------------- | ------------------------------ |
+| debate         | Summary path + key decisions         | `decision`             | `<project>/debate/<topic>`     |
+| breakdown      | Task list summary + dependency graph | `architecture`         | `<project>/tasks`              |
+| specify        | Unresolved questions surfaced        | `discovery`            | `<project>/specs/<task-slug>`  |
+| plannify       | Execution mode + key assumptions     | `decision`             | `<project>/plans/<task-slug>`  |
+| implement      | Bugs fixed, non-obvious discoveries  | `bugfix` / `discovery` | `<project>/impl/<task-slug>`   |
+| afergon-review | Review verdict + required actions    | `decision`             | `<project>/review/<task-slug>` |
 
 Use `project: <project-name>` and `scope: project` on every save.
 
@@ -280,6 +280,7 @@ memory:
 ```
 
 Write structured markdown files to `<vault>/<folder>/`:
+
 - One file per pipeline stage: `debate.md`, `tasks.md`, `decisions.md`, `review-<slug>.md`
 - Append to existing files rather than overwriting.
 - Format: `## YYYY-MM-DD — <stage>` heading + content.
@@ -291,6 +292,7 @@ Write structured markdown files to `<vault>/<folder>/`:
 Append to `openspec/MEMORY.md` after each significant pipeline event.
 
 Format:
+
 ```markdown
 ## YYYY-MM-DD — <stage> (<task-slug>)
 
@@ -303,7 +305,6 @@ Create the file if it does not exist. Never truncate or overwrite existing conte
 #### `none`
 
 No memory operations. Do not read or write memory during the pipeline.
-
 
 ## Startup: Project Skill Check
 
