@@ -1,4 +1,7 @@
 {
+	"packages": [
+		"/Users/adrian/projects/afergon/afergon-ai"
+	],
 	"subagents": {
 		"agentOverrides": {
 			"sdd-init": {
