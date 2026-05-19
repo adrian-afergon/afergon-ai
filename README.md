@@ -8,7 +8,10 @@
 ██║  ██║ ██║      ███████╗ ██║  ██║ ╚██████╔╝ ╚██████╔╝ ██║ ╚████║     ██║  ██║ ██║
 ╚═╝  ╚═╝ ╚═╝      ╚══════╝ ╚═╝  ╚═╝  ╚═════╝   ╚═════╝  ╚═╝  ╚═══╝     ╚═╝  ╚═╝ ╚═╝
 ```
+
 > afergon's development harness. From debate to working code: Gherkin-first specs, strict TDD/TPP, and a pipeline that asks before it assumes.
+>
+> ⚠️ **Status:** This project is currently under active development and is **not production-ready** yet.
 
 ## What is afergon-ai?
 
@@ -36,13 +39,25 @@ It provides:
 npm install -g afergon-ai
 ```
 
-**From the repo:**
+**From the repo (stable snapshot):**
 
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
 npm install -g .
 ```
+
+`npm install -g .` installs a copy of the current state. Later local edits in your clone are **not** reflected automatically.
+
+**From the repo (linked dev mode, recommended while developing):**
+
+```bash
+git clone https://github.com/adrian-afergon/afergon-ai.git
+cd afergon-ai
+npm link
+```
+
+`npm link` creates a global symlink to your local checkout, so changes are picked up immediately.
 
 ### Step 2 — Initialize a project
 
@@ -71,6 +86,45 @@ afergon-ai update
 
 Re-applies the latest files to all tools already installed in the project. Detects which tools are active automatically.
 
+### Local install troubleshooting (`npm i -g .` vs `npm link`)
+
+If global install appears "disconnected" from your machine after `npm i -g .`, this is expected: npm copied files to global `node_modules`.
+
+Use this recovery flow:
+
+```bash
+# from afergon-ai repo
+npm uninstall -g afergon-ai
+npm link
+which afergon-ai
+afergon-ai doctor
+```
+
+`which afergon-ai` should point to your npm global bin and resolve to the linked local checkout.
+`afergon-ai doctor` validates that the launcher resolves to the package root and that required scripts are present.
+
+If you see an error like:
+
+```bash
+bash: /Users/<you>/.nvm/versions/node/<ver>/scripts/init-project.sh: No such file or directory
+```
+
+it means the global shim was resolving paths from the npm bin directory instead of the package root. Update to the latest version and relink (`npm link`) so the fixed launcher is used.
+
+If OpenCode starts but your agents do not appear, verify:
+
+```bash
+afergon-ai doctor --opencode
+opencode agent list | rg "orchestrator|debate|implement"
+```
+
+If that list is empty, ensure files exist in:
+
+```bash
+${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents
+${XDG_CONFIG_HOME:-$HOME/.config}/opencode/commands
+```
+
 ---
 
 ## Per-tool setup
@@ -91,7 +145,7 @@ pi install npm:afergon-ai
 
 ### OpenCode
 
-`init --opencode` copies agents and commands to `~/.config/opencode/agents/` and `~/.config/opencode/commands/`. These merge with your existing global OpenCode config — nothing is overwritten without confirmation.
+`init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config — nothing is overwritten without confirmation.
 
 ---
 
