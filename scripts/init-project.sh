@@ -44,6 +44,18 @@ echo "Project : $PROJECT_NAME"
 echo "Directory: $TARGET_DIR"
 echo ""
 
+# ── Preflight: verify global launcher wiring ──────────────────────────────────
+if command -v afergon-ai >/dev/null 2>&1; then
+	if ! bash "$PACKAGE_ROOT/scripts/verify-install.sh" >/dev/null 2>&1; then
+		echo "⚠ Detected a potentially broken global launcher installation."
+		echo "  Suggested fix (from afergon-ai repo):"
+		echo "    pnpm remove -g afergon-ai"
+		echo "    pnpm link --global"
+		echo "    afergon-ai doctor"
+		echo ""
+	fi
+fi
+
 # ── Interactive tool selection (no flags provided) ────────────────────────────
 
 if ! $SETUP_PI && ! $SETUP_CLAUDE && ! $SETUP_OPENCODE; then
@@ -195,10 +207,14 @@ if $SETUP_OPENCODE; then
 	echo "OpenCode setup"
 	echo "--------------"
 	ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
-	OC_AGENTS_DIR="${HOME}/.config/opencode/agents"
-	OC_COMMANDS_DIR="${HOME}/.config/opencode/commands"
+	OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+	OC_AGENTS_DIR="$OC_BASE_DIR/agents"
+	OC_COMMANDS_DIR="$OC_BASE_DIR/commands"
 
 	mkdir -p "$OC_AGENTS_DIR" "$OC_COMMANDS_DIR"
+
+	agents_copied=0
+	commands_copied=0
 
 	# Copy agents — ask on conflict
 	for src in "$ADAPTER_PATH"/agents/*.md; do
@@ -207,7 +223,10 @@ if $SETUP_OPENCODE; then
 			read -r -p "Warning: $(basename "$dest") exists in global agents. Overwrite? [y/N] " c
 			[[ "$c" != "y" && "$c" != "Y" ]] && continue
 		fi
-		cp "$src" "$dest" && echo "✔ agents/$(basename "$dest")"
+		if cp "$src" "$dest"; then
+			agents_copied=$((agents_copied + 1))
+			echo "✔ agents/$(basename "$dest")"
+		fi
 	done
 
 	# Copy commands — ask on conflict
@@ -217,8 +236,15 @@ if $SETUP_OPENCODE; then
 			read -r -p "Warning: $(basename "$dest") exists in global commands. Overwrite? [y/N] " c
 			[[ "$c" != "y" && "$c" != "Y" ]] && continue
 		fi
-		cp "$src" "$dest" && echo "✔ commands/$(basename "$dest")"
+		if cp "$src" "$dest"; then
+			commands_copied=$((commands_copied + 1))
+			echo "✔ commands/$(basename "$dest")"
+		fi
 	done
+
+	echo "OpenCode config dir: $OC_BASE_DIR"
+	echo "OpenCode agents copied: $agents_copied"
+	echo "OpenCode commands copied: $commands_copied"
 
 	# Project-level opencode.json (for MCP and project-specific config)
 	if [ ! -f "$TARGET_DIR/opencode.json" ]; then
@@ -238,7 +264,7 @@ echo ""
 
 $SETUP_PI && echo "  Pi        → .pi/APPEND_SYSTEM.md (active on next Pi session)"
 $SETUP_CLAUDE && echo "  Claude    → CLAUDE.md + .claude/skills/"
-$SETUP_OPENCODE && echo "  OpenCode  → ~/.config/opencode/agents/ + commands/"
+$SETUP_OPENCODE && echo "  OpenCode  → ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents/ + commands/"
 
 echo ""
 echo "Available skills (all tools):"

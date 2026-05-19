@@ -57,8 +57,9 @@ fi
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
-OC_AGENTS_DIR="${HOME}/.config/opencode/agents"
-OC_COMMANDS_DIR="${HOME}/.config/opencode/commands"
+OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OC_AGENTS_DIR="$OC_BASE_DIR/agents"
+OC_COMMANDS_DIR="$OC_BASE_DIR/commands"
 ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
 OC_MARKER="$OC_AGENTS_DIR/orchestrator.md"
 
@@ -67,15 +68,15 @@ if [ -f "$OC_MARKER" ]; then
 	for src in "$ADAPTER_PATH"/agents/*.md; do
 		cp "$src" "$OC_AGENTS_DIR/$(basename "$src")"
 	done
-	echo "✔ OpenCode: updated ~/.config/opencode/agents/"
+	echo "✔ OpenCode: updated $OC_BASE_DIR/agents/"
 
 	for src in "$ADAPTER_PATH"/commands/*.md; do
 		cp "$src" "$OC_COMMANDS_DIR/$(basename "$src")"
 	done
-	echo "✔ OpenCode: updated ~/.config/opencode/commands/"
+	echo "✔ OpenCode: updated $OC_BASE_DIR/commands/"
 	UPDATED=$((UPDATED + 1))
 else
-	echo "  OpenCode: not installed globally (skipped)"
+	echo "  OpenCode: not installed globally in $OC_BASE_DIR (skipped)"
 	SKIPPED=$((SKIPPED + 1))
 fi
 

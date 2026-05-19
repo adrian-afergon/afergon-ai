@@ -36,7 +36,7 @@ It provides:
 **From npm** (once published):
 
 ```bash
-npm install -g afergon-ai
+pnpm add -g afergon-ai
 ```
 
 **From the repo (stable snapshot):**
@@ -44,20 +44,20 @@ npm install -g afergon-ai
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
-npm install -g .
+pnpm add -g .
 ```
 
-`npm install -g .` installs a copy of the current state. Later local edits in your clone are **not** reflected automatically.
+`pnpm add -g .` installs a copy of the current state. Later local edits in your clone are **not** reflected automatically.
 
 **From the repo (linked dev mode, recommended while developing):**
 
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
-npm link
+pnpm link --global
 ```
 
-`npm link` creates a global symlink to your local checkout, so changes are picked up immediately.
+`pnpm link --global` creates a global symlink to your local checkout, so changes are picked up immediately.
 
 ### Step 2 — Initialize a project
 
@@ -86,21 +86,21 @@ afergon-ai update
 
 Re-applies the latest files to all tools already installed in the project. Detects which tools are active automatically.
 
-### Local install troubleshooting (`npm i -g .` vs `npm link`)
+### Local install troubleshooting (`pnpm add -g .` vs `pnpm link --global`)
 
-If global install appears "disconnected" from your machine after `npm i -g .`, this is expected: npm copied files to global `node_modules`.
+If global install appears "disconnected" from your machine after `pnpm add -g .`, this is expected: pnpm installed a global package copy instead of linking your local checkout.
 
 Use this recovery flow:
 
 ```bash
 # from afergon-ai repo
-npm uninstall -g afergon-ai
-npm link
+pnpm remove -g afergon-ai
+pnpm link --global
 which afergon-ai
 afergon-ai doctor
 ```
 
-`which afergon-ai` should point to your npm global bin and resolve to the linked local checkout.
+`which afergon-ai` should point to your global bin and resolve to the linked local checkout.
 `afergon-ai doctor` validates that the launcher resolves to the package root and that required scripts are present.
 
 If you see an error like:
@@ -109,7 +109,7 @@ If you see an error like:
 bash: /Users/<you>/.nvm/versions/node/<ver>/scripts/init-project.sh: No such file or directory
 ```
 
-it means the global shim was resolving paths from the npm bin directory instead of the package root. Update to the latest version and relink (`npm link`) so the fixed launcher is used.
+it means the global shim was resolving paths from the global bin directory instead of the package root. Update to the latest version and relink (`pnpm link --global`) so the fixed launcher is used.
 
 If OpenCode starts but your agents do not appear, verify:
 
