@@ -3,11 +3,18 @@
 #
 # Usage:
 #   afergon-ai init [--pi] [--claude] [--opencode] [--all]
+#   afergon-ai doctor [--opencode]
 #   afergon-ai update
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
 
 CMD="${1:-}"
@@ -16,6 +23,10 @@ case "$CMD" in
   init)
     shift
     exec bash "$PACKAGE_ROOT/scripts/init-project.sh" "$@"
+    ;;
+  doctor)
+    shift
+    exec bash "$PACKAGE_ROOT/scripts/verify-install.sh" "$@"
     ;;
   update)
     exec bash "$PACKAGE_ROOT/scripts/update.sh"
@@ -26,10 +37,12 @@ case "$CMD" in
     echo ""
     echo "Usage:"
     echo "  afergon-ai init [--pi] [--claude] [--opencode] [--all]"
+    echo "  afergon-ai doctor [--opencode]"
     echo "  afergon-ai update"
     echo ""
     echo "Commands:"
     echo "  init     Initialize afergon-ai in the current project"
+    echo "  doctor   Verify install; use --opencode for agents/commands checks"
     echo "  update   Re-apply latest afergon-ai files to all installed tools"
     echo ""
     ;;
