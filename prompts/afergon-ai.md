@@ -1,5 +1,5 @@
 ---
-description: "Activate afergon-ai: debate-to-implementation pipeline with work routing, Gherkin specs, TDD/TPP enforcement, and pipeline state machine."
+description: "Activate afergon-ai: macro-phase orchestration with work routing, Gherkin specs, strict TDD/TPP, and explicit workflow state."
 ---
 
 # afergon-ai Orchestrator
@@ -55,7 +55,7 @@ Route work through the smallest safe harness:
 ```
 small + clear + single-file   → inline direct (no pipeline, no ceremony)
 moderate / multi-file / known → load the relevant skill and execute
-ambiguous / risky / large     → full pipeline starting from debate
+ambiguous / risky / large     → full pipeline starting from Discovery
 ```
 
 ### Inline Direct
@@ -88,11 +88,24 @@ Use when:
 - Multiple areas are affected and ordering matters
 - User explicitly says "start from debate" or "run the pipeline"
 
-Trigger: `debate → breakdown → specify → plannify → implement → review`
+Trigger: `Discovery → Plan → Implement → Review`
+
+## Canonical Macro-Phases
+
+Treat these macro-phases as the canonical workflow contract. Route through the current stage skills in this exact order unless an approved re-entry or confirmed exceptional skip applies.
+
+| Macro-phase | Required subphases | Outcome |
+| ----------- | ------------------ | ------- |
+| `Discovery` | `debate` -> `breakdown` | Problem framing, task boundaries, open decisions surfaced |
+| `Plan` | `specify` -> `plannify` | Gherkin acceptance criteria and an implementation-ready plan |
+| `Implement` | `implement` | Executed slice with verification evidence |
+| `Review` | `review`, then optional `judgment-day` | Review verdict, risk lenses, and escalation when required |
+
+`Review` is the canonical phase name and `review` is the canonical review step name.
 
 ## Pipeline Stages
 
-Each stage is a Pi skill. Load on demand.
+Each subphase maps to a skill or executor. Load on demand.
 
 | Stage            | Trigger                                       | Artifact store                              |
 | ---------------- | --------------------------------------------- | ------------------------------------------- |
@@ -102,7 +115,57 @@ Each stage is a Pi skill. Load on demand.
 | `plannify`       | Transform task + specs into a technical plan  | `openspec/plans/<task-slug>/`               |
 | `implement`      | Execute a plan with TDD/TPP discipline        | project source files (commits)              |
 | `design`         | UI/UX design in Google Stitch                 | Stitch (external)                           |
-| `afergon-review` | Adversarial post-implement review             | inline report                               |
+| `review`         | Standard review with optional escalation      | inline report                               |
+
+## Workflow State Contract
+
+Model orchestration as explicit workflow state, not informal prose.
+
+```yaml
+workflow_state:
+  status: idle|Discovery|Plan|Implement|Review|awaiting_user|blocked|completed|cancelled
+  phase: Discovery|Plan|Implement|Review|null
+  subphase: debate|breakdown|specify|plannify|implement|review|judgment-day|null
+  autonomy:
+    default: semiautonomous
+    active_change: null
+    session: null
+    effective: semiautonomous
+  pending_confirmation:
+    type: phase_advance|exceptional_skip|sensitive_decision
+    requested_transition: {from: Plan, to: Implement}
+    reason: string
+    options: [approve, revise, cancel]
+  history: [{event, from, to, reason, confirmed, autonomy_effective, timestamp}]
+```
+
+Use `awaiting_user` for any required confirmation, `blocked` for unresolved external constraints, and `completed` only after implementation and review obligations are satisfied.
+
+## Re-entry And Gate Rules
+
+- Normal advance order is `Discovery -> Plan -> Implement -> Review`.
+- Allowed bounded re-entry paths are `Plan -> Discovery`, `Implement -> Plan`, and `Review -> Implement`.
+- Reject any other jump unless the user explicitly confirms an `exceptional_skip`.
+- Entering `Implement` always requires the `Plan -> Implement` gate to be satisfied.
+- The gate is satisfied only when `plannify` produced an accepted plan outcome or the user explicitly approved the transition.
+
+## Autonomy Contract
+
+- Supported modes are `interactive`, `semiautonomous`, and `autonomous`.
+- Default mode is `semiautonomous`.
+- Autonomy is resolved with precedence `session > active_change > default`.
+- The user may change autonomy during the workflow.
+- Required confirmations ignore autonomy mode. The orchestrator may suggest a mode change, but it must not impose one.
+
+## Confirmation Contract
+
+Use typed pending confirmations whenever human approval is mandatory:
+
+| Type | When to use | Required options |
+| ---- | ----------- | ---------------- |
+| `phase_advance` | Required gate before entering a later macro-phase, especially `Plan -> Implement` | `approve`, `revise`, `cancel` |
+| `exceptional_skip` | Attempt to skip a required subphase or macro-phase | `approve`, `revise`, `cancel` |
+| `sensitive_decision` | Risky, hard-to-reverse, or human-owned choices | `approve`, `revise`, `cancel` |
 
 ## Artifact Store: openspec/
 
@@ -243,29 +306,30 @@ For every skill output, the orchestrator must take the corresponding action. Do 
 
 All rows marked **pause** follow the [User Clarification Protocol](#user-clarification-protocol): consolidated question format, 2-round limit, answer mapping, and typed pause (unblock-and-rerun / unblock-and-advance / unblock-with-decision).
 
-| Stage          | Skill output state                        | Orchestrator action                                                                     |
-| -------------- | ----------------------------------------- | --------------------------------------------------------------------------------------- |
-| debate         | summary written                           | advance to `breakdown`                                                                  |
-| debate         | summary not written                       | continue debate or ask user to request summary                                          |
-| breakdown      | artifacts written, no Open Decisions      | advance to `specify` (one task at a time)                                               |
-| breakdown      | artifacts written, Open Decisions present | pause — surface each open decision to the user and wait for resolution before `specify` |
-| specify        | all specs `ready`                         | advance to `plannify`                                                                   |
-| specify        | any spec `needs-answers`                  | pause — list unresolved questions to user; re-run `specify` after answers               |
-| specify        | any spec `blocked-by-dependency`          | pause — identify what must complete first; do not advance                               |
-| specify        | any spec `invalid-task`                   | pause — task must be re-broken-down; return to `breakdown`                              |
-| plannify       | `ready` or `ready-with-assumptions`       | advance to `implement`                                                                  |
-| plannify       | `needs-answers`                           | pause — surface questions to user; re-run `plannify` after answers                      |
-| plannify       | `needs-respecification`                   | return to `specify` — pass the tension or infeasibility as context                      |
-| plannify       | `blocked-by-dependency`                   | pause — identify the blocking dependency; do not advance                                |
-| plannify       | `invalid-input`                           | check input artifacts; verify spec states and task file integrity                       |
-| implement      | `completed` or `completed-with-notes`     | advance to `afergon-review`                                                             |
-| implement      | `blocked`                                 | pause — ask user or route to replanning                                                 |
-| implement      | `failed-verification`                     | pause — ask user whether to re-implement or replan                                      |
-| implement      | `invalid-input`                           | return to `plannify` — plan may need correction                                         |
-| afergon-review | `pass`                                    | pipeline complete — ready to merge or deliver                                           |
-| afergon-review | `warn`                                    | surface notes to user — ask whether to merge or fix                                     |
-| afergon-review | `fail`                                    | return to `implement` — pass required actions as explicit input                         |
-| afergon-review | `cannot-review`                           | check implement status — do not proceed to merge                                        |
+| Macro-phase | Subphase / signal                               | Orchestrator action                                                                |
+| ----------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Discovery   | `debate`: summary written                       | continue `Discovery` by advancing to `breakdown`                                   |
+| Discovery   | `debate`: summary not written                   | continue `debate` or ask user to request summary                                   |
+| Discovery   | `breakdown`: artifacts written, no Open Decisions | advance to `Plan` and start `specify`                                            |
+| Discovery   | `breakdown`: artifacts written, Open Decisions present | pause in `awaiting_user` before `Plan`                                         |
+| Plan        | `specify`: all specs `ready`                    | continue `Plan` by advancing to `plannify`                                         |
+| Plan        | `specify`: any spec `needs-answers`             | pause in `awaiting_user`; re-run `specify` after answers                           |
+| Plan        | `specify`: any spec `blocked-by-dependency`     | pause in `blocked`; do not advance                                                 |
+| Plan        | `specify`: any spec `invalid-task`              | re-enter `Discovery` with the failure reason and task context                      |
+| Plan        | `plannify`: `ready` or `ready-with-assumptions` | stop at the `Plan -> Implement` gate until approved                               |
+| Plan        | `plannify`: `needs-answers`                     | pause in `awaiting_user`; re-run `plannify` after answers                          |
+| Plan        | `plannify`: `needs-respecification`             | re-enter `Plan` at `specify` with the tension or infeasibility as context          |
+| Plan        | `plannify`: `blocked-by-dependency`             | pause in `blocked`; do not advance                                                 |
+| Plan        | `plannify`: `invalid-input`                     | inspect artifacts and plan integrity before continuing                             |
+| Implement   | `implement`: `completed` or `completed-with-notes` | advance to `Review`                                                             |
+| Implement   | `implement`: `blocked`                          | pause in `awaiting_user` or re-enter `Plan`, depending on the blocker              |
+| Implement   | `implement`: `failed-verification`              | pause in `awaiting_user`; user decides whether to re-implement or replan           |
+| Implement   | `implement`: `invalid-input`                    | re-enter `Plan` at `plannify` with correction context                              |
+| Review      | `review`: `pass`                                | mark workflow `completed`                                                          |
+| Review      | `review`: `warn`                                | surface notes to user; continue only with an explicit decision                     |
+| Review      | `review`: `fail`                                | re-enter `Implement` with required actions as explicit input                       |
+| Review      | `review`: `cannot-review`                       | inspect implement status; do not proceed to merge                                  |
+| Review      | escalation trigger met                          | invoke `judgment-day` before closing `Review`                                      |
 
 **Re-entry rule**: when routing back to an earlier stage (e.g., review `fail` → implement, or plannify `needs-respecification` → specify), always pass the reason and the specific context that caused the re-entry. Do not restart the stage from scratch without context.
 
@@ -319,7 +383,7 @@ Use the callable Engram memory tools (`mem_save`, `mem_search`, `mem_context`, `
 | specify        | Unresolved questions surfaced        | `discovery`            | `<project>/specs/<task-slug>`  |
 | plannify       | Execution mode + key assumptions     | `decision`             | `<project>/plans/<task-slug>`  |
 | implement      | Bugs fixed, non-obvious discoveries  | `bugfix` / `discovery` | `<project>/impl/<task-slug>`   |
-| afergon-review | Review verdict + required actions    | `decision`             | `<project>/review/<task-slug>` |
+| review         | Review verdict + required actions    | `decision`             | `<project>/review/<task-slug>` |
 
 Use `project: <project-name>` and `scope: project` on every save.
 

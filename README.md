@@ -20,7 +20,7 @@ afergon-ai is a development harness that turns your coding agent into a **contro
 It provides:
 
 - A **work routing ladder**: small tasks execute directly; complex work follows the full pipeline.
-- An **8-stage pipeline**: `debate → breakdown → specify → plannify → implement → review` (+ `design` for UI/UX with Stitch, + `detect-skills` for auto-discovery).
+- A **canonical 4-phase workflow**: `Discovery → Plan → Implement → Review`, backed by the current subphases `debate → breakdown → specify → plannify → implement → review` (+ `design` for UI/UX with Stitch, + `detect-skills` for auto-discovery).
 - **Gherkin-first specs**: behavior as the primary implementation contract.
 - **Strict TDD/TPP**: RED → GREEN (lowest-complexity transformation) → TRIANGULATE (≥2 adversarial scenarios) → REFACTOR.
 - **Epistemic discipline**: agents never invent missing product decisions.
@@ -152,10 +152,42 @@ pi install npm:afergon-ai
 ## Pipeline
 
 ```
-debate → breakdown → specify → plannify → implement → review
-                                               ↓
-                                           design  (parallel, UI/UX only)
+Discovery: debate → breakdown
+Plan:      specify → plannify
+Implement: implement
+Review:    review → judgment-day (only when escalation is required)
+            ↓
+        design  (parallel, UI/UX only)
 ```
+
+### Macro-phase contract
+
+| Macro-phase | Required subphases | Notes |
+| ----------- | ------------------ | ----- |
+| `Discovery` | `debate`, `breakdown` | Defines scope, tasks, and open decisions |
+| `Plan` | `specify`, `plannify` | Produces Gherkin specs and an implementation-ready plan |
+| `Implement` | `implement` | Executes the approved slice with strict TDD/TPP expectations |
+| `Review` | `review`, optional `judgment-day` | Runs standard review first and escalates only when risk triggers it |
+
+The normal flow is `Discovery -> Plan -> Implement -> Review`. Allowed re-entry paths are `Plan -> Discovery`, `Implement -> Plan`, and `Review -> Implement`. Any other jump is an exceptional skip and requires explicit user confirmation.
+
+### Autonomy and gates
+
+- Supported autonomy modes: `interactive`, `semiautonomous`, `autonomous`
+- Default mode: `semiautonomous`
+- Precedence: `session > active_change > default`
+- Required confirmations ignore autonomy mode
+- `Plan -> Implement` is a mandatory gate: implementation starts only after `plannify` produced an accepted plan or the user explicitly approved the transition
+
+### Review escalation path
+
+`Review` always starts with the standard `review` step. It escalates to `judgment-day` when strong risk triggers exist, when multiple moderate triggers combine, or when review confidence is uncertain.
+
+The canonical review executor name is `review`.
+
+### Chained delivery guidance
+
+When a workflow change is likely to exceed roughly 400 changed lines, split it into chained PR-sized work units with a clear start state, finish state, verification step, and rollback boundary. Keep prompt/docs changes with the user-visible workflow change they describe.
 
 ### Stages
 
@@ -167,7 +199,7 @@ debate → breakdown → specify → plannify → implement → review
 | `plannify`       | Build an executable technical plan                  | `openspec/plans/<task-slug>/PLAN.md`         |
 | `implement`      | Execute the plan with strict TDD/TPP                | project source files + commits               |
 | `design`         | UI/UX design in Google Stitch                       | Stitch (external)                            |
-| `afergon-review` | Adversarial post-implementation review              | `openspec/results/<task-slug>/RESULT.md`     |
+| `review`         | Standard review with optional `judgment-day` escalation | `openspec/results/<task-slug>/RESULT.md` |
 | `detect-skills`  | Auto-detect and install project skills              | `.agents/skills/` + `.atl/skill-registry.md` |
 
 ### Work routing
@@ -175,7 +207,7 @@ debate → breakdown → specify → plannify → implement → review
 ```
 small + clear + single-file   → inline (no pipeline)
 moderate / multi-file         → single stage
-ambiguous / risky / large     → full pipeline from debate
+ambiguous / risky / large     → full workflow from Discovery
 ```
 
 ---
@@ -191,7 +223,7 @@ Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`.
 /skill:plannify        Technical execution plan
 /skill:implement       TDD/TPP strict implementation
 /skill:design          UI/UX design in Google Stitch
-/skill:afergon-review  Adversarial post-implement review
+/skill:review          Standard review with optional escalation
 /skill:detect-skills   Auto-detect skills for your tech stack
 ```
 
