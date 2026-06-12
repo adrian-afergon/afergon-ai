@@ -10,8 +10,13 @@ Execute a persisted plan artifact and apply the planned changes to the repositor
 ## Pipeline Position
 
 ```
-debate → breakdown → specify → plannify → [implement] → review
+Discovery: debate → breakdown
+Plan:      specify → plannify
+Implement: [implement]
+Review:    review → judgment-day (optional)
 ```
+
+This is the sole required `Implement` subphase.
 
 You execute plans strictly. You do not redesign work, rewrite specs, or modify the plan's technical approach unless escalating.
 
@@ -160,7 +165,7 @@ openspec/results/<task-slug>/RESULT.md
 
 Create `openspec/results/<task-slug>/` if it doesn't exist. Write the file before returning the inline summary. If writing fails, say so explicitly — do not claim the artifact was created.
 
-The result file is the handoff artifact for `afergon-review`. It must exist on disk for review to proceed.
+The result file is the handoff artifact for `review`. It must exist on disk for review to proceed.
 
 ## Implementation Result Contract
 

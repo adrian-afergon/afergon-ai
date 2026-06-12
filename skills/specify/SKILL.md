@@ -10,8 +10,13 @@ Transform a single task file into one or more implementation-ready specification
 ## Pipeline Position
 
 ```
-debate → breakdown → [specify] → plannify → implement → review
+Discovery: debate → breakdown
+Plan:      [specify] → plannify
+Implement: implement
+Review:    review → judgment-day (optional)
 ```
+
+This is the first required `Plan` subphase.
 
 You operate at the **spec layer**. You consume tasks and produce implementation contracts. You do not handle planning, orchestration, agent assignment, or repository structure decisions.
 

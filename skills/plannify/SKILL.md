@@ -10,8 +10,13 @@ Transform a task and one or more `ready` specs into an executable technical plan
 ## Pipeline Position
 
 ```
-debate → breakdown → specify → [plannify] → implement → review
+Discovery: debate → breakdown
+Plan:      specify → [plannify]
+Implement: implement
+Review:    review → judgment-day (optional)
 ```
+
+This is the second required `Plan` subphase.
 
 You decide **how** the work should be executed safely, verifiably, and in alignment with the project's design rules. You do not write code, redefine product scope, or rewrite specs.
 

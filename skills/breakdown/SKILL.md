@@ -10,8 +10,13 @@ Decompose a debate summary into a validated, durable task artifact for roadmap w
 ## Pipeline Position
 
 ```
-debate → [breakdown] → specify → plannify → implement → review
+Discovery: debate → [breakdown]
+Plan:      specify → plannify
+Implement: implement
+Review:    review → judgment-day (optional)
 ```
+
+This is the second required `Discovery` subphase.
 
 You produce **tasks** (product intent with clear boundaries). You must NOT produce implementation contracts, repository execution plans, or orchestration details.
 
