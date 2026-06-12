@@ -1,16 +1,16 @@
 ---
-name: afergon-review
-description: "Trigger: post-implementation review, adversarial diff review, pre-PR check. Runs a fresh-context adversarial review of implemented changes."
+name: review
+description: "Trigger: post-implementation review, adversarial diff review, pre-PR check. Runs the standard review layer, activates context risk lenses, and signals when judgment-day escalation is required."
 ---
 
-# Afergon Review Skill
+# Review Skill
 
-Adversarial post-implementation review. Run this after `implement` completes and before committing or opening a PR.
+Adversarial post-implementation review. Run this after `implement` completes and before committing or opening a PR. Standard review always runs first. Activate risk lenses from the change context, then determine whether `judgment-day` escalation is optional, unnecessary, or required.
 
 ## Pipeline Position
 
 ```
-debate → breakdown → specify → plannify → implement → [afergon-review]
+Discovery → Plan → Implement → [Review: review → judgment-day when required]
 ```
 
 You are a **fresh-context reviewer**. Your job is to find problems — not validate the implementer's assumptions.
@@ -39,6 +39,48 @@ Before doing anything else, read the result file and check its status.
 - The plan file: `openspec/plans/<task-slug>/PLAN.md`
 - The spec files: `openspec/specs/<task-slug>/spec-NN-<slug>.md`
 - The git diff (see below)
+
+## Layered Review Contract
+
+### 1. Standard review always runs
+
+Run the normal adversarial review checklist on every change.
+
+### 2. Activate context risk lenses when relevant
+
+Add the risk lenses that matter for the diff. Typical lenses include:
+
+- `architecture` for cross-cutting workflow, contract, or structural changes
+- `security` for auth, secrets, permissions, privacy, or sensitive data
+- `performance` for hot paths, latency, heavy I/O, or scaling concerns
+- `incident_recovery` for rollback, repair, migrations, or post-incident fixes
+- `reviewer_burden` for large diffs, mixed concerns, or important pre-PR checks
+
+Return only the lenses that actually apply.
+
+### 3. Decide escalation
+
+Set `judgment_day_recommended` from this matrix:
+
+- `required` when at least one strong trigger exists
+- `required` when at least two moderate triggers exist
+- `required` when one moderate trigger exists and review `confidence` is `uncertain`
+- `yes` when escalation is not required but a second review would still materially reduce risk
+- `no` when the change is low risk and standard review is enough
+
+Strong triggers:
+
+- architecture change
+- low review confidence
+- incident or recovery work
+- sensitive security
+- critical performance
+
+Moderate triggers:
+
+- large diff
+- mixed areas
+- important pre-PR review
 
 ### Obtaining the Git Diff
 
@@ -87,6 +129,7 @@ For each area, report: `pass`, `warn`, or `fail` with evidence.
 - Is the diff reasonably sized for review (< 400 lines recommended)?
 - If oversized, is it justified by the scope of the task?
 - Are there unrelated changes mixed into the diff?
+- Does the diff activate moderate escalation triggers such as `large diff`, `mixed areas`, or `important pre-PR review`?
 
 ### 7. Regressions
 
@@ -98,7 +141,18 @@ For each area, report: `pass`, `warn`, or `fail` with evidence.
 ```markdown
 ## Review Result
 
-**Overall**: <pass | warn | fail>
+**Overall**: <pass | warn | fail | cannot-review>
+**Confidence**: <high | medium | low | uncertain>
+**Judgment Day Recommended**: <no | yes | required>
+
+### Active Risk Lenses
+
+- <lens, or "None">
+
+### Escalation Triggers
+
+- Strong: <trigger list, or "None">
+- Moderate: <trigger list, or "None">
 
 ### Spec Compliance
 
@@ -150,13 +204,16 @@ For each area, report: `pass`, `warn`, or `fail` with evidence.
 
 ## Escalation
 
+If `Judgment Day Recommended` is `required`, the orchestrator must invoke `judgment-day` before closing `Review`.
+
 If you find blocking issues:
 
-- Return `fail` with specific evidence
-- List required actions clearly
-- Do NOT suggest "it's close enough" or minimize serious issues
+- Return `fail` with specific evidence.
+- List required actions clearly.
+- Do NOT suggest "it's close enough" or minimize serious issues.
 
 If the diff is > 400 lines and not justified:
 
-- Warn explicitly about reviewer burden
-- Suggest how to split it into smaller review units
+- Warn explicitly about reviewer burden.
+- Treat `large diff` as a moderate escalation trigger.
+- Suggest how to split it into smaller review units.
