@@ -67,6 +67,77 @@ function copyManagedAgents(xdgHome) {
   return agentsDir;
 }
 
+function writeFakeOpencodeCli(tempRoot, handlers = {}) {
+  const binDir = path.join(tempRoot, "fake-bin");
+  const scriptPath = path.join(binDir, "opencode");
+  fs.mkdirSync(binDir, { recursive: true });
+
+  const modelListings = handlers.modelListings ?? {};
+  const failingProviders = handlers.failingProviders ?? {};
+  const slowProviders = handlers.slowProviders ?? {};
+  fs.writeFileSync(
+    scriptPath,
+    `#!/bin/sh
+if [ "$1" != "models" ]; then
+  echo "unexpected args: $*" >&2
+  exit 64
+fi
+provider="$2"
+case "$provider" in
+${Object.entries(slowProviders)
+  .map(
+    ([provider, delay]) => `  ${provider})
+    sleep ${Number(delay)}
+    exit 0
+    ;;`,
+  )
+  .join("\n")}
+${Object.entries(modelListings)
+  .map(
+    ([provider, models]) => `  ${provider})
+    cat <<'EOF'
+${models.join("\n")}
+EOF
+    exit 0
+    ;;`,
+  )
+  .join("\n")}
+${Object.entries(failingProviders)
+  .map(
+    ([provider, message]) => `  ${provider})
+    echo ${JSON.stringify(message)} >&2
+    exit 1
+    ;;`,
+  )
+  .join("\n")}
+  *)
+    exit 0
+    ;;
+esac
+`,
+    { mode: 0o755 },
+  );
+
+  return binDir;
+}
+
+function makeUnavailableOpencodeEnv(tempRoot, env = {}) {
+  const fakeBin = path.join(tempRoot, "unavailable-opencode-bin");
+  fs.mkdirSync(fakeBin, { recursive: true });
+  fs.writeFileSync(
+    path.join(fakeBin, "opencode"),
+    `#!/bin/sh
+echo "opencode unavailable in test" >&2
+exit 127
+`,
+    { mode: 0o755 },
+  );
+  return {
+    ...env,
+    PATH: `${fakeBin}:${process.env.PATH}`,
+  };
+}
+
 describe("model profile resolution", () => {
   it("uses the orchestrator model for missing subagent assignments", () => {
     const assignments = resolveAssignments({
@@ -138,34 +209,35 @@ describe("models CLI behavior", () => {
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: configDir,
     };
+    const cliEnv = makeUnavailableOpencodeEnv(tempRoot, env);
 
-    const initialShow = runCli(["show"], env);
+    const initialShow = runCli(["show"], cliEnv);
     expect(initialShow.status).toBe(0);
     expect(initialShow.stdout).toContain(`Config path: ${path.join(configDir, "config.json")}`);
     expect(initialShow.stdout).toContain("Status: no afergon-ai model config yet");
 
-    const createBudget = runCli(["profile", "create", "budget"], env);
+    const createBudget = runCli(["profile", "create", "budget"], cliEnv);
     expect(createBudget.status).toBe(0);
     expect(createBudget.stdout).toContain("Created profile 'budget'.");
 
-    const setMain = runCli(["set", "afergon-ai", "openai/gpt-5.5"], env);
+    const setMain = runCli(["set", "afergon-ai", "openai/gpt-5.5"], cliEnv);
     expect(setMain.status).toBe(0);
     expect(setMain.stdout).toContain("Updated profile 'budget': afergon-ai -> openai/gpt-5.5");
 
-    const createFallback = runCli(["profile", "create", "fallback"], env);
+    const createFallback = runCli(["profile", "create", "fallback"], cliEnv);
     expect(createFallback.status).toBe(0);
     expect(createFallback.stdout).toContain("Seeded from the current afergon-ai profile assignments.");
 
-    const switchFallback = runCli(["switch", "fallback"], env);
+    const switchFallback = runCli(["switch", "fallback"], cliEnv);
     expect(switchFallback.status).toBe(0);
     expect(switchFallback.stdout).toContain("Switched active profile to 'fallback'.");
 
-    const list = runCli(["list"], env);
+    const list = runCli(["list"], cliEnv);
     expect(list.status).toBe(0);
     expect(list.stdout).toContain("  budget");
     expect(list.stdout).toContain("* fallback");
 
-    const deleteBudget = runCli(["profile", "delete", "budget"], env);
+    const deleteBudget = runCli(["profile", "delete", "budget"], cliEnv);
     expect(deleteBudget.status).toBe(0);
     expect(deleteBudget.stdout).toContain("Deleted profile 'budget'.");
 
@@ -182,19 +254,138 @@ describe("models CLI behavior", () => {
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
     };
+    const cliEnv = makeUnavailableOpencodeEnv(tempRoot, env);
 
-    expect(runCli(["profile", "create", "budget"], env).status).toBe(0);
-    expect(runCli(["set", "afergon-ai", "openai/gpt-5.5"], env).status).toBe(0);
-    expect(runCli(["profile", "create", "fallback"], env).status).toBe(0);
-    expect(runCli(["switch", "fallback"], env).status).toBe(0);
-    expect(runCli(["set", "afergon-ai", "openai/gpt-4.1"], env).status).toBe(0);
+    expect(runCli(["profile", "create", "budget"], cliEnv).status).toBe(0);
+    expect(runCli(["set", "afergon-ai", "openai/gpt-5.5"], cliEnv).status).toBe(0);
+    expect(runCli(["profile", "create", "fallback"], cliEnv).status).toBe(0);
+    expect(runCli(["switch", "fallback"], cliEnv).status).toBe(0);
+    expect(runCli(["set", "afergon-ai", "openai/gpt-5.4"], cliEnv).status).toBe(0);
 
-    const result = runCli(["show", "budget"], env);
+    const result = runCli(["show", "budget"], cliEnv);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Active profile: fallback");
     expect(result.stdout).toContain("Shown profile: budget");
     expect(result.stdout).toContain("- afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit");
+  });
+
+  it("accepts a known concrete model when OpenCode reports it as available", () => {
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "openai/gpt-5.5"],
+      },
+    });
+
+    const result = runModelsScript(["set", "afergon-ai", "openai/gpt-5.5"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toContain("Updated profile 'default': afergon-ai -> openai/gpt-5.5");
+  });
+
+  it("rejects an unknown concrete model with suggestions by default", () => {
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "openai/gpt-5.4-fast", "openai/gpt-5.5"],
+      },
+    });
+
+    const result = runModelsScript(["set", "afergon-ai", "openai/gpt-5.6"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Requested model 'openai/gpt-5.6' is not available from provider 'openai'.");
+    expect(result.stderr).toContain("Did you mean:");
+    expect(result.stderr).toContain("openai/gpt-5.4");
+    expect(result.stderr).toContain("openai/gpt-5.5");
+    expect(result.stderr).toContain("openai/gpt-5.4-fast");
+    expect(result.stderr).toContain("--allow-unknown");
+  });
+
+  it("allows an unknown concrete model with an explicit escape hatch", () => {
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "openai/gpt-5.5"],
+      },
+    });
+
+    const result = runModelsScript(["set", "--allow-unknown", "afergon-ai", "openai/gpt-5.6"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("Warning: Requested model 'openai/gpt-5.6' is not available from provider 'openai'.");
+    expect(readJson(path.join(tempRoot, "config", "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "openai/gpt-5.6",
+    );
+  });
+
+  it("rejects a concrete model without provider/model format by default", () => {
+    const tempRoot = makeTempRoot();
+
+    const result = runModelsScript(["set", "afergon-ai", "gpt-5.5"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Model 'gpt-5.5' does not use the expected provider/model format.");
+    expect(result.stderr).toContain("Use a value like 'openai/gpt-5.5'");
+    expect(result.stderr).toContain("--allow-unknown");
+    expect(fs.existsSync(path.join(tempRoot, "config", "config.json"))).toBe(false);
+  });
+
+  it("allows a custom concrete model without provider/model format with an explicit escape hatch", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+
+    const result = runModelsScript(["set", "--allow-unknown", "afergon-ai", "openai-gpt-5.5"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("Warning: Model 'openai-gpt-5.5' does not use the expected provider/model format.");
+    expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "openai-gpt-5.5",
+    );
+  });
+
+  it("bypasses availability validation for inherit", () => {
+    const tempRoot = makeTempRoot();
+    const emptyPath = path.join(tempRoot, "empty-path");
+    fs.mkdirSync(emptyPath, { recursive: true });
+
+    const result = runModelsScript(["set", "afergon-ai", "inherit"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: emptyPath,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("could not be verified");
+    expect(readJson(path.join(tempRoot, "config", "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "inherit",
+    );
   });
 
   it("supports profile show as an ergonomic alias", () => {
@@ -204,11 +395,12 @@ describe("models CLI behavior", () => {
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
     };
+    const cliEnv = makeUnavailableOpencodeEnv(tempRoot, env);
 
-    expect(runCli(["profile", "create", "budget"], env).status).toBe(0);
-    expect(runCli(["set", "afergon-ai", "openai/gpt-5.5"], env).status).toBe(0);
+    expect(runCli(["profile", "create", "budget"], cliEnv).status).toBe(0);
+    expect(runCli(["set", "afergon-ai", "openai/gpt-5.5"], cliEnv).status).toBe(0);
 
-    const result = runCli(["profile", "show", "budget"], env);
+    const result = runCli(["profile", "show", "budget"], cliEnv);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Shown profile: budget");
@@ -217,6 +409,11 @@ describe("models CLI behavior", () => {
 
   it("passes an absolute afergon-ai config dir into the OpenCode registrar", () => {
     const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.5"],
+      },
+    });
     const configDir = path.join(tempRoot, "relative-config");
     const xdgHome = path.join(tempRoot, "xdg");
     fs.mkdirSync(path.join(xdgHome, "opencode"), { recursive: true });
@@ -227,6 +424,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.relative(repoRoot, xdgHome),
       AFERGON_AI_CONFIG_DIR: path.relative(repoRoot, configDir),
+      PATH: `${fakeBin}:${process.env.PATH}`,
     };
 
     expect(runCli(["profile", "create", "budget"], env).status).toBe(0);
@@ -271,6 +469,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: xdgHome,
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      ...makeUnavailableOpencodeEnv(tempRoot),
     });
 
     expect(result.status).toBe(0);
@@ -301,6 +500,71 @@ describe("models CLI behavior", () => {
     expect(result.stderr).toContain("OpenCode refresh uses Bash, but bash is unavailable");
     expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
       "openai/gpt-5.5",
+    );
+  });
+
+  it("saves and warns when opencode is unavailable so availability cannot be verified", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    const emptyPath = path.join(tempRoot, "empty-path");
+    fs.mkdirSync(emptyPath, { recursive: true });
+
+    const result = runModelsScript(["set", "afergon-ai", "local/custom-model"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: configDir,
+      PATH: emptyPath,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("could not be verified because the 'opencode' CLI is unavailable");
+    expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "local/custom-model",
+    );
+  });
+
+  it("saves and warns when opencode model listing times out", () => {
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      slowProviders: {
+        local: 2,
+      },
+    });
+
+    const result = runModelsScript(["set", "afergon-ai", "local/custom-model"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: `${fakeBin}:${process.env.PATH}`,
+      AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("could not be verified because opencode models local timed out after 1ms");
+    expect(readJson(path.join(tempRoot, "config", "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "local/custom-model",
+    );
+  });
+
+  it("saves and warns when provider model listing fails", () => {
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      failingProviders: {
+        local: "provider credentials are not configured",
+      },
+    });
+
+    const result = runModelsScript(["set", "afergon-ai", "local/custom-model"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("provider 'local' could not be listed: provider credentials are not configured");
+    expect(readJson(path.join(tempRoot, "config", "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "local/custom-model",
     );
   });
 

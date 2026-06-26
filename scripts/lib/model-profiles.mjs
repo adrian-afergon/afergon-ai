@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 export const SUPPORTED_AGENTS = [
@@ -31,6 +32,18 @@ const AGENT_ALIASES = new Map([
   ["afg-design", "afg-design"],
   ["design", "afg-design"],
 ]);
+
+const DEFAULT_OPENCODE_MODELS_TIMEOUT_MS = 5000;
+
+function getOpenCodeModelsTimeoutMs(env = process.env) {
+  const rawTimeout = env.AFERGON_AI_MODELS_LIST_TIMEOUT_MS;
+  if (!rawTimeout) {
+    return DEFAULT_OPENCODE_MODELS_TIMEOUT_MS;
+  }
+
+  const timeout = Number.parseInt(rawTimeout, 10);
+  return Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_OPENCODE_MODELS_TIMEOUT_MS;
+}
 
 export function getConfigDir(env = process.env) {
   if (env.AFERGON_AI_CONFIG_DIR) {
@@ -74,6 +87,177 @@ export function normalizeStoredModel(value) {
   }
 
   return trimmed.toLowerCase() === "inherit" ? "inherit" : trimmed;
+}
+
+export function parseProviderModel(value) {
+  const normalized = normalizeStoredModel(value);
+  if (!normalized || normalized === "inherit") {
+    return null;
+  }
+
+  const separatorIndex = normalized.indexOf("/");
+  if (separatorIndex <= 0 || separatorIndex === normalized.length - 1) {
+    return null;
+  }
+
+  return {
+    provider: normalized.slice(0, separatorIndex),
+    modelId: normalized,
+    shortModelId: normalized.slice(separatorIndex + 1),
+  };
+}
+
+function levenshteinDistance(left, right) {
+  if (left === right) {
+    return 0;
+  }
+
+  if (!left.length) {
+    return right.length;
+  }
+
+  if (!right.length) {
+    return left.length;
+  }
+
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  const current = new Array(right.length + 1);
+
+  for (let row = 1; row <= left.length; row += 1) {
+    current[0] = row;
+    for (let column = 1; column <= right.length; column += 1) {
+      const substitutionCost = left[row - 1] === right[column - 1] ? 0 : 1;
+      current[column] = Math.min(
+        current[column - 1] + 1,
+        previous[column] + 1,
+        previous[column - 1] + substitutionCost,
+      );
+    }
+
+    for (let column = 0; column <= right.length; column += 1) {
+      previous[column] = current[column];
+    }
+  }
+
+  return previous[right.length];
+}
+
+export function suggestCloseModelIds(requestedModelId, availableModelIds, limit = 3) {
+  const requested = parseProviderModel(requestedModelId);
+  if (!requested) {
+    return [];
+  }
+
+  const requestedShortModelId = requested.shortModelId.toLowerCase();
+
+  const ranked = availableModelIds
+    .map((candidate) => {
+      const parsedCandidate = parseProviderModel(candidate);
+      const candidateShortModelId = parsedCandidate?.shortModelId ?? candidate;
+      const candidateShortModelIdLower = candidateShortModelId.toLowerCase();
+      const shortDistance = levenshteinDistance(requestedShortModelId, candidateShortModelIdLower);
+      const fullDistance = levenshteinDistance(requested.modelId.toLowerCase(), candidate.toLowerCase());
+      const includesBonus =
+        candidateShortModelIdLower.includes(requestedShortModelId) ||
+        requestedShortModelId.includes(candidateShortModelIdLower)
+          ? -2
+          : 0;
+
+      return {
+        candidate,
+        score: Math.min(shortDistance, fullDistance) + includesBonus,
+      };
+    })
+    .sort((left, right) => left.score - right.score || left.candidate.localeCompare(right.candidate));
+
+  return ranked.slice(0, limit).map(({ candidate }) => candidate);
+}
+
+export function listOpenCodeProviderModels(provider, env = process.env) {
+  const timeout = getOpenCodeModelsTimeoutMs(env);
+  const result = spawnSync("opencode", ["models", provider], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    env,
+    timeout,
+  });
+
+  if (result.error) {
+    if (result.error.code === "ETIMEDOUT") {
+      return {
+        status: "unavailable",
+        reason: `opencode models ${provider} timed out after ${timeout}ms`,
+      };
+    }
+
+    if (result.error.code === "ENOENT") {
+      return {
+        status: "unavailable",
+        reason: "the 'opencode' CLI is unavailable",
+      };
+    }
+
+    return {
+      status: "failed",
+      reason: result.error.message,
+    };
+  }
+
+  if (result.status !== 0) {
+    return {
+      status: "failed",
+      reason: result.stderr.trim() || `opencode models ${provider} exited with status ${result.status}`,
+    };
+  }
+
+  const models = result.stdout
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return {
+    status: "ok",
+    models,
+  };
+}
+
+export function validateModelAvailability(modelId, env = process.env) {
+  const parsed = parseProviderModel(modelId);
+  if (!parsed) {
+    return {
+      status: "malformed",
+      message: `Model '${modelId}' does not use the expected provider/model format. Use a value like 'openai/gpt-5.5' or rerun with '--allow-unknown' if you intentionally need a custom string.`,
+    };
+  }
+
+  const availableModels = listOpenCodeProviderModels(parsed.provider, env);
+  if (availableModels.status === "unavailable") {
+    return {
+      status: "unverified",
+      warning: `Model '${parsed.modelId}' could not be verified because ${availableModels.reason}. Saving anyway.`,
+    };
+  }
+
+  if (availableModels.status === "failed") {
+    return {
+      status: "unverified",
+      warning: `Model '${parsed.modelId}' could not be verified because provider '${parsed.provider}' could not be listed: ${availableModels.reason}. Saving anyway.`,
+    };
+  }
+
+  if (availableModels.models.includes(parsed.modelId)) {
+    return {
+      status: "known",
+      availableModels: availableModels.models,
+    };
+  }
+
+  return {
+    status: "unknown",
+    availableModels: availableModels.models,
+    suggestions: suggestCloseModelIds(parsed.modelId, availableModels.models),
+    provider: parsed.provider,
+  };
 }
 
 export function normalizeAgentName(input) {

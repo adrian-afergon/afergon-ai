@@ -94,6 +94,7 @@ afergon-ai models show budget
 afergon-ai models list
 afergon-ai models switch budget
 afergon-ai models set afergon-ai openai/gpt-5.5
+afergon-ai models set --allow-unknown afergon-ai local/custom-model
 afergon-ai models set afg-review inherit
 afergon-ai models profile create fallback
 ```
@@ -102,6 +103,8 @@ Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
+
+Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
 
 When OpenCode is already installed through afergon-ai, `models switch` and `models set` refresh the managed OpenCode agent registrations on disk. Existing sessions may still need a new compatible run; live hot-swap is not guaranteed.
 

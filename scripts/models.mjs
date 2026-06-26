@@ -18,6 +18,7 @@ import {
   resolveAssignments,
   saveConfig,
   SUPPORTED_AGENTS,
+  validateModelAvailability,
 } from "./lib/model-profiles.mjs";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -39,7 +40,7 @@ function printHelp() {
   console.log("  afergon-ai models show <profile>");
   console.log("  afergon-ai models list");
   console.log("  afergon-ai models switch <profile>");
-  console.log("  afergon-ai models set <agent> <model|inherit>");
+  console.log("  afergon-ai models set [--allow-unknown] <agent> <model|inherit>");
   console.log("  afergon-ai models profile show <name>");
   console.log("  afergon-ai models profile create <name>");
   console.log("  afergon-ai models profile delete <name>");
@@ -50,8 +51,20 @@ function printHelp() {
   console.log("Notes:");
   console.log("  - Missing agent assignments inherit from afergon-ai.");
   console.log("  - 'inherit' means defer to afergon-ai; if that is also unset, runtime defaults are preserved.");
+  console.log("  - Concrete model strings should use provider/model format, for example 'openai/gpt-5.5'.");
+  console.log("  - Concrete models are validated with 'opencode models <provider>' when available.");
+  console.log("  - Use '--allow-unknown' to save an unlisted or custom concrete model after reviewing the warning.");
   console.log("  - Changes update afergon-ai-owned config and refresh compatible host config on disk when supported.");
   console.log("  - Live hot-swap is not guaranteed for already-running sessions.");
+}
+
+function formatUnknownModelError(model, provider, suggestions) {
+  const lines = [`Requested model '${model}' is not available from provider '${provider}'.`];
+  if (suggestions.length > 0) {
+    lines.push(`Did you mean: ${suggestions.join(", ")}?`);
+  }
+  lines.push("If you really need to save it anyway, rerun with '--allow-unknown'.");
+  return lines.join(" ");
 }
 
 function formatEffective(entry) {
@@ -180,11 +193,33 @@ function switchProfile(profileNameInput) {
   reapplySupportedAdapters();
 }
 
-function setAgentModel(agentInput, modelInput) {
+function setAgentModel(agentInput, modelInput, options = {}) {
   const agentName = normalizeAgentName(agentInput);
   const normalizedModel = normalizeStoredModel(modelInput);
   if (!normalizedModel) {
     throw new Error("Model is required. Use a concrete model string or 'inherit'.");
+  }
+
+  if (normalizedModel !== "inherit") {
+    const validation = validateModelAvailability(normalizedModel);
+    if (validation.status === "malformed") {
+      if (!options.allowUnknown) {
+        throw new Error(validation.message);
+      }
+      console.warn(`Warning: ${validation.message}`);
+    }
+
+    if (validation.status === "unknown") {
+      const errorMessage = formatUnknownModelError(normalizedModel, validation.provider, validation.suggestions ?? []);
+      if (!options.allowUnknown) {
+        throw new Error(errorMessage);
+      }
+      console.warn(`Warning: ${errorMessage}`);
+    }
+
+    if (validation.status === "unverified") {
+      console.warn(`Warning: ${validation.warning}`);
+    }
   }
 
   const { config } = loadConfig();
@@ -195,6 +230,29 @@ function setAgentModel(agentInput, modelInput) {
   console.log(`Updated profile '${activeProfileName}': ${agentName} -> ${normalizedModel}`);
   console.log(`Config path: ${configPath}`);
   reapplySupportedAdapters();
+}
+
+function parseSetCommandArguments(args) {
+  let allowUnknown = false;
+  const positional = [];
+
+  for (const arg of args) {
+    if (arg === "--allow-unknown") {
+      allowUnknown = true;
+      continue;
+    }
+    positional.push(arg);
+  }
+
+  if (positional.length !== 2) {
+    throw new Error("Usage: afergon-ai models set [--allow-unknown] <agent> <model|inherit>");
+  }
+
+  return {
+    allowUnknown,
+    agent: positional[0],
+    model: positional[1],
+  };
 }
 
 function createProfile(profileNameInput) {
@@ -269,10 +327,10 @@ function main(argv) {
       switchProfile(rest[0]);
       return;
     case "set":
-      if (rest.length !== 2) {
-        throw new Error("Usage: afergon-ai models set <agent> <model|inherit>");
+      {
+        const parsed = parseSetCommandArguments(rest);
+        setAgentModel(parsed.agent, parsed.model, { allowUnknown: parsed.allowUnknown });
       }
-      setAgentModel(rest[0], rest[1]);
       return;
     case "profile":
       if (rest[0] === "show" && rest.length === 2) {
