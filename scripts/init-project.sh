@@ -18,6 +18,21 @@ PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
 TARGET_DIR="$(pwd)"
 PROJECT_NAME="$(basename "$TARGET_DIR")"
 
+migrate_legacy_file() {
+	local old_path="$1"
+	local new_path="$2"
+	local label="$3"
+	[ -f "$old_path" ] || return 0
+	if [ -f "$new_path" ] && ! cmp -s "$old_path" "$new_path"; then
+		read -r -p "Conflict: migrating $label would overwrite $(basename "$new_path"). Replace it? [y/N] " c
+		[[ "$c" != "y" && "$c" != "Y" ]] && return 1
+		rm -f "$new_path"
+	fi
+	mv "$old_path" "$new_path"
+	echo "  OpenCode: migrated $(basename "$old_path") → $(basename "$new_path")"
+	return 0
+}
+
 SETUP_PI=false
 SETUP_CLAUDE=false
 SETUP_OPENCODE=false
@@ -215,6 +230,29 @@ if $SETUP_OPENCODE; then
 
 	agents_copied=0
 	commands_copied=0
+	REMOVE_LEGACY=0
+	legacy_found=()
+	for old_name in orchestrator debate breakdown specify plannify implement review design; do
+		[ -f "$OC_AGENTS_DIR/${old_name}.md" ] && legacy_found+=("agents/${old_name}.md")
+		[ -f "$OC_COMMANDS_DIR/${old_name}.md" ] && legacy_found+=("commands/${old_name}.md")
+	done
+	if [ ${#legacy_found[@]} -gt 0 ]; then
+		echo "Detected possible legacy OpenCode files with old afergon-ai names:"
+		for item in "${legacy_found[@]}"; do
+			echo "  - $item"
+		done
+		read -r -p "Migrate these legacy names to afergon-ai/afg-* and remove matching legacy opencode.json entries? [y/N] " migrate_legacy
+		if [[ "$migrate_legacy" == "y" || "$migrate_legacy" == "Y" ]]; then
+			REMOVE_LEGACY=1
+			migrate_legacy_file "$OC_AGENTS_DIR/orchestrator.md" "$OC_AGENTS_DIR/afergon-ai.md" "agent orchestrator.md" || true
+			for old_name in debate breakdown specify plannify implement review design; do
+				migrate_legacy_file "$OC_AGENTS_DIR/${old_name}.md" "$OC_AGENTS_DIR/afg-${old_name}.md" "agent ${old_name}.md" || true
+				migrate_legacy_file "$OC_COMMANDS_DIR/${old_name}.md" "$OC_COMMANDS_DIR/afg-${old_name}.md" "command ${old_name}.md" || true
+			done
+		else
+			echo "  OpenCode: leaving legacy generic names untouched."
+		fi
+	fi
 
 	# Copy agents — ask on conflict
 	for src in "$ADAPTER_PATH"/agents/*.md; do
@@ -226,28 +264,6 @@ if $SETUP_OPENCODE; then
 		if cp "$src" "$dest"; then
 			agents_copied=$((agents_copied + 1))
 			echo "✔ agents/$(basename "$dest")"
-		fi
-	done
-
-	# Migrate: rename old orchestrator.md to afergon-ai.md if it exists
-	if [ -f "$OC_AGENTS_DIR/orchestrator.md" ] && [ ! -f "$OC_AGENTS_DIR/afergon-ai.md" ]; then
-		mv "$OC_AGENTS_DIR/orchestrator.md" "$OC_AGENTS_DIR/afergon-ai.md"
-		echo "  OpenCode: migrated orchestrator.md → afergon-ai.md"
-	fi
-
-	# Migrate: rename old unprefixed agents to afg- prefix
-	for old_name in debate breakdown specify plannify implement review design; do
-		if [ -f "$OC_AGENTS_DIR/${old_name}.md" ] && [ ! -f "$OC_AGENTS_DIR/afg-${old_name}.md" ]; then
-			mv "$OC_AGENTS_DIR/${old_name}.md" "$OC_AGENTS_DIR/afg-${old_name}.md"
-			echo "  OpenCode: migrated agent ${old_name}.md → afg-${old_name}.md"
-		fi
-	done
-
-	# Migrate: rename old unprefixed commands to afg- prefix
-	for old_name in debate breakdown specify plannify implement review design; do
-		if [ -f "$OC_COMMANDS_DIR/${old_name}.md" ] && [ ! -f "$OC_COMMANDS_DIR/afg-${old_name}.md" ]; then
-			mv "$OC_COMMANDS_DIR/${old_name}.md" "$OC_COMMANDS_DIR/afg-${old_name}.md"
-			echo "  OpenCode: migrated command ${old_name}.md → afg-${old_name}.md"
 		fi
 	done
 
@@ -269,7 +285,7 @@ if $SETUP_OPENCODE; then
 	echo "OpenCode commands copied: $commands_copied"
 
 	# Register agents in global opencode.json
-	bash "$PACKAGE_ROOT/scripts/register-opencode-agents.sh" "$ADAPTER_PATH"
+	AFG_REMOVE_LEGACY="$REMOVE_LEGACY" bash "$PACKAGE_ROOT/scripts/register-opencode-agents.sh" "$ADAPTER_PATH"
 
 	# Project-level opencode.json (for MCP and project-specific config)
 	if [ ! -f "$TARGET_DIR/opencode.json" ]; then

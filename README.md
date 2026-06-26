@@ -145,9 +145,21 @@ pi install npm:afergon-ai
 
 ### OpenCode
 
-`init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config — nothing is overwritten without confirmation.
+`init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config, and install/update asks before overwriting conflicting files.
 
 Agents are also registered in the global `opencode.json` so they appear in the agent selector. The main `afergon-ai` agent is visible (`mode: primary`), while pipeline subagents (`afg-debate`, `afg-breakdown`, `afg-specify`, `afg-plannify`, `afg-implement`, `afg-review`, `afg-design`) are hidden from the user interface and use the `afg-` prefix to avoid name collisions with other installed agents.
+
+OpenCode command surface:
+
+```text
+/afg-debate
+/afg-breakdown
+/afg-specify
+/afg-plannify
+/afg-implement
+/afg-review
+/afg-design
+```
 
 ---
 
@@ -216,17 +228,17 @@ ambiguous / risky / large     → full workflow from Discovery
 
 ## Skills
 
-Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In Claude Code and OpenCode, load the skill file or use the corresponding command.
+Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In Claude Code, load the skill file. In OpenCode, use the corresponding `/afg-*` command.
 
-```
-/skill:debate          Socratic debate session
-/skill:breakdown       Decompose a debate summary into tasks
-/skill:specify         Gherkin-first specs from a task
-/skill:plannify        Technical execution plan
-/skill:implement       TDD/TPP strict implementation
-/skill:design          UI/UX design in Google Stitch
-/skill:review          Standard review with optional escalation
-/skill:detect-skills   Auto-detect skills for your tech stack
+```text
+Pi skill: /skill:debate        OpenCode: /afg-debate
+Pi skill: /skill:breakdown     OpenCode: /afg-breakdown
+Pi skill: /skill:specify       OpenCode: /afg-specify
+Pi skill: /skill:plannify      OpenCode: /afg-plannify
+Pi skill: /skill:implement     OpenCode: /afg-implement
+Pi skill: /skill:design        OpenCode: /afg-design
+Pi skill: /skill:review        OpenCode: /afg-review
+Pi skill: /skill:detect-skills
 ```
 
 Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with Pi, Claude Code, Cursor, and OpenCode.
