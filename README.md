@@ -115,7 +115,7 @@ If OpenCode starts but your agents do not appear, verify:
 
 ```bash
 afergon-ai doctor --opencode
-opencode agent list | rg "orchestrator|debate|implement"
+opencode agent list | rg "afergon-ai|debate|implement"
 ```
 
 If that list is empty, ensure files exist in:
@@ -146,6 +146,8 @@ pi install npm:afergon-ai
 ### OpenCode
 
 `init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config — nothing is overwritten without confirmation.
+
+Agents are also registered in the global `opencode.json` so they appear in the agent selector. The main `afergon-ai` agent is visible (`mode: primary`), while pipeline subagents (`debate`, `breakdown`, `specify`, `plannify`, `implement`, `review`, `design`) are hidden from the user interface.
 
 ---
 

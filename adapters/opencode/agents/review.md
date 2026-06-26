@@ -1,6 +1,7 @@
 ---
 description: Adversarial post-implementation review — reads RESULT.md and diff, checks spec/plan compliance, TDD evidence, code quality, and diff size
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.2
 permission:
   bash: allow

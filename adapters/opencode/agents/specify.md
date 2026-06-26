@@ -1,6 +1,7 @@
 ---
 description: Transforms a single task into Gherkin-first implementation specs with formal state tracking — writes to openspec/specs/<task-slug>/
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.2
 permission:
   bash: allow

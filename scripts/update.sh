@@ -61,9 +61,16 @@ OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 OC_AGENTS_DIR="$OC_BASE_DIR/agents"
 OC_COMMANDS_DIR="$OC_BASE_DIR/commands"
 ADAPTER_PATH="$PACKAGE_ROOT/adapters/opencode"
-OC_MARKER="$OC_AGENTS_DIR/orchestrator.md"
+OC_MARKER="$OC_AGENTS_DIR/afergon-ai.md"
+OC_LEGACY_MARKER="$OC_AGENTS_DIR/orchestrator.md"
 
-if [ -f "$OC_MARKER" ]; then
+if [ -f "$OC_MARKER" ] || [ -f "$OC_LEGACY_MARKER" ]; then
+	# Migrate: rename old orchestrator.md to afergon-ai.md if it exists
+	if [ -f "$OC_LEGACY_MARKER" ] && [ ! -f "$OC_MARKER" ]; then
+		mv "$OC_LEGACY_MARKER" "$OC_MARKER"
+		echo "  OpenCode: migrated orchestrator.md → afergon-ai.md"
+	fi
+
 	# Overwrite all afergon-ai agents and commands silently
 	for src in "$ADAPTER_PATH"/agents/*.md; do
 		cp "$src" "$OC_AGENTS_DIR/$(basename "$src")"
@@ -74,6 +81,10 @@ if [ -f "$OC_MARKER" ]; then
 		cp "$src" "$OC_COMMANDS_DIR/$(basename "$src")"
 	done
 	echo "✔ OpenCode: updated $OC_BASE_DIR/commands/"
+
+	# Register/update agents in global opencode.json
+	bash "$PACKAGE_ROOT/scripts/register-opencode-agents.sh" "$ADAPTER_PATH"
+
 	UPDATED=$((UPDATED + 1))
 else
 	echo "  OpenCode: not installed globally in $OC_BASE_DIR (skipped)"

@@ -1,5 +1,5 @@
 ---
-description: afergon-ai orchestrator — routes requests through Discovery/Plan/Implement/Review
+description: afergon-ai — routes requests through Discovery/Plan/Implement/Review
 mode: primary
 temperature: 0.2
 permission:

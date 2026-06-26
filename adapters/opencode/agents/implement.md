@@ -1,6 +1,7 @@
 ---
 description: Executes a persisted plan from openspec/plans/ with strict TDD/TPP discipline — updates checkboxes, creates commits, writes RESULT.md
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.2
 permission:
   bash: allow

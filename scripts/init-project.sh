@@ -229,6 +229,12 @@ if $SETUP_OPENCODE; then
 		fi
 	done
 
+	# Migrate: rename old orchestrator.md to afergon-ai.md if it exists
+	if [ -f "$OC_AGENTS_DIR/orchestrator.md" ] && [ ! -f "$OC_AGENTS_DIR/afergon-ai.md" ]; then
+		mv "$OC_AGENTS_DIR/orchestrator.md" "$OC_AGENTS_DIR/afergon-ai.md"
+		echo "  OpenCode: migrated orchestrator.md → afergon-ai.md"
+	fi
+
 	# Copy commands — ask on conflict
 	for src in "$ADAPTER_PATH"/commands/*.md; do
 		dest="$OC_COMMANDS_DIR/$(basename "$src")"
@@ -245,6 +251,9 @@ if $SETUP_OPENCODE; then
 	echo "OpenCode config dir: $OC_BASE_DIR"
 	echo "OpenCode agents copied: $agents_copied"
 	echo "OpenCode commands copied: $commands_copied"
+
+	# Register agents in global opencode.json
+	bash "$PACKAGE_ROOT/scripts/register-opencode-agents.sh" "$ADAPTER_PATH"
 
 	# Project-level opencode.json (for MCP and project-specific config)
 	if [ ! -f "$TARGET_DIR/opencode.json" ]; then
