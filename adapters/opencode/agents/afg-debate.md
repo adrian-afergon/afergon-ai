@@ -1,6 +1,7 @@
 ---
 description: Socratic debate assistant — explores and refines ideas, produces a structured debate summary in openspec/debate/
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.7
 permission:
   bash: deny

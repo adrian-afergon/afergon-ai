@@ -1,6 +1,7 @@
 ---
 description: Transforms a task + ready specs into an executable technical plan with execution strategy and verification criteria — writes to openspec/plans/<task-slug>/
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.2
 permission:
   bash: allow

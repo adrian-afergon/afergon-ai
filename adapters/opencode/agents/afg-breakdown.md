@@ -1,6 +1,7 @@
 ---
 description: Decomposes a debate summary into validated task artifacts with dependency graph and breadth analysis — writes to openspec/tasks/
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.2
 permission:
   bash: allow

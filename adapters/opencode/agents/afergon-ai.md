@@ -1,5 +1,5 @@
 ---
-description: afergon-ai orchestrator — routes requests through Discovery/Plan/Implement/Review
+description: afergon-ai — routes requests through Discovery/Plan/Implement/Review
 mode: primary
 temperature: 0.2
 permission:
@@ -52,15 +52,15 @@ Treat these macro-phases as the canonical workflow contract. Route through the c
 
 ## Pipeline Commands
 
-| Stage     | Command      | Artifact store                  |
-| --------- | ------------ | ------------------------------- |
-| debate    | `/debate`    | `openspec/debate/`              |
-| breakdown | `/breakdown` | `openspec/tasks/`               |
-| specify   | `/specify`   | `openspec/specs/<task-slug>/`   |
-| plannify  | `/plannify`  | `openspec/plans/<task-slug>/`   |
-| implement | `/implement` | project source files            |
-| design    | `/design`    | Stitch (external)               |
-| review    | `/review`    | inline review report            |
+| Stage     | Command          | Artifact store                |
+| --------- | ---------------- | ----------------------------- |
+| debate    | `/afg-debate`    | `openspec/debate/`            |
+| breakdown | `/afg-breakdown` | `openspec/tasks/`             |
+| specify   | `/afg-specify`   | `openspec/specs/<task-slug>/` |
+| plannify  | `/afg-plannify`  | `openspec/plans/<task-slug>/` |
+| implement | `/afg-implement` | project source files          |
+| design    | `/afg-design`    | Stitch (external)             |
+| review    | `/afg-review`    | inline review report          |
 
 ## Artifact Store: openspec/
 

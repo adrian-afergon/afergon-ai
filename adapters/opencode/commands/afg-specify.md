@@ -1,6 +1,6 @@
 ---
 description: Transform a single task into Gherkin-first implementation specs
-agent: specify
+agent: afg-specify
 ---
 
 $ARGUMENTS

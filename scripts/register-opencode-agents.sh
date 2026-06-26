@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+# afergon-ai/scripts/register-opencode-agents.sh
+#
+# Register afergon-ai agents in the global opencode.json config.
+# Called by init-project.sh and update.sh after copying agent files.
+
+set -euo pipefail
+
+ADAPTER_PATH="${1:?Usage: register-opencode-agents.sh <adapter-path>}"
+OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OC_CONFIG="$OC_BASE_DIR/opencode.json"
+OC_AGENTS_DIR="$OC_BASE_DIR/agents"
+REMOVE_LEGACY="${AFG_REMOVE_LEGACY:-0}"
+
+if [ ! -d "$ADAPTER_PATH/agents" ]; then
+	echo "  register-opencode-agents: no agents directory at $ADAPTER_PATH/agents"
+	exit 0
+fi
+
+mkdir -p "$OC_BASE_DIR"
+
+if [ ! -f "$OC_CONFIG" ]; then
+	echo '{"$schema":"https://opencode.ai/config.json"}' >"$OC_CONFIG"
+fi
+
+python3 - "$OC_CONFIG" "$OC_AGENTS_DIR" "$REMOVE_LEGACY" <<'PYEOF'
+import json
+import os
+import sys
+
+config_path = sys.argv[1]
+oc_agents_dir = sys.argv[2]
+remove_legacy = sys.argv[3] == "1"
+
+MANIFEST = {
+    "afergon-ai": {
+        "description": "afergon-ai — routes requests through Discovery/Plan/Implement/Review",
+        "mode": "primary",
+        "temperature": 0.2,
+        "permission": {
+            "bash": "deny",
+            "edit": "deny",
+            "glob": "deny",
+            "grep": "deny",
+            "read": "deny",
+            "webfetch": "deny",
+            "write": {"*": "deny"},
+        },
+    },
+    "afg-debate": {
+        "description": "Socratic debate assistant — explores and refines ideas, produces a structured debate summary in openspec/debate/",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.7,
+        "permission": {
+            "bash": "deny",
+            "edit": "deny",
+            "glob": "deny",
+            "grep": "deny",
+            "read": "deny",
+            "webfetch": "deny",
+            "write": {"*": "deny", "openspec/debate/debate-summary*.md": "allow"},
+        },
+    },
+    "afg-breakdown": {
+        "description": "Decomposes a debate summary into validated task artifacts with dependency graph and breadth analysis — writes to openspec/tasks/",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.2,
+        "permission": {
+            "bash": "allow",
+            "edit": "deny",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "deny", "openspec/tasks/*.md": "allow"},
+        },
+    },
+    "afg-specify": {
+        "description": "Transforms a single task into Gherkin-first implementation specs with formal state tracking — writes to openspec/specs/<task-slug>/",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.2,
+        "permission": {
+            "bash": "allow",
+            "edit": "deny",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "deny", "openspec/specs/**/*.md": "allow"},
+        },
+    },
+    "afg-plannify": {
+        "description": "Transforms a task + ready specs into an executable technical plan with execution strategy and verification criteria — writes to openspec/plans/<task-slug>/",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.2,
+        "permission": {
+            "bash": "allow",
+            "edit": "deny",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "deny", "openspec/plans/**/*.md": "allow"},
+        },
+    },
+    "afg-implement": {
+        "description": "Executes a persisted plan from openspec/plans/ with strict TDD/TPP discipline — updates checkboxes, creates commits, writes RESULT.md",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.2,
+        "permission": {
+            "bash": "allow",
+            "edit": "allow",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "allow"},
+        },
+    },
+    "afg-review": {
+        "description": "Adversarial post-implementation review — reads RESULT.md and diff, checks spec/plan compliance, TDD evidence, code quality, and diff size",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.2,
+        "permission": {
+            "bash": "allow",
+            "edit": "deny",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "deny", "openspec/results/**/*.md": "allow"},
+        },
+    },
+    "afg-design": {
+        "description": "Plans and executes UI/UX design work in Google Stitch — plan → explicit approval → execution",
+        "mode": "subagent",
+        "hidden": True,
+        "temperature": 0.3,
+        "permission": {
+            "bash": "deny",
+            "edit": "deny",
+            "glob": "allow",
+            "grep": "allow",
+            "read": "allow",
+            "webfetch": "deny",
+            "write": {"*": "deny"},
+            "stitch_create_project": "allow",
+            "stitch_get_project": "allow",
+            "stitch_list_projects": "allow",
+            "stitch_list_screens": "allow",
+            "stitch_get_screen": "allow",
+            "stitch_generate_screen_from_text": "allow",
+            "stitch_edit_screens": "allow",
+            "stitch_generate_variants": "allow",
+            "stitch_create_design_system": "allow",
+            "stitch_update_design_system": "allow",
+            "stitch_list_design_systems": "allow",
+        },
+    },
+}
+
+LEGACY_NAMES = ["orchestrator", "debate", "breakdown", "specify", "plannify", "implement", "review", "design"]
+
+def read_prompt_body(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    if not content.startswith("---\n"):
+        return content.strip() + "\n"
+    lines = content.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        return content.strip() + "\n"
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            return "".join(lines[i + 1 :]).lstrip("\n")
+    return content.strip() + "\n"
+
+def looks_managed(existing: dict, desired: dict, managed_path: str) -> bool:
+    prompt = existing.get("prompt", "")
+    return (
+        prompt == desired["prompt"]
+        or prompt == f"{{file:{managed_path}}}"
+        or (
+            existing.get("description") == desired.get("description")
+            and existing.get("mode") == desired.get("mode")
+        )
+    )
+
+with open(config_path, "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+agents = config.setdefault("agent", {})
+registered = []
+skipped = []
+
+for name, meta in MANIFEST.items():
+    managed_path = os.path.join(oc_agents_dir, f"{name}.md")
+    desired = {
+        "description": meta["description"],
+        "mode": meta["mode"],
+        "temperature": meta["temperature"],
+        "permission": meta["permission"],
+        "prompt": read_prompt_body(managed_path),
+    }
+    if meta.get("hidden"):
+        desired["hidden"] = True
+
+    existing = agents.get(name)
+    if existing and not looks_managed(existing, desired, managed_path):
+        print(f"Conflict: agent '{name}' already exists in opencode.json and does not look managed by afergon-ai.")
+        answer = input(f"Overwrite '{name}' with afergon-ai's managed definition? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            skipped.append(name)
+            continue
+
+    if existing != desired:
+        agents[name] = desired
+        registered.append(name)
+
+if remove_legacy:
+    removed = []
+    for legacy in LEGACY_NAMES:
+        existing = agents.get(legacy)
+        if not existing:
+            continue
+        prompt = existing.get("prompt", "")
+        if prompt == f"{{file:{os.path.join(oc_agents_dir, legacy + '.md')}}}" or prompt == read_prompt_body(os.path.join(oc_agents_dir, legacy + ".md")) if os.path.exists(os.path.join(oc_agents_dir, legacy + ".md")) else False:
+            del agents[legacy]
+            removed.append(legacy)
+    if removed:
+        print(f"  OpenCode: removed {len(removed)} legacy opencode.json entry(ies): {', '.join(sorted(removed))}")
+
+with open(config_path, "w", encoding="utf-8") as f:
+    json.dump(config, f, indent=2)
+    f.write("\n")
+
+if registered:
+    print(f"  OpenCode: registered {len(registered)} agent(s) in opencode.json: {', '.join(registered)}")
+else:
+    print("  OpenCode: agents already registered in opencode.json (up to date)")
+
+if skipped:
+    print(f"  OpenCode: kept existing non-managed agent definition(s): {', '.join(skipped)}")
+PYEOF

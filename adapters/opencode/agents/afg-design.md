@@ -1,6 +1,7 @@
 ---
 description: Plans and executes UI/UX design work in Google Stitch — plan → explicit approval → execution
-mode: primary
+mode: subagent
+hidden: true
 temperature: 0.3
 permission:
   bash: deny
