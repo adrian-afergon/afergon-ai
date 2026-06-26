@@ -143,6 +143,19 @@ for fname in afergon_files:
         agents[agent_name] = entry
         registered.append(agent_name)
 
+# Clean up old unprefixed agent entries that were replaced by afg- prefixed ones
+OLD_NAMES = {"debate", "breakdown", "specify", "plannify", "implement", "review", "design", "orchestrator"}
+migrated = []
+for old_name in OLD_NAMES:
+    if old_name in agents:
+        existing = agents[old_name]
+        existing_prompt = existing.get("prompt", "")
+        # Only remove if it points to a file that no longer exists in our adapter
+        # (i.e., it was an old unprefixed entry we're replacing)
+        if existing_prompt.endswith(f"/{old_name}.md}}") or existing_prompt.endswith(f"/agents/{old_name}.md}}"):
+            del agents[old_name]
+            migrated.append(old_name)
+
 # Write back
 with open(config_path, "w") as f:
     json.dump(config, f, indent=2)
@@ -152,4 +165,7 @@ if registered:
     print(f"  OpenCode: registered {len(registered)} agent(s) in opencode.json: {', '.join(registered)}")
 else:
     print("  OpenCode: agents already registered in opencode.json (up to date)")
+
+if migrated:
+    print(f"  OpenCode: migrated {len(migrated)} old entry(ies): {', '.join(sorted(migrated))}")
 PYEOF

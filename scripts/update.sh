@@ -71,6 +71,22 @@ if [ -f "$OC_MARKER" ] || [ -f "$OC_LEGACY_MARKER" ]; then
 		echo "  OpenCode: migrated orchestrator.md → afergon-ai.md"
 	fi
 
+	# Migrate: rename old unprefixed agents to afg- prefix
+	for old_name in debate breakdown specify plannify implement review design; do
+		if [ -f "$OC_AGENTS_DIR/${old_name}.md" ] && [ ! -f "$OC_AGENTS_DIR/afg-${old_name}.md" ]; then
+			mv "$OC_AGENTS_DIR/${old_name}.md" "$OC_AGENTS_DIR/afg-${old_name}.md"
+			echo "  OpenCode: migrated ${old_name}.md → afg-${old_name}.md"
+		fi
+	done
+
+	# Migrate: rename old unprefixed commands to afg- prefix
+	for old_name in debate breakdown specify plannify implement review design; do
+		if [ -f "$OC_COMMANDS_DIR/${old_name}.md" ] && [ ! -f "$OC_COMMANDS_DIR/afg-${old_name}.md" ]; then
+			mv "$OC_COMMANDS_DIR/${old_name}.md" "$OC_COMMANDS_DIR/afg-${old_name}.md"
+			echo "  OpenCode: migrated command ${old_name}.md → afg-${old_name}.md"
+		fi
+	done
+
 	# Overwrite all afergon-ai agents and commands silently
 	for src in "$ADAPTER_PATH"/agents/*.md; do
 		cp "$src" "$OC_AGENTS_DIR/$(basename "$src")"

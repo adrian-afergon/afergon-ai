@@ -235,6 +235,22 @@ if $SETUP_OPENCODE; then
 		echo "  OpenCode: migrated orchestrator.md → afergon-ai.md"
 	fi
 
+	# Migrate: rename old unprefixed agents to afg- prefix
+	for old_name in debate breakdown specify plannify implement review design; do
+		if [ -f "$OC_AGENTS_DIR/${old_name}.md" ] && [ ! -f "$OC_AGENTS_DIR/afg-${old_name}.md" ]; then
+			mv "$OC_AGENTS_DIR/${old_name}.md" "$OC_AGENTS_DIR/afg-${old_name}.md"
+			echo "  OpenCode: migrated agent ${old_name}.md → afg-${old_name}.md"
+		fi
+	done
+
+	# Migrate: rename old unprefixed commands to afg- prefix
+	for old_name in debate breakdown specify plannify implement review design; do
+		if [ -f "$OC_COMMANDS_DIR/${old_name}.md" ] && [ ! -f "$OC_COMMANDS_DIR/afg-${old_name}.md" ]; then
+			mv "$OC_COMMANDS_DIR/${old_name}.md" "$OC_COMMANDS_DIR/afg-${old_name}.md"
+			echo "  OpenCode: migrated command ${old_name}.md → afg-${old_name}.md"
+		fi
+	done
+
 	# Copy commands — ask on conflict
 	for src in "$ADAPTER_PATH"/commands/*.md; do
 		dest="$OC_COMMANDS_DIR/$(basename "$src")"
