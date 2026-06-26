@@ -12,12 +12,36 @@ OC_CONFIG="$OC_BASE_DIR/opencode.json"
 OC_AGENTS_DIR="$OC_BASE_DIR/agents"
 REMOVE_LEGACY="${AFG_REMOVE_LEGACY:-0}"
 
+REQUIRED_AGENT_FILES=(
+  "afergon-ai.md"
+  "afg-debate.md"
+  "afg-breakdown.md"
+  "afg-specify.md"
+  "afg-plannify.md"
+  "afg-implement.md"
+  "afg-review.md"
+  "afg-design.md"
+)
+
 if [ ! -d "$ADAPTER_PATH/agents" ]; then
 	echo "  register-opencode-agents: no agents directory at $ADAPTER_PATH/agents"
 	exit 0
 fi
 
 mkdir -p "$OC_BASE_DIR"
+
+missing_agent_files=()
+for agent_file in "${REQUIRED_AGENT_FILES[@]}"; do
+  if [ ! -f "$OC_AGENTS_DIR/$agent_file" ]; then
+    missing_agent_files+=("$agent_file")
+  fi
+done
+
+if [ "${#missing_agent_files[@]}" -gt 0 ]; then
+  printf '  OpenCode: warning: missing managed agent file(s): %s\n' "${missing_agent_files[*]}"
+  printf "  OpenCode: skipped opencode.json registration to avoid a partial write. Run 'afergon-ai update' or 'afergon-ai init --opencode' to repair.\n"
+  exit 0
+fi
 
 if [ ! -f "$OC_CONFIG" ]; then
 	echo '{"$schema":"https://opencode.ai/config.json"}' >"$OC_CONFIG"
@@ -27,6 +51,7 @@ python3 - "$OC_CONFIG" "$OC_AGENTS_DIR" "$REMOVE_LEGACY" <<'PYEOF'
 import json
 import os
 import sys
+from pathlib import Path
 
 config_path = sys.argv[1]
 oc_agents_dir = sys.argv[2]
@@ -167,6 +192,62 @@ MANIFEST = {
 
 LEGACY_NAMES = ["orchestrator", "debate", "breakdown", "specify", "plannify", "implement", "review", "design"]
 
+def normalize_assignment(value):
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    return "inherit" if value.lower() == "inherit" else value
+
+def model_config_path() -> Path:
+    explicit_dir = os.environ.get("AFERGON_AI_CONFIG_DIR")
+    if explicit_dir:
+        return Path(explicit_dir).expanduser() / "config.json"
+
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    home = os.environ.get("HOME", "")
+    base_dir = Path(xdg).expanduser() if xdg else Path(home).expanduser() / ".config"
+    return base_dir / "afergon-ai" / "config.json"
+
+def load_active_model_profile():
+    config_file = model_config_path()
+    if not config_file.exists():
+        return {}, True
+
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        print(f"  OpenCode: warning: could not read afergon-ai model config ({exc}); preserving existing managed model assignments.")
+        return {}, False
+
+    models = data.get("models")
+    if not isinstance(models, dict):
+        return {}, True
+
+    active_profile = models.get("activeProfile")
+    profiles = models.get("profiles")
+    if not isinstance(active_profile, str) or not isinstance(profiles, dict):
+        return {}, True
+
+    profile = profiles.get(active_profile)
+    return (profile if isinstance(profile, dict) else {}), True
+
+ACTIVE_MODEL_PROFILE, MODEL_PROJECTION_ENABLED = load_active_model_profile()
+
+def resolve_model(name: str):
+    orchestrator = normalize_assignment(ACTIVE_MODEL_PROFILE.get("afergon-ai"))
+    if name == "afergon-ai":
+        return None if orchestrator in (None, "inherit") else orchestrator
+
+    explicit = normalize_assignment(ACTIVE_MODEL_PROFILE.get(name))
+    if explicit and explicit != "inherit":
+        return explicit
+    if orchestrator and orchestrator != "inherit":
+        return orchestrator
+    return None
+
 def read_prompt_body(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -207,10 +288,15 @@ for name, meta in MANIFEST.items():
         "permission": meta["permission"],
         "prompt": read_prompt_body(managed_path),
     }
+    model = resolve_model(name)
+    if model:
+        desired["model"] = model
     if meta.get("hidden"):
         desired["hidden"] = True
 
     existing = agents.get(name)
+    if not MODEL_PROJECTION_ENABLED and isinstance(existing, dict) and "model" in existing:
+        desired["model"] = existing["model"]
     if existing and not looks_managed(existing, desired, managed_path):
         print(f"Conflict: agent '{name}' already exists in opencode.json and does not look managed by afergon-ai.")
         answer = input(f"Overwrite '{name}' with afergon-ai's managed definition? [y/N] ").strip().lower()
