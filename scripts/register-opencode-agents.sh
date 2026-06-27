@@ -11,6 +11,18 @@ OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 OC_CONFIG="$OC_BASE_DIR/opencode.json"
 OC_AGENTS_DIR="$OC_BASE_DIR/agents"
 REMOVE_LEGACY="${AFG_REMOVE_LEGACY:-0}"
+NONINTERACTIVE="${AFG_OPENCODE_REGISTER_NONINTERACTIVE:-0}"
+
+REQUIRED_AGENT_FILES=(
+  "afergon-ai.md"
+  "afg-debate.md"
+  "afg-breakdown.md"
+  "afg-specify.md"
+  "afg-plannify.md"
+  "afg-implement.md"
+  "afg-review.md"
+  "afg-design.md"
+)
 
 if [ ! -d "$ADAPTER_PATH/agents" ]; then
 	echo "  register-opencode-agents: no agents directory at $ADAPTER_PATH/agents"
@@ -19,18 +31,31 @@ fi
 
 mkdir -p "$OC_BASE_DIR"
 
-if [ ! -f "$OC_CONFIG" ]; then
-	echo '{"$schema":"https://opencode.ai/config.json"}' >"$OC_CONFIG"
+missing_agent_files=()
+for agent_file in "${REQUIRED_AGENT_FILES[@]}"; do
+  if [ ! -f "$OC_AGENTS_DIR/$agent_file" ]; then
+    missing_agent_files+=("$agent_file")
+  fi
+done
+
+if [ "${#missing_agent_files[@]}" -gt 0 ]; then
+  printf '  OpenCode: warning: missing managed agent file(s): %s\n' "${missing_agent_files[*]}"
+  printf "  OpenCode: skipped opencode.json registration to avoid a partial write. Run 'afergon-ai update' or 'afergon-ai init --opencode' to repair.\n"
+  exit 0
 fi
 
-python3 - "$OC_CONFIG" "$OC_AGENTS_DIR" "$REMOVE_LEGACY" <<'PYEOF'
+python3 - "$OC_CONFIG" "$OC_AGENTS_DIR" "$REMOVE_LEGACY" "$NONINTERACTIVE" <<'PYEOF'
 import json
 import os
+import shutil
 import sys
+import tempfile
+from pathlib import Path
 
 config_path = sys.argv[1]
 oc_agents_dir = sys.argv[2]
 remove_legacy = sys.argv[3] == "1"
+noninteractive = sys.argv[4] == "1"
 
 MANIFEST = {
     "afergon-ai": {
@@ -167,6 +192,68 @@ MANIFEST = {
 
 LEGACY_NAMES = ["orchestrator", "debate", "breakdown", "specify", "plannify", "implement", "review", "design"]
 
+def normalize_assignment(value):
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    return "inherit" if value.lower() == "inherit" else value
+
+def model_config_path() -> Path:
+    explicit_dir = os.environ.get("AFERGON_AI_CONFIG_DIR")
+    if explicit_dir:
+        return Path(explicit_dir).expanduser() / "config.json"
+
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    home = os.environ.get("HOME", "")
+    base_dir = Path(xdg).expanduser() if xdg else Path(home).expanduser() / ".config"
+    return base_dir / "afergon-ai" / "config.json"
+
+def load_active_model_profile():
+    config_file = model_config_path()
+    if not config_file.exists():
+        return {}, True
+
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        print(f"  OpenCode: warning: could not read afergon-ai model config ({exc}); preserving existing managed model assignments.")
+        return {}, False
+
+    if not isinstance(data, dict):
+        print("  OpenCode: warning: afergon-ai model config root is not an object; preserving existing managed model assignments.")
+        return {}, False
+
+    models = data.get("models")
+    if not isinstance(models, dict):
+        return {}, False
+
+    active_profile = models.get("activeProfile")
+    profiles = models.get("profiles")
+    if not isinstance(active_profile, str) or not isinstance(profiles, dict):
+        return {}, False
+
+    profile = profiles.get(active_profile)
+    if not isinstance(profile, dict):
+        return {}, False
+    return profile, True
+
+ACTIVE_MODEL_PROFILE, MODEL_PROJECTION_ENABLED = load_active_model_profile()
+
+def resolve_model(name: str):
+    orchestrator = normalize_assignment(ACTIVE_MODEL_PROFILE.get("afergon-ai"))
+    if name == "afergon-ai":
+        return None if orchestrator in (None, "inherit") else orchestrator
+
+    explicit = normalize_assignment(ACTIVE_MODEL_PROFILE.get(name))
+    if explicit and explicit != "inherit":
+        return explicit
+    if orchestrator and orchestrator != "inherit":
+        return orchestrator
+    return None
+
 def read_prompt_body(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -191,10 +278,68 @@ def looks_managed(existing: dict, desired: dict, managed_path: str) -> bool:
         )
     )
 
-with open(config_path, "r", encoding="utf-8") as f:
-    config = json.load(f)
+def load_opencode_config(path: str) -> dict:
+    if not os.path.exists(path):
+        return {"$schema": "https://opencode.ai/config.json"}
+    def backup_original(reason: str) -> str:
+        backup_path = f"{path}.{reason}-{os.getpid()}"
+        try:
+            shutil.copy2(path, backup_path)
+            return f" Backed up original to {backup_path}."
+        except Exception as backup_exc:
+            return f" Could not back up original ({backup_exc})."
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        backup_note = backup_original("corrupt")
+        print(f"  OpenCode: warning: could not read opencode.json ({exc}); recreating managed config shell.{backup_note}")
+        return {"$schema": "https://opencode.ai/config.json"}
+    if not isinstance(data, dict):
+        backup_note = backup_original("invalid-root")
+        print(f"  OpenCode: warning: opencode.json root is not an object; recreating managed config shell.{backup_note}")
+        return {"$schema": "https://opencode.ai/config.json"}
+    return data
+
+def atomic_write_json(path: str, data: dict) -> None:
+    directory = os.path.dirname(path)
+    fd, tmp_path = tempfile.mkstemp(prefix=".opencode.json.", suffix=".tmp", dir=directory, text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+        try:
+            dir_fd = os.open(directory, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            pass
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except FileNotFoundError:
+            pass
+        raise
+
+config = load_opencode_config(config_path)
 
 agents = config.setdefault("agent", {})
+if not isinstance(agents, dict):
+    backup_path = f"{config_path}.invalid-agent-{os.getpid()}"
+    try:
+        shutil.copy2(config_path, backup_path)
+        backup_note = f" Backed up original to {backup_path}."
+    except Exception as backup_exc:
+        backup_note = f" Could not back up original ({backup_exc})."
+    print(f"  OpenCode: warning: opencode.json field 'agent' is not an object; recreating managed agent registry.{backup_note}")
+    agents = {}
+    config["agent"] = agents
 registered = []
 skipped = []
 
@@ -207,12 +352,29 @@ for name, meta in MANIFEST.items():
         "permission": meta["permission"],
         "prompt": read_prompt_body(managed_path),
     }
+    model = resolve_model(name)
+    if model:
+        desired["model"] = model
     if meta.get("hidden"):
         desired["hidden"] = True
 
     existing = agents.get(name)
+    if existing is not None and not isinstance(existing, dict):
+        backup_path = f"{config_path}.invalid-agent-entry-{os.getpid()}"
+        try:
+            shutil.copy2(config_path, backup_path)
+            backup_note = f" Backed up original to {backup_path}."
+        except Exception as backup_exc:
+            backup_note = f" Could not back up original ({backup_exc})."
+        print(f"  OpenCode: warning: agent '{name}' entry is not an object; replacing it with afergon-ai managed definition.{backup_note}")
+        existing = None
+    if not MODEL_PROJECTION_ENABLED and isinstance(existing, dict) and "model" in existing:
+        desired["model"] = existing["model"]
     if existing and not looks_managed(existing, desired, managed_path):
         print(f"Conflict: agent '{name}' already exists in opencode.json and does not look managed by afergon-ai.")
+        if noninteractive:
+            skipped.append(name)
+            continue
         answer = input(f"Overwrite '{name}' with afergon-ai's managed definition? [y/N] ").strip().lower()
         if answer not in {"y", "yes"}:
             skipped.append(name)
@@ -235,9 +397,7 @@ if remove_legacy:
     if removed:
         print(f"  OpenCode: removed {len(removed)} legacy opencode.json entry(ies): {', '.join(sorted(removed))}")
 
-with open(config_path, "w", encoding="utf-8") as f:
-    json.dump(config, f, indent=2)
-    f.write("\n")
+atomic_write_json(config_path, config)
 
 if registered:
     print(f"  OpenCode: registered {len(registered)} agent(s) in opencode.json: {', '.join(registered)}")
