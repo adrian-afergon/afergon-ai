@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   normalizeAgentName,
   resolveAssignments,
+  saveConfig,
   SUPPORTED_AGENTS,
 } from "../scripts/lib/model-profiles.mjs";
 
@@ -33,6 +34,7 @@ function runCli(args, env = {}) {
   return spawnSync(cliPath, ["models", ...args], {
     cwd: repoRoot,
     encoding: "utf8",
+    timeout: 10000,
     env: {
       ...process.env,
       ...env,
@@ -44,6 +46,7 @@ function runModelsScript(args, env = {}) {
   return spawnSync(process.execPath, [path.join(repoRoot, "scripts/models.mjs"), ...args], {
     cwd: repoRoot,
     encoding: "utf8",
+    timeout: 10000,
     env: {
       ...process.env,
       ...env,
@@ -121,6 +124,30 @@ esac
   return binDir;
 }
 
+function writeHangingBash(tempRoot) {
+  const binDir = path.join(tempRoot, "hanging-bash-bin");
+  const scriptPath = path.join(binDir, "bash");
+  fs.mkdirSync(binDir, { recursive: true });
+  fs.writeFileSync(
+    scriptPath,
+    `#!/bin/sh
+case "$1" in
+  --version)
+    echo "GNU bash test"
+    exit 0
+    ;;
+  *)
+    sleep 2
+    exit 0
+    ;;
+esac
+`,
+    { mode: 0o755 },
+  );
+
+  return binDir;
+}
+
 function makeUnavailableOpencodeEnv(tempRoot, env = {}) {
   const fakeBin = path.join(tempRoot, "unavailable-opencode-bin");
   fs.mkdirSync(fakeBin, { recursive: true });
@@ -139,6 +166,10 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("keeps the supported agent list unique so config projections do not duplicate entries", () => {
+    expect(new Set(SUPPORTED_AGENTS).size).toBe(SUPPORTED_AGENTS.length);
+  });
+
   it("uses the orchestrator model for missing subagent assignments", () => {
     const assignments = resolveAssignments({
       "afergon-ai": "openai/gpt-5.5",
@@ -201,6 +232,28 @@ describe("agent aliases", () => {
 });
 
 describe("models CLI behavior", () => {
+  it("writes afergon-ai config atomically without leaving a temp file", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    const config = {
+      version: 1,
+      models: {
+        activeProfile: "default",
+        profiles: {
+          default: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    };
+
+    const configPath = saveConfig(config, { AFERGON_AI_CONFIG_DIR: configDir });
+
+    expect(configPath).toBe(path.join(configDir, "config.json"));
+    expect(readJson(configPath)).toEqual(config);
+    expect(fs.readdirSync(configDir).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+  });
+
   it("runs show, create, list, set, switch, and delete against an isolated config dir", () => {
     const tempRoot = makeTempRoot();
     const configDir = path.join(tempRoot, "relative-config");
@@ -455,6 +508,78 @@ describe("models CLI behavior", () => {
     expect(result.stderr).toContain("Repair the file or move it aside");
   });
 
+  it("fails gracefully when model config root is not an object", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), "[]\n", "utf8");
+
+    const result = runCli(["show"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("root value must be an object");
+    expect(result.stderr).toContain("Repair the file or move it aside");
+  });
+
+  it("fails gracefully when model config schema is invalid", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), JSON.stringify({ models: { profiles: [] } }), "utf8");
+
+    const result = runCli(["show"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("models.profiles must be an object");
+    expect(result.stderr).toContain("Repair the file or move it aside");
+  });
+
+  it("creates a first profile when host OpenCode config is malformed", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    const xdgHome = path.join(tempRoot, "xdg");
+    fs.mkdirSync(path.join(xdgHome, "opencode"), { recursive: true });
+    fs.writeFileSync(path.join(xdgHome, "opencode", "opencode.json"), "{not-json", "utf8");
+
+    const result = runCli(["profile", "create", "budget"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("could not read OpenCode config");
+    expect(result.stdout).toContain("Created profile 'budget'.");
+    expect(readJson(path.join(configDir, "config.json")).models.profiles.budget).toEqual({});
+  });
+
+  it("creates a first profile when host OpenCode config root is not an object", () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    const xdgHome = path.join(tempRoot, "xdg");
+    fs.mkdirSync(path.join(xdgHome, "opencode"), { recursive: true });
+    fs.writeFileSync(path.join(xdgHome, "opencode", "opencode.json"), "null\n", "utf8");
+
+    const result = runCli(["profile", "create", "budget"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("is not an object");
+    expect(result.stdout).toContain("Created profile 'budget'.");
+    expect(readJson(path.join(configDir, "config.json")).models.profiles.budget).toEqual({});
+  });
+
   it("does not invoke OpenCode registration when managed agent files are missing", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
@@ -498,6 +623,36 @@ describe("models CLI behavior", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Updated profile 'default': afergon-ai -> openai/gpt-5.5");
     expect(result.stderr).toContain("OpenCode refresh uses Bash, but bash is unavailable");
+    expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
+      "openai/gpt-5.5",
+    );
+  });
+
+  it("saves afergon-ai config and soft-warns when OpenCode refresh times out", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const configDir = path.join(tempRoot, "config");
+    const fakeBashBin = writeHangingBash(tempRoot);
+    const fakeOpencodeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.5"],
+      },
+    });
+    fs.mkdirSync(path.join(xdgHome, "opencode"), { recursive: true });
+    fs.writeFileSync(path.join(xdgHome, "opencode", "opencode.json"), '{"$schema":"https://opencode.ai/config.json"}\n');
+    copyManagedAgents(xdgHome);
+
+    const result = runModelsScript(["set", "afergon-ai", "openai/gpt-5.5"], {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+      AFERGON_AI_CONFIG_DIR: configDir,
+      PATH: `${fakeBashBin}:${fakeOpencodeBin}:${process.env.PATH}`,
+      AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "500",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Updated profile 'default': afergon-ai -> openai/gpt-5.5");
+    expect(result.stderr).toContain("OpenCode refresh timed out after 500ms");
     expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
       "openai/gpt-5.5",
     );
@@ -681,6 +836,7 @@ describe("OpenCode registrar behavior", () => {
     const result = spawnSync("bash", [registerScript, adapterPath], {
       cwd: repoRoot,
       encoding: "utf8",
+      timeout: 10000,
       env: {
         ...process.env,
         HOME: path.join(tempRoot, "home"),
@@ -727,6 +883,7 @@ describe("OpenCode registrar behavior", () => {
     const result = spawnSync("bash", [registerScript, adapterPath], {
       cwd: repoRoot,
       encoding: "utf8",
+      timeout: 10000,
       env: {
         ...process.env,
         HOME: path.join(tempRoot, "home"),
@@ -740,6 +897,93 @@ describe("OpenCode registrar behavior", () => {
     const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
     expect(opencodeConfig.agent["afergon-ai"].model).toBe("openai/existing-main");
     expect(opencodeConfig.agent["afg-implement"].model).toBe("openai/existing-implement");
+  });
+
+  it("preserves existing model assignments when afergon-ai model config root is not an object", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    const configDir = path.join(tempRoot, "config");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    fs.mkdirSync(configDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(path.join(configDir, "config.json"), "[]\n", "utf8");
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify(
+        {
+          $schema: "https://opencode.ai/config.json",
+          agent: {
+            "afergon-ai": {
+              prompt: `{file:${path.join(opencodeDir, "agents", "afergon-ai.md")}}`,
+              model: "openai/existing-main",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFERGON_AI_CONFIG_DIR: configDir,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("afergon-ai model config root is not an object");
+    const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
+    expect(opencodeConfig.agent["afergon-ai"].model).toBe("openai/existing-main");
+  });
+
+  it("preserves existing model assignments when afergon-ai model config schema is invalid", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    const configDir = path.join(tempRoot, "config");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    fs.mkdirSync(configDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(path.join(configDir, "config.json"), JSON.stringify({ models: { profiles: [] } }), "utf8");
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify(
+        {
+          $schema: "https://opencode.ai/config.json",
+          agent: {
+            "afergon-ai": {
+              prompt: `{file:${path.join(opencodeDir, "agents", "afergon-ai.md")}}`,
+              model: "openai/existing-main",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFERGON_AI_CONFIG_DIR: configDir,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
+    expect(opencodeConfig.agent["afergon-ai"].model).toBe("openai/existing-main");
   });
 
   it("removes stale model assignments when a valid active profile resolves to runtime defaults", () => {
@@ -793,6 +1037,7 @@ describe("OpenCode registrar behavior", () => {
     const result = spawnSync("bash", [registerScript, adapterPath], {
       cwd: repoRoot,
       encoding: "utf8",
+      timeout: 10000,
       env: {
         ...process.env,
         HOME: path.join(tempRoot, "home"),
@@ -805,5 +1050,121 @@ describe("OpenCode registrar behavior", () => {
     const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
     expect(opencodeConfig.agent["afergon-ai"].model).toBeUndefined();
     expect(opencodeConfig.agent["afg-implement"].model).toBeUndefined();
+  });
+
+  it("skips conflicting agent definitions in non-interactive registrar mode", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify({ agent: { "afergon-ai": { description: "user owned", mode: "primary", prompt: "custom" } } }, null, 2),
+    );
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Conflict: agent 'afergon-ai'");
+    expect(result.stdout).toContain("kept existing non-managed agent definition(s): afergon-ai");
+    expect(readJson(path.join(opencodeDir, "opencode.json")).agent["afergon-ai"].prompt).toBe("custom");
+  });
+
+  it("recreates malformed opencode.json with an atomic registrar write", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(path.join(opencodeDir, "opencode.json"), "{not-json", "utf8");
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("could not read opencode.json");
+    const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
+    expect(opencodeConfig.$schema).toBe("https://opencode.ai/config.json");
+    expect(opencodeConfig.agent["afergon-ai"].description).toContain("afergon-ai");
+    expect(fs.readdirSync(opencodeDir).some((entry) => entry.startsWith("opencode.json.corrupt-"))).toBe(true);
+    expect(fs.readdirSync(opencodeDir).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+  });
+
+  it("backs up and recreates opencode.json when the root schema is not an object", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(path.join(opencodeDir, "opencode.json"), "[]\n", "utf8");
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("opencode.json root is not an object");
+    const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
+    expect(opencodeConfig.$schema).toBe("https://opencode.ai/config.json");
+    expect(opencodeConfig.agent["afergon-ai"].description).toContain("afergon-ai");
+    expect(fs.readdirSync(opencodeDir).some((entry) => entry.startsWith("opencode.json.invalid-root-"))).toBe(true);
+  });
+
+  it("backs up and replaces invalid per-agent OpenCode entries", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const opencodeDir = path.join(xdgHome, "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    copyManagedAgents(xdgHome);
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify({ $schema: "https://opencode.ai/config.json", agent: { "afergon-ai": "bad" } }, null, 2),
+    );
+
+    const result = spawnSync("bash", [registerScript, adapterPath], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+        AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("agent 'afergon-ai' entry is not an object");
+    const opencodeConfig = readJson(path.join(opencodeDir, "opencode.json"));
+    expect(opencodeConfig.agent["afergon-ai"].description).toContain("afergon-ai");
+    expect(fs.readdirSync(opencodeDir).some((entry) => entry.startsWith("opencode.json.invalid-agent-entry-"))).toBe(true);
   });
 });

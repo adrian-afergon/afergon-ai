@@ -22,11 +22,23 @@ import {
 } from "./lib/model-profiles.mjs";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS = 10000;
+
+function getOpenCodeRefreshTimeoutMs(env = process.env) {
+  const rawTimeout = env.AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS;
+  if (!rawTimeout) {
+    return DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS;
+  }
+
+  const timeout = Number.parseInt(rawTimeout, 10);
+  return Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS;
+}
 
 function createRegistrationEnv() {
   return {
     ...process.env,
     AFERGON_AI_CONFIG_DIR: getConfigDir(),
+    AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
     ...(process.env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: path.resolve(process.env.XDG_CONFIG_HOME) } : {}),
   };
 }
@@ -155,7 +167,7 @@ function reapplySupportedAdapters() {
     return;
   }
   if (!process.env.AFG_FORCE_OPENCODE_BASH_REFRESH) {
-    const bashCheck = spawnSync("bash", ["--version"], { stdio: "ignore" });
+    const bashCheck = spawnSync("bash", ["--version"], { stdio: "ignore", timeout: getOpenCodeRefreshTimeoutMs() });
     if (bashCheck.status !== 0) {
       console.warn(
         "Saved config. OpenCode refresh uses Bash, but bash is unavailable. Run 'afergon-ai update' from a Bash-capable shell to refresh OpenCode registrations.",
@@ -164,15 +176,26 @@ function reapplySupportedAdapters() {
     }
   }
   const adapterPath = path.join(PACKAGE_ROOT, "adapters/opencode");
+  const refreshTimeout = getOpenCodeRefreshTimeoutMs();
   const result = spawnSync("bash", [registerScript, adapterPath], {
     cwd: PACKAGE_ROOT,
     encoding: "utf8",
     stdio: ["inherit", "pipe", "pipe"],
     env: createRegistrationEnv(),
+    timeout: refreshTimeout,
   });
 
   if (result.stdout.trim()) {
     console.log(result.stdout.trim());
+  }
+  if (result.error?.code === "ETIMEDOUT") {
+    console.warn(
+      `Saved config. OpenCode refresh timed out after ${refreshTimeout}ms. Run 'afergon-ai update' to retry the host registration refresh.`,
+    );
+    return;
+  }
+  if (result.error) {
+    throw result.error;
   }
   if (result.status !== 0) {
     const errorMessage = result.stderr.trim() || "OpenCode refresh failed.";
@@ -313,9 +336,6 @@ function main(argv) {
         throw new Error("Usage: afergon-ai models show [profile]");
       }
       showCurrentConfig(rest[0]);
-      return;
-    case undefined:
-      showCurrentConfig();
       return;
     case "list":
       listProfiles();
