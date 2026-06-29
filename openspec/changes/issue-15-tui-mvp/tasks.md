@@ -69,9 +69,9 @@ Gate: if PR11-PR13 forecast reaches 350-400 lines, split again before apply; oth
 - [x] 7.3 Update `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` with section action selection, modal state, output panel, and focus-return helpers.
 
 ## Phase 8: PR12 Configuration and Status Actions
-- [ ] 8.1 RED/GREEN: extend `tests/tui-configuration.test.mjs` and `tests/tui-status.test.mjs` for inline `doctor`, confirmed `update`, confirmed `init`, checkbox flag selection, output/error rendering, and section refresh.
-- [ ] 8.2 Update `scripts/lib/tui/config-status-adapter.mjs`, `scripts/lib/tui/screens/configuration.mjs`, and `scripts/lib/tui/screens/status.mjs` to expose executable action lists, confirmation copy, and output-panel summaries.
-- [ ] 8.3 Update `tests/tui-shell.test.mjs` and `README.md` for section action keyboard flow, modal focus bounds, and cancel/escape guidance.
+- [x] 8.1 RED/GREEN: extend `tests/tui-configuration.test.mjs` and `tests/tui-status.test.mjs` for inline `doctor`, confirmed `update`, confirmed `init`, checkbox flag selection, output/error rendering, and section refresh.
+- [x] 8.2 Update `scripts/lib/tui/config-status-adapter.mjs`, `scripts/lib/tui/screens/configuration.mjs`, and `scripts/lib/tui/screens/status.mjs` to expose executable action lists, confirmation copy, and output-panel summaries.
+- [x] 8.3 Update `tests/tui-shell.test.mjs` and `README.md` for section action keyboard flow, modal focus bounds, and cancel/escape guidance.
 
 ## Phase 9: PR13 Model Profiles Interactive Actions
 - [ ] 9.1 RED/GREEN: extend `tests/tui-model-profiles.test.mjs` for `models list/show` inline output plus picker/form-driven `switch`, `set`, `profile create`, and `profile delete` with no fabricated commands.

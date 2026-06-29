@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getConfigurationStatus } from "../scripts/lib/tui/config-status-adapter.mjs";
+import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import { renderConfigurationScreen } from "../scripts/lib/tui/screens/configuration.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
 
@@ -279,5 +281,162 @@ describe("createTuiApp configuration route", () => {
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
     expect(terminal.output).toContain("Press c for Configuration");
+  });
+
+  it("renders configuration interactive actions from the section state, runs doctor inline, and closes output with Escape", async () => {
+    const terminal = new FakeTerminal();
+    const executeAction = vi.fn(async ({ action }) => ({
+      ok: false,
+      exitCode: 1,
+      stdout: "doctor summary\n",
+      stderr: `${action.id} failed\n`,
+      timedOut: false,
+    }));
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      executeAction,
+      loadConfigurationStatus: () => ({
+        title: "Configuration",
+        items: [{ id: "model-config", label: "Model config", state: "ok", detail: "Config file exists." }],
+        actions: [{ id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify install." }],
+        interactiveActions: [
+          createActionDefinition({
+            id: "configuration-doctor",
+            section: "configuration",
+            kind: "read",
+            label: "Run doctor",
+            argv: buildCommandArgv("doctor"),
+          }),
+        ],
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("c");
+    await flushTui();
+
+    expect(terminal.output).toContain("> Run doctor [selected]");
+    expect(terminal.output).toContain("Execution: runs inline");
+
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(executeAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: expect.objectContaining({ id: "configuration-doctor", argv: ["doctor"] }) }),
+    );
+    expect(terminal.output).toContain("Output [fail]");
+    expect(terminal.output).toContain("doctor summary");
+    expect(terminal.output).toContain("configuration-doctor failed");
+
+    terminal.output = "";
+    terminal.emitInput("\u001b");
+    await flushTui();
+
+    expect(terminal.output).not.toContain("Output [fail]");
+    expect(app.navigation.route).toBe("configuration");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(app.navigation.sectionActionSelection).toBe(0);
+  });
+
+  it("opens the init checkbox form, builds only the chosen flags, confirms execution, and refreshes the section", async () => {
+    const terminal = new FakeTerminal();
+    let configurationLoads = 0;
+    const executeAction = vi.fn(async () => ({
+      ok: true,
+      exitCode: 0,
+      stdout: "init complete\n",
+      stderr: "",
+      timedOut: false,
+    }));
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      executeAction,
+      loadConfigurationStatus: () => {
+        configurationLoads += 1;
+        return {
+          title: "Configuration",
+          items: [
+            {
+              id: "pi",
+              label: "Pi",
+              state: configurationLoads > 2 ? "ok" : "warn",
+              detail: configurationLoads > 2 ? "Installed in this project." : "Not installed in this project.",
+            },
+          ],
+          actions: [{ id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." }],
+          interactiveActions: [
+            createActionDefinition({
+              id: "configuration-init",
+              section: "configuration",
+              kind: "mutate",
+              label: "Initialize project files",
+              cliEquivalent: "afergon-ai init",
+              buildArgv: ({ selectedIds }) => buildCommandArgv("init", selectedIds.includes("all") ? ["--all"] : selectedIds.map((id) => `--${id}`)),
+              form: {
+                kind: "checkboxes",
+                title: "Choose what to initialize",
+                options: [
+                  { id: "pi", label: "Pi" },
+                  { id: "claude", label: "Claude" },
+                  { id: "opencode", label: "OpenCode" },
+                  { id: "all", label: "All" },
+                ],
+              },
+            }),
+          ],
+        };
+      },
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("c");
+    await flushTui();
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(terminal.output).toContain("Choose what to initialize");
+    expect(terminal.output).toContain("Pi [ ]");
+    expect(terminal.output).toContain("Claude [ ]");
+    expect(terminal.output).toContain("OpenCode [ ]");
+    expect(terminal.output).toContain("All [x]");
+    expect(terminal.output).toContain("Use Space to toggle the selected checkbox.");
+
+    terminal.emitInput(" ");
+    terminal.emitInput("\u001b[B");
+    terminal.emitInput("\u001b[B");
+    terminal.emitInput(" ");
+    terminal.emitInput("\u001b[B");
+    terminal.emitInput("\u001b[B");
+    await flushTui();
+
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(terminal.output).toContain("Confirmation");
+    expect(terminal.output).toContain("afergon-ai init --pi --opencode");
+
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(executeAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: expect.objectContaining({ id: "configuration-init", argv: ["init", "--pi", "--opencode"] }) }),
+    );
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("init complete");
+
+    terminal.output = "";
+    terminal.emitInput("\u001b");
+    await flushTui();
+
+    expect(terminal.output).toContain("Pi [ok]: Installed in this project.");
+    expect(configurationLoads).toBeGreaterThan(2);
   });
 });

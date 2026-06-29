@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { createActionDefinition } from "./actions/definitions.mjs";
+import { buildCommandArgv, getCommandManifestEntry } from "./command-manifest.mjs";
 import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.mjs";
-import { getCommandManifestEntry } from "./command-manifest.mjs";
 
 const CONFIGURATION_ACTION_DESCRIPTIONS = Object.freeze({
   init: "Initialize project files.",
@@ -99,6 +100,61 @@ function createActions(actionIds) {
   return actionIds.map((id) => createAction(id));
 }
 
+export function buildInitCommandArgv({ selectedIds = [] } = {}) {
+  const normalizedIds = Array.isArray(selectedIds)
+    ? selectedIds.filter((id) => id === "pi" || id === "claude" || id === "opencode" || id === "all")
+    : [];
+
+  if (normalizedIds.includes("all")) {
+    return buildCommandArgv("init", ["--all"]);
+  }
+
+  return buildCommandArgv("init", normalizedIds.map((id) => `--${id}`));
+}
+
+function createInteractiveActions(section) {
+  const doctorArgv = section === "status" ? buildCommandArgv("doctor", ["--opencode"]) : buildCommandArgv("doctor");
+
+  return [
+    createActionDefinition({
+      id: `${section}-doctor`,
+      section,
+      kind: "read",
+      label: section === "status" ? "Run doctor for OpenCode" : "Run doctor",
+      argv: doctorArgv,
+    }),
+    createActionDefinition({
+      id: `${section}-init`,
+      section,
+      kind: "mutate",
+      label: "Initialize project files",
+      cliEquivalent: "afergon-ai init",
+      buildArgv: ({ selectedIds }) => buildInitCommandArgv({ selectedIds }),
+      form: {
+        kind: "checkboxes",
+        title: "Choose what to initialize",
+        options: [
+          { id: "pi", label: "Pi" },
+          { id: "claude", label: "Claude" },
+          { id: "opencode", label: "OpenCode" },
+          { id: "all", label: "All" },
+        ],
+      },
+      confirmLabel: "Initialize the selected surfaces?",
+      refreshTarget: section,
+    }),
+    createActionDefinition({
+      id: `${section}-update`,
+      section,
+      kind: "mutate",
+      label: "Refresh managed files",
+      argv: buildCommandArgv("update"),
+      confirmLabel: "Refresh the managed files for this installation?",
+      refreshTarget: section,
+    }),
+  ];
+}
+
 function addGuidance(item) {
   switch (item.id) {
     case "model-config":
@@ -185,6 +241,7 @@ export function getConfigurationStatus({ cwd = process.cwd(), env = process.env 
     title: "Configuration",
     items,
     actions: createActions(["init", "doctor", "update", "models"]),
+    interactiveActions: createInteractiveActions("configuration"),
   };
 }
 
@@ -196,5 +253,6 @@ export function getStatusScreenState({ cwd = process.cwd(), env = process.env } 
     summary: summarizeItems(items),
     items,
     actions: createActions(STATUS_ACTION_IDS),
+    interactiveActions: createInteractiveActions("status"),
   };
 }
