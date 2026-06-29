@@ -108,6 +108,75 @@ Concrete model strings should use `provider/model` format, for example `openai/g
 
 When OpenCode is already installed through afergon-ai, `models switch` and `models set` refresh the managed OpenCode agent registrations on disk. Existing sessions may still need a new compatible run; live hot-swap is not guaranteed.
 
+### Step 5 — Choose the launch mode
+
+`afergon-ai` now routes through a shared dispatcher so interactive and scripted use stay separate:
+
+```bash
+afergon-ai          # opens the TUI when run in an interactive terminal
+afergon-ai tui      # explicitly opens the TUI
+afergon-ai --help   # always prints help
+afergon-ai doctor   # stays non-interactive and scriptable
+```
+
+Dispatcher rules:
+
+- Interactive TTY + no args: open the TUI.
+- Interactive TTY + `tui`: open the TUI.
+- Non-TTY/CI + no args: print help and exit 0.
+- Non-TTY/CI + `tui`: fail fast with guidance instead of hanging.
+- Explicit commands like `init`, `doctor`, `update`, and `models` always bypass the TUI.
+
+Windows launchers use the same dispatcher boundary and forward the full argument list, so quoted arguments are preserved instead of being truncated to fixed `%2 ... %5` slots.
+
+The MVP TUI currently exposes these sections:
+
+- **Configuration** — current install/config state plus stable CLI actions for `init`, `doctor`, `update`, and `models`
+- **Status** — readiness summary and actionable repair guidance using the same stable CLI actions
+- **Model Profiles** — active profile, saved profiles, resolved assignments, and the stable `afergon-ai models` surface
+
+CLI-equivalent visibility rules:
+
+- Show a CLI equivalent only when afergon-ai already has a stable explicit command.
+- Do not invent CLI equivalents for unsupported or read-only TUI actions.
+
+Accessibility and keyboard notes:
+
+- Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
+- Home and section screens include explicit text help for returning Home and exiting with `q` or `Esc`.
+- If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
+- Status, failure, and selection cues use text markers such as `[ok]`, `[warn]`, `[fail]`, and `[selected]`, not color alone.
+
+PR2 shell rollback boundary: revert `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` together if the minimal TUI shell regresses before later slices land.
+
+Chained rollback notes:
+
+- PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.mjs` together.
+- PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.mjs` with its tests if command labels drift.
+- PR4/PR5/PR6 screens: revert the matching adapter + screen + focused tests together (`configuration`, `status`, or `model-profiles`).
+- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.mjs`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
+
+PR2 manual keyboard smoke checks:
+
+```bash
+printf 'q' | AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai
+printf '\033' | AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui
+```
+
+Final verification checklist:
+
+```bash
+pnpm test  # expected: all docs + TUI contract tests pass
+./bin/afergon-ai --help  # expected: prints dispatcher help and exits 0
+./bin/afergon-ai  # expected: prints help and exits 0 in non-TTY mode
+./bin/afergon-ai tui  # expected: exits 1 in non-TTY mode after printing guidance
+./bin/afergon-ai doctor --opencode  # expected: explicit command bypass runs; local environment warnings may still surface
+./bin/afergon-ai models show "budget profile"  # expected: quoted arg stays intact as one profile name
+AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui  # expected: forced-TTY smoke can visit Configuration, Status, and Model Profiles, then exit with q
+```
+
+Use the forced-TTY smoke run to confirm you can enter **Configuration**, **Status**, and **Model Profiles**, return with `h`, and exit with `q`.
+
 ### Local install troubleshooting (`pnpm add -g .` vs `pnpm link --global`)
 
 If global install appears "disconnected" from your machine after `pnpm add -g .`, this is expected: pnpm installed a global package copy instead of linking your local checkout.
