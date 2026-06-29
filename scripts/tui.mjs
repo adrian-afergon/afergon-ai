@@ -5,8 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
+import { getModelProfilesScreenState } from "./lib/tui/model-profiles-adapter.mjs";
 import { createNavigationState, navigateTo } from "./lib/tui/navigation.mjs";
 import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
+import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.mjs";
 import { renderStatusScreen } from "./lib/tui/screens/status.mjs";
 
 const APP_TITLE = "afergon-ai TUI";
@@ -56,21 +58,11 @@ export function renderHomeScreen(navigation, width) {
   return lines.map((line) => padLine(line, width));
 }
 
-function renderPlaceholderScreen(route, width) {
-  return [
-    route === "model-profiles" ? "Model Profiles" : route.charAt(0).toUpperCase() + route.slice(1),
-    "",
-    "This screen will land in a later slice.",
-    "Press h to return Home.",
-    "Press q or Esc to exit.",
-  ].map((line) => padLine(line, width));
-}
-
 function setRoute(navigation, route) {
   Object.assign(navigation, navigateTo(navigation, route));
 }
 
-function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationStatus, loadStatusScreenState }) {
+function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationStatus, loadStatusScreenState, loadModelProfilesScreenState }) {
   return {
     render(width) {
       if (navigation.route === "configuration") {
@@ -81,7 +73,11 @@ function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationSta
         return renderStatusScreen(loadStatusScreenState(), width);
       }
 
-      return navigation.route === "home" ? renderHomeScreen(navigation, width) : renderPlaceholderScreen(navigation.route, width);
+      if (navigation.route === "model-profiles") {
+        return renderModelProfilesScreen(loadModelProfilesScreenState(), width);
+      }
+
+      return renderHomeScreen(navigation, width);
     },
     handleInput(data) {
       if (shouldExitTui(data)) {
@@ -123,6 +119,7 @@ export function createTuiApp({
   exit = ({ code }) => process.exit(code),
   loadConfigurationStatus = () => getConfigurationStatus(),
   loadStatusScreenState = () => getStatusScreenState(),
+  loadModelProfilesScreenState = () => getModelProfilesScreenState(),
 } = {}) {
   const navigation = createNavigationState();
   const tui = new TUI(terminal);
@@ -138,7 +135,7 @@ export function createTuiApp({
     exit({ code, reason });
   };
 
-  const screen = createMainScreen({ navigation, onExit: stop, onNavigate: () => tui.requestRender(true), loadConfigurationStatus, loadStatusScreenState });
+  const screen = createMainScreen({ navigation, onExit: stop, onNavigate: () => tui.requestRender(true), loadConfigurationStatus, loadStatusScreenState, loadModelProfilesScreenState });
   tui.addChild(screen);
   tui.setFocus(screen);
   terminal.setTitle?.(APP_TITLE);
