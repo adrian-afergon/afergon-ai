@@ -74,6 +74,6 @@ Gate: if PR11-PR13 forecast reaches 350-400 lines, split again before apply; oth
 - [x] 8.3 Update `tests/tui-shell.test.mjs` and `README.md` for section action keyboard flow, modal focus bounds, and cancel/escape guidance.
 
 ## Phase 9: PR13 Model Profiles Interactive Actions
-- [ ] 9.1 RED/GREEN: extend `tests/tui-model-profiles.test.mjs` for `models list/show` inline output plus picker/form-driven `switch`, `set`, `profile create`, and `profile delete` with no fabricated commands.
-- [ ] 9.2 Update `scripts/lib/tui/model-profiles-adapter.mjs` and `scripts/lib/tui/screens/model-profiles.mjs` for read-only action lists, mutating forms/pickers, confirmations, refresh-after-mutation, and bounded error/output panels.
-- [ ] 9.3 Update `tests/tui-docs.test.mjs`, `apply-progress.md`, and `verify-report.md`; rerun `pnpm test` plus forced-TTY smoke for inline output, cancel, confirm, and post-mutation refresh on temp fixtures.
+- [x] 9.1 RED/GREEN: extend `tests/tui-model-profiles.test.mjs` for `models list/show` inline output plus picker/form-driven `switch`, `set`, `profile create`, and `profile delete` with no fabricated commands.
+- [x] 9.2 Update `scripts/lib/tui/model-profiles-adapter.mjs` and `scripts/lib/tui/screens/model-profiles.mjs` for read-only action lists, mutating forms/pickers, confirmations, refresh-after-mutation, and bounded error/output panels.
+- [x] 9.3 Update `tests/tui-docs.test.mjs`, `apply-progress.md`, and `verify-report.md`; rerun `pnpm test` plus forced-TTY smoke for inline output, cancel, confirm, and post-mutation refresh on temp fixtures.

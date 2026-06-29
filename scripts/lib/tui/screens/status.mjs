@@ -1,5 +1,7 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
+import { sanitizeTerminalOutput } from "../actions/forms.mjs";
+
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
 }
@@ -25,5 +27,5 @@ export function renderStatusScreen(status, width) {
     "Press q or Esc to exit.",
   );
 
-  return lines.map((line) => padLine(line, width));
+  return lines.map((line) => padLine(sanitizeTerminalOutput(line), width));
 }

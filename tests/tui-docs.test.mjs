@@ -13,6 +13,8 @@ describe("TUI docs contract", () => {
     expect(README).toContain("Non-TTY/CI + no args: print help and exit 0.");
     expect(README).toContain("Non-TTY/CI + `tui`: fail fast with guidance instead of hanging.");
     expect(README).toContain("Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.");
+    expect(README).toContain("Inside Model Profiles, `models list` and `models show` run inline, while `switch`, `set`, `profile create`, and `profile delete` open picker or text forms before confirmation.");
+    expect(README).toContain("Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.");
     expect(README).toContain("If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.");
     expect(README).toContain("Status, failure, and selection cues use text markers such as `[ok]`, `[warn]`, `[fail]`, and `[selected]`, not color alone.");
     expect(README).toContain("Do not invent CLI equivalents for unsupported or read-only TUI actions.");

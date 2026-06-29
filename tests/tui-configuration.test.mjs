@@ -229,6 +229,41 @@ describe("renderConfigurationScreen", () => {
     expect(lines.join("\n")).not.toContain("afergon-ai configuration");
   });
 
+  it("sanitizes terminal control sequences from configuration labels, details, and paths", () => {
+    const lines = renderConfigurationScreen(
+      {
+        title: "Configuration",
+        items: [
+          {
+            id: "model-config",
+            label: "Model\u001b[31m config\u001b[0m",
+            state: "ok",
+            detail: "Path /tmp/\u009d2;owned\u0007config.json\u0085active profile: default",
+          },
+        ],
+        actions: [
+          {
+            id: "doctor",
+            label: "afergon-ai do\u009b31mctor\u009b0m",
+            argv: ["doctor"],
+            description: "Inspect \u001b]2;owned\u0007current setup",
+          },
+        ],
+      },
+      200,
+    );
+
+    const output = lines.join("\n");
+
+    expect(output).toContain("Model config [ok]: Path /tmp/config.json?active profile: default");
+    expect(output).toContain("- afergon-ai doctor: Inspect current setup");
+    expect(output).toContain("[ok]");
+    expect(output).not.toContain("\u001b");
+    expect(output).not.toContain("\u009b");
+    expect(output).not.toContain("\u009d");
+    expect(output).not.toContain("owned");
+  });
+
   it("renders a model-config failure item without throwing", () => {
     const status = {
       title: "Configuration",

@@ -1,5 +1,7 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
+import { sanitizeTerminalOutput } from "../actions/forms.mjs";
+
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
 }
@@ -53,11 +55,15 @@ export function renderModelProfilesScreen(state, width) {
     "",
     ...state.actions.map((action) => `- ${action.label}: ${action.description}`),
     "",
+    "Interactive notes",
+    "- Use inline actions for list/show results and picker or text forms for profile changes.",
+    "- Successful profile mutations refresh this section before you keep navigating.",
+    "",
     "Keyboard help",
     "State labels use [ok], [warn], and [fail] text markers where applicable.",
     "Press h to return Home.",
     "Press q or Esc to exit.",
   ];
 
-  return lines.map((line) => padLine(line, width));
+  return lines.map((line) => padLine(sanitizeTerminalOutput(line), width));
 }
