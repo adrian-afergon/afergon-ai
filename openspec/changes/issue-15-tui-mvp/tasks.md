@@ -4,10 +4,10 @@
 
 | Field | Value |
 |---|---|
-| Estimated changed lines | 1350-1850 total across 10 PRs |
+| Estimated changed lines | 2150-2900 total across 13 PRs |
 | 400-line budget risk | High |
 | Chained PRs recommended | Yes |
-| Suggested split | PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 |
+| Suggested split | PR1 → PR2 → PR3 → PR4 → PR5 → PR6 → PR7 → PR8 → PR9 → PR10 → PR11 → PR12 → PR13 |
 | Delivery strategy | auto-chain (forced chained) |
 | Chain strategy | stacked-to-main |
 
@@ -30,8 +30,11 @@ Chain strategy: stacked-to-main
 | 8 | Branding/logo extraction | PR8 | base main after PR7; target 140-220 lines |
 | 9 | Home arrow navigation + focus | PR9 | base main after PR8; target 180-280 lines |
 | 10 | Accessibility polish + final verify | PR10 | base main after PR9; target 120-200 lines |
+| 11 | Shared TUI action framework + runner | PR11 | base main after PR10; target 220-320 lines |
+| 12 | Configuration + Status interactive actions | PR12 | base main after PR11; target 260-360 lines |
+| 13 | Model Profiles interactive actions | PR13 | base main after PR12; target 300-390 lines |
 
-Gate: if PR8-PR10 forecast reaches 350-400 lines, split again before apply; otherwise stop for `size:exception` approval.
+Gate: if PR11-PR13 forecast reaches 350-400 lines, split again before apply; otherwise stop for `size:exception` approval.
 
 ## Phase 1: Launcher and Shell Foundations
 - [x] 1.1 Refresh `openspec/config.yaml` test metadata to Vitest / `pnpm test`.
@@ -59,3 +62,18 @@ Gate: if PR8-PR10 forecast reaches 350-400 lines, split again before apply; othe
 ## Phase 6: PR10 Accessibility Polish and Verify
 - [x] 6.1 RED/GREEN: update `tests/tui-shell.test.mjs`, `tests/tui-docs.test.mjs`, and affected screen tests for non-color-only focus, help/exit hints, and fallback branding text.
 - [x] 6.2 Update `scripts/lib/tui/screens/*.mjs`, `README.md`, `prompts/afergon-ai.md`, `apply-progress.md`, and `verify-report.md`; rerun `pnpm test` plus forced-TTY arrow smoke.
+
+## Phase 7: PR11 Shared Action Framework
+- [x] 7.1 RED/GREEN: add `tests/tui-actions.test.mjs` for argv-only execution, read-only inline output, confirm-before-mutate, and Esc/Cancel recovery.
+- [x] 7.2 Create `scripts/lib/tui/actions/definitions.mjs`, `scripts/lib/tui/actions/runner.mjs`, and `scripts/lib/tui/actions/forms.mjs`; extend `scripts/lib/tui/command-manifest.mjs` for stable action argv builders only.
+- [x] 7.3 Update `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` with section action selection, modal state, output panel, and focus-return helpers.
+
+## Phase 8: PR12 Configuration and Status Actions
+- [ ] 8.1 RED/GREEN: extend `tests/tui-configuration.test.mjs` and `tests/tui-status.test.mjs` for inline `doctor`, confirmed `update`, confirmed `init`, checkbox flag selection, output/error rendering, and section refresh.
+- [ ] 8.2 Update `scripts/lib/tui/config-status-adapter.mjs`, `scripts/lib/tui/screens/configuration.mjs`, and `scripts/lib/tui/screens/status.mjs` to expose executable action lists, confirmation copy, and output-panel summaries.
+- [ ] 8.3 Update `tests/tui-shell.test.mjs` and `README.md` for section action keyboard flow, modal focus bounds, and cancel/escape guidance.
+
+## Phase 9: PR13 Model Profiles Interactive Actions
+- [ ] 9.1 RED/GREEN: extend `tests/tui-model-profiles.test.mjs` for `models list/show` inline output plus picker/form-driven `switch`, `set`, `profile create`, and `profile delete` with no fabricated commands.
+- [ ] 9.2 Update `scripts/lib/tui/model-profiles-adapter.mjs` and `scripts/lib/tui/screens/model-profiles.mjs` for read-only action lists, mutating forms/pickers, confirmations, refresh-after-mutation, and bounded error/output panels.
+- [ ] 9.3 Update `tests/tui-docs.test.mjs`, `apply-progress.md`, and `verify-report.md`; rerun `pnpm test` plus forced-TTY smoke for inline output, cancel, confirm, and post-mutation refresh on temp fixtures.
