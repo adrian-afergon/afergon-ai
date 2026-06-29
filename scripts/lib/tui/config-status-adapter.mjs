@@ -11,6 +11,8 @@ const CONFIGURATION_ACTION_DESCRIPTIONS = Object.freeze({
   models: "Review and manage model profiles.",
 });
 
+const STATUS_ACTION_IDS = Object.freeze(["doctor", "init", "update", "models"]);
+
 function createAction(id) {
   const manifestEntry = getCommandManifestEntry(id);
 
@@ -93,6 +95,42 @@ function getOpenCodeItem(env) {
   };
 }
 
+function createActions(actionIds) {
+  return actionIds.map((id) => createAction(id));
+}
+
+function addGuidance(item) {
+  switch (item.id) {
+    case "model-config":
+      if (item.state === "warn") {
+        return {
+          ...item,
+          detail: `${item.detail} Run 'afergon-ai models show' to inspect or create profiles.`,
+        };
+      }
+      return item;
+    case "pi":
+    case "claude":
+      if (item.state === "warn") {
+        return {
+          ...item,
+          detail: `${item.detail} Run 'afergon-ai init' to install project files.`,
+        };
+      }
+      return item;
+    case "opencode":
+      if (item.state === "warn") {
+        return {
+          ...item,
+          detail: `${item.detail} Run 'afergon-ai init --opencode' or 'afergon-ai doctor --opencode' to repair the managed host install.`,
+        };
+      }
+      return item;
+    default:
+      return item;
+  }
+}
+
 function getBaseStatusItems({ cwd, env }) {
   return [
     getModelConfigItem(env),
@@ -114,10 +152,49 @@ function getBaseStatusItems({ cwd, env }) {
   ];
 }
 
+function summarizeItems(items) {
+  const hasFailures = items.some((item) => item.state === "fail");
+  if (hasFailures) {
+    return {
+      label: "Readiness",
+      state: "fail",
+      detail: "Interactive workflows need attention. Run 'afergon-ai doctor' first, then repair any failed items.",
+    };
+  }
+
+  const hasWarnings = items.some((item) => item.state === "warn");
+  if (hasWarnings) {
+    return {
+      label: "Readiness",
+      state: "warn",
+      detail: "Setup is incomplete. Run 'afergon-ai init' for missing project files, then rerun 'afergon-ai doctor'.",
+    };
+  }
+
+  return {
+    label: "Readiness",
+    state: "ok",
+    detail: "Ready for guided workflows.",
+  };
+}
+
 export function getConfigurationStatus({ cwd = process.cwd(), env = process.env } = {}) {
+  const items = getBaseStatusItems({ cwd, env });
+
   return {
     title: "Configuration",
-    items: getBaseStatusItems({ cwd, env }),
-    actions: ["init", "doctor", "update", "models"].map((id) => createAction(id)),
+    items,
+    actions: createActions(["init", "doctor", "update", "models"]),
+  };
+}
+
+export function getStatusScreenState({ cwd = process.cwd(), env = process.env } = {}) {
+  const items = getBaseStatusItems({ cwd, env }).map((item) => addGuidance(item));
+
+  return {
+    title: "Status",
+    summary: summarizeItems(items),
+    items,
+    actions: createActions(STATUS_ACTION_IDS),
   };
 }

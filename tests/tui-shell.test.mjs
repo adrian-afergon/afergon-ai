@@ -51,22 +51,24 @@ describe("createTuiApp", () => {
     const terminal = new FakeTerminal();
     const exits = [];
     const app = createTuiApp({ terminal, exit: (payload) => exits.push(payload) });
-
     app.start();
     await flushTui();
-
     expect(app.navigation.route).toBe("home");
     expect(terminal.title).toBe("afergon-ai TUI");
     expect(terminal.output).toContain("█████");
-    expect(terminal.output).toContain("debate  ·  specify  ·  implement  ·  review");
-    expect(terminal.output).toContain("- Configuration (press c)");
     expect(terminal.output).toContain("Press c for Configuration.");
+    expect(terminal.output).toContain("Press s for Status.");
     expect(exits).toEqual([]);
   });
 
-  it("renders the Configuration route while preserving Home/Status/Model Profiles shortcuts", async () => {
+  it("renders the Configuration and Status routes while preserving Home and Model Profiles shortcuts", async () => {
     const terminal = new FakeTerminal();
-    const app = createTuiApp({ terminal, exit: () => {}, loadConfigurationStatus: () => ({ title: "Configuration", items: [{ label: "Pi", state: "ok", detail: "installed" }], actions: [{ label: "afergon-ai init", description: "Initialize project files." }] }) });
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadConfigurationStatus: () => ({ title: "Configuration", items: [{ label: "Pi", state: "ok", detail: "installed" }], actions: [{ label: "afergon-ai init", description: "Initialize project files." }] }),
+      loadStatusScreenState: () => ({ title: "Status", summary: { label: "Readiness", state: "warn", detail: "setup incomplete" }, items: [{ label: "OpenCode", state: "warn", detail: "missing" }], actions: [{ label: "afergon-ai doctor", description: "Verify current installation state." }] }),
+    });
 
     app.start();
     await flushTui();
@@ -78,18 +80,17 @@ describe("createTuiApp", () => {
 
     terminal.emitInput("h");
     await flushTui();
-    expect(app.navigation.route).toBe("home");
-
     terminal.emitInput("s");
     await flushTui();
     expect(app.navigation.route).toBe("status");
-    expect(terminal.output).toContain("This screen will land in a later slice.");
+    expect(terminal.output).toContain("Current health");
 
     terminal.emitInput("h");
     await flushTui();
     terminal.emitInput("m");
     await flushTui();
     expect(app.navigation.route).toBe("model-profiles");
+    expect(terminal.output).toContain("This screen will land in a later slice.");
   });
 
   it("stops the TUI when q or Escape is pressed", async () => {

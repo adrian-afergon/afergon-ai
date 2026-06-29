@@ -4,9 +4,10 @@ import { Key, matchesKey, ProcessTerminal, truncateToWidth, TUI } from "@earendi
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getConfigurationStatus } from "./lib/tui/config-status-adapter.mjs";
+import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
 import { createNavigationState, navigateTo } from "./lib/tui/navigation.mjs";
 import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
+import { renderStatusScreen } from "./lib/tui/screens/status.mjs";
 
 const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
@@ -69,11 +70,15 @@ function setRoute(navigation, route) {
   Object.assign(navigation, navigateTo(navigation, route));
 }
 
-function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationStatus }) {
+function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationStatus, loadStatusScreenState }) {
   return {
     render(width) {
       if (navigation.route === "configuration") {
         return renderConfigurationScreen(loadConfigurationStatus(), width);
+      }
+
+      if (navigation.route === "status") {
+        return renderStatusScreen(loadStatusScreenState(), width);
       }
 
       return navigation.route === "home" ? renderHomeScreen(navigation, width) : renderPlaceholderScreen(navigation.route, width);
@@ -117,6 +122,7 @@ export function createTuiApp({
   terminal = new ProcessTerminal(),
   exit = ({ code }) => process.exit(code),
   loadConfigurationStatus = () => getConfigurationStatus(),
+  loadStatusScreenState = () => getStatusScreenState(),
 } = {}) {
   const navigation = createNavigationState();
   const tui = new TUI(terminal);
@@ -132,12 +138,7 @@ export function createTuiApp({
     exit({ code, reason });
   };
 
-  const screen = createMainScreen({
-    navigation,
-    onExit: stop,
-    onNavigate: () => tui.requestRender(true),
-    loadConfigurationStatus,
-  });
+  const screen = createMainScreen({ navigation, onExit: stop, onNavigate: () => tui.requestRender(true), loadConfigurationStatus, loadStatusScreenState });
   tui.addChild(screen);
   tui.setFocus(screen);
   terminal.setTitle?.(APP_TITLE);
