@@ -4,7 +4,9 @@ import { Key, matchesKey, ProcessTerminal, truncateToWidth, TUI } from "@earendi
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { getConfigurationStatus } from "./lib/tui/config-status-adapter.mjs";
 import { createNavigationState, navigateTo } from "./lib/tui/navigation.mjs";
+import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
 
 const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
@@ -43,6 +45,9 @@ export function renderHomeScreen(navigation, width) {
     "- Status (press s)",
     "- Model Profiles (press m)",
     "",
+    "Press c for Configuration.",
+    "Press s for Status.",
+    "Press m for Model Profiles.",
     "Press h to return Home from any section.",
     "Press q or Esc to exit.",
   ];
@@ -64,9 +69,13 @@ function setRoute(navigation, route) {
   Object.assign(navigation, navigateTo(navigation, route));
 }
 
-function createMainScreen({ navigation, onExit, onNavigate }) {
+function createMainScreen({ navigation, onExit, onNavigate, loadConfigurationStatus }) {
   return {
     render(width) {
+      if (navigation.route === "configuration") {
+        return renderConfigurationScreen(loadConfigurationStatus(), width);
+      }
+
       return navigation.route === "home" ? renderHomeScreen(navigation, width) : renderPlaceholderScreen(navigation.route, width);
     },
     handleInput(data) {
@@ -104,7 +113,11 @@ function createMainScreen({ navigation, onExit, onNavigate }) {
   };
 }
 
-export function createTuiApp({ terminal = new ProcessTerminal(), exit = ({ code }) => process.exit(code) } = {}) {
+export function createTuiApp({
+  terminal = new ProcessTerminal(),
+  exit = ({ code }) => process.exit(code),
+  loadConfigurationStatus = () => getConfigurationStatus(),
+} = {}) {
   const navigation = createNavigationState();
   const tui = new TUI(terminal);
   let stopped = false;
@@ -119,7 +132,12 @@ export function createTuiApp({ terminal = new ProcessTerminal(), exit = ({ code 
     exit({ code, reason });
   };
 
-  const screen = createMainScreen({ navigation, onExit: stop, onNavigate: () => tui.requestRender(true) });
+  const screen = createMainScreen({
+    navigation,
+    onExit: stop,
+    onNavigate: () => tui.requestRender(true),
+    loadConfigurationStatus,
+  });
   tui.addChild(screen);
   tui.setFocus(screen);
   terminal.setTitle?.(APP_TITLE);
