@@ -1,0 +1,274 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
+import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
+import { createTuiApp } from "../scripts/tui.mjs";
+
+const tempRoots = [];
+
+afterEach(() => {
+  for (const tempRoot of tempRoots.splice(0)) {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+function makeTempRoot() {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-status-tui-test-"));
+  tempRoots.push(tempRoot);
+  return tempRoot;
+}
+
+function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+class FakeTerminal {
+  constructor() {
+    this.columns = 100;
+    this.rows = 30;
+    this.kittyProtocolActive = false;
+    this.output = "";
+    this.stopCalls = 0;
+    this.title = "";
+    this.onInput = undefined;
+    this.onResize = undefined;
+  }
+
+  start(onInput, onResize) {
+    this.onInput = onInput;
+    this.onResize = onResize;
+  }
+
+  stop() {
+    this.stopCalls += 1;
+  }
+
+  async drainInput() {}
+
+  write(data) {
+    this.output += data;
+  }
+
+  moveBy() {}
+  hideCursor() {}
+  showCursor() {}
+  clearLine() {}
+  clearFromCursor() {}
+  clearScreen() {}
+
+  setTitle(title) {
+    this.title = title;
+  }
+
+  setProgress() {}
+
+  emitInput(data) {
+    this.onInput?.(data);
+  }
+}
+
+async function flushTui() {
+  await new Promise((resolve) => process.nextTick(resolve));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe("getStatusScreenState", () => {
+  it("reports readiness warnings with actionable commands when setup surfaces are missing", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    const status = getStatusScreenState({ cwd: tempRoot, env });
+
+    expect(status.summary).toEqual(
+      expect.objectContaining({
+        label: "Readiness",
+        state: "warn",
+        detail: expect.stringContaining("afergon-ai init"),
+      }),
+    );
+    expect(status.items).toContainEqual(
+      expect.objectContaining({
+        id: "model-config",
+        state: "warn",
+        detail: expect.stringContaining("afergon-ai models show"),
+      }),
+    );
+    expect(status.items).toContainEqual(
+      expect.objectContaining({
+        id: "claude",
+        state: "warn",
+        detail: expect.stringContaining("afergon-ai init"),
+      }),
+    );
+    expect(status.actions).toEqual([
+      expect.objectContaining({ id: "doctor", label: "afergon-ai doctor", argv: ["doctor"] }),
+      expect.objectContaining({ id: "init", label: "afergon-ai init", argv: ["init"] }),
+      expect.objectContaining({ id: "update", label: "afergon-ai update", argv: ["update"] }),
+      expect.objectContaining({ id: "models", label: "afergon-ai models", argv: ["models"] }),
+    ]);
+  });
+
+  it("reports an ok readiness summary when all status surfaces are installed in isolated temp fixtures", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    writeJson(path.join(xdgHome, "afergon-ai", "config.json"), {
+      version: 1,
+      models: {
+        activeProfile: "default",
+        profiles: {
+          default: {
+            "afergon-ai": "openai/gpt-5.4",
+          },
+        },
+      },
+    });
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "# Append system\n");
+    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "# Claude\n");
+    writeJson(path.join(xdgHome, "opencode", "opencode.json"), {
+      agent: {
+        "afergon-ai": {
+          model: "openai/gpt-5.4",
+        },
+      },
+    });
+    fs.mkdirSync(path.join(xdgHome, "opencode", "agents"), { recursive: true });
+    fs.writeFileSync(path.join(xdgHome, "opencode", "agents", "afergon-ai.md"), "# afergon-ai\n");
+
+    const status = getStatusScreenState({ cwd: tempRoot, env });
+    const lines = renderStatusScreen(status, 120);
+    const output = lines.join("\n");
+
+    expect(status.summary).toEqual(
+      expect.objectContaining({
+        label: "Readiness",
+        state: "ok",
+        detail: "Ready for guided workflows.",
+      }),
+    );
+    expect(status.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
+        expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
+        expect.objectContaining({ id: "claude", state: "ok", detail: expect.stringContaining("CLAUDE.md") }),
+        expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("Managed install detected") }),
+      ]),
+    );
+    expect(output).toContain("Readiness [ok]: Ready for guided workflows.");
+    expect(output).toContain("Model config [ok]:");
+    expect(output).toContain("Pi [ok]:");
+    expect(output).toContain("Claude Code [ok]:");
+    expect(output).toContain("OpenCode [ok]:");
+  });
+
+  it("reports readiness failures with preserved root cause and repair guidance", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const configDir = path.join(xdgHome, "afergon-ai");
+
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), "{ invalid json\n");
+
+    const status = getStatusScreenState({
+      cwd: tempRoot,
+      env: {
+        HOME: path.join(tempRoot, "home"),
+        XDG_CONFIG_HOME: xdgHome,
+      },
+    });
+
+    expect(status.summary).toEqual(
+      expect.objectContaining({
+        label: "Readiness",
+        state: "fail",
+        detail: expect.stringContaining("afergon-ai doctor"),
+      }),
+    );
+    expect(status.items).toContainEqual(
+      expect.objectContaining({
+        id: "model-config",
+        state: "fail",
+        detail: expect.stringContaining("invalid JSON"),
+      }),
+    );
+    expect(status.items).toContainEqual(
+      expect.objectContaining({
+        id: "model-config",
+        state: "fail",
+        detail: expect.stringContaining("afergon-ai models show"),
+      }),
+    );
+  });
+});
+
+describe("renderStatusScreen", () => {
+  it("renders readiness, item health, and stable CLI-equivalent actions", () => {
+    const lines = renderStatusScreen(
+      {
+        title: "Status",
+        summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
+        items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Run afergon-ai init to install project files." }],
+        actions: [
+          { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
+        ],
+      },
+      100,
+    );
+
+    expect(lines.join("\n")).toContain("Status");
+    expect(lines.join("\n")).toContain("Readiness [warn]: Run afergon-ai init to finish setup.");
+    expect(lines.join("\n")).toContain("Claude Code [warn]: Run afergon-ai init to install project files.");
+    expect(lines.join("\n")).toContain("afergon-ai doctor");
+    expect(lines.join("\n")).toContain("Keyboard help");
+    expect(lines.join("\n")).toContain("State labels use [ok], [warn], and [fail] text markers.");
+    expect(lines.join("\n")).toContain("Press h to return Home");
+  });
+});
+
+describe("createTuiApp status route", () => {
+  it("navigates from Home to Status and back with discoverable keyboard shortcuts", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadStatusScreenState: () => ({
+        title: "Status",
+        summary: { label: "Readiness", state: "ok", detail: "Ready for guided workflows." },
+        items: [{ id: "opencode", label: "OpenCode", state: "ok", detail: "Managed install detected." }],
+        actions: [{ id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify install." }],
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("s");
+    await flushTui();
+
+    expect(app.navigation.route).toBe("status");
+    expect(terminal.output).toContain("Status");
+    expect(terminal.output).toContain("Readiness [ok]: Ready for guided workflows.");
+    expect(terminal.output).toContain("afergon-ai doctor");
+
+    terminal.output = "";
+    terminal.emitInput("h");
+    await flushTui();
+
+    expect(app.navigation.route).toBe("home");
+    expect(terminal.output).toContain("Home");
+    expect(terminal.output).toContain("Press s for Status");
+  });
+});
