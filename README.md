@@ -143,6 +143,10 @@ CLI-equivalent visibility rules:
 Accessibility and keyboard notes:
 
 - Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
+- Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
+- `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
+- `init` opens checkbox choices for Pi, Claude Code, OpenCode, or all before showing a confirmation with the exact argv that will run.
+- `update` always asks for confirmation before it executes.
 - Home and section screens include explicit text help for returning Home and exiting with `q` or `Esc`.
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
 - Status, failure, and selection cues use text markers such as `[ok]`, `[warn]`, `[fail]`, and `[selected]`, not color alone.

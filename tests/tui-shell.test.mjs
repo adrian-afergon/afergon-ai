@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import {
   activateHomeSelection,
   createNavigationState,
@@ -173,7 +175,16 @@ describe("createTuiApp", () => {
   it("ignores arrow and enter keys off Home so the TUI stays responsive", async () => {
     const terminal = new FakeTerminal();
     const exits = [];
-    const app = createTuiApp({ terminal, exit: (payload) => exits.push(payload) });
+    const app = createTuiApp({
+      terminal,
+      exit: (payload) => exits.push(payload),
+      loadConfigurationStatus: () => ({
+        title: "Configuration",
+        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+        actions: [],
+        interactiveActions: [],
+      }),
+    });
 
     app.start();
     await flushTui();
@@ -188,6 +199,7 @@ describe("createTuiApp", () => {
     expect(exits).toEqual([]);
 
     terminal.emitInput("q");
+    await flushTui();
 
     expect(terminal.stopCalls).toBe(1);
     expect(exits).toEqual([{ code: 0, reason: "user-exit" }]);
@@ -205,6 +217,64 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("debate · specify · implement · review");
     expect(terminal.output).toContain("Plain-text branding mode keeps Home readable.");
     expect(terminal.output).toContain("Keyboard help");
+  });
+
+  it("shows section action keyboard guidance plus form cancel help without trapping focus", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadConfigurationStatus: () => ({
+        title: "Configuration",
+        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+        actions: [{ id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." }],
+        interactiveActions: [
+          createActionDefinition({
+            id: "configuration-init",
+            section: "configuration",
+            kind: "mutate",
+            label: "Initialize project files",
+            cliEquivalent: "afergon-ai init",
+            buildArgv: ({ selectedIds }) => buildCommandArgv("init", selectedIds.includes("all") ? ["--all"] : selectedIds.map((id) => `--${id}`)),
+            form: {
+              kind: "checkboxes",
+              title: "Choose what to initialize",
+              options: [
+                { id: "pi", label: "Pi" },
+                { id: "claude", label: "Claude" },
+                { id: "opencode", label: "OpenCode" },
+                { id: "all", label: "All" },
+              ],
+            },
+          }),
+        ],
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("c");
+    await flushTui();
+
+    expect(terminal.output).toContain("Use ↑/↓ to move the action selection.");
+    expect(terminal.output).toContain("Press Esc to cancel confirmations, forms, or output panels.");
+
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(terminal.output).toContain("Choose what to initialize");
+    expect(terminal.output).toContain("Use Space to toggle the selected checkbox.");
+    expect(terminal.output).toContain("Press Esc to cancel.");
+
+    terminal.output = "";
+    terminal.emitInput("\u001b");
+    await flushTui();
+
+    expect(app.navigation.route).toBe("configuration");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(terminal.output).toContain("Configuration");
   });
 
   it("stops the TUI when q is pressed", async () => {

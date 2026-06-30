@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
 import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
@@ -235,6 +237,7 @@ describe("renderStatusScreen", () => {
     expect(lines.join("\n")).toContain("State labels use [ok], [warn], and [fail] text markers.");
     expect(lines.join("\n")).toContain("Press h to return Home");
   });
+
 });
 
 describe("createTuiApp status route", () => {
@@ -270,5 +273,109 @@ describe("createTuiApp status route", () => {
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
     expect(terminal.output).toContain("Press s for Status");
+  });
+
+  it("runs the status doctor action inline with --opencode and shows bounded failure output", async () => {
+    const terminal = new FakeTerminal();
+    const executeAction = vi.fn(async ({ action }) => ({
+      ok: false,
+      exitCode: 1,
+      stdout: "doctor summary\n",
+      stderr: `${action.id} failed\n`,
+      timedOut: false,
+    }));
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      executeAction,
+      loadStatusScreenState: () => ({
+        title: "Status",
+        summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai doctor --opencode." },
+        items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Managed install not detected." }],
+        actions: [{ id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify install." }],
+        interactiveActions: [
+          createActionDefinition({
+            id: "status-doctor",
+            section: "status",
+            kind: "read",
+            label: "Run doctor for OpenCode",
+            argv: buildCommandArgv("doctor", ["--opencode"]),
+          }),
+        ],
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("s");
+    await flushTui();
+    expect(terminal.output).toContain("> Run doctor for OpenCode [selected]");
+
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(executeAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: expect.objectContaining({ id: "status-doctor", argv: ["doctor", "--opencode"] }) }),
+    );
+    expect(terminal.output).toContain("Output [fail]");
+    expect(terminal.output).toContain("doctor summary");
+    expect(terminal.output).toContain("status-doctor failed");
+
+    terminal.output = "";
+    terminal.emitInput("\u001b");
+    await flushTui();
+
+    expect(terminal.output).not.toContain("Output [fail]");
+    expect(app.navigation.route).toBe("status");
+  });
+
+  it("requires confirmation for update, lets Escape cancel, and keeps focus on the selected status action", async () => {
+    const terminal = new FakeTerminal();
+    const executeAction = vi.fn(async () => ({ ok: true, exitCode: 0, stdout: "updated\n", stderr: "", timedOut: false }));
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      executeAction,
+      loadStatusScreenState: () => ({
+        title: "Status",
+        summary: { label: "Readiness", state: "warn", detail: "Setup is incomplete." },
+        items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Not installed." }],
+        actions: [{ id: "update", label: "afergon-ai update", argv: ["update"], description: "Refresh installed files." }],
+        interactiveActions: [
+          createActionDefinition({
+            id: "status-update",
+            section: "status",
+            kind: "mutate",
+            label: "Refresh managed files",
+            argv: buildCommandArgv("update"),
+          }),
+        ],
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.output = "";
+
+    terminal.emitInput("s");
+    await flushTui();
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(terminal.output).toContain("Confirmation");
+    expect(terminal.output).toContain("afergon-ai update");
+    expect(executeAction).not.toHaveBeenCalled();
+
+    terminal.output = "";
+    terminal.emitInput("\u001b");
+    await flushTui();
+
+    expect(executeAction).not.toHaveBeenCalled();
+    expect(terminal.output).not.toContain("Confirmation");
+    expect(app.navigation.route).toBe("status");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(app.navigation.sectionActionSelection).toBe(0);
   });
 });
