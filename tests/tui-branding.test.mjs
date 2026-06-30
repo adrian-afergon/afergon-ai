@@ -1,0 +1,130 @@
+import { describe, expect, it, vi } from "vitest";
+
+import {
+  BRANDING_LOGO,
+  canRenderBrandingLogo,
+  getBrandingLines,
+} from "../scripts/lib/branding/logo.mjs";
+import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+import { renderHomeScreen } from "../scripts/tui.mjs";
+import startupBannerExtension, {
+  STARTUP_BANNER_BRANDING,
+} from "../extensions/startup-banner.ts";
+
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+function renderStartupBanner(width) {
+  vi.useFakeTimers();
+
+  try {
+    let sessionStartHandler;
+    let headerFactory;
+
+    const pi = {
+      getCommands() {
+        return [];
+      },
+      on(event, handler) {
+        if (event === "session_start") {
+          sessionStartHandler = handler;
+        }
+      },
+    };
+
+    startupBannerExtension(pi);
+
+    sessionStartHandler?.({}, {
+      hasUI: true,
+      cwd: process.cwd(),
+      ui: {
+        setHeader(factory) {
+          headerFactory = factory;
+        },
+      },
+    });
+
+    expect(headerFactory).toBeTypeOf("function");
+
+    const header = headerFactory(
+      {
+        requestRender() {},
+      },
+      {},
+    );
+
+    vi.advanceTimersByTime(80);
+
+    return header.render(width).map(stripAnsi);
+  } finally {
+    vi.useRealTimers();
+  }
+}
+
+describe("branding logo contract", () => {
+  it("exposes the canonical AFERGON-AI artwork, tagline, and plain-text fallback copy", () => {
+    expect(BRANDING_LOGO).toEqual({
+      lines: [
+        " █████╗  ███████╗ ███████╗ ██████╗   ██████╗   ██████╗  ███╗   ██╗  ·   █████╗  ██╗",
+        "██╔══██╗ ██╔════╝ ██╔════╝ ██╔══██╗ ██╔════╝  ██╔═══██╗ ████╗  ██║     ██╔══██╗ ██║",
+        "███████║ █████╗   █████╗   ██████╔╝ ██║  ███╗ ██║   ██║ ██╔██╗ ██║     ███████║ ██║",
+        "██╔══██║ ██╔══╝   ██╔══╝   ██╔══██╗ ██║   ██║ ██║   ██║ ██║╚██╗██║     ██╔══██║ ██║",
+        "██║  ██║ ██║      ███████╗ ██║  ██║ ╚██████╔╝ ╚██████╔╝ ██║ ╚████║     ██║  ██║ ██║",
+        "╚═╝  ╚═╝ ╚═╝      ╚══════╝ ╚═╝  ╚═╝  ╚═════╝   ╚═════╝  ╚═╝  ╚═══╝     ╚═╝  ╚═╝ ╚═╝",
+      ],
+      tagline: "debate  ·  specify  ·  implement  ·  review",
+      fallbackTitle: "AFERGON-AI",
+      fallbackCopy: "debate · specify · implement · review",
+    });
+  });
+
+  it("supports explicit variant lookup without inventing nonexistent artwork", () => {
+    expect(getBrandingLines()).toEqual(BRANDING_LOGO.lines);
+    expect(getBrandingLines("default")).toEqual(BRANDING_LOGO.lines);
+    expect(getBrandingLines("ascii")).toBeUndefined();
+  });
+
+  it("treats narrow widths as unsafe for the canonical banner", () => {
+    expect(canRenderBrandingLogo(120)).toBe(true);
+    expect(canRenderBrandingLogo(60)).toBe(false);
+  });
+});
+
+describe("startup banner and TUI home branding", () => {
+  it("reuses the shared branding source in the startup banner", () => {
+    expect(STARTUP_BANNER_BRANDING).toBe(BRANDING_LOGO);
+  });
+
+  it("renders the shared startup banner output when the viewport can fit it", () => {
+    const lines = renderStartupBanner(120);
+
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.tagline))).toBe(true);
+  });
+
+  it("renders plain-text startup branding when the full banner is unsafe to fit", () => {
+    const lines = renderStartupBanner(60);
+
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.fallbackTitle))).toBe(true);
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.fallbackCopy))).toBe(true);
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(false);
+  });
+
+  it("renders the shared banner on Home when the terminal can fit it", () => {
+    const lines = renderHomeScreen(createNavigationState(), 120);
+
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.tagline))).toBe(true);
+    expect(lines).toContain("Home");
+  });
+
+  it("falls back to plain-text branding when the full banner is unsafe to render", () => {
+    const lines = renderHomeScreen(createNavigationState(), 60);
+
+    expect(lines).toContain("AFERGON-AI");
+    expect(lines).toContain("debate · specify · implement · review");
+    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(false);
+    expect(lines).toContain("Press q or Esc to exit.");
+  });
+});

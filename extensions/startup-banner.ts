@@ -3,20 +3,14 @@ import { truncateToWidth } from "@earendil-works/pi-tui";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
+import {
+	BRANDING_LOGO,
+	canRenderBrandingLogo,
+} from "../scripts/lib/branding/logo.mjs";
+
 const execAsync = promisify(exec);
 
-// ── ASCII logo ─────────────────────────────────────────────────────────────
-
-const LOGO = [
-	" █████╗  ███████╗ ███████╗ ██████╗   ██████╗   ██████╗  ███╗   ██╗  ·   █████╗  ██╗",
-	"██╔══██╗ ██╔════╝ ██╔════╝ ██╔══██╗ ██╔════╝  ██╔═══██╗ ████╗  ██║     ██╔══██╗ ██║",
-	"███████║ █████╗   █████╗   ██████╔╝ ██║  ███╗ ██║   ██║ ██╔██╗ ██║     ███████║ ██║",
-	"██╔══██║ ██╔══╝   ██╔══╝   ██╔══██╗ ██║   ██║ ██║   ██║ ██║╚██╗██║     ██╔══██║ ██║",
-	"██║  ██║ ██║      ███████╗ ██║  ██║ ╚██████╔╝ ╚██████╔╝ ██║ ╚████║     ██║  ██║ ██║",
-	"╚═╝  ╚═╝ ╚═╝      ╚══════╝ ╚═╝  ╚═╝  ╚═════╝   ╚═════╝  ╚═╝  ╚═══╝     ╚═╝  ╚═╝ ╚═╝",
-];
-
-const TAGLINE = "debate  ·  specify  ·  implement  ·  review";
+export const STARTUP_BANNER_BRANDING = BRANDING_LOGO;
 
 // ── Color helpers ──────────────────────────────────────────────────────────
 
@@ -141,6 +135,7 @@ export default function (pi: ExtensionAPI) {
 				render(width: number): string[] {
 					const opacity = Math.min(1, tick / FADE_IN);
 					if (opacity < 0.05) return [];
+					const shouldRenderLogo = canRenderBrandingLogo(width);
 
 					// Logo row colors: bright top → dark bottom
 					const shades: Array<"bright" | "mid" | "dim" | "dark"> = [
@@ -154,20 +149,41 @@ export default function (pi: ExtensionAPI) {
 
 					const out: string[] = [""];
 
-					for (let i = 0; i < LOGO.length; i++) {
-						const [r, g, b] = {
-							bright: [0, 229, 255],
-							mid: [0, 188, 212],
-							dim: [0, 131, 143],
-							dark: [0, 60, 70],
-						}[shades[i]!] as [number, number, number];
-						const line = fadeRgb(r, g, b, opacity, LOGO[i]!);
-						out.push(truncateToWidth(centerLine(line, width), width, ""));
+					if (shouldRenderLogo) {
+						for (let i = 0; i < STARTUP_BANNER_BRANDING.lines.length; i++) {
+							const [r, g, b] = {
+								bright: [0, 229, 255],
+								mid: [0, 188, 212],
+								dim: [0, 131, 143],
+								dark: [0, 60, 70],
+							}[shades[i]!] as [number, number, number];
+							const line = fadeRgb(r, g, b, opacity, STARTUP_BANNER_BRANDING.lines[i]!);
+							out.push(truncateToWidth(centerLine(line, width), width, ""));
+						}
+					} else {
+						out.push(
+							truncateToWidth(
+								centerLine(
+									fadeRgb(0, 229, 255, opacity, STARTUP_BANNER_BRANDING.fallbackTitle),
+									width,
+								),
+								width,
+								"",
+							),
+						);
 					}
 
 					out.push("");
 
-					const tagline = fadeRgb(0, 188, 212, opacity * 0.8, TAGLINE);
+					const tagline = fadeRgb(
+						0,
+						188,
+						212,
+						opacity * 0.8,
+						shouldRenderLogo
+							? STARTUP_BANNER_BRANDING.tagline
+							: STARTUP_BANNER_BRANDING.fallbackCopy,
+					);
 					out.push(truncateToWidth(centerLine(tagline, width), width, ""));
 
 					out.push("");

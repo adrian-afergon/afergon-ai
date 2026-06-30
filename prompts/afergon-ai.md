@@ -90,6 +90,24 @@ Use when:
 
 Trigger: `Discovery → Plan → Implement → Review`
 
+## Command Surface And TUI Launch Contract
+
+When users invoke `afergon-ai`, preserve the dispatcher split between interactive TUI entry and explicit CLI automation:
+
+- Interactive TTY + no args → open the TUI.
+- Interactive TTY + `tui` → open the TUI.
+- Non-TTY/CI + no args → print help and exit 0.
+- Non-TTY/CI + `tui` → fail fast with guidance and a non-zero exit.
+- Explicit commands such as `init`, `doctor`, `update`, and `models` stay non-interactive and scriptable.
+
+Windows launchers must match POSIX behavior and preserve the full argv surface; do not rely on fixed `%2 ... %5` forwarding.
+
+The MVP TUI surface is limited to Home, Configuration, Status, and Model Profiles. Show CLI equivalents only where a stable explicit command already exists; never invent equivalents for unsupported actions.
+
+Home accessibility cues must stay text-first: arrow selection plus Enter, direct `c`/`s`/`m`/`h` shortcuts, explicit exit hints, and plain-text branding fallback when the banner is unsafe.
+
+When this workflow ships as chained slices, keep rollback notes aligned with the slice boundary. Docs/prompt-only rollback for the final polish slice is limited to `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.mjs`, and the matching OpenSpec evidence files.
+
 ## Canonical Macro-Phases
 
 Treat these macro-phases as the canonical workflow contract. Route through the current stage skills in this exact order unless an approved re-entry or confirmed exceptional skip applies.
