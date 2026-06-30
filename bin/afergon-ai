@@ -2,6 +2,7 @@
 # afergon-ai CLI
 #
 # Usage:
+#   afergon-ai tui
 #   afergon-ai init [--pi] [--claude] [--opencode] [--all]
 #   afergon-ai doctor [--opencode]
 #   afergon-ai update
@@ -18,44 +19,4 @@ done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
 
-CMD="${1:-}"
-
-case "$CMD" in
-  init)
-    shift
-    exec bash "$PACKAGE_ROOT/scripts/init-project.sh" "$@"
-    ;;
-  doctor)
-    shift
-    exec bash "$PACKAGE_ROOT/scripts/verify-install.sh" "$@"
-    ;;
-  update)
-    exec bash "$PACKAGE_ROOT/scripts/update.sh"
-    ;;
-  models)
-    shift
-    exec node "$PACKAGE_ROOT/scripts/models.mjs" "$@"
-    ;;
-  ""|--help|-h)
-    echo ""
-    echo "afergon-ai — development harness CLI"
-    echo ""
-    echo "Usage:"
-    echo "  afergon-ai init [--pi] [--claude] [--opencode] [--all]"
-    echo "  afergon-ai doctor [--opencode]"
-    echo "  afergon-ai update"
-    echo "  afergon-ai models [show [profile]|list|switch|set|profile]"
-    echo ""
-    echo "Commands:"
-    echo "  init     Initialize afergon-ai in the current project"
-    echo "  doctor   Verify install; use --opencode for agents/commands checks"
-    echo "  update   Re-apply latest afergon-ai files to all installed tools"
-    echo "  models   Manage afergon-ai model profiles and refresh compatible host config"
-    echo ""
-    ;;
-  *)
-    echo "Unknown command: $CMD"
-    echo "Run 'afergon-ai --help' for usage."
-    exit 1
-    ;;
-esac
+exec node "$PACKAGE_ROOT/scripts/cli-dispatch.mjs" "$@"
