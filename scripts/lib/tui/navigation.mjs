@@ -30,6 +30,8 @@ export function navigateTo(state, route) {
   return {
     ...state,
     route,
+    sectionActionSelection: 0,
+    modal: undefined,
   };
 }
 
@@ -50,4 +52,58 @@ export function activateHomeSelection(state) {
   assertHomeSelection(currentSelection);
 
   return navigateTo(state, HOME_MENU_ROUTES[currentSelection]);
+}
+
+export function moveSectionActionSelection(state, actionCount, direction) {
+  if (!Number.isInteger(actionCount) || actionCount <= 0) {
+    return {
+      ...state,
+      sectionActionSelection: 0,
+    };
+  }
+
+  const currentSelection = normalizeSectionActionSelection(state, actionCount).sectionActionSelection;
+  const nextSelection = (currentSelection + direction + actionCount) % actionCount;
+
+  return {
+    ...state,
+    sectionActionSelection: nextSelection,
+  };
+}
+
+export function normalizeSectionActionSelection(state, actionCount) {
+  if (!Number.isInteger(actionCount) || actionCount <= 0) {
+    return {
+      ...state,
+      sectionActionSelection: 0,
+    };
+  }
+
+  const rawSelection = state.sectionActionSelection;
+  const nextSelection = Number.isInteger(rawSelection)
+    ? Math.min(Math.max(rawSelection, 0), actionCount - 1)
+    : 0;
+
+  if (nextSelection === rawSelection) {
+    return state;
+  }
+
+  return {
+    ...state,
+    sectionActionSelection: nextSelection,
+  };
+}
+
+export function openModal(state, modal) {
+  return {
+    ...state,
+    modal,
+  };
+}
+
+export function closeModal(state) {
+  return {
+    ...state,
+    modal: undefined,
+  };
 }
