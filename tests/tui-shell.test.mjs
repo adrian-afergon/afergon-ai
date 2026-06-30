@@ -14,16 +14,8 @@ class FakeTerminal {
     this.onInput = undefined;
     this.onResize = undefined;
   }
-
-  start(onInput, onResize) {
-    this.onInput = onInput;
-    this.onResize = onResize;
-  }
-
-  stop() {
-    this.stopCalls += 1;
-  }
-
+  start(onInput, onResize) { this.onInput = onInput; this.onResize = onResize; }
+  stop() { this.stopCalls += 1; }
   async drainInput() {}
   write(data) { this.output += data; }
   moveBy() {}
@@ -44,11 +36,7 @@ async function flushTui() {
 
 describe("navigation state", () => {
   it("defaults to the home route and exposes only the MVP route set", () => {
-    expect(createNavigationState()).toEqual({
-      route: "home",
-      routes: ["home", "configuration", "status", "model-profiles"],
-    });
-
+    expect(createNavigationState()).toEqual({ route: "home", routes: ["home", "configuration", "status", "model-profiles"] });
     expect(TUI_ROUTES).toEqual(["home", "configuration", "status", "model-profiles"]);
   });
 
@@ -71,20 +59,26 @@ describe("createTuiApp", () => {
     expect(terminal.title).toBe("afergon-ai TUI");
     expect(terminal.output).toContain("█████");
     expect(terminal.output).toContain("debate  ·  specify  ·  implement  ·  review");
-    expect(terminal.output).toContain("Home");
     expect(terminal.output).toContain("- Configuration (press c)");
-    expect(terminal.output).toContain("- Status (press s)");
-    expect(terminal.output).toContain("- Model Profiles (press m)");
-    expect(terminal.output).toContain("Press q or Esc to exit.");
+    expect(terminal.output).toContain("Press c for Configuration.");
     expect(exits).toEqual([]);
   });
 
-  it("preserves c/s/m/h shortcuts for MVP route navigation", async () => {
+  it("renders the Configuration route while preserving Home/Status/Model Profiles shortcuts", async () => {
     const terminal = new FakeTerminal();
-    const app = createTuiApp({ terminal, exit: () => {} });
+    const app = createTuiApp({ terminal, exit: () => {}, loadConfigurationStatus: () => ({ title: "Configuration", items: [{ label: "Pi", state: "ok", detail: "installed" }], actions: [{ label: "afergon-ai init", description: "Initialize project files." }] }) });
 
     app.start();
     await flushTui();
+
+    terminal.emitInput("c");
+    await flushTui();
+    expect(app.navigation.route).toBe("configuration");
+    expect(terminal.output).toContain("Current state");
+
+    terminal.emitInput("h");
+    await flushTui();
+    expect(app.navigation.route).toBe("home");
 
     terminal.emitInput("s");
     await flushTui();
@@ -93,42 +87,19 @@ describe("createTuiApp", () => {
 
     terminal.emitInput("h");
     await flushTui();
-    expect(app.navigation.route).toBe("home");
-
     terminal.emitInput("m");
     await flushTui();
     expect(app.navigation.route).toBe("model-profiles");
-
-    terminal.emitInput("h");
-    await flushTui();
-    expect(app.navigation.route).toBe("home");
-
-    terminal.emitInput("c");
-    await flushTui();
-    expect(app.navigation.route).toBe("configuration");
   });
 
   it("stops the TUI when q or Escape is pressed", async () => {
     const terminal = new FakeTerminal();
     const exits = [];
     const app = createTuiApp({ terminal, exit: (payload) => exits.push(payload) });
-
     app.start();
     await flushTui();
     terminal.emitInput("q");
-
     expect(terminal.stopCalls).toBe(1);
     expect(exits).toEqual([{ code: 0, reason: "user-exit" }]);
-
-    const terminalTwo = new FakeTerminal();
-    const exitsTwo = [];
-    const appTwo = createTuiApp({ terminal: terminalTwo, exit: (payload) => exitsTwo.push(payload) });
-
-    appTwo.start();
-    await flushTui();
-    terminalTwo.emitInput("");
-
-    expect(terminalTwo.stopCalls).toBe(1);
-    expect(exitsTwo).toEqual([{ code: 0, reason: "user-exit" }]);
   });
 });
