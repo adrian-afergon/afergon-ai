@@ -238,6 +238,47 @@ describe("renderStatusScreen", () => {
     expect(lines.join("\n")).toContain("Press h to return Home");
   });
 
+  it("sanitizes terminal control sequences from status labels, details, and paths", () => {
+    const lines = renderStatusScreen(
+      {
+        title: "Status",
+        summary: {
+          label: "Read\u001b[32miness\u001b[0m",
+          state: "warn",
+          detail: "Inspect /repo/\u009d2;owned\u0007CLAUDE.md\u0085Run afergon-ai doctor.",
+        },
+        items: [
+          {
+            id: "claude",
+            label: "Claude\u009b31m Code\u009b0m",
+            state: "fail",
+            detail: "Repair \u001b]2;owned\u0007/tmp/CLAUDE.md and retry.",
+          },
+        ],
+        actions: [
+          {
+            id: "doctor",
+            label: "afergon-ai doctor",
+            argv: ["doctor"],
+            description: "Verify \u001b[31mcurrent\u001b[0m installation",
+          },
+        ],
+      },
+      200,
+    );
+
+    const output = lines.join("\n");
+
+    expect(output).toContain("Readiness [warn]: Inspect /repo/CLAUDE.md?Run afergon-ai doctor.");
+    expect(output).toContain("Claude Code [fail]: Repair /tmp/CLAUDE.md and retry.");
+    expect(output).toContain("- afergon-ai doctor: Verify current installation");
+    expect(output).toContain("[warn]");
+    expect(output).toContain("[fail]");
+    expect(output).not.toContain("\u001b");
+    expect(output).not.toContain("\u009b");
+    expect(output).not.toContain("\u009d");
+    expect(output).not.toContain("owned");
+  });
 });
 
 describe("createTuiApp status route", () => {

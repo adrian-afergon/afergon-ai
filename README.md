@@ -144,6 +144,8 @@ Accessibility and keyboard notes:
 
 - Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
+- Inside Model Profiles, `models list` and `models show` run inline, while `switch`, `set`, `profile create`, and `profile delete` open picker or text forms before confirmation.
+- Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
 - `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
 - `init` opens checkbox choices for Pi, Claude Code, OpenCode, or all before showing a confirmation with the exact argv that will run.
 - `update` always asks for confirmation before it executes.
