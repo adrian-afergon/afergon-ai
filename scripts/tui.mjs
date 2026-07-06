@@ -51,9 +51,15 @@ import { renderStatusScreen } from "./lib/tui/screens/status.mjs";
 const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
 const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.mjs");
+const TEAL_ANSI = "\u001b[38;5;6m";
+const ANSI_RESET = "\u001b[0m";
 
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
+}
+
+function styleTeal(text) {
+  return `${TEAL_ANSI}${text}${ANSI_RESET}`;
 }
 
 export function shouldExitTui(data) {
@@ -84,7 +90,10 @@ export function renderHomeScreen(navigation, width) {
     "",
     "Sections available in this MVP slice:",
     "- Home",
-    ...homeItems.map((item) => `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""} (press ${item.shortcut})`),
+    ...homeItems.map((item) => {
+      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""} (press ${item.shortcut})`;
+      return item.selected ? styleTeal(line) : line;
+    }),
     "",
     "Keyboard help",
     "Use ↑/↓ to move the Home selection.",
@@ -98,7 +107,15 @@ export function renderHomeScreen(navigation, width) {
     "Press q or Esc to exit.",
   ];
 
-  return lines.map((line) => padLine(line, width));
+  return lines.map((line, index) => {
+    const paddedLine = padLine(line, width);
+
+    if (!useFallbackBranding && ((index >= 0 && index < BRANDING_LOGO.lines.length) || index === BRANDING_LOGO.lines.length + 1)) {
+      return styleTeal(paddedLine);
+    }
+
+    return paddedLine;
+  });
 }
 
 export function createHomeScreen({ navigation, onExit }) {
@@ -156,11 +173,8 @@ function renderInteractiveActions(actions, navigation) {
     "",
     ...actions.flatMap((action, index) => {
       const selected = (navigation.sectionActionSelection ?? 0) === index;
-      return [
-        `${selected ? ">" : " "} ${action.label}${selected ? " [selected]" : ""}`,
-        `  CLI equivalent: ${action.cliEquivalent}`,
-        `  Execution: ${action.kind === "mutate" ? "confirmation required" : "runs inline"}`,
-      ];
+      const line = `${selected ? ">" : " "} ${action.label}${selected ? " [selected]" : ""}`;
+      return [selected ? styleTeal(line) : line];
     }),
     "",
     "Keyboard help",

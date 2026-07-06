@@ -354,8 +354,8 @@ describe("createTuiApp configuration route", () => {
     terminal.emitInput("c");
     await flushTui();
 
-    expect(terminal.output).toContain("> Run doctor [selected]");
-    expect(terminal.output).toContain("Execution: runs inline");
+    expect(terminal.output).toContain("[38;5;6m> Run doctor [selected][0m");
+    expect(terminal.output).not.toContain("Execution: runs inline");
 
     terminal.emitInput("\r");
     await flushTui();
