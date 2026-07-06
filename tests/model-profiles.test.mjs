@@ -2,11 +2,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   normalizeAgentName,
   resolveAssignments,
+  saveProfileAssignments,
   saveConfig,
   SUPPORTED_AGENTS,
 } from "../scripts/lib/model-profiles.mjs";
@@ -822,6 +823,97 @@ describe("models CLI behavior", () => {
     const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
     expect(savedConfig.models.activeProfile).toBe("budget");
     expect(savedConfig.models.profiles.fallback).toBeUndefined();
+  });
+});
+
+describe("saveProfileAssignments", () => {
+  it("saves staged assignments to the targeted inactive profile without mutating the active profile", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: process.env.PATH,
+    };
+    const refreshActiveProfile = vi.fn();
+
+    saveConfig(
+      {
+        version: 1,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+            },
+            fallback: {
+              "afergon-ai": "openai/gpt-5.4",
+            },
+          },
+        },
+      },
+      env,
+    );
+
+    saveProfileAssignments(
+      "fallback",
+      {
+        "afg-review": "openai/gpt-5.4-mini",
+      },
+      { env, refreshActiveProfile },
+    );
+
+    const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(savedConfig.models.activeProfile).toBe("budget");
+    expect(savedConfig.models.profiles.budget).toEqual({
+      "afergon-ai": "openai/gpt-5.5",
+    });
+    expect(savedConfig.models.profiles.fallback).toEqual({
+      "afergon-ai": "openai/gpt-5.4",
+      "afg-review": "openai/gpt-5.4-mini",
+    });
+    expect(refreshActiveProfile).not.toHaveBeenCalled();
+  });
+
+  it("refreshes managed host registrations only when saving the active profile", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      PATH: process.env.PATH,
+    };
+    const refreshActiveProfile = vi.fn();
+
+    saveConfig(
+      {
+        version: 1,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+            },
+          },
+        },
+      },
+      env,
+    );
+
+    saveProfileAssignments(
+      "budget",
+      {
+        "afg-review": "inherit",
+      },
+      { env, refreshActiveProfile },
+    );
+
+    const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(savedConfig.models.profiles.budget).toEqual({
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-review": "inherit",
+    });
+    expect(refreshActiveProfile).toHaveBeenCalledTimes(1);
   });
 });
 

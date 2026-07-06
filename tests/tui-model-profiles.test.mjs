@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
-import { getModelProfilesScreenState } from "../scripts/lib/tui/model-profiles-adapter.mjs";
+import { getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
 import { renderModelProfilesScreen } from "../scripts/lib/tui/screens/model-profiles.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
 
@@ -194,6 +194,11 @@ class FakeTerminal {
 async function flushTui() {
   await new Promise((resolve) => process.nextTick(resolve));
   await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function emitInput(terminal, data) {
+  terminal.emitInput(data);
+  await flushTui();
 }
 
 describe("getModelProfilesScreenState", () => {
@@ -472,7 +477,7 @@ describe("renderModelProfilesScreen", () => {
       { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` },
     ).join("\n");
 
-    expect(output).toContain("Placeholder only in this slice for budget-red.");
+    expect(output).toContain("Target profile: budget-red");
     expect(output).not.toContain("owned");
     expect(output).not.toContain("\u001b]2;");
     expect(output).not.toContain("\u001b[31m");
@@ -544,6 +549,7 @@ describe("createTuiApp model-profiles route", () => {
       exit: () => {},
       loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
       executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
     });
 
     app.start();
@@ -583,6 +589,7 @@ describe("createTuiApp model-profiles route", () => {
       exit: () => {},
       loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
       executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
     });
 
     app.start();
@@ -620,8 +627,7 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     terminal.emitInput("n");
     await flushTui();
-    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
-    expect(app.navigation.modelProfiles?.targetProfileName).toBeUndefined();
+    expect(terminal.output).toContain("Create a profile");
   });
 
   it("sanitizes the assignment placeholder after pressing U on a malicious profile name", async () => {
@@ -644,6 +650,7 @@ describe("createTuiApp model-profiles route", () => {
       exit: () => {},
       loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
       executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
     });
 
     app.start();
@@ -656,8 +663,176 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
 
     expect(app.navigation.modelProfiles?.mode).toBe("assignments");
-    expect(terminal.output).toContain("Placeholder only in this slice for budget.");
+    expect(terminal.output).toContain("Assignment editor");
+    expect(terminal.output).toContain("Target profile: budget");
     expect(terminal.output).not.toContain("owned");
     expect(terminal.output).not.toContain("\u001b]2;");
+  });
+
+  it("keeps create-name as the first step before entering assignment mode", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+    expect(terminal.output).toContain("Create a profile");
+
+    await emitInput(terminal, "d");
+    await emitInput(terminal, "r");
+    await emitInput(terminal, "a");
+    await emitInput(terminal, "f");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
+    expect(terminal.output).toContain("Assignment editor");
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeDefined();
+  });
+
+  it("stages manual assignment edits in assignment mode and saves them only after S", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+
+    terminal.output = "";
+    await emitInput(terminal, "u");
+    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBe("fallback");
+
+    await emitInput(terminal, "\u001b[B");
+    expect(app.navigation.modelProfiles?.focusedAgentIndex).toBe(1);
+    expect(terminal.output).toContain(`${SUPPORTED_AGENTS[1]} [selected]`);
+
+    terminal.output = "";
+    await emitInput(terminal, "\r");
+    expect(terminal.output).toContain(`Set model for ${SUPPORTED_AGENTS[1]}`);
+
+    await emitInput(terminal, "o");
+    await emitInput(terminal, "p");
+    await emitInput(terminal, "e");
+    await emitInput(terminal, "n");
+    await emitInput(terminal, "a");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "/");
+    await emitInput(terminal, "g");
+    await emitInput(terminal, "p");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "-");
+    await emitInput(terminal, "4");
+    await emitInput(terminal, ".");
+    await emitInput(terminal, "1");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+
+    const stagedOnlyConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(stagedOnlyConfig.models.profiles.fallback[SUPPORTED_AGENTS[1]]).toBeUndefined();
+    expect(app.navigation.modelProfiles?.stagedAssignments?.[SUPPORTED_AGENTS[1]]).toBe("openai/gpt-4.1");
+    expect(terminal.output).toContain(`configured=openai/gpt-4.1`);
+
+    await emitInput(terminal, "s");
+    await flushTui();
+
+    const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(savedConfig.models.activeProfile).toBe("budget");
+    expect(savedConfig.models.profiles.fallback[SUPPORTED_AGENTS[1]]).toBe("openai/gpt-4.1");
+    expect(savedConfig.models.profiles.budget[SUPPORTED_AGENTS[1]]).toBeUndefined();
+  });
+
+  it("drops staged assignment edits when Esc exits assignment mode", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "u");
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "n");
+    await emitInput(terminal, "h");
+    await emitInput(terminal, "e");
+    await emitInput(terminal, "r");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modelProfiles?.stagedAssignments?.[SUPPORTED_AGENTS[0]]).toBe("inherit");
+
+    await emitInput(terminal, "\u001b");
+
+    const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.stagedAssignments).toEqual({});
+    expect(savedConfig.models.profiles.fallback[SUPPORTED_AGENTS[0]]).toBe("openai/gpt-5.4");
   });
 });

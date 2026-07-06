@@ -1,4 +1,4 @@
-import { getActiveProfile, getConfigPath, loadConfig, resolveAssignments, SUPPORTED_AGENTS } from "../model-profiles.mjs";
+import { getActiveProfile, getConfigPath, loadConfig, resolveAssignments, saveProfileAssignments, SUPPORTED_AGENTS } from "../model-profiles.mjs";
 import { createActionDefinition } from "./actions/definitions.mjs";
 import { buildCommandArgv, getCommandManifestEntry } from "./command-manifest.mjs";
 
@@ -260,10 +260,14 @@ export function getModelProfilesBrowseIntent(state, intent) {
   }
 
   if (intent === "create") {
-    return { kind: "assignments-entry", targetProfileName: undefined };
+    return { kind: "create-entry" };
   }
 
   return { kind: "none" };
+}
+
+export function saveAssignmentsForProfile(profileName, assignments, options) {
+  return saveProfileAssignments(profileName, assignments, options);
 }
 
 export function getModelProfilesScreenState({ cwd = process.cwd(), env = process.env, navigation } = {}) {
@@ -294,12 +298,24 @@ export function getModelProfilesScreenState({ cwd = process.cwd(), env = process
   const activeProfileName = config.models.activeProfile;
   const activeProfile = getActiveProfile(config) ?? {};
   const profileNames = Object.keys(config.models.profiles).sort();
+  const modelProfilesState = navigation?.modelProfiles ?? {};
+  const mode = modelProfilesState.mode ?? "browse";
   const focusedProfileIndex = navigation?.modelProfiles?.focusedProfileIndex ?? 0;
+  const focusedAgentIndex = navigation?.modelProfiles?.focusedAgentIndex ?? 0;
+  const targetProfileName = modelProfilesState.targetProfileName;
+  const stagedAssignments = modelProfilesState.stagedAssignments ?? {};
   const profiles = getBrowseProfileRows(profileNames, activeProfileName, focusedProfileIndex);
   const focusedProfile = getFocusedProfileRow(profiles, focusedProfileIndex);
-  const focusedAssignments = focusedProfile.isCreate
-    ? []
-    : resolveAssignments(config.models.profiles[focusedProfile.name] ?? activeProfile);
+  const baseAssignments = mode === "assignments"
+    ? (targetProfileName ? config.models.profiles[targetProfileName] ?? {} : {})
+    : (focusedProfile.isCreate ? {} : (config.models.profiles[focusedProfile.name] ?? activeProfile));
+  const focusedAssignments = resolveAssignments({
+    ...baseAssignments,
+    ...stagedAssignments,
+  }).map((assignment, index) => ({
+    ...assignment,
+    isFocused: mode === "assignments" && index === focusedAgentIndex,
+  }));
 
   return {
     cwd,
@@ -308,10 +324,12 @@ export function getModelProfilesScreenState({ cwd = process.cwd(), env = process
     summary: summarizeProfiles(profileNames, activeProfileName, exists),
     activeProfile: activeProfileName ?? "(none)",
     profiles,
-    assignments: focusedAssignments,
+    assignments: mode === "browse" && focusedProfile.isCreate ? [] : focusedAssignments,
     browse: {
-      mode: navigation?.modelProfiles?.mode ?? "browse",
-      targetProfileName: navigation?.modelProfiles?.targetProfileName,
+      mode,
+      targetProfileName,
+      focusedAgentIndex,
+      stagedAssignments,
       focusedProfile,
       focusedProfileName: focusedProfile.name,
       isCreateSelected: focusedProfile.isCreate,

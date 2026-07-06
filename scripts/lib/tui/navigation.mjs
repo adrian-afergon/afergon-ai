@@ -7,6 +7,7 @@ function createModelProfilesState() {
     focusedProfileIndex: 0,
     focusedAgentIndex: 0,
     targetProfileName: undefined,
+    stagedAssignments: {},
   };
 }
 
@@ -64,6 +65,7 @@ export function enterModelProfilesAssignments(state, targetProfileName) {
     ...state,
     mode: "assignments",
     targetProfileName,
+    stagedAssignments: { ...(state?.stagedAssignments ?? {}) },
   };
 }
 
@@ -73,6 +75,32 @@ export function exitModelProfilesAssignments(state) {
     ...state,
     mode: "browse",
     targetProfileName: undefined,
+    stagedAssignments: {},
+  };
+}
+
+export function moveModelProfilesAssignmentSelection(state, assignmentCount, direction) {
+  const safeCount = Number.isInteger(assignmentCount) && assignmentCount > 0 ? assignmentCount : 1;
+  const current = Number.isInteger(state?.focusedAgentIndex) ? state.focusedAgentIndex : 0;
+
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "assignments",
+    focusedAgentIndex: (current + direction + safeCount) % safeCount,
+    stagedAssignments: { ...(state?.stagedAssignments ?? {}) },
+  };
+}
+
+export function stageModelProfilesAssignment(state, agentName, model) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "assignments",
+    stagedAssignments: {
+      ...(state?.stagedAssignments ?? {}),
+      [agentName]: model,
+    },
   };
 }
 
