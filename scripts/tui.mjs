@@ -32,13 +32,16 @@ import {
 } from "./lib/tui/actions/forms.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
-import { getModelProfilesScreenState } from "./lib/tui/model-profiles-adapter.mjs";
+import { getModelProfilesBrowseIntent, getModelProfilesScreenState } from "./lib/tui/model-profiles-adapter.mjs";
 import {
   activateHomeSelection,
   closeModal,
   createNavigationState,
+  enterModelProfilesAssignments,
+  exitModelProfilesAssignments,
   HOME_MENU_ROUTES,
   moveHomeSelection,
+  moveModelProfilesSelection,
   moveSectionActionSelection,
   navigateTo,
   normalizeSectionActionSelection,
@@ -53,6 +56,7 @@ const EXIT_REASON = "user-exit";
 const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.mjs");
 const TEAL_ANSI = "\u001b[38;5;6m";
 const ANSI_RESET = "\u001b[0m";
+const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
 
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
@@ -60,6 +64,10 @@ function padLine(text, width) {
 
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
+}
+
+function isDeleteKey(data) {
+  return matchesKey(data, Key.delete) || data === DELETE_ESCAPE_SEQUENCE;
 }
 
 export function shouldExitTui(data) {
@@ -158,6 +166,10 @@ function showModal(navigation, modal) {
 
 function hideModal(navigation) {
   navigation.modal = closeModal(navigation).modal;
+}
+
+function updateModelProfilesState(navigation, nextState) {
+  navigation.modelProfiles = nextState;
 }
 
 function renderInteractiveActions(actions, navigation) {
@@ -334,7 +346,7 @@ function createMainScreen({
     }
 
     if (route === "model-profiles") {
-      return loadModelProfilesScreenState();
+      return loadModelProfilesScreenState({ navigation });
     }
 
     return undefined;
@@ -380,7 +392,7 @@ function createMainScreen({
       }
 
       if (navigation.route === "model-profiles") {
-        return appendInteractionPanels(renderModelProfilesScreen(getRouteState("model-profiles"), width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal }), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route !== "home") {
@@ -567,6 +579,12 @@ function createMainScreen({
         return;
       }
 
+      if (navigation.route === "model-profiles" && navigation.modelProfiles?.mode === "assignments" && matchesKey(data, Key.escape)) {
+        updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
+        onNavigate();
+        return;
+      }
+
       if (shouldExitTui(data)) {
         onExit({ code: 0, reason: EXIT_REASON });
         return;
@@ -575,6 +593,52 @@ function createMainScreen({
       const printable = data.length === 1 ? data.toLowerCase() : undefined;
       const interactiveActions = getRouteInteractiveActions(navigation.route);
       syncSectionActionSelection(navigation, interactiveActions.length);
+
+      if (navigation.route === "model-profiles") {
+        const routeState = getRouteState("model-profiles");
+
+        if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "browse") {
+          if (matchesKey(data, Key.up)) {
+            updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, -1));
+            onNavigate();
+            return;
+          }
+
+          if (matchesKey(data, Key.down)) {
+            updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, 1));
+            onNavigate();
+            return;
+          }
+
+          const intent = data === " "
+            ? getModelProfilesBrowseIntent(routeState, "switch")
+            : isDeleteKey(data)
+              ? getModelProfilesBrowseIntent(routeState, "delete")
+              : printable === "u"
+                ? getModelProfilesBrowseIntent(routeState, "edit")
+                : printable === "n"
+                  ? getModelProfilesBrowseIntent(routeState, "create")
+                  : { kind: "none" };
+
+          if (intent.kind === "confirm-action") {
+            showModal(navigation, createConfirmationState({ action: intent.action }));
+            onNavigate();
+            return;
+          }
+
+          if (intent.kind === "assignments-entry") {
+            updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, intent.targetProfileName));
+            onNavigate();
+            return;
+          }
+
+          if (intent.kind === "create-entry") {
+            updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, undefined));
+            onNavigate();
+            return;
+          }
+        }
+      }
 
       if (navigation.route === "home" && matchesKey(data, Key.up)) {
         updateHomeSelection(navigation, -1);
@@ -661,7 +725,7 @@ export function createTuiApp({
   exit = ({ code }) => process.exit(code),
   loadConfigurationStatus = () => getConfigurationStatus(),
   loadStatusScreenState = () => getStatusScreenState(),
-  loadModelProfilesScreenState = () => getModelProfilesScreenState(),
+  loadModelProfilesScreenState = ({ navigation } = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
 } = {}) {

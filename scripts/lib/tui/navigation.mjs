@@ -1,6 +1,15 @@
 export const TUI_ROUTES = Object.freeze(["home", "configuration", "status", "model-profiles"]);
 export const HOME_MENU_ROUTES = Object.freeze(["configuration", "status", "model-profiles"]);
 
+function createModelProfilesState() {
+  return {
+    mode: "browse",
+    focusedProfileIndex: 0,
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+  };
+}
+
 function assertHomeSelection(homeSelection) {
   if (!Number.isInteger(homeSelection) || homeSelection < 0 || homeSelection >= HOME_MENU_ROUTES.length) {
     throw new Error(`Unsupported Home selection: ${homeSelection}`);
@@ -20,6 +29,7 @@ export function createNavigationState(initialRoute = "home", initialHomeSelectio
   return {
     route: initialRoute,
     homeSelection: initialHomeSelection,
+    modelProfiles: createModelProfilesState(),
     routes: [...TUI_ROUTES],
   };
 }
@@ -30,8 +40,39 @@ export function navigateTo(state, route) {
   return {
     ...state,
     route,
+    modelProfiles: createModelProfilesState(),
     sectionActionSelection: 0,
     modal: undefined,
+  };
+}
+
+export function moveModelProfilesSelection(state, profileCount, direction) {
+  const safeCount = Number.isInteger(profileCount) && profileCount > 0 ? profileCount : 1;
+  const current = Number.isInteger(state?.focusedProfileIndex) ? state.focusedProfileIndex : 0;
+
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: state?.mode ?? "browse",
+    focusedProfileIndex: (current + direction + safeCount) % safeCount,
+  };
+}
+
+export function enterModelProfilesAssignments(state, targetProfileName) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "assignments",
+    targetProfileName,
+  };
+}
+
+export function exitModelProfilesAssignments(state) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    targetProfileName: undefined,
   };
 }
 
