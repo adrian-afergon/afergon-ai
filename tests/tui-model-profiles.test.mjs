@@ -201,6 +201,10 @@ async function emitInput(terminal, data) {
   await flushTui();
 }
 
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getModelProfilesScreenState", () => {
   it("reports missing config with active-profile guidance and only stable CLI-equivalent actions", () => {
     const tempRoot = makeTempRoot();
@@ -508,7 +512,7 @@ describe("createTuiApp model-profiles route", () => {
 
     app.start();
     await flushTui();
-    expect(terminal.output).toContain("Press m for Model Profiles");
+    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
 
     terminal.output = "";
     terminal.emitInput("m");
@@ -526,7 +530,7 @@ describe("createTuiApp model-profiles route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press m for Model Profiles");
+    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
   });
 
   it("keeps Up/Down focused on profile rows and does not move section actions", async () => {

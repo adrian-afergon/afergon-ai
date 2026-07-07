@@ -78,6 +78,10 @@ async function flushTui() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getStatusScreenState", () => {
   it("reports readiness warnings with actionable commands when setup surfaces are missing", () => {
     const tempRoot = makeTempRoot();
@@ -313,7 +317,7 @@ describe("createTuiApp status route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press s for Status");
+    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
   });
 
   it("runs the status doctor action inline with --opencode and shows bounded failure output", async () => {

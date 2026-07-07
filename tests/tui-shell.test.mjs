@@ -1,3 +1,4 @@
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
@@ -9,7 +10,11 @@ import {
   navigateTo,
   TUI_ROUTES,
 } from "../scripts/lib/tui/navigation.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+import { buildRouteBreadcrumb, createTuiApp } from "../scripts/tui.mjs";
+
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
 
 class FakeTerminal {
   constructor() {
@@ -102,6 +107,95 @@ describe("navigation state", () => {
     expect(activateHomeSelection({ ...createNavigationState(), homeSelection: 1 }).route).toBe("status");
     expect(activateHomeSelection({ ...createNavigationState(), homeSelection: 2 }).route).toBe("model-profiles");
   });
+
+  it("builds route breadcrumbs for top-level screens and nested model-profile flows", () => {
+    expect(buildRouteBreadcrumb(createNavigationState())).toBe("Home");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "configuration"))).toBe("Configuration");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "status"))).toBe("Status");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "model-profiles"))).toBe("Models");
+    expect(buildRouteBreadcrumb({
+      ...navigateTo(createNavigationState(), "model-profiles"),
+      modelProfiles: {
+        mode: "assignments",
+        focusedProfileIndex: 0,
+        focusedAgentIndex: 0,
+        targetProfileName: "budget",
+        stagedAssignments: {},
+      },
+    })).toBe("Models/budget");
+  });
+
+  it("sanitizes dynamic breadcrumb text before it is rendered", () => {
+    const breadcrumb = buildRouteBreadcrumb({
+      ...navigateTo(createNavigationState(), "model-profiles"),
+      modelProfiles: {
+        mode: "assignments",
+        focusedProfileIndex: 0,
+        focusedAgentIndex: 0,
+        targetProfileName: "budget\u001b]2;owned\u0007\u001b[31mred",
+        stagedAssignments: {},
+      },
+    });
+
+    expect(breadcrumb).toBe("Models/budgetred");
+    expect(breadcrumb).not.toContain("\u001b");
+  });
+
+  it("clips very long rendered breadcrumbs to the frame width without losing sanitization", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "profile-1234567890\u001b[31m-dangerously-long-name-for-the-frame",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(renderedLines[0]).toHaveLength(32);
+    expect(visibleWidth(renderedLines[0])).toBe(32);
+    expect(renderedLines[0]).toBe("┌ Models/profile-1234567890-da ─");
+    expect(renderedLines[0]).not.toContain("\u001b");
+  });
+
+  it("clips wide unicode breadcrumbs to the visible frame width", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "超長名稱超長名稱超長名稱",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(visibleWidth(renderedLines[0])).toBeLessThanOrEqual(32);
+    expect(renderedLines[0]).toContain("Models/");
+    expect(renderedLines[0]).not.toContain("\u001b");
+  });
+
+  it("keeps readable rendered breadcrumbs intact when they fit within the frame", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "budget",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(renderedLines[0]).toBe("┌ Models/budget ────────────────");
+  });
 });
 
 describe("createTuiApp", () => {
@@ -118,14 +212,14 @@ describe("createTuiApp", () => {
     expect(terminal.title).toBe("afergon-ai TUI");
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
-    expect(terminal.output).toContain("Home");
+    expect(terminal.output).toContain("┌ Home");
     expect(terminal.output).toContain("> Configuration [selected]");
     expect(terminal.output).toContain("  Status");
     expect(terminal.output).toContain("  Model Profiles");
-    expect(terminal.output).toContain("Keyboard help");
+    expect(terminal.output).not.toContain("Current route: home");
     expect(terminal.output).toContain("Use ↑/↓ to move the Home selection.");
     expect(terminal.output).toContain("Press Enter to open the selected section.");
-    expect(terminal.output).toContain("Selection markers: > and [selected] identify the active Home item.");
+    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
     expect(terminal.output).toContain("Press q or Esc to exit");
     expect(exits).toEqual([]);
   });
@@ -223,7 +317,7 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
     expect(terminal.output).toContain("Plain-text branding mode keeps Home readable.");
-    expect(terminal.output).toContain("Keyboard help");
+    expect(terminal.output).toContain("Use ↑/↓ to move the Home selection.");
   });
 
   it("shows section action keyboard guidance plus form cancel help without trapping focus", async () => {

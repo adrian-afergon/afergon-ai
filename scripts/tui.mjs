@@ -6,6 +6,7 @@ import {
   ProcessTerminal,
   truncateToWidth,
   TUI,
+  visibleWidth,
 } from "@earendil-works/pi-tui";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,12 +62,62 @@ const TEAL_ANSI = "\u001b[38;5;6m";
 const ANSI_RESET = "\u001b[0m";
 const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
 
+const ROUTE_BREADCRUMBS = Object.freeze({
+  home: "Home",
+  configuration: "Configuration",
+  status: "Status",
+  "model-profiles": "Models",
+});
+
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
 }
 
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
+}
+
+function repeatToWidth(character, width) {
+  return character.repeat(Math.max(0, width));
+}
+
+function renderShortcutHintLine() {
+  return `Press ${styleTeal("C")}onfiguracion | ${styleTeal("S")}tatus | ${styleTeal("M")}odels`;
+}
+
+function clipBreadcrumbForFrame(breadcrumb, width) {
+  const maxBreadcrumbWidth = Math.max(1, width - 4);
+  return truncateToWidth(sanitizeTerminalOutput(breadcrumb ?? ""), maxBreadcrumbWidth, "");
+}
+
+export function buildRouteBreadcrumb(navigation) {
+  const baseBreadcrumb = ROUTE_BREADCRUMBS[navigation?.route] ?? ROUTE_BREADCRUMBS.home;
+
+  if (navigation?.route !== "model-profiles") {
+    return baseBreadcrumb;
+  }
+
+  if (navigation?.modelProfiles?.mode !== "assignments") {
+    return baseBreadcrumb;
+  }
+
+  const profileName = sanitizeTerminalOutput(navigation.modelProfiles?.targetProfileName ?? "");
+  return `${baseBreadcrumb}/${profileName || "New"}`;
+}
+
+function renderFramedLines(contentLines, width, { breadcrumb, footerLines = [] } = {}) {
+  const safeWidth = Math.max(20, width);
+  const innerWidth = Math.max(1, safeWidth - 4);
+  const safeBreadcrumb = clipBreadcrumbForFrame(breadcrumb, safeWidth);
+  const topRuleWidth = Math.max(1, safeWidth - visibleWidth(safeBreadcrumb) - 3);
+  const framedLines = [`┌ ${safeBreadcrumb} ${repeatToWidth("─", topRuleWidth)}`];
+
+  for (const line of [...contentLines, ...footerLines]) {
+    framedLines.push(`│ ${padLine(line, innerWidth)} │`);
+  }
+
+  framedLines.push(`└${repeatToWidth("─", safeWidth - 2)}┘`);
+  return framedLines;
 }
 
 function isDeleteKey(data) {
@@ -124,31 +175,25 @@ export function renderHomeScreen(navigation, width) {
     ? [BRANDING_LOGO.fallbackTitle, BRANDING_LOGO.fallbackCopy, "Plain-text branding mode keeps Home readable."]
     : [...BRANDING_LOGO.lines, "", BRANDING_LOGO.tagline];
 
-  const lines = [
+  const contentLines = [
     ...brandingLines,
     "",
-    "Home",
-    "",
-    `Current route: ${navigation.route}`,
-    "",
     "Sections available in this MVP slice:",
-    "- Home",
     ...homeItems.map((item) => {
       const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""} (press ${item.shortcut})`;
       return item.selected ? styleTeal(line) : line;
     }),
     "",
-    "Keyboard help",
-    "Use ↑/↓ to move the Home selection.",
     "Press Enter to open the selected section.",
-    "Shortcut keys: c Configuration, s Status, m Model Profiles.",
-    "Press c for Configuration.",
-    "Press s for Status.",
-    "Press m for Model Profiles.",
+    renderShortcutHintLine(),
     "Press h to return Home from any section.",
-    "Selection markers: > and [selected] identify the active Home item.",
     "Press q or Esc to exit.",
   ];
+
+  const lines = renderFramedLines(contentLines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLines: ["Use ↑/↓ to move the Home selection."],
+  });
 
   return lines.map((line, index) => {
     const paddedLine = padLine(line, width);
@@ -349,6 +394,13 @@ function appendInteractionPanels(lines, navigation, outputState, interactiveActi
   return augmentedLines;
 }
 
+function renderFramedRouteScreen(lines, navigation, width, options = {}) {
+  return renderFramedLines(lines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    ...options,
+  });
+}
+
 function renderPlaceholderScreen(route, width) {
   return [
     `${route} (coming later)`,
@@ -468,15 +520,15 @@ function createMainScreen({
       syncSectionActionSelection(navigation, interactiveActions.length);
 
       if (navigation.route === "configuration") {
-        return appendInteractionPanels(renderConfigurationScreen(getRouteState("configuration"), width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route === "status") {
-        return appendInteractionPanels(renderStatusScreen(getRouteState("status"), width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderStatusScreen(getRouteState("status"), width), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route === "model-profiles") {
-        return appendInteractionPanels(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal }), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal }), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route !== "home") {

@@ -116,7 +116,7 @@ describe("startup banner and TUI home branding", () => {
 
     expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
     expect(lines.some((line) => line.includes(BRANDING_LOGO.tagline))).toBe(true);
-    expect(lines).toContain("Home");
+    expect(lines.some((line) => stripAnsi(line).includes("┌ Home"))).toBe(true);
   });
 
   it("renders the Home banner and selected route with additive teal styling while preserving text cues", () => {
@@ -124,14 +124,25 @@ describe("startup banner and TUI home branding", () => {
 
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && stripAnsi(line).includes("> Configuration [selected]"))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6mC\u001b[0m") && stripAnsi(line).includes("Press Configuracion | Status | Models"))).toBe(true);
+  });
+
+  it("moves the navigation help into the frame footer and removes the redundant route label", () => {
+    const lines = renderHomeScreen(createNavigationState(), 120);
+    const strippedLines = lines.map(stripAnsi);
+
+    expect(strippedLines).not.toContain("Current route: home");
+    expect(strippedLines.at(-2)).toContain("Use ↑/↓ to move the Home selection.");
+    expect(strippedLines.some((line) => line.includes("Press Configuracion | Status | Models"))).toBe(true);
   });
 
   it("falls back to plain-text branding when the full banner is unsafe to render", () => {
     const lines = renderHomeScreen(createNavigationState(), 60);
+    const strippedLines = lines.map(stripAnsi);
 
-    expect(lines).toContain("AFERGON-AI");
-    expect(lines).toContain("debate · specify · implement · review");
+    expect(strippedLines.some((line) => line.includes("AFERGON-AI"))).toBe(true);
+    expect(strippedLines.some((line) => line.includes("debate · specify · implement · review"))).toBe(true);
     expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(false);
-    expect(lines).toContain("Press q or Esc to exit.");
+    expect(strippedLines.some((line) => line.includes("Press q or Esc to exit."))).toBe(true);
   });
 });

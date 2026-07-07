@@ -73,6 +73,10 @@ async function flushTui() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getConfigurationStatus", () => {
   it("reports missing local configuration/install surfaces and exposes only stable CLI actions", () => {
     const tempRoot = makeTempRoot();
@@ -315,7 +319,7 @@ describe("createTuiApp configuration route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press c for Configuration");
+    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
   });
 
   it("renders configuration interactive actions from the section state, runs doctor inline, and closes output with Escape", async () => {
