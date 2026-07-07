@@ -10,7 +10,7 @@ import {
   navigateTo,
   TUI_ROUTES,
 } from "../scripts/lib/tui/navigation.mjs";
-import { buildRouteBreadcrumb, createTuiApp } from "../scripts/tui.mjs";
+import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.mjs";
 
 function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
@@ -196,6 +196,20 @@ describe("navigation state", () => {
 
     expect(renderedLines[0]).toBe("┌ Models/budget ────────────────");
   });
+
+  it("renders Home body lines without a trailing right border suffix", () => {
+    const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
+
+    expect(renderedLines.slice(1, -1)).toSatisfy((lines) => lines.every((line) => line.startsWith("│ ") && !/\s*│$/.test(line)));
+  });
+
+  it("embeds the shortened arrow hint in the bottom frame line", () => {
+    const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
+
+    expect(renderedLines.at(-1)).toContain("└ ↑/↓ move ");
+    expect(visibleWidth(renderedLines.at(-1))).toBe(60);
+    expect(renderedLines.join("\n")).not.toContain("Use ↑/↓ to move the Home selection.");
+  });
 });
 
 describe("createTuiApp", () => {
@@ -217,7 +231,7 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("  Status");
     expect(terminal.output).toContain("  Model Profiles");
     expect(terminal.output).not.toContain("Current route: home");
-    expect(terminal.output).toContain("Use ↑/↓ to move the Home selection.");
+    expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
     expect(terminal.output).toContain("Press Enter to open the selected section.");
     expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
     expect(terminal.output).toContain("Press q or Esc to exit");
@@ -317,7 +331,7 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
     expect(terminal.output).toContain("Plain-text branding mode keeps Home readable.");
-    expect(terminal.output).toContain("Use ↑/↓ to move the Home selection.");
+    expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
   });
 
   it("shows section action keyboard guidance plus form cancel help without trapping focus", async () => {

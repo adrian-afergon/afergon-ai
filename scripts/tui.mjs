@@ -73,6 +73,10 @@ function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
 }
 
+function padVisibleLine(text, width) {
+  return `${text}${repeatToWidth(" ", Math.max(0, width - visibleWidth(text)))}`;
+}
+
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
 }
@@ -88,6 +92,21 @@ function renderShortcutHintLine() {
 function clipBreadcrumbForFrame(breadcrumb, width) {
   const maxBreadcrumbWidth = Math.max(1, width - 4);
   return truncateToWidth(sanitizeTerminalOutput(breadcrumb ?? ""), maxBreadcrumbWidth, "");
+}
+
+function clipFrameLabel(label, width) {
+  const maxLabelWidth = Math.max(1, width - 4);
+  return truncateToWidth(sanitizeTerminalOutput(label ?? ""), maxLabelWidth, "");
+}
+
+function renderEmbeddedFrameRule(corner, label, width) {
+  if (!label) {
+    return `${corner}${repeatToWidth("─", width - 1)}`;
+  }
+
+  const safeLabel = clipFrameLabel(label, width);
+  const ruleWidth = Math.max(1, width - visibleWidth(safeLabel) - 3);
+  return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
 }
 
 export function buildRouteBreadcrumb(navigation) {
@@ -107,16 +126,15 @@ export function buildRouteBreadcrumb(navigation) {
 
 function renderFramedLines(contentLines, width, { breadcrumb, footerLines = [] } = {}) {
   const safeWidth = Math.max(20, width);
-  const innerWidth = Math.max(1, safeWidth - 4);
-  const safeBreadcrumb = clipBreadcrumbForFrame(breadcrumb, safeWidth);
-  const topRuleWidth = Math.max(1, safeWidth - visibleWidth(safeBreadcrumb) - 3);
-  const framedLines = [`┌ ${safeBreadcrumb} ${repeatToWidth("─", topRuleWidth)}`];
+  const innerWidth = Math.max(1, safeWidth - 2);
+  const footerLabel = footerLines.at(-1);
+  const framedLines = [renderEmbeddedFrameRule("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), safeWidth)];
 
-  for (const line of [...contentLines, ...footerLines]) {
-    framedLines.push(`│ ${padLine(line, innerWidth)} │`);
+  for (const line of [...contentLines, ...footerLines.slice(0, -1)]) {
+    framedLines.push(`│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)}`);
   }
 
-  framedLines.push(`└${repeatToWidth("─", safeWidth - 2)}┘`);
+  framedLines.push(renderEmbeddedFrameRule("└", footerLabel, safeWidth));
   return framedLines;
 }
 
@@ -192,7 +210,7 @@ export function renderHomeScreen(navigation, width) {
 
   const lines = renderFramedLines(contentLines, width, {
     breadcrumb: buildRouteBreadcrumb(navigation),
-    footerLines: ["Use ↑/↓ to move the Home selection."],
+    footerLines: ["↑/↓ move"],
   });
 
   return lines.map((line, index) => {

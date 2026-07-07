@@ -132,7 +132,7 @@ describe("startup banner and TUI home branding", () => {
     const strippedLines = lines.map(stripAnsi);
 
     expect(strippedLines).not.toContain("Current route: home");
-    expect(strippedLines.at(-2)).toContain("Use ↑/↓ to move the Home selection.");
+    expect(strippedLines.at(-1)).toContain("└ ↑/↓ move ");
     expect(strippedLines.some((line) => line.includes("Press Configuracion | Status | Models"))).toBe(true);
   });
 
