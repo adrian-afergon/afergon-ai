@@ -77,6 +77,13 @@ function padVisibleLine(text, width) {
   return `${text}${repeatToWidth(" ", Math.max(0, width - visibleWidth(text)))}`;
 }
 
+function centerVisibleLine(text, width) {
+  const safeText = truncateToWidth(text, Math.max(1, width), "");
+  const totalPadding = Math.max(0, width - visibleWidth(safeText));
+  const leftPadding = Math.floor(totalPadding / 2);
+  return `${repeatToWidth(" ", leftPadding)}${safeText}`;
+}
+
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
 }
@@ -86,7 +93,7 @@ function repeatToWidth(character, width) {
 }
 
 function renderShortcutHintLine() {
-  return `Press ${styleTeal("C")}onfiguracion | ${styleTeal("S")}tatus | ${styleTeal("M")}odels`;
+  return `Press (${styleTeal("C")})onfiguracion | (${styleTeal("S")})tatus | (${styleTeal("M")})odels`;
 }
 
 function clipBreadcrumbForFrame(breadcrumb, width) {
@@ -99,6 +106,15 @@ function clipFrameLabel(label, width) {
   return truncateToWidth(sanitizeTerminalOutput(label ?? ""), maxLabelWidth, "");
 }
 
+function clipFooterSegment(label, maxWidth) {
+  if (!label || maxWidth < 3) {
+    return "";
+  }
+
+  const safeLabel = truncateToWidth(sanitizeTerminalOutput(label), Math.max(1, maxWidth - 2), "");
+  return safeLabel ? ` ${safeLabel} ` : "";
+}
+
 function renderEmbeddedFrameRule(corner, label, width) {
   if (!label) {
     return `${corner}${repeatToWidth("─", width - 1)}`;
@@ -107,6 +123,22 @@ function renderEmbeddedFrameRule(corner, label, width) {
   const safeLabel = clipFrameLabel(label, width);
   const ruleWidth = Math.max(1, width - visibleWidth(safeLabel) - 3);
   return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
+}
+
+function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
+  const footerWidth = Math.max(0, width - 1);
+  const rightSegment = clipFooterSegment(rightLabel, footerWidth);
+
+  if (!rightSegment) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const remainingWidth = Math.max(0, footerWidth - visibleWidth(rightSegment));
+  const reservedRuleWidth = remainingWidth > 0 ? 1 : 0;
+  const leftSegment = clipFooterSegment(leftLabel, Math.max(0, remainingWidth - reservedRuleWidth));
+  const ruleWidth = Math.max(0, footerWidth - visibleWidth(leftSegment) - visibleWidth(rightSegment));
+
+  return `${corner}${leftSegment}${repeatToWidth("─", ruleWidth)}${rightSegment}`;
 }
 
 export function buildRouteBreadcrumb(navigation) {
@@ -124,17 +156,16 @@ export function buildRouteBreadcrumb(navigation) {
   return `${baseBreadcrumb}/${profileName || "New"}`;
 }
 
-function renderFramedLines(contentLines, width, { breadcrumb, footerLines = [] } = {}) {
+function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel } = {}) {
   const safeWidth = Math.max(20, width);
   const innerWidth = Math.max(1, safeWidth - 2);
-  const footerLabel = footerLines.at(-1);
   const framedLines = [renderEmbeddedFrameRule("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), safeWidth)];
 
-  for (const line of [...contentLines, ...footerLines.slice(0, -1)]) {
+  for (const line of [...contentLines, ...footerLines]) {
     framedLines.push(`│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)}`);
   }
 
-  framedLines.push(renderEmbeddedFrameRule("└", footerLabel, safeWidth));
+  framedLines.push(renderEmbeddedFrameFooter("└", footerLeftLabel, footerRightLabel, safeWidth));
   return framedLines;
 }
 
@@ -184,39 +215,52 @@ export function renderHomeScreen(navigation, width) {
   const homeItems = HOME_MENU_ROUTES.map((route, index) => ({
     route,
     label: route === "model-profiles" ? "Model Profiles" : route.charAt(0).toUpperCase() + route.slice(1),
-    shortcut: route === "configuration" ? "c" : route === "status" ? "s" : "m",
     selected: navigation.homeSelection === index,
   }));
 
   const useFallbackBranding = !canRenderBrandingLogo(width);
   const brandingLines = useFallbackBranding
     ? [BRANDING_LOGO.fallbackTitle, BRANDING_LOGO.fallbackCopy, "Plain-text branding mode keeps Home readable."]
-    : [...BRANDING_LOGO.lines, "", BRANDING_LOGO.tagline];
+    : [...BRANDING_LOGO.lines, BRANDING_LOGO.tagline];
+  const centeredBrandingLines = brandingLines.map((line, index) => {
+    if (!line) {
+      return line;
+    }
+
+    if ((!useFallbackBranding && index <= BRANDING_LOGO.lines.length) || (useFallbackBranding && index <= 1)) {
+      return centerVisibleLine(line, Math.max(1, width - 2));
+    }
+
+    return line;
+  });
 
   const contentLines = [
-    ...brandingLines,
+    ...centeredBrandingLines,
     "",
     "Sections available in this MVP slice:",
     ...homeItems.map((item) => {
-      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""} (press ${item.shortcut})`;
+      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""}`;
       return item.selected ? styleTeal(line) : line;
     }),
     "",
     "Press Enter to open the selected section.",
     renderShortcutHintLine(),
-    "Press h to return Home from any section.",
-    "Press q or Esc to exit.",
   ];
 
   const lines = renderFramedLines(contentLines, width, {
     breadcrumb: buildRouteBreadcrumb(navigation),
-    footerLines: ["↑/↓ move"],
+    footerLeftLabel: "↑/↓ move",
+    footerRightLabel: "Press q or Esc to exit",
   });
 
   return lines.map((line, index) => {
     const paddedLine = padLine(line, width);
 
-    if (!useFallbackBranding && ((index >= 0 && index < BRANDING_LOGO.lines.length) || index === BRANDING_LOGO.lines.length + 1)) {
+    if (!useFallbackBranding && index > 0 && index <= BRANDING_LOGO.lines.length + 1) {
+      return styleTeal(paddedLine);
+    }
+
+    if (useFallbackBranding && index > 0 && index <= 2) {
       return styleTeal(paddedLine);
     }
 
@@ -415,6 +459,8 @@ function appendInteractionPanels(lines, navigation, outputState, interactiveActi
 function renderFramedRouteScreen(lines, navigation, width, options = {}) {
   return renderFramedLines(lines, width, {
     breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLeftLabel: "Press H to return home",
+    footerRightLabel: "Press q or Esc to exit",
     ...options,
   });
 }

@@ -123,8 +123,11 @@ describe("startup banner and TUI home branding", () => {
     const lines = renderHomeScreen(createNavigationState(), 120);
 
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines.at(-1)))).toBe(true);
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && stripAnsi(line).includes("> Configuration [selected]"))).toBe(true);
-    expect(lines.some((line) => line.includes("\u001b[38;5;6mC\u001b[0m") && stripAnsi(line).includes("Press Configuracion | Status | Models"))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.tagline))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6mC\u001b[0m") && stripAnsi(line).includes("Press (C)onfiguracion | (S)tatus | (M)odels"))).toBe(true);
+    expect(lines.some((line) => stripAnsi(line).includes("Press Configuracion | Status | Models"))).toBe(false);
   });
 
   it("moves the navigation help into the frame footer and removes the redundant route label", () => {
@@ -133,7 +136,21 @@ describe("startup banner and TUI home branding", () => {
 
     expect(strippedLines).not.toContain("Current route: home");
     expect(strippedLines.at(-1)).toContain("└ ↑/↓ move ");
-    expect(strippedLines.some((line) => line.includes("Press Configuracion | Status | Models"))).toBe(true);
+    expect(strippedLines.at(-1)).toContain(" Press q or Esc to exit ");
+    expect(strippedLines.some((line) => line.includes("Press (C)onfiguracion | (S)tatus | (M)odels"))).toBe(true);
+    expect(strippedLines.some((line) => line.includes("Press h to return Home from any section."))).toBe(false);
+  });
+
+  it("centers the Home banner and subtitle without leaving a blank separator row between them", () => {
+    const lines = renderHomeScreen(createNavigationState(), 120).map(stripAnsi);
+    const logoStartIndex = lines.findIndex((line) => line.includes(BRANDING_LOGO.lines[0]));
+    const taglineIndex = lines.findIndex((line) => line.includes(BRANDING_LOGO.tagline));
+
+    expect(logoStartIndex).toBeGreaterThanOrEqual(0);
+    expect(taglineIndex).toBe(logoStartIndex + BRANDING_LOGO.lines.length);
+    expect(lines[logoStartIndex + BRANDING_LOGO.lines.length - 1].includes(BRANDING_LOGO.lines.at(-1))).toBe(true);
+    expect(lines[taglineIndex]).toMatch(/^│\s+debate  ·  specify  ·  implement  ·  review\s+$/);
+    expect(lines[taglineIndex]).not.toBe(`│ ${BRANDING_LOGO.tagline}`);
   });
 
   it("falls back to plain-text branding when the full banner is unsafe to render", () => {
@@ -143,6 +160,6 @@ describe("startup banner and TUI home branding", () => {
     expect(strippedLines.some((line) => line.includes("AFERGON-AI"))).toBe(true);
     expect(strippedLines.some((line) => line.includes("debate · specify · implement · review"))).toBe(true);
     expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(false);
-    expect(strippedLines.some((line) => line.includes("Press q or Esc to exit."))).toBe(true);
+    expect(strippedLines.at(-1)).toContain("Press q or Esc to exit");
   });
 });

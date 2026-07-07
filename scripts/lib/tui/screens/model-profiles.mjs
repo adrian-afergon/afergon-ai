@@ -90,14 +90,12 @@ export function renderModelProfilesScreen(state, width, { styleSelected } = {}) 
      "",
      "Keyboard help",
      ...(isBrowseMode
-       ? [
-           "Use ↑/↓ to move the profile selection.",
-           "Press Space to switch or start the focused profile flow.",
-           "Press Delete to confirm deletion, U to edit, and N to create.",
-         ]
-      : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
-    "Press h to return Home.",
-    "Press q or Esc to exit.",
+        ? [
+            "Use ↑/↓ to move the profile selection.",
+            "Press Space to switch or start the focused profile flow.",
+            "Press Delete to confirm deletion, U to edit, and N to create.",
+          ]
+       : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
   ];
 
   return lines.map((line) => padLine(line, width));

@@ -16,6 +16,35 @@ function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
+function createRouteRenderApp() {
+  return createTuiApp({
+    exit: () => {},
+    loadConfigurationStatus: () => ({
+      title: "Configuration",
+      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+      actions: [],
+      interactiveActions: [],
+    }),
+    loadStatusScreenState: () => ({
+      title: "Status",
+      summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init." },
+      items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Not installed." }],
+      actions: [],
+      interactiveActions: [],
+    }),
+    loadModelProfilesScreenState: () => ({
+      title: "Model Profiles",
+      activeProfile: "default",
+      summary: { state: "ok", detail: "1 profile available" },
+      profiles: [{ name: "default", active: true }],
+      assignments: [{ agent: "afergon-ai", model: "openai/gpt-5.4", source: "explicit" }],
+      actions: [],
+      interactiveActions: [],
+      supportedActions: [],
+    }),
+  });
+}
+
 class FakeTerminal {
   constructor() {
     this.columns = 80;
@@ -207,8 +236,39 @@ describe("navigation state", () => {
     const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
 
     expect(renderedLines.at(-1)).toContain("└ ↑/↓ move ");
+    expect(renderedLines.at(-1)).toContain(" Press q or Esc to exit ");
     expect(visibleWidth(renderedLines.at(-1))).toBe(60);
     expect(renderedLines.join("\n")).not.toContain("Use ↑/↓ to move the Home selection.");
+    expect(renderedLines.join("\n")).not.toContain("Press h to return Home from any section.");
+  });
+
+  it("keeps non-Home frame footers within narrow widths for representative routes", () => {
+    const app = createRouteRenderApp();
+
+    for (const route of ["configuration", "status", "model-profiles"]) {
+      app.navigation.route = route;
+
+      for (const width of [20, 21, 22, 23, 24]) {
+        const renderedLines = app.screen.render(width).map(stripAnsi);
+        const footer = renderedLines.at(-1);
+
+        expect(visibleWidth(footer)).toBeLessThanOrEqual(width);
+        expect(footer).toMatch(/^└/);
+        expect(footer).not.toContain("│");
+      }
+    }
+  });
+
+  it("preserves both non-Home footer hints when the frame is wide enough", () => {
+    const app = createRouteRenderApp();
+    app.navigation.route = "configuration";
+
+    const renderedLines = app.screen.render(60).map(stripAnsi);
+    const footer = renderedLines.at(-1);
+
+    expect(footer).toContain("Press H to return home");
+    expect(footer).toContain("Press q or Esc to exit");
+    expect(visibleWidth(footer)).toBe(60);
   });
 });
 
@@ -232,9 +292,10 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("  Model Profiles");
     expect(terminal.output).not.toContain("Current route: home");
     expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
+    expect(stripAnsi(terminal.output)).toContain("Press q or Esc to exit");
     expect(terminal.output).toContain("Press Enter to open the selected section.");
-    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
-    expect(terminal.output).toContain("Press q or Esc to exit");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
+    expect(terminal.output).not.toContain("Press h to return Home from any section.");
     expect(exits).toEqual([]);
   });
 

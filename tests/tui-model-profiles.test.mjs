@@ -512,7 +512,7 @@ describe("createTuiApp model-profiles route", () => {
 
     app.start();
     await flushTui();
-    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
 
     terminal.output = "";
     terminal.emitInput("m");
@@ -530,7 +530,7 @@ describe("createTuiApp model-profiles route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(stripAnsi(terminal.output)).toContain("Press Configuracion | Status | Models");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
   });
 
   it("keeps Up/Down focused on profile rows and does not move section actions", async () => {
