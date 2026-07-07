@@ -20,7 +20,11 @@ function renderProfiles(profiles, styleSelected) {
   }
 
   return profiles.map((profile) => {
-    const line = `- ${sanitizeText(profile.name)}${profile.isActive ? " [active]" : ""}${profile.isFocused ? " [selected]" : ""}`;
+    const marker = profile.isFocused ? ">" : " ";
+    const label = profile.isCreate
+      ? sanitizeText(profile.name)
+      : `[${profile.isActive ? "X" : " "}] ${sanitizeText(profile.name)}`;
+    const line = `${marker} ${label}`;
     return profile.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
   });
 }
@@ -39,19 +43,13 @@ function renderAssignmentEditor(assignments, styleSelected) {
   });
 }
 
-function renderSupportedActions(actions) {
-  return actions.flatMap((action) => {
-    const lines = [`- ${sanitizeText(action.label)}: ${sanitizeText(action.detail)}`];
-    if (action.command) {
-      lines.push(`  CLI equivalent: ${sanitizeText(action.command)}`);
-    }
-    return lines;
-  });
+function renderMutedLines(lines, styleMuted) {
+  return lines.map((line) => (typeof styleMuted === "function" && line ? styleMuted(line) : line));
 }
 
-export function renderModelProfilesScreen(state, width, { styleSelected } = {}) {
+export function renderModelProfilesScreen(state, width, { styleSelected, styleMuted } = {}) {
   const isBrowseMode = (state.browse?.mode ?? "browse") === "browse";
-  const detailLines = isBrowseMode && state.assignments.length > 0 ? renderAssignments(state.assignments) : [];
+  const detailLines = isBrowseMode && state.assignments.length > 0 ? renderMutedLines(renderAssignments(state.assignments), styleMuted) : [];
   const assignmentLines = state.assignments.length > 0 ? renderAssignmentEditor(state.assignments, styleSelected) : [];
   const lines = [
     sanitizeText(state.title ?? "Model Profiles"),
@@ -64,38 +62,21 @@ export function renderModelProfilesScreen(state, width, { styleSelected } = {}) 
     "",
     ...renderProfiles(state.profiles, styleSelected),
     "",
-    "Profile details",
+    ...(isBrowseMode ? renderMutedLines(["Profile Details"], styleMuted) : ["Assignment editor"]),
     "",
-    ...detailLines,
+    ...(isBrowseMode ? detailLines : [
+      `Target profile: ${getAssignmentPlaceholderProfileName(state.browse)}`,
+      ...assignmentLines,
+    ]),
     "",
-    "Supported actions",
-    "",
-    ...renderSupportedActions(state.supportedActions),
-    "",
-    "Stable CLI surfaces",
-    "",
-    ...state.actions.map((action) => `- ${sanitizeText(action.label)}: ${sanitizeText(action.description)}`),
-    "",
-     ...(isBrowseMode
-       ? [
-           "Interactive notes",
-           "- Browse mode scopes arrow keys to the profile list only.",
-           "- Space switches the focused profile or starts the new-profile flow.",
-         ]
-        : [
-            "Assignment editor",
-            `Target profile: ${getAssignmentPlaceholderProfileName(state.browse)}`,
-            ...assignmentLines,
-          ]),
-     "",
-     "Keyboard help",
-     ...(isBrowseMode
-        ? [
-            "Use ↑/↓ to move the profile selection.",
-            "Press Space to switch or start the focused profile flow.",
-            "Press Delete to confirm deletion, U to edit, and N to create.",
-          ]
-       : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
+    "Keyboard help",
+    ...(isBrowseMode
+      ? [
+          "Use ↑/↓ to move the profile selection.",
+          "Press Space to switch or start the focused profile flow.",
+          "Press Delete to confirm deletion, U to edit, and N to create.",
+        ]
+      : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
   ];
 
   return lines.map((line) => padLine(line, width));

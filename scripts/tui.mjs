@@ -59,6 +59,7 @@ const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
 const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.mjs");
 const TEAL_ANSI = "\u001b[38;5;6m";
+const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
 const ANSI_RESET = "\u001b[0m";
 const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
 
@@ -86,6 +87,10 @@ function centerVisibleLine(text, width) {
 
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
+}
+
+function styleLightGray(text) {
+  return `${LIGHT_GRAY_ANSI}${text}${ANSI_RESET}`;
 }
 
 function repeatToWidth(character, width) {
@@ -592,7 +597,7 @@ function createMainScreen({
       }
 
       if (navigation.route === "model-profiles") {
-        return appendInteractionPanels(renderFramedRouteScreen(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal }), navigation, width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal, styleMuted: styleLightGray }), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route !== "home") {

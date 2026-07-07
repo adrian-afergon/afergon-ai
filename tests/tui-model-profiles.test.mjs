@@ -222,11 +222,6 @@ describe("getModelProfilesScreenState", () => {
     expect(state.actions).toEqual([
       expect.objectContaining({ id: "models", label: "afergon-ai models", argv: ["models"] }),
     ]);
-    expect(state.supportedActions).toEqual([
-      expect.objectContaining({ label: "Review current profile details", command: "afergon-ai models" }),
-      expect.objectContaining({ label: "Create, switch, or delete profiles", command: undefined }),
-      expect.objectContaining({ label: "Set agent-specific models", command: undefined }),
-    ]);
   });
 
   it("reports the active profile, known profiles, and resolved assignments from isolated config fixtures", () => {
@@ -339,7 +334,7 @@ describe("getModelProfilesScreenState", () => {
 });
 
 describe("renderModelProfilesScreen", () => {
-  it("renders active profile state, supported profile actions, and only stable CLI-equivalent commands", () => {
+  it("renders browse mode with focused cursor, active profile checkboxes, and muted detail rows", () => {
     const lines = renderModelProfilesScreen(
       {
         title: "Model Profiles",
@@ -356,30 +351,55 @@ describe("renderModelProfilesScreen", () => {
           { agent: "afg-debate", configured: "(unset)", effective: "openai/gpt-5.5", source: "implicit-inherit" },
         ],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [
-          { label: "Review current profile details", detail: "Inspect the active profile and resolved assignments.", command: "afergon-ai models" },
-          { label: "Create, switch, or delete profiles", detail: "Use the CLI when you need to change profile membership." },
-        ],
         browse: { mode: "browse", focusedProfileName: "budget", isCreateSelected: false },
       },
       120,
+      {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     );
 
     const output = lines.join("\n");
     expect(output).toContain("Model Profiles");
     expect(output).toContain("Active profile: budget");
     expect(output).toContain("Profile list");
-    expect(output).toContain("budget [active] [selected]");
-    expect(output).toContain("fallback");
-    expect(output).toContain("* New Profile");
-    expect(output).toContain("Profile details");
-    expect(output).toContain("afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit");
-    expect(output).toContain("afg-review: configured=inherit, effective=openai/gpt-5.5, source=inherit");
-    expect(output).toContain("afg-debate: configured=(unset), effective=openai/gpt-5.5, source=implicit-inherit");
-    expect(output).toContain("CLI equivalent: afergon-ai models");
+    expect(output).toContain("> [X] budget");
+    expect(output).toContain("  [ ] fallback");
+    expect(output).toContain("  * New Profile");
+    expect(output).toContain("\u001b[38;5;250mProfile Details\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-review: configured=inherit, effective=openai/gpt-5.5, source=inherit\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-debate: configured=(unset), effective=openai/gpt-5.5, source=implicit-inherit\u001b[0m");
+    expect(output).not.toContain("[selected]");
+    expect(output).not.toContain("Supported actions");
+    expect(output).not.toContain("Stable CLI surfaces");
+    expect(output).not.toContain("Interactive notes");
     expect(output).toContain("Keyboard help");
     expect(output).toContain("Use ↑/↓ to move the profile selection.");
     expect(output).toContain("Press Space to switch or start the focused profile flow.");
+  });
+
+  it("renders the active marker independently from the focused row", () => {
+    const output = renderModelProfilesScreen(
+      {
+        title: "Model Profiles",
+        summary: { state: "ok", detail: "2 profile(s) available." },
+        activeProfile: "budget",
+        profiles: [
+          { name: "budget", isActive: true, isCreate: false, isFocused: false },
+          { name: "fallback", isActive: false, isCreate: false, isFocused: true },
+          { name: "* New Profile", isActive: false, isCreate: true, isFocused: false },
+        ],
+        assignments: [],
+        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
+        browse: { mode: "browse", focusedProfileName: "fallback", isCreateSelected: false },
+      },
+      120,
+    ).join("\n");
+
+    expect(output).toContain("  [X] budget");
+    expect(output).toContain("> [ ] fallback");
+    expect(output).not.toContain("> [X] budget");
   });
 
   it("renders an empty lower pane for the * New Profile sentinel row", () => {
@@ -395,14 +415,13 @@ describe("renderModelProfilesScreen", () => {
         ],
         assignments: [],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
         browse: { mode: "browse", focusedProfileName: "* New Profile", isCreateSelected: true },
       },
       120,
     ).join("\n");
 
-    expect(output).toContain("* New Profile [selected]");
-    expect(output).toContain("Profile details");
+    expect(output).toContain("> * New Profile");
+    expect(output).toContain("Profile Details");
     expect(output).not.toContain("configured=");
   });
 
@@ -419,10 +438,7 @@ describe("renderModelProfilesScreen", () => {
       profiles: [],
       assignments: [],
       actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-      supportedActions: [
-        { label: "Review current profile details", detail: "Inspect the active profile and resolved assignments.", command: "afergon-ai models" },
-      ],
-    };
+      };
 
     expect(() => renderModelProfilesScreen(state, 160)).not.toThrow();
     expect(renderModelProfilesScreen(state, 160).join("\n")).toContain(
@@ -445,18 +461,19 @@ describe("renderModelProfilesScreen", () => {
           { agent: "afergon-ai", configured: "\u001b[31mred\u001b[0m-model", effective: "tail\u009d2;owned\u0007", source: "explicit" },
         ],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect \u001b[2Jsafe\u0007 state.", command: "afergon-ai models" }],
       },
       160,
-      { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` },
+      {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     ).join("\n");
 
     expect(output).toContain("Active profile ready");
     expect(output).toContain("Active profile: budget?");
-    expect(output).toContain("\u001b[38;5;6m- budget [active] [selected]\u001b[0m");
+    expect(output).toContain("\u001b[38;5;6m> [X] budget\u001b[0m");
     expect(output).toContain("fallback?");
-    expect(output).toContain("configured=red-model, effective=tail, source=explicit");
-    expect(output).toContain("Inspect safe? state.");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: configured=red-model, effective=tail, source=explicit\u001b[0m");
     expect(output).not.toContain("owned");
     expect(output).not.toContain("\u0000");
   });
@@ -471,7 +488,6 @@ describe("renderModelProfilesScreen", () => {
         profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
         assignments: [],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
         browse: {
           mode: "assignments",
           targetProfileName: "budget\u001b]2;owned\u0007\u001b[31m-red\u001b[0m",
@@ -504,7 +520,6 @@ describe("createTuiApp model-profiles route", () => {
         ],
         assignments: [{ agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit" }],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
         browse: { mode: "browse", focusedProfileName: "budget", isCreateSelected: false },
         interactiveActions: [],
       }),
@@ -522,7 +537,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).toContain("Model Profiles");
     expect(terminal.output).toContain("Active profile: budget");
     expect(terminal.output).toContain("Profile list");
-    expect(terminal.output).toContain("budget [active] [selected]");
+    expect(terminal.output).toContain("> [X] budget");
 
     terminal.output = "";
     terminal.emitInput("h");
@@ -565,12 +580,12 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(1);
     expect(app.navigation.sectionActionSelection).toBe(0);
-    expect(terminal.output).toContain("fallback [selected]");
+    expect(terminal.output).toContain("> [ ] fallback");
 
     terminal.emitInput("\u001b[B");
     await flushTui();
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(2);
-    expect(terminal.output).toContain("* New Profile [selected]");
+    expect(terminal.output).toContain("> * New Profile");
   });
 
   it("bounds browse-mode intents to switch, delete confirmation, edit entry, and create entry", async () => {

@@ -13,7 +13,7 @@ describe("TUI docs contract", () => {
     expect(README).toContain("Non-TTY/CI + no args: print help and exit 0.");
     expect(README).toContain("Non-TTY/CI + `tui`: fail fast with guidance instead of hanging.");
     expect(README).toContain("Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.");
-    expect(README).toContain("Selected rows add teal emphasis when the terminal supports color, but `[selected]` and other text cues remain the source of truth.");
+    expect(README).toContain("Selected rows add teal emphasis when the terminal supports color, while Model Profiles browse mode pairs the `>` cursor with `[X]`/`[ ]` active markers instead of a `[selected]` suffix.");
     expect(README).toContain("Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.");
     expect(README).toContain("Inside Model Profiles, `models list` and `models show` run inline, while `switch`, `set`, `profile create`, and `profile delete` open picker or text forms before confirmation.");
     expect(README).toContain("In Model Profiles browse mode, ↑/↓ move only the profile list, Space activates the focused existing profile or starts `* New Profile`, Delete opens typed confirmation, `U` edits the focused profile, and `N` opens create-name first.");
@@ -21,7 +21,7 @@ describe("TUI docs contract", () => {
     expect(README).toContain("A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.");
     expect(README).toContain("Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.");
     expect(README).toContain("If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.");
-    expect(README).toContain("Status, failure, and selection cues use text markers such as `[ok]`, `[warn]`, `[fail]`, and `[selected]`, not color alone.");
+    expect(README).toContain("Status and failure cues use text markers such as `[ok]`, `[warn]`, and `[fail]`, not color alone.");
     expect(README).toContain("Do not invent CLI equivalents for unsupported or read-only TUI actions.");
     expect(README).toContain("PR7 docs/polish");
     expect(README).toContain("`tests/tui-docs.test.mjs`");
