@@ -588,7 +588,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).toContain("> * New Profile");
   });
 
-  it("switches focused profiles immediately while preserving delete confirmation, edit entry, and create entry", async () => {
+  it("switches focused profiles immediately without opening an output panel while preserving delete confirmation, edit entry, and create entry", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -622,23 +622,32 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     terminal.emitInput(" ");
     await flushTui();
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(1);
     expect(terminal.output).not.toContain("Confirmation");
-    expect(app.navigation.modal?.kind).toBe("output");
+    expect(app.navigation.modal).toBeUndefined();
     expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.activeProfile).toBe("fallback");
-    expect(terminal.output).toContain("Switched active profile to 'fallback'.");
     expect(terminal.output).toContain("> [X] fallback");
     expect(terminal.output).toContain("  [ ] budget");
+    expect(terminal.output).not.toContain("Output [ok]");
+    expect(terminal.output).not.toContain("Press Enter or Esc to close this output panel.");
 
-    terminal.emitInput("\u001b");
+    terminal.output = "";
+    terminal.emitInput("\u001b[A");
     await flushTui();
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(0);
+    expect(terminal.output).toContain("> [ ] budget");
+    expect(terminal.output).toContain("  [X] fallback");
+
     terminal.output = "";
     terminal.emitInput("\u001b[3~");
     await flushTui();
     expect(terminal.output).toContain("Type the selected profile name to confirm deletion.");
-    expect(terminal.output).toContain("Expected text: fallback");
-    expect(terminal.output).toContain("afergon-ai models profile delete fallback");
+    expect(terminal.output).toContain("Expected text: budget");
+    expect(terminal.output).toContain("afergon-ai models profile delete budget");
 
     terminal.emitInput("\u001b");
+    await flushTui();
+    terminal.emitInput("\u001b[B");
     await flushTui();
     terminal.output = "";
     terminal.emitInput("u");
@@ -651,6 +660,53 @@ describe("createTuiApp model-profiles route", () => {
     terminal.emitInput("n");
     await flushTui();
     expect(terminal.output).toContain("Create a profile");
+  });
+
+  it("shows an output panel when an immediate profile switch fails", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => ({
+        title: "Model Profiles",
+        summary: { state: "ok", detail: "2 profile(s) available." },
+        activeProfile: "budget",
+        configPath: "/tmp/config.json",
+        profiles: [
+          { name: "budget", isActive: true, isCreate: false, isFocused: false },
+          { name: "fallback", isActive: false, isCreate: false, isFocused: true },
+          { name: "* New Profile", isActive: false, isCreate: true, isFocused: false },
+        ],
+        assignments: [],
+        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
+        browse: {
+          mode: navigation?.modelProfiles?.mode ?? "browse",
+          focusedProfileName: "fallback",
+          focusedProfile: { name: "fallback", isActive: false, isCreate: false, isFocused: true },
+          isCreateSelected: false,
+        },
+        interactiveActions: [],
+      }),
+      executeAction: async ({ action }) => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: `failed to switch ${action.argv.at(-1)}`,
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [fail]");
+    expect(terminal.output).toContain("failed to switch fallback");
+    expect(terminal.output).toContain("Press Enter or Esc to close this output panel.");
   });
 
   it("sanitizes the assignment placeholder after pressing U on a malicious profile name", async () => {

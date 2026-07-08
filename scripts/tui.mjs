@@ -480,6 +480,10 @@ function renderPlaceholderScreen(route, width) {
   ].map((line) => padLine(line, width));
 }
 
+function shouldSuppressSuccessfulOutputPanel(action, result) {
+  return result?.ok === true && action?.id === "models-switch-focused";
+}
+
 function createMainScreen({
   navigation,
   onExit,
@@ -532,6 +536,12 @@ function createMainScreen({
       const result = await executeAction({ action });
       if (action.id === "model-profiles-create-profile" && result.ok) {
         updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
+        onNavigate();
+        return;
+      }
+      if (shouldSuppressSuccessfulOutputPanel(action, result)) {
+        outputState = undefined;
+        hideModal(navigation);
         onNavigate();
         return;
       }
