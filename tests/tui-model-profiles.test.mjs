@@ -588,7 +588,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).toContain("> * New Profile");
   });
 
-  it("bounds browse-mode intents to switch, delete confirmation, edit entry, and create entry", async () => {
+  it("switches focused profiles immediately while preserving delete confirmation, edit entry, and create entry", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -622,8 +622,12 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     terminal.emitInput(" ");
     await flushTui();
-    expect(terminal.output).toContain("Confirmation");
-    expect(terminal.output).toContain("afergon-ai models switch fallback");
+    expect(terminal.output).not.toContain("Confirmation");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.activeProfile).toBe("fallback");
+    expect(terminal.output).toContain("Switched active profile to 'fallback'.");
+    expect(terminal.output).toContain("> [X] fallback");
+    expect(terminal.output).toContain("  [ ] budget");
 
     terminal.emitInput("\u001b");
     await flushTui();

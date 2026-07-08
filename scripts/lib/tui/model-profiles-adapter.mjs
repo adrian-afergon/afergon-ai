@@ -221,7 +221,7 @@ export function getModelProfilesBrowseIntent(state, intent) {
     }
 
     return {
-      kind: "confirm-action",
+      kind: "run-action",
       action: {
         id: "models-switch-focused",
         section: "model-profiles",
@@ -229,7 +229,6 @@ export function getModelProfilesBrowseIntent(state, intent) {
         label: `Switch active profile to ${focusedProfile.name}`,
         argv: buildCommandArgv("models", ["switch", focusedProfile.name]),
         cliEquivalent: `afergon-ai models switch ${focusedProfile.name}`,
-        confirmLabel: "Switch the active profile now?",
       },
     };
   }

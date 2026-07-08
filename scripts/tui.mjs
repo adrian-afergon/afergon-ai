@@ -887,6 +887,11 @@ function createMainScreen({
                   ? getModelProfilesBrowseIntent(routeState, "create")
                   : { kind: "none" };
 
+          if (intent.kind === "run-action") {
+            runSelectedAction(intent.action);
+            return;
+          }
+
           if (intent.kind === "confirm-action") {
             showModal(navigation, createConfirmationState({ action: intent.action }));
             onNavigate();
