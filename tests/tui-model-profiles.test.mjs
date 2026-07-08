@@ -262,6 +262,7 @@ describe("getModelProfilesScreenState", () => {
       expect.objectContaining({ name: "* New Profile", isActive: false, isCreate: true, isFocused: false }),
     ]);
     expect(state.assignments).toHaveLength(SUPPORTED_AGENTS.length);
+    expect(state.browse.placeholderAssignments).toEqual(SUPPORTED_AGENTS);
     expect(state.assignments).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit" }),
@@ -361,7 +362,6 @@ describe("renderModelProfilesScreen", () => {
 
     const output = lines.join("\n");
     expect(output).toContain("Model Profiles");
-    expect(output).toContain("Active profile: budget");
     expect(output).toContain("Profile list");
     expect(output).toContain("> [X] budget");
     expect(output).toContain("  [ ] fallback");
@@ -374,6 +374,8 @@ describe("renderModelProfilesScreen", () => {
     expect(output).not.toContain("Supported actions");
     expect(output).not.toContain("Stable CLI surfaces");
     expect(output).not.toContain("Interactive notes");
+    expect(output).not.toContain("Summary [ok]:");
+    expect(output).not.toContain("Active profile: budget");
     expect(output).toContain("Keyboard help");
     expect(output).toContain("Use ↑/↓ to move the profile selection.");
     expect(output).toContain("Press Space to switch or start the focused profile flow.");
@@ -402,7 +404,7 @@ describe("renderModelProfilesScreen", () => {
     expect(output).not.toContain("> [X] budget");
   });
 
-  it("renders an empty lower pane for the * New Profile sentinel row", () => {
+  it("renders placeholder detail rows for the * New Profile sentinel row to preserve layout height", () => {
     const output = renderModelProfilesScreen(
       {
         title: "Model Profiles",
@@ -415,14 +417,25 @@ describe("renderModelProfilesScreen", () => {
         ],
         assignments: [],
         actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        browse: { mode: "browse", focusedProfileName: "* New Profile", isCreateSelected: true },
+        browse: {
+          mode: "browse",
+          focusedProfileName: "* New Profile",
+          isCreateSelected: true,
+          placeholderAssignments: ["afergon-ai", "afg-review", "afg-debate"],
+        },
       },
       120,
+      {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     ).join("\n");
 
     expect(output).toContain("> * New Profile");
     expect(output).toContain("Profile Details");
     expect(output).not.toContain("configured=");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: pending new profile assignment\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-review: pending new profile assignment\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-debate: pending new profile assignment\u001b[0m");
   });
 
   it("renders a fail state without throwing", () => {
@@ -469,8 +482,8 @@ describe("renderModelProfilesScreen", () => {
       },
     ).join("\n");
 
-    expect(output).toContain("Active profile ready");
-    expect(output).toContain("Active profile: budget?");
+    expect(output).not.toContain("Active profile ready");
+    expect(output).not.toContain("Active profile: budget?");
     expect(output).toContain("\u001b[38;5;6m> [X] budget\u001b[0m");
     expect(output).toContain("fallback?");
     expect(output).toContain("\u001b[38;5;250m- afergon-ai: configured=red-model, effective=tail, source=explicit\u001b[0m");
@@ -535,9 +548,10 @@ describe("createTuiApp model-profiles route", () => {
 
     expect(app.navigation.route).toBe("model-profiles");
     expect(terminal.output).toContain("Model Profiles");
-    expect(terminal.output).toContain("Active profile: budget");
     expect(terminal.output).toContain("Profile list");
     expect(terminal.output).toContain("> [X] budget");
+    expect(stripAnsi(terminal.output)).toContain("Active profile: budget");
+    expect(stripAnsi(terminal.output)).not.toContain("Summary [ok]: 1 profile(s) available.");
 
     terminal.output = "";
     terminal.emitInput("h");

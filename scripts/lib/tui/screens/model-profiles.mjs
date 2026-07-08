@@ -47,15 +47,26 @@ function renderMutedLines(lines, styleMuted) {
   return lines.map((line) => (typeof styleMuted === "function" && line ? styleMuted(line) : line));
 }
 
+function renderNewProfilePlaceholderRows(agentNames = []) {
+  return agentNames.map((agentName) => `- ${sanitizeText(agentName)}: pending new profile assignment`);
+}
+
 export function renderModelProfilesScreen(state, width, { styleSelected, styleMuted } = {}) {
   const isBrowseMode = (state.browse?.mode ?? "browse") === "browse";
-  const detailLines = isBrowseMode && state.assignments.length > 0 ? renderMutedLines(renderAssignments(state.assignments), styleMuted) : [];
+  const showNewProfilePlaceholders = isBrowseMode && state.browse?.isCreateSelected && state.assignments.length === 0;
+  const detailLines = isBrowseMode
+    ? renderMutedLines(
+        state.assignments.length > 0
+          ? renderAssignments(state.assignments)
+          : (showNewProfilePlaceholders ? renderNewProfilePlaceholderRows(state.browse?.placeholderAssignments) : []),
+        styleMuted,
+      )
+    : [];
   const assignmentLines = state.assignments.length > 0 ? renderAssignmentEditor(state.assignments, styleSelected) : [];
   const lines = [
     sanitizeText(state.title ?? "Model Profiles"),
     "",
-    `Summary [${sanitizeText(state.summary.state)}]: ${sanitizeText(state.summary.detail)}`,
-    `Active profile: ${sanitizeText(state.activeProfile)}`,
+    ...(state.summary?.state === "fail" ? [`Summary [fail]: ${sanitizeText(state.summary.detail)}`] : []),
     `Config path: ${sanitizeText(state.configPath)}`,
     "",
     "Profile list",

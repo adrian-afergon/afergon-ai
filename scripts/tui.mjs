@@ -130,6 +130,26 @@ function renderEmbeddedFrameRule(corner, label, width) {
   return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
 }
 
+function renderEmbeddedFrameHeader(corner, leftLabel, rightLabel, width) {
+  if (!rightLabel?.label || !rightLabel?.value) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const safeLeftLabel = clipFrameLabel(leftLabel, width);
+  const safeRightLabel = sanitizeTerminalOutput(rightLabel.label);
+  const safeRightValue = sanitizeTerminalOutput(rightLabel.value);
+  const rightText = `${safeRightLabel}: ${safeRightValue}`;
+  const minimumWidth = visibleWidth(safeLeftLabel) + visibleWidth(rightText) + 5;
+
+  if (minimumWidth > width) {
+    return renderEmbeddedFrameRule(corner, safeLeftLabel, width);
+  }
+
+  const rightRendered = `${safeRightLabel}: ${styleTeal(safeRightValue)}`;
+  const ruleWidth = Math.max(1, width - visibleWidth(safeLeftLabel) - visibleWidth(rightText) - 5);
+  return `${corner} ${safeLeftLabel} ${repeatToWidth("─", ruleWidth)} ${rightRendered}`;
+}
+
 function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
   const footerWidth = Math.max(0, width - 1);
   const rightSegment = clipFooterSegment(rightLabel, footerWidth);
@@ -161,10 +181,10 @@ export function buildRouteBreadcrumb(navigation) {
   return `${baseBreadcrumb}/${profileName || "New"}`;
 }
 
-function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel } = {}) {
+function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel } = {}) {
   const safeWidth = Math.max(20, width);
   const innerWidth = Math.max(1, safeWidth - 2);
-  const framedLines = [renderEmbeddedFrameRule("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), safeWidth)];
+  const framedLines = [renderEmbeddedFrameHeader("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), headerRightLabel, safeWidth)];
 
   for (const line of [...contentLines, ...footerLines]) {
     framedLines.push(`│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)}`);
@@ -470,6 +490,17 @@ function renderFramedRouteScreen(lines, navigation, width, options = {}) {
   });
 }
 
+function buildModelProfilesHeaderLabel(routeState) {
+  const activeProfile = sanitizeTerminalOutput(routeState?.activeProfile ?? "(none)");
+  if ((routeState?.browse?.mode ?? "browse") !== "browse") {
+    return undefined;
+  }
+  return {
+    label: "Active profile",
+    value: activeProfile,
+  };
+}
+
 function renderPlaceholderScreen(route, width) {
   return [
     `${route} (coming later)`,
@@ -607,7 +638,18 @@ function createMainScreen({
       }
 
       if (navigation.route === "model-profiles") {
-        return appendInteractionPanels(renderFramedRouteScreen(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal, styleMuted: styleLightGray }), navigation, width), navigation, outputState, interactiveActions);
+        const routeState = getRouteState("model-profiles");
+        return appendInteractionPanels(
+          renderFramedRouteScreen(
+            renderModelProfilesScreen(routeState, width, { styleSelected: styleTeal, styleMuted: styleLightGray }),
+            navigation,
+            width,
+            { headerRightLabel: buildModelProfilesHeaderLabel(routeState) },
+          ),
+          navigation,
+          outputState,
+          interactiveActions,
+        );
       }
 
       if (navigation.route !== "home") {

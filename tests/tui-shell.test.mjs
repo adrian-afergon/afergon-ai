@@ -226,6 +226,18 @@ describe("navigation state", () => {
     expect(renderedLines[0]).toBe("┌ Models/budget ────────────────");
   });
 
+  it("renders the Models frame header with a right-aligned active-profile label", () => {
+    const app = createRouteRenderApp();
+    app.navigation.route = "model-profiles";
+
+    const renderedLines = app.screen.render(80).map(stripAnsi);
+
+    expect(renderedLines[0]).toContain("┌ Models ");
+    expect(renderedLines[0]).toContain("Active profile: default");
+    expect(renderedLines[0]).toMatch(/Active profile: default\s*$/);
+    expect(renderedLines.join("\n")).not.toContain("Summary [ok]: 1 profile available");
+  });
+
   it("renders Home body lines without a trailing right border suffix", () => {
     const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
 

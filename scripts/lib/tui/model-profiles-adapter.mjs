@@ -332,6 +332,7 @@ export function getModelProfilesScreenState({ cwd = process.cwd(), env = process
       focusedProfile,
       focusedProfileName: focusedProfile.name,
       isCreateSelected: focusedProfile.isCreate,
+      placeholderAssignments: SUPPORTED_AGENTS,
     },
     actions: [createStableModelsAction()],
     interactiveActions: [],
