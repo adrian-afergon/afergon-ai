@@ -708,6 +708,7 @@ describe("models CLI behavior", () => {
       XDG_CONFIG_HOME: xdgHome,
       AFERGON_AI_CONFIG_DIR: configDir,
       PATH: `${fakeBashBin}:${fakeOpencodeBin}:${process.env.PATH}`,
+      AFG_FORCE_OPENCODE_BASH_REFRESH: "1",
       AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "500",
     });
 
