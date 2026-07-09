@@ -144,7 +144,12 @@ Accessibility and keyboard notes:
 
 - Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
+- Selected rows add teal emphasis when the terminal supports color, but `[selected]` and other text cues remain the source of truth.
+- Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.
 - Inside Model Profiles, `models list` and `models show` run inline, while `switch`, `set`, `profile create`, and `profile delete` open picker or text forms before confirmation.
+- In Model Profiles browse mode, ↑/↓ move only the profile list, Space activates the focused existing profile or starts `* New Profile`, Delete opens typed confirmation, `U` edits the focused profile, and `N` opens create-name first.
+- In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual `provider/model` entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.
+- A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.
 - Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
 - `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
 - `init` opens checkbox choices for Pi, Claude Code, OpenCode, or all before showing a confirmation with the exact argv that will run.

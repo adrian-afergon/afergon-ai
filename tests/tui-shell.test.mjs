@@ -71,6 +71,13 @@ describe("navigation state", () => {
     expect(createNavigationState()).toEqual({
       route: "home",
       homeSelection: 0,
+      modelProfiles: {
+        mode: "browse",
+        focusedProfileIndex: 0,
+        focusedAgentIndex: 0,
+        targetProfileName: undefined,
+        stagedAssignments: {},
+      },
       routes: ["home", "configuration", "status", "model-profiles"],
     });
 
