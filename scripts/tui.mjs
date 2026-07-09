@@ -32,7 +32,8 @@ import {
 } from "./lib/tui/actions/forms.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
-import { getModelProfilesBrowseIntent, getModelProfilesScreenState } from "./lib/tui/model-profiles-adapter.mjs";
+import { buildCommandArgv } from "./lib/tui/command-manifest.mjs";
+import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
 import {
   activateHomeSelection,
   closeModal,
@@ -41,11 +42,13 @@ import {
   exitModelProfilesAssignments,
   HOME_MENU_ROUTES,
   moveHomeSelection,
+  moveModelProfilesAssignmentSelection,
   moveModelProfilesSelection,
   moveSectionActionSelection,
   navigateTo,
   normalizeSectionActionSelection,
   openModal,
+  stageModelProfilesAssignment,
 } from "./lib/tui/navigation.mjs";
 import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
 import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.mjs";
@@ -68,6 +71,38 @@ function styleTeal(text) {
 
 function isDeleteKey(data) {
   return matchesKey(data, Key.delete) || data === DELETE_ESCAPE_SEQUENCE;
+}
+
+function createModelProfileCreateAction() {
+  return {
+    id: "model-profiles-create-profile",
+    section: "model-profiles",
+    kind: "mutate",
+    label: "Create a profile",
+    cliEquivalent: "afergon-ai models profile create <name>",
+    confirmLabel: "Create this profile now?",
+    buildArgv: ({ profileName }) => buildCommandArgv("models", ["profile", "create", profileName]),
+    form: {
+      kind: "fields",
+      title: "Create a profile",
+      fields: [{ id: "profileName", label: "Profile name", type: "text", initialValue: "", required: true, requiredMessage: "Profile name is required." }],
+    },
+  };
+}
+
+function createModelProfileStageAction(assignment) {
+  return {
+    id: "model-profiles-stage-assignment",
+    section: "model-profiles",
+    kind: "draft",
+    label: `Set model for ${assignment.agent}`,
+    agentName: assignment.agent,
+    form: {
+      kind: "fields",
+      title: `Set model for ${assignment.agent}`,
+      fields: [{ id: "model", label: "Model", type: "text", initialValue: "", required: true, requiredMessage: "Model is required." }],
+    },
+  };
 }
 
 export function shouldExitTui(data) {
@@ -333,6 +368,7 @@ function createMainScreen({
   loadModelProfilesScreenState,
   getInteractiveActions,
   executeAction,
+  saveModelProfileAssignments,
 }) {
   let outputState;
 
@@ -371,12 +407,60 @@ function createMainScreen({
     };
   }
 
-  async function runSelectedAction(action) {
-    const result = await executeAction({ action });
-    outputState = createOutputState({ action, result });
-    showModal(navigation, outputState);
-    onNavigate();
-  }
+    async function runSelectedAction(action) {
+      const result = await executeAction({ action });
+      if (action.id === "model-profiles-create-profile" && result.ok) {
+        updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
+        onNavigate();
+        return;
+      }
+      outputState = createOutputState({ action, result });
+      showModal(navigation, outputState);
+      onNavigate();
+    }
+
+    function showAssignmentSaveError(error) {
+      outputState = createOutputState({
+        action: {
+          id: "model-profiles-save-assignments",
+          label: "Save staged assignments",
+          cliEquivalent: "TUI assignment save",
+        },
+        result: {
+          ok: false,
+          exitCode: 1,
+          stdout: "",
+          stderr: error instanceof Error ? error.message : String(error),
+          timedOut: false,
+        },
+      });
+      showModal(navigation, outputState);
+      onNavigate();
+    }
+
+    function saveFocusedProfileAssignments() {
+      try {
+        const result = saveModelProfileAssignments({
+          profileName: navigation.modelProfiles?.targetProfileName,
+          assignments: navigation.modelProfiles?.stagedAssignments ?? {},
+        });
+
+        if (result && typeof result.then === "function") {
+          result
+            .then(() => {
+              updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
+              onNavigate();
+            })
+            .catch(showAssignmentSaveError);
+          return;
+        }
+
+        updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
+        onNavigate();
+      } catch (error) {
+        showAssignmentSaveError(error);
+      }
+    }
 
   return {
     render(width) {
@@ -450,6 +534,35 @@ function createMainScreen({
         }
 
         if (matchesKey(data, Key.enter)) {
+          if (navigation.modal.action.id === "model-profiles-stage-assignment") {
+            const submitState = getFormSubmitState(navigation.modal);
+            if (submitState.isCancel) {
+              hideModal(navigation);
+              onNavigate();
+              return;
+            }
+            if (submitState.isSubmit) {
+              const validation = validateFormInput(navigation.modal);
+              if (!validation.ok) {
+                navigation.modal = {
+                  ...navigation.modal,
+                  activeIndex: validation.activeIndex ?? navigation.modal.activeIndex,
+                  validationMessage: validation.message,
+                };
+                onNavigate();
+                return;
+              }
+
+              updateModelProfilesState(
+                navigation,
+                stageModelProfilesAssignment(navigation.modelProfiles, navigation.modal.action.agentName, validation.input.model),
+              );
+              hideModal(navigation);
+              onNavigate();
+              return;
+            }
+          }
+
           if (navigation.modal.formKind === "checkboxes") {
             const submitState = getFormSubmitState(navigation.modal);
             if (submitState.isCancel) {
@@ -502,6 +615,11 @@ function createMainScreen({
               }
 
               const resolvedAction = resolveExecutableAction(navigation.modal.action, validation.input);
+              if (navigation.modal.action.id === "model-profiles-create-profile") {
+                showModal(navigation, createConfirmationState({ action: { ...resolvedAction, targetProfileName: validation.input.profileName } }));
+                onNavigate();
+                return;
+              }
               showModal(navigation, createConfirmationState({ action: resolvedAction }));
               onNavigate();
               return;
@@ -597,6 +715,34 @@ function createMainScreen({
       if (navigation.route === "model-profiles") {
         const routeState = getRouteState("model-profiles");
 
+        if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "assignments") {
+          if (matchesKey(data, Key.up)) {
+            updateModelProfilesState(navigation, moveModelProfilesAssignmentSelection(navigation.modelProfiles, routeState?.assignments?.length ?? 1, -1));
+            onNavigate();
+            return;
+          }
+
+          if (matchesKey(data, Key.down)) {
+            updateModelProfilesState(navigation, moveModelProfilesAssignmentSelection(navigation.modelProfiles, routeState?.assignments?.length ?? 1, 1));
+            onNavigate();
+            return;
+          }
+
+          if (matchesKey(data, Key.enter)) {
+            const focusedAssignment = routeState?.assignments?.[navigation.modelProfiles?.focusedAgentIndex ?? 0];
+            if (focusedAssignment) {
+              showModal(navigation, createFormState({ action: createModelProfileStageAction(focusedAssignment) }));
+              onNavigate();
+            }
+            return;
+          }
+
+          if (printable === "s") {
+            saveFocusedProfileAssignments();
+            return;
+          }
+        }
+
         if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "browse") {
           if (matchesKey(data, Key.up)) {
             updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, -1));
@@ -633,7 +779,7 @@ function createMainScreen({
           }
 
           if (intent.kind === "create-entry") {
-            updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, undefined));
+            showModal(navigation, createFormState({ action: createModelProfileCreateAction() }));
             onNavigate();
             return;
           }
@@ -728,6 +874,7 @@ export function createTuiApp({
   loadModelProfilesScreenState = ({ navigation } = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
+  saveModelProfileAssignments = ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments),
 } = {}) {
   const navigation = createNavigationState();
   navigation.sectionActionSelection = 0;
@@ -754,6 +901,7 @@ export function createTuiApp({
     loadModelProfilesScreenState,
     getInteractiveActions: (route) => interactiveActionsByRoute[route] ?? [],
     executeAction,
+    saveModelProfileAssignments,
   });
   tui.addChild(screen);
   tui.setFocus(screen);

@@ -32,6 +32,13 @@ function renderAssignments(assignments) {
   );
 }
 
+function renderAssignmentEditor(assignments, styleSelected) {
+  return assignments.map((assignment) => {
+    const line = `${sanitizeText(assignment.agent)}${assignment.isFocused ? " [selected]" : ""}: configured=${sanitizeText(assignment.configured)}, effective=${sanitizeText(assignment.effective ?? "(runtime default)")}, source=${sanitizeText(assignment.source)}`;
+    return assignment.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
+  });
+}
+
 function renderSupportedActions(actions) {
   return actions.flatMap((action) => {
     const lines = [`- ${sanitizeText(action.label)}: ${sanitizeText(action.detail)}`];
@@ -44,7 +51,8 @@ function renderSupportedActions(actions) {
 
 export function renderModelProfilesScreen(state, width, { styleSelected } = {}) {
   const isBrowseMode = (state.browse?.mode ?? "browse") === "browse";
-  const detailLines = state.assignments.length > 0 ? renderAssignments(state.assignments) : [];
+  const detailLines = isBrowseMode && state.assignments.length > 0 ? renderAssignments(state.assignments) : [];
+  const assignmentLines = state.assignments.length > 0 ? renderAssignmentEditor(state.assignments, styleSelected) : [];
   const lines = [
     sanitizeText(state.title ?? "Model Profiles"),
     "",
@@ -68,26 +76,26 @@ export function renderModelProfilesScreen(state, width, { styleSelected } = {}) 
     "",
     ...state.actions.map((action) => `- ${sanitizeText(action.label)}: ${sanitizeText(action.description)}`),
     "",
-    ...(isBrowseMode
-      ? [
-          "Interactive notes",
-          "- Browse mode scopes arrow keys to the profile list only.",
-          "- Space switches the focused profile or starts the new-profile flow.",
-        ]
-       : [
-           "Assignment editor",
-           `- Placeholder only in this slice for ${getAssignmentPlaceholderProfileName(state.browse)}.`,
-           "- Full agent assignment editing lands in PR3.",
-         ]),
-    "",
-    "Keyboard help",
-    ...(isBrowseMode
-      ? [
-          "Use ↑/↓ to move the profile selection.",
-          "Press Space to switch or start the focused profile flow.",
-          "Press Delete to confirm deletion, U to edit, and N to create.",
-        ]
-      : ["Press Esc to return to browse mode."]),
+     ...(isBrowseMode
+       ? [
+           "Interactive notes",
+           "- Browse mode scopes arrow keys to the profile list only.",
+           "- Space switches the focused profile or starts the new-profile flow.",
+         ]
+        : [
+            "Assignment editor",
+            `Target profile: ${getAssignmentPlaceholderProfileName(state.browse)}`,
+            ...assignmentLines,
+          ]),
+     "",
+     "Keyboard help",
+     ...(isBrowseMode
+       ? [
+           "Use ↑/↓ to move the profile selection.",
+           "Press Space to switch or start the focused profile flow.",
+           "Press Delete to confirm deletion, U to edit, and N to create.",
+         ]
+      : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
     "Press h to return Home.",
     "Press q or Esc to exit.",
   ];
