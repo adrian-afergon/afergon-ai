@@ -386,6 +386,8 @@ function renderInteractiveActions(actions, navigation) {
 
 function renderConfirmationModal(modal) {
   const prompt = modal.confirmation?.prompt ?? modal.action.confirmLabel ?? "Confirm this action?";
+  const isSubmitCancel = modal.confirmation?.kind === "submit-cancel";
+  const activeChoice = modal.activeChoice === "cancel" ? "cancel" : "submit";
   return [
     "",
     "Confirmation",
@@ -400,9 +402,43 @@ function renderConfirmationModal(modal) {
         ]
       : []),
     ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage)] : []),
-    "Press Enter to confirm.",
+    ...(isSubmitCancel
+      ? [
+          "Choices:",
+          `${activeChoice === "submit" ? ">" : " "} Submit / confirm`,
+          `${activeChoice === "cancel" ? ">" : " "} Cancel`,
+          "Use ↑/↓ to choose Submit or Cancel.",
+          "Press Enter to choose.",
+        ]
+      : ["Press Enter to confirm."]),
     "Press Esc to cancel.",
   ];
+}
+
+function isModelProfilesDeleteConfirmation(modal) {
+  return modal?.kind === "confirm" && modal.action?.id === "models-delete-focused";
+}
+
+function renderFloatingConfirmationModal(lines, modal) {
+  const screenWidth = Math.max(FRAME_MIN_WIDTH, ...lines.map((line) => visibleWidth(line)));
+  const modalContent = renderConfirmationModal(modal);
+  const preferredWidth = Math.max(...modalContent.map((line) => visibleWidth(line))) + 4;
+  const boxWidth = Math.min(Math.max(FRAME_MIN_WIDTH, preferredWidth), Math.max(FRAME_MIN_WIDTH, screenWidth - 4));
+  const innerWidth = Math.max(1, boxWidth - 4);
+  const boxLines = [
+    `┌${repeatToWidth("─", boxWidth - 2)}┐`,
+    ...modalContent.map((line) => `│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)} │`),
+    `└${repeatToWidth("─", boxWidth - 2)}┘`,
+  ];
+  const overlayStart = Math.max(1, Math.floor((lines.length - boxLines.length) / 2));
+  const leftPadding = repeatToWidth(" ", Math.max(0, Math.floor((screenWidth - boxWidth) / 2)));
+  const overlaidLines = [...lines];
+
+  for (let index = 0; index < boxLines.length; index += 1) {
+    overlaidLines[overlayStart + index] = padVisibleLine(`${leftPadding}${boxLines[index]}`, screenWidth);
+  }
+
+  return overlaidLines;
 }
 
 function renderPickerFormModal(modal) {
@@ -481,6 +517,10 @@ function renderCheckboxFormModal(modal) {
 function appendInteractionPanels(lines, navigation, outputState, interactiveActions) {
   const augmentedLines = [...lines, ...renderInteractiveActions(interactiveActions, navigation)];
 
+  if (isModelProfilesDeleteConfirmation(navigation.modal)) {
+    return renderFloatingConfirmationModal(augmentedLines, navigation.modal);
+  }
+
   if (navigation.modal?.kind === "confirm") {
     augmentedLines.push(...renderConfirmationModal(navigation.modal));
   }
@@ -533,7 +573,7 @@ function renderPlaceholderScreen(route, width) {
 }
 
 function shouldSuppressSuccessfulOutputPanel(action, result) {
-  if (result?.ok !== true || action?.id !== "models-switch-focused") {
+  if (result?.ok !== true || !["models-switch-focused", "models-delete-focused"].includes(action?.id)) {
     return false;
   }
 
@@ -544,6 +584,25 @@ function shouldSuppressSuccessfulOutputPanel(action, result) {
 
   const stdout = sanitizeTerminalOutput(result.stdout ?? "").toLowerCase();
   return !hasDegradedRefreshGuidance({ stdout, stderr });
+}
+
+function finalizeSuccessfulModelProfilesDelete(navigation, routeState) {
+  const currentIndex = Number.isInteger(navigation.modelProfiles?.focusedProfileIndex)
+    ? navigation.modelProfiles.focusedProfileIndex
+    : 0;
+  const maxIndex = Math.max((routeState?.profiles?.length ?? 1) - 1, 0);
+
+  updateModelProfilesState(navigation, {
+    ...navigation.modelProfiles,
+    mode: "browse",
+    focusedProfileIndex: Math.min(Math.max(currentIndex, 0), maxIndex),
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+    stagedAssignments: {},
+    createProfileName: undefined,
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  });
 }
 
 function shouldShowProfileCreateOutput(action, result) {
@@ -655,6 +714,9 @@ function createMainScreen({
       return;
     }
     if (shouldSuppressSuccessfulOutputPanel(action, result)) {
+      if (action.id === "models-delete-focused") {
+        finalizeSuccessfulModelProfilesDelete(navigation, getRouteState("model-profiles"));
+      }
       outputState = undefined;
       hideModal(navigation);
       onNavigate();
@@ -935,25 +997,40 @@ function createMainScreen({
       }
 
       if (navigation.modal?.kind === "confirm") {
+        if (navigation.modal.confirmation?.kind === "submit-cancel" && (matchesKey(data, Key.up) || matchesKey(data, Key.down))) {
+          navigation.modal = {
+            ...navigation.modal,
+            activeChoice: navigation.modal.activeChoice === "cancel" ? "submit" : "cancel",
+          };
+          onNavigate();
+          return;
+        }
+
         if (matchesKey(data, Key.escape)) {
           hideModal(navigation);
           onNavigate();
           return;
         }
 
-        if (data === "\u007f") {
+        if (navigation.modal.confirmation?.kind === "typed-match" && data === "\u007f") {
           navigation.modal = backspaceConfirmationCharacter(navigation.modal);
           onNavigate();
           return;
         }
 
-        if (data.length === 1 && data !== "\r") {
+        if (navigation.modal.confirmation?.kind === "typed-match" && data.length === 1 && data !== "\r") {
           navigation.modal = appendConfirmationCharacter(navigation.modal, data);
           onNavigate();
           return;
         }
 
         if (matchesKey(data, Key.enter)) {
+          if (navigation.modal.confirmation?.kind === "submit-cancel" && navigation.modal.activeChoice === "cancel") {
+            hideModal(navigation);
+            onNavigate();
+            return;
+          }
+
           const validation = validateConfirmationState(navigation.modal);
           if (!validation.ok) {
             navigation.modal = {
@@ -1083,7 +1160,7 @@ function createMainScreen({
 
           const intent = matchesKey(data, Key.enter)
             ? getModelProfilesBrowseIntent(routeState, "switch")
-            : isDeleteKey(data)
+            : isDeleteKey(data) || printable === "d"
               ? getModelProfilesBrowseIntent(routeState, "delete")
               : printable === "u"
                 ? getModelProfilesBrowseIntent(routeState, "edit")
