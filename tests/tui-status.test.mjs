@@ -78,6 +78,10 @@ async function flushTui() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getStatusScreenState", () => {
   it("reports readiness warnings with actionable commands when setup surfaces are missing", () => {
     const tempRoot = makeTempRoot();
@@ -235,7 +239,7 @@ describe("renderStatusScreen", () => {
     expect(lines.join("\n")).toContain("afergon-ai doctor");
     expect(lines.join("\n")).toContain("Keyboard help");
     expect(lines.join("\n")).toContain("State labels use [ok], [warn], and [fail] text markers.");
-    expect(lines.join("\n")).toContain("Press h to return Home");
+    expect(lines.join("\n")).not.toContain("Press h to return Home");
   });
 
   it("sanitizes terminal control sequences from status labels, details, and paths", () => {
@@ -313,7 +317,7 @@ describe("createTuiApp status route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press s for Status");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
   });
 
   it("runs the status doctor action inline with --opencode and shows bounded failure output", async () => {

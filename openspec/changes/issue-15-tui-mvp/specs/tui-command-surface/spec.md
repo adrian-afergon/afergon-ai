@@ -51,14 +51,14 @@ The TUI MUST provide functional Configuration, Status, and Model Profiles sectio
 - AND help text identifies how to return Home and how to exit
 
 #### Scenario: Modal or form focus stays bounded and recoverable
-- GIVEN the user opens an action confirmation, picker, or form
+- GIVEN the user opens an action confirmation, create-name editor, assignment-editor model-entry form, or typed delete confirmation
 - WHEN the user navigates with keyboard controls only
 - THEN focus remains within the active surface until submit or cancel
 - AND Esc or Cancel returns focus to the launching action without trapping the user
 
 ### Requirement: Interactive section actions execute only defined CLI behaviors
 
-The TUI MUST execute section actions only from explicit action definitions backed by stable argv arrays. Read-only actions MUST execute inline and render status/output in the TUI. Mutating actions MUST require an in-TUI confirmation before execution. The system MUST NOT fabricate commands, shell strings, or unsupported actions.
+The TUI MUST execute section actions only from explicit action definitions backed by stable argv arrays. Read-only actions MUST execute inline and render status/output in the TUI. Destructive or higher-risk mutations MUST require an in-TUI confirmation before execution. Direct profile switching from the focused Model Profiles browse row and explicit assignment-editor saves are intentional immediate key actions in this UX iteration. The system MUST NOT fabricate commands, shell strings, or unsupported actions.
 
 #### Scenario: Read-only action executes inline
 - GIVEN the user activates `doctor` from Configuration or Status
@@ -66,11 +66,17 @@ The TUI MUST execute section actions only from explicit action definitions backe
 - THEN the TUI executes the mapped argv definition inline
 - AND the result appears in a TUI output/status surface without leaving the TUI
 
-#### Scenario: Mutating action requires confirmation
-- GIVEN the user activates `init`, `update`, `models switch`, `models set`, `models profile create`, or `models profile delete`
+#### Scenario: Destructive or higher-risk mutation requires confirmation
+- GIVEN the user activates `init`, `update`, or `models profile delete`
 - WHEN the action is selected
 - THEN the TUI shows the exact action summary and confirmation choice first
 - AND execution does not start until the user confirms
+
+#### Scenario: Direct focused profile switch executes immediately
+- GIVEN the user focuses an existing profile in Model Profiles browse mode
+- WHEN the user presses `Space`
+- THEN the TUI switches to that profile immediately without a pre-execution confirmation step
+- AND clean success stays inline while failures or degraded refresh guidance remain visible in bounded output
 
 #### Scenario: Unsupported command is never invented
 - GIVEN a screen shows a profile or repair action with no stable CLI equivalent
@@ -80,7 +86,9 @@ The TUI MUST execute section actions only from explicit action definitions backe
 
 ### Requirement: Forms, cancellation, and output recovery
 
-The TUI MUST provide bounded forms or pickers for `init`, `models switch`, `models set`, `models profile create`, and `models profile delete`. `init` MUST expose checkbox choices for Pi, Claude, OpenCode, and all. Users MUST be able to cancel forms, confirmations, and output views with keyboard actions. After a mutating action succeeds, the affected section MUST refresh its displayed state.
+The TUI MUST provide bounded input surfaces whenever additional input is required, including `init`, Model Profiles create-name entry, assignment-editor model entry, and `models profile delete` typed confirmation. `init` MUST expose checkbox choices for Pi, Claude, OpenCode, and all. Model Profiles browse-mode switching MAY use direct focused-profile activation when no extra input is required. Users MUST be able to cancel forms, confirmations, and output views with keyboard actions. After a mutating action succeeds, the affected section MUST refresh its displayed state.
+
+The current Model Profiles UX does not present a legacy action-list `models set` confirmation or picker. Browse mode enters the assignment editor with `U`, manual `provider/model` entry happens per focused agent, staged edits remain local until `S`, and that explicit `S` save executes immediately without an additional confirmation even though persistence still routes through manifest-backed `models set` argv. Typed delete confirmation remains required.
 
 #### Scenario: Init exposes bounded checkbox choices
 - GIVEN the user opens `init` from Configuration or Status
@@ -88,11 +96,23 @@ The TUI MUST provide bounded forms or pickers for `init`, `models switch`, `mode
 - THEN Pi, Claude, OpenCode, and all appear as keyboard-operable checkbox choices
 - AND submission routes only the chosen flags to the mapped argv definition
 
-#### Scenario: Model profile actions use pickers/forms
+#### Scenario: Model profile actions use assignment-editor entry and typed confirmation
 - GIVEN the user opens a Model Profiles mutating action
 - WHEN the action needs a profile, agent, or model value
-- THEN the TUI collects it through bounded pickers or text-entry form fields
+- THEN the TUI collects it through bounded create-name text entry, assignment-editor model-entry fields, or typed delete confirmation as appropriate
 - AND the submitted argv matches the chosen values without shell interpolation
+
+#### Scenario: First profile create surfaces degraded refresh guidance when present
+- GIVEN the user creates the first profile from Model Profiles browse mode
+- WHEN the create command succeeds but stdout or stderr includes degraded, warning, or recovery guidance
+- THEN the TUI enters the assignment editor for that new profile
+- AND the guidance remains visible in a bounded output panel until dismissed
+
+#### Scenario: Assignment editor save is an explicit direct action
+- GIVEN the user is in Model Profiles assignment mode with staged edits
+- WHEN the user presses `S`
+- THEN the TUI saves those staged edits immediately without an extra confirmation step
+- AND clean success returns to browse mode while failures or degraded refresh guidance remain visible in bounded output
 
 #### Scenario: Cancel or escape aborts the active action safely
 - GIVEN a confirmation, form, or output panel is open

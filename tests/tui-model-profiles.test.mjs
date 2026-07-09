@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
 import { getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
@@ -201,8 +201,51 @@ async function emitInput(terminal, data) {
   await flushTui();
 }
 
+async function emitText(terminal, text) {
+  for (const character of text) {
+    await emitInput(terminal, character);
+  }
+}
+
+async function submitFocusedModelEntry(terminal, modelText) {
+  await emitText(terminal, modelText);
+  await emitInput(terminal, "\u001b[B");
+  await emitInput(terminal, "\r");
+}
+
+function buildBrowseRouteState({ navigation, activeProfile = "budget", focusedProfileName = "fallback", summaryDetail = "2 profile(s) available." } = {}) {
+  return {
+    title: "Model Profiles",
+    summary: { state: "ok", detail: summaryDetail },
+    activeProfile,
+    configPath: "/tmp/config.json",
+    profiles: [
+      { name: "budget", isActive: activeProfile === "budget", isCreate: false, isFocused: focusedProfileName === "budget" },
+      { name: "fallback", isActive: activeProfile === "fallback", isCreate: false, isFocused: focusedProfileName === "fallback" },
+      { name: "* New Profile", isActive: false, isCreate: true, isFocused: focusedProfileName === "* New Profile" },
+    ],
+    assignments: [],
+    browse: {
+      mode: navigation?.modelProfiles?.mode ?? "browse",
+      focusedProfileName,
+      focusedProfile: {
+        name: focusedProfileName,
+        isActive: activeProfile === focusedProfileName,
+        isCreate: focusedProfileName === "* New Profile",
+        isFocused: true,
+      },
+      isCreateSelected: focusedProfileName === "* New Profile",
+    },
+    interactiveActions: [],
+  };
+}
+
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getModelProfilesScreenState", () => {
-  it("reports missing config with active-profile guidance and only stable CLI-equivalent actions", () => {
+  it("reports missing config with active-profile guidance and the current interactive-state shape", () => {
     const tempRoot = makeTempRoot();
     const env = {
       HOME: path.join(tempRoot, "home"),
@@ -215,14 +258,8 @@ describe("getModelProfilesScreenState", () => {
     expect(state.activeProfile).toBe("(none)");
     expect(state.summary.state).toBe("warn");
     expect(state.summary.detail).toContain("No afergon-ai model config exists yet");
-    expect(state.actions).toEqual([
-      expect.objectContaining({ id: "models", label: "afergon-ai models", argv: ["models"] }),
-    ]);
-    expect(state.supportedActions).toEqual([
-      expect.objectContaining({ label: "Review current profile details", command: "afergon-ai models" }),
-      expect.objectContaining({ label: "Create, switch, or delete profiles", command: undefined }),
-      expect.objectContaining({ label: "Set agent-specific models", command: undefined }),
-    ]);
+    expect(state).not.toHaveProperty("actions");
+    expect(state.interactiveActions).toEqual([]);
   });
 
   it("reports the active profile, known profiles, and resolved assignments from isolated config fixtures", () => {
@@ -263,6 +300,7 @@ describe("getModelProfilesScreenState", () => {
       expect.objectContaining({ name: "* New Profile", isActive: false, isCreate: true, isFocused: false }),
     ]);
     expect(state.assignments).toHaveLength(SUPPORTED_AGENTS.length);
+    expect(state.browse.placeholderAssignments).toEqual(SUPPORTED_AGENTS);
     expect(state.assignments).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit" }),
@@ -335,7 +373,7 @@ describe("getModelProfilesScreenState", () => {
 });
 
 describe("renderModelProfilesScreen", () => {
-  it("renders active profile state, supported profile actions, and only stable CLI-equivalent commands", () => {
+  it("renders browse mode with focused cursor, active profile checkboxes, and muted detail rows", () => {
     const lines = renderModelProfilesScreen(
       {
         title: "Model Profiles",
@@ -351,34 +389,58 @@ describe("renderModelProfilesScreen", () => {
           { agent: "afg-review", configured: "inherit", effective: "openai/gpt-5.5", source: "inherit" },
           { agent: "afg-debate", configured: "(unset)", effective: "openai/gpt-5.5", source: "implicit-inherit" },
         ],
-        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [
-          { label: "Review current profile details", detail: "Inspect the active profile and resolved assignments.", command: "afergon-ai models" },
-          { label: "Create, switch, or delete profiles", detail: "Use the CLI when you need to change profile membership." },
-        ],
         browse: { mode: "browse", focusedProfileName: "budget", isCreateSelected: false },
       },
       120,
+      {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     );
 
     const output = lines.join("\n");
     expect(output).toContain("Model Profiles");
-    expect(output).toContain("Active profile: budget");
     expect(output).toContain("Profile list");
-    expect(output).toContain("budget [active] [selected]");
-    expect(output).toContain("fallback");
-    expect(output).toContain("* New Profile");
-    expect(output).toContain("Profile details");
-    expect(output).toContain("afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit");
-    expect(output).toContain("afg-review: configured=inherit, effective=openai/gpt-5.5, source=inherit");
-    expect(output).toContain("afg-debate: configured=(unset), effective=openai/gpt-5.5, source=implicit-inherit");
-    expect(output).toContain("CLI equivalent: afergon-ai models");
+    expect(output).toContain("> [X] budget");
+    expect(output).toContain("  [ ] fallback");
+    expect(output).toContain("  * New Profile");
+    expect(output).toContain("\u001b[38;5;250mProfile Details\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-review: configured=inherit, effective=openai/gpt-5.5, source=inherit\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-debate: configured=(unset), effective=openai/gpt-5.5, source=implicit-inherit\u001b[0m");
+    expect(output).not.toContain("[selected]");
+    expect(output).not.toContain("Supported actions");
+    expect(output).not.toContain("Stable CLI surfaces");
+    expect(output).not.toContain("Interactive notes");
+    expect(output).not.toContain("Summary [ok]:");
+    expect(output).not.toContain("Active profile: budget");
     expect(output).toContain("Keyboard help");
     expect(output).toContain("Use ↑/↓ to move the profile selection.");
     expect(output).toContain("Press Space to switch or start the focused profile flow.");
   });
 
-  it("renders an empty lower pane for the * New Profile sentinel row", () => {
+  it("renders the active marker independently from the focused row", () => {
+    const output = renderModelProfilesScreen(
+      {
+        title: "Model Profiles",
+        summary: { state: "ok", detail: "2 profile(s) available." },
+        activeProfile: "budget",
+        profiles: [
+          { name: "budget", isActive: true, isCreate: false, isFocused: false },
+          { name: "fallback", isActive: false, isCreate: false, isFocused: true },
+          { name: "* New Profile", isActive: false, isCreate: true, isFocused: false },
+        ],
+        assignments: [],
+        browse: { mode: "browse", focusedProfileName: "fallback", isCreateSelected: false },
+      },
+      120,
+    ).join("\n");
+
+    expect(output).toContain("  [X] budget");
+    expect(output).toContain("> [ ] fallback");
+    expect(output).not.toContain("> [X] budget");
+  });
+
+  it("renders placeholder detail rows for the * New Profile sentinel row to preserve layout height", () => {
     const output = renderModelProfilesScreen(
       {
         title: "Model Profiles",
@@ -390,16 +452,25 @@ describe("renderModelProfilesScreen", () => {
           { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
         ],
         assignments: [],
-        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
-        browse: { mode: "browse", focusedProfileName: "* New Profile", isCreateSelected: true },
+        browse: {
+          mode: "browse",
+          focusedProfileName: "* New Profile",
+          isCreateSelected: true,
+          placeholderAssignments: ["afergon-ai", "afg-review", "afg-debate"],
+        },
       },
       120,
+      {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     ).join("\n");
 
-    expect(output).toContain("* New Profile [selected]");
-    expect(output).toContain("Profile details");
+    expect(output).toContain("> * New Profile");
+    expect(output).toContain("Profile Details");
     expect(output).not.toContain("configured=");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: pending new profile assignment\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-review: pending new profile assignment\u001b[0m");
+    expect(output).toContain("\u001b[38;5;250m- afg-debate: pending new profile assignment\u001b[0m");
   });
 
   it("renders a fail state without throwing", () => {
@@ -414,10 +485,6 @@ describe("renderModelProfilesScreen", () => {
       activeProfile: "(unavailable)",
       profiles: [],
       assignments: [],
-      actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-      supportedActions: [
-        { label: "Review current profile details", detail: "Inspect the active profile and resolved assignments.", command: "afergon-ai models" },
-      ],
     };
 
     expect(() => renderModelProfilesScreen(state, 160)).not.toThrow();
@@ -440,19 +507,19 @@ describe("renderModelProfilesScreen", () => {
         assignments: [
           { agent: "afergon-ai", configured: "\u001b[31mred\u001b[0m-model", effective: "tail\u009d2;owned\u0007", source: "explicit" },
         ],
-        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect \u001b[2Jsafe\u0007 state.", command: "afergon-ai models" }],
       },
       160,
-      { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` },
+      {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      },
     ).join("\n");
 
-    expect(output).toContain("Active profile ready");
-    expect(output).toContain("Active profile: budget?");
-    expect(output).toContain("\u001b[38;5;6m- budget [active] [selected]\u001b[0m");
+    expect(output).not.toContain("Active profile ready");
+    expect(output).not.toContain("Active profile: budget?");
+    expect(output).toContain("\u001b[38;5;6m> [X] budget\u001b[0m");
     expect(output).toContain("fallback?");
-    expect(output).toContain("configured=red-model, effective=tail, source=explicit");
-    expect(output).toContain("Inspect safe? state.");
+    expect(output).toContain("\u001b[38;5;250m- afergon-ai: configured=red-model, effective=tail, source=explicit\u001b[0m");
     expect(output).not.toContain("owned");
     expect(output).not.toContain("\u0000");
   });
@@ -466,8 +533,6 @@ describe("renderModelProfilesScreen", () => {
         activeProfile: "budget",
         profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
         assignments: [],
-        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
         browse: {
           mode: "assignments",
           targetProfileName: "budget\u001b]2;owned\u0007\u001b[31m-red\u001b[0m",
@@ -499,8 +564,6 @@ describe("createTuiApp model-profiles route", () => {
           { name: "* New Profile", isActive: false, isCreate: true, isFocused: false },
         ],
         assignments: [{ agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit" }],
-        actions: [{ id: "models", label: "afergon-ai models", argv: ["models"], description: "Manage model profiles from the CLI." }],
-        supportedActions: [{ label: "Review current profile details", detail: "Inspect the active profile.", command: "afergon-ai models" }],
         browse: { mode: "browse", focusedProfileName: "budget", isCreateSelected: false },
         interactiveActions: [],
       }),
@@ -508,7 +571,7 @@ describe("createTuiApp model-profiles route", () => {
 
     app.start();
     await flushTui();
-    expect(terminal.output).toContain("Press m for Model Profiles");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
 
     terminal.output = "";
     terminal.emitInput("m");
@@ -516,9 +579,10 @@ describe("createTuiApp model-profiles route", () => {
 
     expect(app.navigation.route).toBe("model-profiles");
     expect(terminal.output).toContain("Model Profiles");
-    expect(terminal.output).toContain("Active profile: budget");
     expect(terminal.output).toContain("Profile list");
-    expect(terminal.output).toContain("budget [active] [selected]");
+    expect(terminal.output).toContain("> [X] budget");
+    expect(stripAnsi(terminal.output)).toContain("Active profile: budget");
+    expect(stripAnsi(terminal.output)).not.toContain("Summary [ok]: 1 profile(s) available.");
 
     terminal.output = "";
     terminal.emitInput("h");
@@ -526,7 +590,7 @@ describe("createTuiApp model-profiles route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press m for Model Profiles");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
   });
 
   it("keeps Up/Down focused on profile rows and does not move section actions", async () => {
@@ -549,7 +613,11 @@ describe("createTuiApp model-profiles route", () => {
       exit: () => {},
       loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
       executeAction: createModelsActionExecutor(env),
-      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+      saveModelProfileAssignments: ({ profileName, assignments }) =>
+        saveAssignmentsForProfile(profileName, assignments, {
+          env,
+          validateModelAvailability: () => ({ status: "known", availableModels: ["openai/gpt-4.1"] }),
+        }),
     });
 
     app.start();
@@ -561,15 +629,15 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(1);
     expect(app.navigation.sectionActionSelection).toBe(0);
-    expect(terminal.output).toContain("fallback [selected]");
+    expect(terminal.output).toContain("> [ ] fallback");
 
     terminal.emitInput("\u001b[B");
     await flushTui();
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(2);
-    expect(terminal.output).toContain("* New Profile [selected]");
+    expect(terminal.output).toContain("> * New Profile");
   });
 
-  it("bounds browse-mode intents to switch, delete confirmation, edit entry, and create entry", async () => {
+  it("switches focused profiles immediately without opening an output panel while preserving delete confirmation, edit entry, and create entry", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -603,19 +671,32 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     terminal.emitInput(" ");
     await flushTui();
-    expect(terminal.output).toContain("Confirmation");
-    expect(terminal.output).toContain("afergon-ai models switch fallback");
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(1);
+    expect(terminal.output).not.toContain("Confirmation");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.activeProfile).toBe("fallback");
+    expect(terminal.output).toContain("> [X] fallback");
+    expect(terminal.output).toContain("  [ ] budget");
+    expect(terminal.output).not.toContain("Output [ok]");
+    expect(terminal.output).not.toContain("Press Enter or Esc to close this output panel.");
 
-    terminal.emitInput("\u001b");
+    terminal.output = "";
+    terminal.emitInput("\u001b[A");
     await flushTui();
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(0);
+    expect(terminal.output).toContain("> [ ] budget");
+    expect(terminal.output).toContain("  [X] fallback");
+
     terminal.output = "";
     terminal.emitInput("\u001b[3~");
     await flushTui();
     expect(terminal.output).toContain("Type the selected profile name to confirm deletion.");
-    expect(terminal.output).toContain("Expected text: fallback");
-    expect(terminal.output).toContain("afergon-ai models profile delete fallback");
+    expect(terminal.output).toContain("Expected text: budget");
+    expect(terminal.output).toContain("afergon-ai models profile delete budget");
 
     terminal.emitInput("\u001b");
+    await flushTui();
+    terminal.emitInput("\u001b[B");
     await flushTui();
     terminal.output = "";
     terminal.emitInput("u");
@@ -628,6 +709,117 @@ describe("createTuiApp model-profiles route", () => {
     terminal.emitInput("n");
     await flushTui();
     expect(terminal.output).toContain("Create a profile");
+  });
+
+  it("shows an output panel when an immediate profile switch fails", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => buildBrowseRouteState({ navigation }),
+      executeAction: async ({ action }) => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: `failed to switch ${action.argv.at(-1)}`,
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [fail]");
+    expect(terminal.output).toContain("failed to switch fallback");
+    expect(terminal.output).toContain("Press Enter or Esc to close this output panel.");
+  });
+
+  it("shows an output panel when an immediate profile switch succeeds with degraded refresh guidance", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => buildBrowseRouteState({ navigation }),
+      executeAction: async ({ action }) => ({
+        ok: true,
+        exitCode: 0,
+        stdout: `Switched active profile to '${action.argv.at(-1)}'.\nSaved config. OpenCode refresh timed out after 500ms. Run 'afergon-ai update' to retry the host registration refresh.`,
+        stderr: "",
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("OpenCode refresh timed out after 500ms");
+    expect(terminal.output).toContain("Run 'afergon-ai update'");
+  });
+
+  it("shows an output panel when an immediate profile switch succeeds with registrar conflict guidance on stdout", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => buildBrowseRouteState({ navigation }),
+      executeAction: async ({ action }) => ({
+        ok: true,
+        exitCode: 0,
+        stdout: `Switched active profile to '${action.argv.at(-1)}'.\nConflict: agent 'afergon-ai' already exists in opencode.json and does not look managed by afergon-ai.\n  OpenCode: kept existing non-managed agent definition(s): afergon-ai`,
+        stderr: "",
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("Conflict: agent 'afergon-ai' already exists in opencode.json");
+    expect(terminal.output).toContain("OpenCode: kept existing non-managed agent definition(s): afergon-ai");
+  });
+
+  it("shows an output panel when an immediate profile switch succeeds with stderr warnings", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => buildBrowseRouteState({ navigation }),
+      executeAction: async ({ action }) => ({
+        ok: true,
+        exitCode: 0,
+        stdout: `Switched active profile to '${action.argv.at(-1)}'.`,
+        stderr: "warning: OpenCode refresh was not refreshed for the current session",
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("warning: OpenCode refresh was not refreshed for the current session");
   });
 
   it("sanitizes the assignment placeholder after pressing U on a malicious profile name", async () => {
@@ -715,6 +907,151 @@ describe("createTuiApp model-profiles route", () => {
     expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeDefined();
   });
 
+  it("shows a validation message and keeps state unchanged when create-name submit is empty", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modal?.kind).toBe("form");
+    expect(terminal.output).toContain("Profile name is required");
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeUndefined();
+  });
+
+  it("shows a bounded output panel when first-profile create succeeds with degraded refresh guidance on stdout", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => ({
+        title: "Model Profiles",
+        summary: { state: "warn", detail: "No named profiles are available yet." },
+        activeProfile: navigation?.modelProfiles?.targetProfileName ?? "(none)",
+        configPath: "/tmp/config.json",
+        profiles: [{ name: "* New Profile", isActive: false, isCreate: true, isFocused: true }],
+        assignments: [],
+        browse: {
+          mode: navigation?.modelProfiles?.mode ?? "browse",
+          targetProfileName: navigation?.modelProfiles?.targetProfileName,
+          focusedProfileName: "* New Profile",
+          focusedProfile: { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
+          isCreateSelected: true,
+          placeholderAssignments: SUPPORTED_AGENTS,
+        },
+        interactiveActions: [],
+      }),
+      executeAction: async ({ action }) => ({
+        ok: true,
+        exitCode: 0,
+        stdout: `Created profile '${action.targetProfileName}'.\nSaved config. OpenCode refresh timed out after 500ms. Run 'afergon-ai update' to retry the host registration refresh.`,
+        stderr: "",
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+    await emitInput(terminal, "d");
+    await emitInput(terminal, "r");
+    await emitInput(terminal, "a");
+    await emitInput(terminal, "f");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("OpenCode refresh timed out after 500ms");
+    expect(terminal.output).toContain("Run 'afergon-ai update' to retry the host registration refresh.");
+  });
+
+  it("shows a bounded output panel when first-profile create succeeds with warning guidance on stderr", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => ({
+        title: "Model Profiles",
+        summary: { state: "warn", detail: "No named profiles are available yet." },
+        activeProfile: navigation?.modelProfiles?.targetProfileName ?? "(none)",
+        configPath: "/tmp/config.json",
+        profiles: [{ name: "* New Profile", isActive: false, isCreate: true, isFocused: true }],
+        assignments: [],
+        browse: {
+          mode: navigation?.modelProfiles?.mode ?? "browse",
+          targetProfileName: navigation?.modelProfiles?.targetProfileName,
+          focusedProfileName: "* New Profile",
+          focusedProfile: { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
+          isCreateSelected: true,
+          placeholderAssignments: SUPPORTED_AGENTS,
+        },
+        interactiveActions: [],
+      }),
+      executeAction: async ({ action }) => ({
+        ok: true,
+        exitCode: 0,
+        stdout: `Created profile '${action.targetProfileName}'.`,
+        stderr: "warning: OpenCode refresh was not refreshed for the current session",
+        timedOut: false,
+      }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, " ");
+    await emitInput(terminal, "d");
+    await emitInput(terminal, "r");
+    await emitInput(terminal, "a");
+    await emitInput(terminal, "f");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("warning: OpenCode refresh was not refreshed for the current session");
+  });
+
   it("stages manual assignment edits in assignment mode and saves them only after S", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
@@ -756,22 +1093,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "\r");
     expect(terminal.output).toContain(`Set model for ${SUPPORTED_AGENTS[1]}`);
 
-    await emitInput(terminal, "o");
-    await emitInput(terminal, "p");
-    await emitInput(terminal, "e");
-    await emitInput(terminal, "n");
-    await emitInput(terminal, "a");
-    await emitInput(terminal, "i");
-    await emitInput(terminal, "/");
-    await emitInput(terminal, "g");
-    await emitInput(terminal, "p");
-    await emitInput(terminal, "t");
-    await emitInput(terminal, "-");
-    await emitInput(terminal, "4");
-    await emitInput(terminal, ".");
-    await emitInput(terminal, "1");
-    await emitInput(terminal, "\u001b[B");
-    await emitInput(terminal, "\r");
+    await submitFocusedModelEntry(terminal, "openai/gpt-4.1");
 
     const stagedOnlyConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
     expect(stagedOnlyConfig.models.profiles.fallback[SUPPORTED_AGENTS[1]]).toBeUndefined();
@@ -786,6 +1108,358 @@ describe("createTuiApp model-profiles route", () => {
     expect(savedConfig.models.activeProfile).toBe("budget");
     expect(savedConfig.models.profiles.fallback[SUPPORTED_AGENTS[1]]).toBe("openai/gpt-4.1");
     expect(savedConfig.models.profiles.budget[SUPPORTED_AGENTS[1]]).toBeUndefined();
+  });
+
+  it("shows a validation message and does not save when assignment model submit is empty", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "u");
+
+    terminal.output = "";
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modal?.kind).toBe("form");
+    expect(terminal.output).toContain("Model is required");
+    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
+    expect(app.navigation.modelProfiles?.stagedAssignments ?? {}).toEqual({});
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.fallback[SUPPORTED_AGENTS[0]]).toBe("openai/gpt-5.4");
+  });
+
+  it("blocks delete execution when typed confirmation does not match", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const executeAction = vi.fn(createModelsActionExecutor(env));
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction,
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, "\u001b[3~");
+    await emitText(terminal, "nope");
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modal?.kind).toBe("confirm");
+    expect(terminal.output).toContain("Confirmation text must match the selected profile name.");
+    expect(executeAction).not.toHaveBeenCalled();
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.budget).toBeDefined();
+  });
+
+  it("deletes the focused profile after typed confirmation and refreshes the browse state", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, "\u001b[3~");
+    await emitText(terminal, "budget");
+    await emitInput(terminal, "\r");
+
+    const config = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(config.models.profiles.budget).toBeUndefined();
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Deleted profile 'budget'.");
+
+    terminal.output = "";
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modal).toBeUndefined();
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(terminal.output).toContain("Active profile: ");
+    expect(stripAnsi(terminal.output)).toContain("Active profile: (none)");
+    expect(terminal.output).toContain("> [ ] fallback");
+    expect(terminal.output).toContain("  * New Profile");
+    expect(terminal.output).not.toContain("[X] budget");
+  });
+
+  it("reapplies managed host registrations when saving staged edits for the active profile", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    const refreshActiveModelProfile = vi.fn();
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      refreshActiveModelProfile,
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments, refreshActiveProfile }) =>
+        saveAssignmentsForProfile(profileName, assignments, { env, refreshActiveProfile }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "u");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await submitFocusedModelEntry(terminal, "inherit");
+    await emitInput(terminal, "s");
+    await flushTui();
+
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(refreshActiveModelProfile).toHaveBeenCalledTimes(1);
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.budget[SUPPORTED_AGENTS[1]]).toBe("inherit");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(terminal.output).not.toContain("Output [ok]");
+  });
+
+  it("shows a bounded output panel when saving staged edits for the active profile returns degraded refresh guidance", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    const refreshActiveModelProfile = vi.fn(() => ({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+    }));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      refreshActiveModelProfile,
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments, refreshActiveProfile }) =>
+        saveAssignmentsForProfile(profileName, assignments, {
+          env,
+          refreshActiveProfile,
+          validateModelAvailability: () => ({ status: "known", availableModels: ["openai/gpt-5.5", "openai/gpt-5.4-mini"] }),
+        }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "u");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await submitFocusedModelEntry(terminal, "openai/gpt-4.1-mini");
+
+    terminal.output = "";
+    await emitInput(terminal, "s");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("OpenCode refresh timed out after 500ms");
+    expect(terminal.output).toContain("Run 'afergon-ai update' to retry the host registration refresh.");
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    logSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it("shows a bounded output panel when active-profile assignment save gets registrar warning stdout with exit-0 status", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    const refreshActiveModelProfile = vi.fn(() => ({
+      status: "clean",
+      stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+      stderr: "",
+    }));
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      refreshActiveModelProfile,
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments, refreshActiveProfile }) =>
+        saveAssignmentsForProfile(profileName, assignments, {
+          env,
+          refreshActiveProfile,
+          validateModelAvailability: () => ({ status: "known", availableModels: ["openai/gpt-5.5", "openai/gpt-4.1-mini"] }),
+        }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "u");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await submitFocusedModelEntry(terminal, "openai/gpt-4.1-mini");
+
+    terminal.output = "";
+    await emitInput(terminal, "s");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("OpenCode: warning: missing managed agent file(s): afergon-ai.md");
+    expect(terminal.output).toContain("Run 'afergon-ai update' or 'afergon-ai init --opencode' to repair.");
+  });
+
+  it("shows a bounded output panel when active-profile assignment save gets registrar conflict guidance with exit-0 status", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    const refreshActiveModelProfile = vi.fn(() => ({
+      status: "clean",
+      stdout: "Conflict: agent 'afergon-ai' already exists in opencode.json and does not look managed by afergon-ai.\n  OpenCode: kept existing non-managed agent definition(s): afergon-ai",
+      stderr: "",
+    }));
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      refreshActiveModelProfile,
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+      saveModelProfileAssignments: ({ profileName, assignments, refreshActiveProfile }) =>
+        saveAssignmentsForProfile(profileName, assignments, {
+          env,
+          refreshActiveProfile,
+          validateModelAvailability: () => ({ status: "known", availableModels: ["openai/gpt-5.5", "openai/gpt-4.1-mini"] }),
+        }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "u");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await emitInput(terminal, "o");
+    await emitInput(terminal, "p");
+    await emitInput(terminal, "e");
+    await emitInput(terminal, "n");
+    await emitInput(terminal, "a");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "/");
+    await emitInput(terminal, "g");
+    await emitInput(terminal, "p");
+    await emitInput(terminal, "t");
+    await emitInput(terminal, "-");
+    await emitInput(terminal, "4");
+    await emitInput(terminal, ".");
+    await emitInput(terminal, "1");
+    await emitInput(terminal, "-");
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "n");
+    await emitInput(terminal, "i");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+
+    terminal.output = "";
+    await emitInput(terminal, "s");
+
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modal?.kind).toBe("output");
+    expect(terminal.output).toContain("Output [ok]");
+    expect(terminal.output).toContain("Conflict: agent 'afergon-ai' already exists in opencode.json");
+    expect(terminal.output).toContain("OpenCode: kept existing non-managed agent definition(s): afergon-ai");
   });
 
   it("drops staged assignment edits when Esc exits assignment mode", async () => {

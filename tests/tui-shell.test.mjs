@@ -1,3 +1,6 @@
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
@@ -9,7 +12,41 @@ import {
   navigateTo,
   TUI_ROUTES,
 } from "../scripts/lib/tui/navigation.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.mjs";
+
+const repoRoot = path.resolve(import.meta.dirname, "..");
+
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+function createRouteRenderApp() {
+  return createTuiApp({
+    exit: () => {},
+    loadConfigurationStatus: () => ({
+      title: "Configuration",
+      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+      actions: [],
+      interactiveActions: [],
+    }),
+    loadStatusScreenState: () => ({
+      title: "Status",
+      summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init." },
+      items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Not installed." }],
+      actions: [],
+      interactiveActions: [],
+    }),
+    loadModelProfilesScreenState: () => ({
+      title: "Model Profiles",
+      activeProfile: "default",
+      summary: { state: "ok", detail: "1 profile available" },
+      profiles: [{ name: "default", active: true }],
+      assignments: [{ agent: "afergon-ai", model: "openai/gpt-5.4", source: "explicit" }],
+      actions: [],
+      interactiveActions: [],
+    }),
+  });
+}
 
 class FakeTerminal {
   constructor() {
@@ -102,9 +139,167 @@ describe("navigation state", () => {
     expect(activateHomeSelection({ ...createNavigationState(), homeSelection: 1 }).route).toBe("status");
     expect(activateHomeSelection({ ...createNavigationState(), homeSelection: 2 }).route).toBe("model-profiles");
   });
+
+  it("builds route breadcrumbs for top-level screens and nested model-profile flows", () => {
+    expect(buildRouteBreadcrumb(createNavigationState())).toBe("Home");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "configuration"))).toBe("Configuration");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "status"))).toBe("Status");
+    expect(buildRouteBreadcrumb(navigateTo(createNavigationState(), "model-profiles"))).toBe("Models");
+    expect(buildRouteBreadcrumb({
+      ...navigateTo(createNavigationState(), "model-profiles"),
+      modelProfiles: {
+        mode: "assignments",
+        focusedProfileIndex: 0,
+        focusedAgentIndex: 0,
+        targetProfileName: "budget",
+        stagedAssignments: {},
+      },
+    })).toBe("Models/budget");
+  });
+
+  it("sanitizes dynamic breadcrumb text before it is rendered", () => {
+    const breadcrumb = buildRouteBreadcrumb({
+      ...navigateTo(createNavigationState(), "model-profiles"),
+      modelProfiles: {
+        mode: "assignments",
+        focusedProfileIndex: 0,
+        focusedAgentIndex: 0,
+        targetProfileName: "budget\u001b]2;owned\u0007\u001b[31mred",
+        stagedAssignments: {},
+      },
+    });
+
+    expect(breadcrumb).toBe("Models/budgetred");
+    expect(breadcrumb).not.toContain("\u001b");
+  });
+
+  it("clips very long rendered breadcrumbs to the frame width without losing sanitization", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "profile-1234567890\u001b[31m-dangerously-long-name-for-the-frame",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(renderedLines[0]).toHaveLength(32);
+    expect(visibleWidth(renderedLines[0])).toBe(32);
+    expect(renderedLines[0]).toBe("┌ Models/profile-1234567890-da ─");
+    expect(renderedLines[0]).not.toContain("\u001b");
+  });
+
+  it("clips wide unicode breadcrumbs to the visible frame width", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "超長名稱超長名稱超長名稱",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(visibleWidth(renderedLines[0])).toBeLessThanOrEqual(32);
+    expect(renderedLines[0]).toContain("Models/");
+    expect(renderedLines[0]).not.toContain("\u001b");
+  });
+
+  it("keeps readable rendered breadcrumbs intact when they fit within the frame", () => {
+    const app = createTuiApp({ exit: () => {} });
+
+    app.navigation.route = "model-profiles";
+    app.navigation.modelProfiles = {
+      mode: "assignments",
+      focusedProfileIndex: 0,
+      focusedAgentIndex: 0,
+      targetProfileName: "budget",
+      stagedAssignments: {},
+    };
+
+    const renderedLines = app.screen.render(32).map(stripAnsi);
+
+    expect(renderedLines[0]).toBe("┌ Models/budget ────────────────");
+  });
+
+  it("renders the Models frame header with a right-aligned active-profile label", () => {
+    const app = createRouteRenderApp();
+    app.navigation.route = "model-profiles";
+
+    const renderedLines = app.screen.render(80).map(stripAnsi);
+
+    expect(renderedLines[0]).toContain("┌ Models ");
+    expect(renderedLines[0]).toContain("Active profile: default");
+    expect(renderedLines[0]).toMatch(/Active profile: default\s*$/);
+    expect(renderedLines.join("\n")).not.toContain("Summary [ok]: 1 profile available");
+  });
+
+  it("renders Home body lines without a trailing right border suffix", () => {
+    const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
+
+    expect(renderedLines.slice(1, -1)).toSatisfy((lines) => lines.every((line) => line.startsWith("│ ") && !/\s*│$/.test(line)));
+  });
+
+  it("embeds the shortened arrow hint in the bottom frame line", () => {
+    const renderedLines = renderHomeScreen(createNavigationState(), 60).map(stripAnsi);
+
+    expect(renderedLines.at(-1)).toContain("└ ↑/↓ move ");
+    expect(renderedLines.at(-1)).toContain(" Press q or Esc to exit ");
+    expect(visibleWidth(renderedLines.at(-1))).toBe(60);
+    expect(renderedLines.join("\n")).not.toContain("Use ↑/↓ to move the Home selection.");
+    expect(renderedLines.join("\n")).not.toContain("Press h to return Home from any section.");
+  });
+
+  it("keeps non-Home frame footers within narrow widths for representative routes", () => {
+    const app = createRouteRenderApp();
+
+    for (const route of ["configuration", "status", "model-profiles"]) {
+      app.navigation.route = route;
+
+      for (const width of [20, 21, 22, 23, 24]) {
+        const renderedLines = app.screen.render(width).map(stripAnsi);
+        const footer = renderedLines.at(-1);
+
+        expect(visibleWidth(footer)).toBeLessThanOrEqual(width);
+        expect(footer).toMatch(/^└/);
+        expect(footer).not.toContain("│");
+      }
+    }
+  });
+
+  it("preserves both non-Home footer hints when the frame is wide enough", () => {
+    const app = createRouteRenderApp();
+    app.navigation.route = "configuration";
+
+    const renderedLines = app.screen.render(60).map(stripAnsi);
+    const footer = renderedLines.at(-1);
+
+    expect(footer).toContain("Press H to return home");
+    expect(footer).toContain("Press q or Esc to exit");
+    expect(visibleWidth(footer)).toBe(60);
+  });
 });
 
 describe("createTuiApp", () => {
+  it("imports scripts/tui.mjs without running the models CLI or printing config", () => {
+    const result = spawnSync(process.execPath, ["-e", "await import('./scripts/tui.mjs')"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("");
+  });
+
   it("starts on the home route and renders the minimal shell", async () => {
     const terminal = new FakeTerminal();
     const exits = [];
@@ -118,15 +313,16 @@ describe("createTuiApp", () => {
     expect(terminal.title).toBe("afergon-ai TUI");
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
-    expect(terminal.output).toContain("Home");
+    expect(terminal.output).toContain("┌ Home");
     expect(terminal.output).toContain("> Configuration [selected]");
     expect(terminal.output).toContain("  Status");
     expect(terminal.output).toContain("  Model Profiles");
-    expect(terminal.output).toContain("Keyboard help");
-    expect(terminal.output).toContain("Use ↑/↓ to move the Home selection.");
+    expect(terminal.output).not.toContain("Current route: home");
+    expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
+    expect(stripAnsi(terminal.output)).toContain("Press q or Esc to exit");
     expect(terminal.output).toContain("Press Enter to open the selected section.");
-    expect(terminal.output).toContain("Selection markers: > and [selected] identify the active Home item.");
-    expect(terminal.output).toContain("Press q or Esc to exit");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
+    expect(terminal.output).not.toContain("Press h to return Home from any section.");
     expect(exits).toEqual([]);
   });
 
@@ -223,7 +419,7 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
     expect(terminal.output).toContain("Plain-text branding mode keeps Home readable.");
-    expect(terminal.output).toContain("Keyboard help");
+    expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
   });
 
   it("shows section action keyboard guidance plus form cancel help without trapping focus", async () => {

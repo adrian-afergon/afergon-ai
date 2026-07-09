@@ -12,6 +12,7 @@ import {
   getOpenCodeBaseDir,
   loadConfig,
   normalizeAgentName,
+  normalizeRefreshResult,
   normalizeProfileName,
   normalizeStoredModel,
   readOpenCodeAgentModels,
@@ -24,6 +25,10 @@ import {
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS = 10000;
 
+function isDirectExecution(argv = process.argv) {
+  return Boolean(argv[1]) && path.resolve(argv[1]) === fileURLToPath(import.meta.url);
+}
+
 function getOpenCodeRefreshTimeoutMs(env = process.env) {
   const rawTimeout = env.AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS;
   if (!rawTimeout) {
@@ -34,13 +39,32 @@ function getOpenCodeRefreshTimeoutMs(env = process.env) {
   return Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS;
 }
 
-function createRegistrationEnv() {
+function createRegistrationEnv(env = process.env) {
   return {
-    ...process.env,
-    AFERGON_AI_CONFIG_DIR: getConfigDir(),
+    ...env,
+    AFERGON_AI_CONFIG_DIR: getConfigDir(env),
     AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
-    ...(process.env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: path.resolve(process.env.XDG_CONFIG_HOME) } : {}),
+    ...(env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: path.resolve(env.XDG_CONFIG_HOME) } : {}),
   };
+}
+
+function createRefreshResult(result) {
+  return normalizeRefreshResult(result);
+}
+
+export function reportAdapterRefreshResult(result, { log = console.log, warn = console.warn } = {}) {
+  if (!result) {
+    return result;
+  }
+
+  if (result.stdout) {
+    log(result.stdout);
+  }
+  if (result.stderr) {
+    warn(result.stderr);
+  }
+
+  return result;
 }
 
 function printHelp() {
@@ -140,8 +164,8 @@ function listProfiles() {
   }
 }
 
-function reapplySupportedAdapters() {
-  const opencodeBaseDir = getOpenCodeBaseDir();
+export function reapplySupportedAdapters(env = process.env) {
+  const opencodeBaseDir = getOpenCodeBaseDir(env);
   const opencodeAgentsDir = path.join(opencodeBaseDir, "agents");
   const opencodeConfigPath = path.join(opencodeBaseDir, "opencode.json");
   const requiredAgentFiles = SUPPORTED_AGENTS.map((agentName) => path.join(opencodeAgentsDir, `${agentName}.md`));
@@ -150,49 +174,52 @@ function reapplySupportedAdapters() {
 
   if (!opencodeInstalled) {
     if (fs.existsSync(opencodeConfigPath) && missingAgentFiles.length > 0) {
-      console.log(
-        `Saved config. OpenCode install is missing managed agent file(s): ${missingAgentFiles.map((agentPath) => path.basename(agentPath)).join(", ")}. Run 'afergon-ai update' or 'afergon-ai init --opencode' to repair; only afergon-ai config was updated.`,
-      );
-      return;
+      return createRefreshResult({
+        status: "degraded",
+        stdout: `Saved config. OpenCode install is missing managed agent file(s): ${missingAgentFiles.map((agentPath) => path.basename(agentPath)).join(", ")}. Run 'afergon-ai update' or 'afergon-ai init --opencode' to repair; only afergon-ai config was updated.`,
+      });
     }
-    console.log("Saved config. No managed OpenCode install detected, so only afergon-ai config was updated.");
-    return;
+
+    return createRefreshResult({
+      status: "degraded",
+      stdout: "Saved config. No managed OpenCode install detected, so only afergon-ai config was updated.",
+    });
   }
 
   const registerScript = path.join(PACKAGE_ROOT, "scripts/register-opencode-agents.sh");
-  if (process.platform === "win32" && !process.env.AFG_FORCE_OPENCODE_BASH_REFRESH) {
-    console.warn(
-      "Saved config. OpenCode refresh uses Bash and was skipped on Windows. Run 'afergon-ai update' from a Bash-capable shell to refresh OpenCode registrations.",
-    );
-    return;
+  if (process.platform === "win32" && !env.AFG_FORCE_OPENCODE_BASH_REFRESH) {
+    return createRefreshResult({
+      status: "degraded",
+      stderr:
+        "Saved config. OpenCode refresh uses Bash and was skipped on Windows. Run 'afergon-ai update' from a Bash-capable shell to refresh OpenCode registrations.",
+    });
   }
-  if (!process.env.AFG_FORCE_OPENCODE_BASH_REFRESH) {
-    const bashCheck = spawnSync("bash", ["--version"], { stdio: "ignore", timeout: getOpenCodeRefreshTimeoutMs() });
+  if (!env.AFG_FORCE_OPENCODE_BASH_REFRESH) {
+    const bashCheck = spawnSync("bash", ["--version"], { stdio: "ignore", timeout: getOpenCodeRefreshTimeoutMs(env), env });
     if (bashCheck.status !== 0) {
-      console.warn(
-        "Saved config. OpenCode refresh uses Bash, but bash is unavailable. Run 'afergon-ai update' from a Bash-capable shell to refresh OpenCode registrations.",
-      );
-      return;
+      return createRefreshResult({
+        status: "degraded",
+        stderr:
+          "Saved config. OpenCode refresh uses Bash, but bash is unavailable. Run 'afergon-ai update' from a Bash-capable shell to refresh OpenCode registrations.",
+      });
     }
   }
   const adapterPath = path.join(PACKAGE_ROOT, "adapters/opencode");
-  const refreshTimeout = getOpenCodeRefreshTimeoutMs();
+  const refreshTimeout = getOpenCodeRefreshTimeoutMs(env);
   const result = spawnSync("bash", [registerScript, adapterPath], {
     cwd: PACKAGE_ROOT,
     encoding: "utf8",
     stdio: ["inherit", "pipe", "pipe"],
-    env: createRegistrationEnv(),
+    env: createRegistrationEnv(env),
     timeout: refreshTimeout,
   });
 
-  if (result.stdout.trim()) {
-    console.log(result.stdout.trim());
-  }
   if (result.error?.code === "ETIMEDOUT") {
-    console.warn(
-      `Saved config. OpenCode refresh timed out after ${refreshTimeout}ms. Run 'afergon-ai update' to retry the host registration refresh.`,
-    );
-    return;
+    return createRefreshResult({
+      status: "degraded",
+      stdout: result.stdout.trim(),
+      stderr: `Saved config. OpenCode refresh timed out after ${refreshTimeout}ms. Run 'afergon-ai update' to retry the host registration refresh.`,
+    });
   }
   if (result.error) {
     throw result.error;
@@ -202,7 +229,16 @@ function reapplySupportedAdapters() {
     throw new Error(errorMessage);
   }
 
-  console.log("OpenCode registrations refreshed on disk. Start a new compatible run if the current session does not pick this up automatically.");
+  return createRefreshResult({
+    status: "clean",
+    stdout: [
+      result.stdout.trim(),
+      "OpenCode registrations refreshed on disk. Start a new compatible run if the current session does not pick this up automatically.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    stderr: result.stderr.trim(),
+  });
 }
 
 function switchProfile(profileNameInput) {
@@ -213,7 +249,7 @@ function switchProfile(profileNameInput) {
   const configPath = saveConfig(config);
   console.log(`Switched active profile to '${profileName}'.`);
   console.log(`Config path: ${configPath}`);
-  reapplySupportedAdapters();
+  reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
 function setAgentModel(agentInput, modelInput, options = {}) {
@@ -252,7 +288,7 @@ function setAgentModel(agentInput, modelInput, options = {}) {
 
   console.log(`Updated profile '${activeProfileName}': ${agentName} -> ${normalizedModel}`);
   console.log(`Config path: ${configPath}`);
-  reapplySupportedAdapters();
+  reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
 function parseSetCommandArguments(args) {
@@ -304,7 +340,7 @@ function createProfile(profileNameInput) {
   );
 
   if (config.models.activeProfile === profileName) {
-    reapplySupportedAdapters();
+    reportAdapterRefreshResult(reapplySupportedAdapters());
   }
 }
 
@@ -325,7 +361,7 @@ function deleteProfile(profileNameInput) {
   const configPath = saveConfig(config);
   console.log(`Deleted profile '${profileName}'.`);
   console.log(`Config path: ${configPath}`);
-  reapplySupportedAdapters();
+  reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
 function main(argv) {
@@ -375,10 +411,12 @@ function main(argv) {
   }
 }
 
-try {
-  main(process.argv.slice(2));
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  console.error("Run 'afergon-ai models --help' for usage.");
-  process.exitCode = 1;
+if (isDirectExecution()) {
+  try {
+    main(process.argv.slice(2));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    console.error("Run 'afergon-ai models --help' for usage.");
+    process.exitCode = 1;
+  }
 }

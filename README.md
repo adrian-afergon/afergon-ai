@@ -144,10 +144,10 @@ Accessibility and keyboard notes:
 
 - Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
-- Selected rows add teal emphasis when the terminal supports color, but `[selected]` and other text cues remain the source of truth.
+- Selected rows add teal emphasis when the terminal supports color, while Model Profiles browse mode pairs the `>` cursor with `[X]`/`[ ]` active markers instead of a `[selected]` suffix.
 - Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.
-- Inside Model Profiles, `models list` and `models show` run inline, while `switch`, `set`, `profile create`, and `profile delete` open picker or text forms before confirmation.
-- In Model Profiles browse mode, ↑/↓ move only the profile list, Space activates the focused existing profile or starts `* New Profile`, Delete opens typed confirmation, `U` edits the focused profile, and `N` opens create-name first.
+- In Model Profiles browse mode, ↑/↓ move only the profile list, Space switches the focused existing profile inline with no success output panel, Delete opens typed confirmation, `U` edits the focused profile, and `N` or `* New Profile` starts the create-name flow.
+- Clean successful Space-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.
 - In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual `provider/model` entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.
 - A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.
 - Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
@@ -156,7 +156,7 @@ Accessibility and keyboard notes:
 - `update` always asks for confirmation before it executes.
 - Home and section screens include explicit text help for returning Home and exiting with `q` or `Esc`.
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
-- Status, failure, and selection cues use text markers such as `[ok]`, `[warn]`, `[fail]`, and `[selected]`, not color alone.
+- Status and failure cues use text markers such as `[ok]`, `[warn]`, and `[fail]`, not color alone.
 
 PR2 shell rollback boundary: revert `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` together if the minimal TUI shell regresses before later slices land.
 

@@ -5,7 +5,9 @@ import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  hasDegradedRefreshGuidance,
   normalizeAgentName,
+  normalizeRefreshResult,
   resolveAssignments,
   saveProfileAssignments,
   saveConfig,
@@ -167,6 +169,52 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("treats registrar warning guidance as degraded refresh output", () => {
+    expect(
+      hasDegradedRefreshGuidance({
+        stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' to repair.",
+      }),
+    ).toBe(true);
+    expect(
+      hasDegradedRefreshGuidance({
+        stdout: "OpenCode registrations refreshed on disk. Start a new compatible run if the current session does not pick this up automatically.",
+      }),
+    ).toBe(false);
+    expect(
+      hasDegradedRefreshGuidance({
+        stdout: "Conflict: agent 'afergon-ai' already exists in opencode.json and does not look managed by afergon-ai.\n  OpenCode: kept existing non-managed agent definition(s): afergon-ai",
+      }),
+    ).toBe(true);
+  });
+
+  it("normalizes refresh output into a shared trimmed clean/degraded shape", () => {
+    expect(normalizeRefreshResult()).toBeUndefined();
+    expect(
+      normalizeRefreshResult({
+        status: "clean",
+        stdout: "  Saved config. OpenCode refresh timed out after 500ms.  ",
+        stderr: "  Run 'afergon-ai update' to retry.  ",
+      }),
+    ).toEqual({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry.",
+      degraded: true,
+    });
+    expect(
+      normalizeRefreshResult({
+        status: "clean",
+        stdout: "  OpenCode registrations refreshed on disk.  ",
+        stderr: "   ",
+      }),
+    ).toEqual({
+      status: "clean",
+      stdout: "OpenCode registrations refreshed on disk.",
+      stderr: "",
+      degraded: false,
+    });
+  });
+
   it("keeps the supported agent list unique so config projections do not duplicate entries", () => {
     expect(new Set(SUPPORTED_AGENTS).size).toBe(SUPPORTED_AGENTS.length);
   });
@@ -461,6 +509,18 @@ describe("models CLI behavior", () => {
     expect(result.stdout).toContain("- afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit");
   });
 
+  it("imports scripts/models.mjs without running the CLI entrypoint", () => {
+    const result = spawnSync(process.execPath, ["-e", "await import('./scripts/models.mjs')"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("");
+  });
+
   it("passes an absolute afergon-ai config dir into the OpenCode registrar", () => {
     const tempRoot = makeTempRoot();
     const fakeBin = writeFakeOpencodeCli(tempRoot, {
@@ -648,6 +708,7 @@ describe("models CLI behavior", () => {
       XDG_CONFIG_HOME: xdgHome,
       AFERGON_AI_CONFIG_DIR: configDir,
       PATH: `${fakeBashBin}:${fakeOpencodeBin}:${process.env.PATH}`,
+      AFG_FORCE_OPENCODE_BASH_REFRESH: "1",
       AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "500",
     });
 
@@ -827,15 +888,18 @@ describe("models CLI behavior", () => {
 });
 
 describe("saveProfileAssignments", () => {
-  it("saves staged assignments to the targeted inactive profile without mutating the active profile", () => {
+  it("saves staged assignments to the targeted inactive profile with injected model validation and without mutating the active profile", () => {
     const tempRoot = makeTempRoot();
     const env = {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: process.env.PATH,
     };
     const refreshActiveProfile = vi.fn();
+    const validateAvailability = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.4-mini"],
+    }));
 
     saveConfig(
       {
@@ -860,7 +924,7 @@ describe("saveProfileAssignments", () => {
       {
         "afg-review": "openai/gpt-5.4-mini",
       },
-      { env, refreshActiveProfile },
+      { env, refreshActiveProfile, validateModelAvailability: validateAvailability },
     );
 
     const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
@@ -872,18 +936,26 @@ describe("saveProfileAssignments", () => {
       "afergon-ai": "openai/gpt-5.4",
       "afg-review": "openai/gpt-5.4-mini",
     });
+    expect(validateAvailability).toHaveBeenCalledWith("openai/gpt-5.4-mini", env);
     expect(refreshActiveProfile).not.toHaveBeenCalled();
   });
 
-  it("refreshes managed host registrations only when saving the active profile", () => {
+  it("returns degraded refresh guidance only when saving the active profile", () => {
     const tempRoot = makeTempRoot();
     const env = {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: process.env.PATH,
     };
-    const refreshActiveProfile = vi.fn();
+    const refreshActiveProfile = vi.fn(() => ({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+    }));
+    const validateAvailability = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.5"],
+    }));
 
     saveConfig(
       {
@@ -900,12 +972,12 @@ describe("saveProfileAssignments", () => {
       env,
     );
 
-    saveProfileAssignments(
+    const result = saveProfileAssignments(
       "budget",
       {
         "afg-review": "inherit",
       },
-      { env, refreshActiveProfile },
+      { env, refreshActiveProfile, validateModelAvailability: validateAvailability },
     );
 
     const savedConfig = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
@@ -914,6 +986,58 @@ describe("saveProfileAssignments", () => {
       "afg-review": "inherit",
     });
     expect(refreshActiveProfile).toHaveBeenCalledTimes(1);
+    expect(validateAvailability).not.toHaveBeenCalled();
+    expect(result.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+      degraded: true,
+    });
+  });
+
+  it("normalizes successful registrar warnings into degraded refresh guidance for active-profile saves", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+    };
+    const refreshActiveProfile = vi.fn(() => ({
+      status: "clean",
+      stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+      stderr: "",
+    }));
+
+    saveConfig(
+      {
+        version: 1,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+            },
+          },
+        },
+      },
+      env,
+    );
+
+    const result = saveProfileAssignments(
+      "budget",
+      {
+        "afg-review": "inherit",
+      },
+      { env, refreshActiveProfile },
+    );
+
+    expect(refreshActiveProfile).toHaveBeenCalledTimes(1);
+    expect(result.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+      stderr: "",
+      degraded: true,
+    });
   });
 });
 

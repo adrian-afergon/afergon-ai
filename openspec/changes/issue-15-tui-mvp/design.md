@@ -44,19 +44,19 @@ scripts/lib/tui/actions/*.mjs
 |---|---|---|
 | `scripts/lib/branding/logo.mjs` | Create | Canonical runtime logo lines, tagline, fallback title/copy, and future variant hook. |
 | `extensions/startup-banner.ts` | Modify | Import the shared branding payload instead of owning the banner text inline. |
-| `scripts/tui.mjs` | Modify | Add section action selection, modal/form/output state, inline execution flow, confirmations, and refresh-after-mutation wiring. |
+| `scripts/tui.mjs` | Modify | Add section action selection, modal/form/output state, inline execution flow, confirmation handling, first-profile create guidance handling, refresh-after-mutation wiring, and named frame-layout constants. |
 | `scripts/lib/tui/navigation.mjs` | Modify | Extend navigation state beyond Home selection to track active section actions and modal focus return points. |
 | `scripts/lib/tui/command-manifest.mjs` | Modify | Expand stable argv definitions for `doctor --opencode`, `init` option sets, and model profile action builders without shell strings. |
 | `scripts/lib/tui/actions/runner.mjs` | Create | Execute bounded argv actions, capture stdout/stderr/exit status, and classify read-only vs mutating outcomes. |
 | `scripts/lib/tui/actions/definitions.mjs` | Create | Define per-section action metadata, required inputs, confirmation copy, and refresh targets. |
-| `scripts/lib/tui/actions/forms.mjs` | Create | Normalize checkbox, picker, and text-form state for init/model profile actions. |
+| `scripts/lib/tui/actions/forms.mjs` | Create | Normalize checkbox, typed-confirmation, and text-entry state for init plus the Model Profiles create/assignment/delete flows. |
 | `scripts/lib/tui/screens/*.mjs` | Modify | Render actionable lists, modal prompts, form fields, output panel, and non-color-only focus/help cues. |
 | `tests/tui-shell.test.mjs` | Modify | Cover Home selection state, arrow movement, enter activation, and retained letter shortcuts. |
 | `tests/tui-actions.test.mjs` | Create | Cover shared action definitions, runner safety, confirmations, cancellation, output capture, and refresh triggers. |
 | `tests/tui-docs.test.mjs` | Modify | Lock docs/help expectations for logo, accessibility copy, and final verification notes. |
 | `tests/tui-configuration.test.mjs` | Modify | Cover inline `doctor`, confirm-before-`init`/`update`, checkbox init form, and Configuration focus recovery. |
 | `tests/tui-status.test.mjs` | Modify | Cover Status inline doctor output, repair action confirmations, and section refresh messaging. |
-| `tests/tui-model-profiles.test.mjs` | Modify | Cover read-only views plus switch/set/create/delete forms, output/errors, and refresh-after-mutation. |
+| `tests/tui-model-profiles.test.mjs` | Modify | Cover browse-mode switch/create/delete flows, assignment-editor staging plus direct `S` save, degraded create/save guidance, output/errors, and refresh-after-mutation. |
 | `README.md` | Modify | Keep human-facing logo/docs aligned with the new TUI accessibility behavior. |
 
 ## Interfaces / Contracts
@@ -89,7 +89,7 @@ type TuiActionDefinition = {
   cliEquivalent?: string;
   buildArgv(input?: Record<string, unknown>): string[];
   confirmLabel?: string;
-  form?: "init-checkboxes" | "profile-picker" | "set-model" | "create-profile" | "delete-profile";
+  form?: "init-checkboxes" | "create-profile-name" | "assignment-model-entry" | "typed-delete-confirm";
   refreshTarget?: "configuration" | "status" | "model-profiles";
 };
 ```
@@ -99,7 +99,7 @@ Contract notes:
 - `c`/`s`/`m`/`h` remain valid regardless of arrow support.
 - If no safe variant exists for the terminal, Home renders `fallbackTitle` and `fallbackCopy` instead of broken art.
 - Action execution uses argv arrays only; no shell interpolation or fabricated commands are allowed.
-- Read-only actions render bounded output inline; mutating actions require confirmation and trigger adapter refresh on success.
+- Read-only actions render bounded output inline; destructive or higher-risk mutations require confirmation, while focused profile switch, successful profile-create entry into assignment mode, and explicit assignment-editor save remain direct flows that still surface bounded output when warnings or degraded refresh guidance need attention.
 - Esc/Cancel dismisses the active confirm/form/output surface and restores focus to the invoking section action.
 
 ## Testing Strategy
@@ -109,9 +109,9 @@ Contract notes:
 | Unit | branding module contract | Vitest assertions for canonical lines, fallback fields, and no invented variants. |
 | Unit | Home navigation behavior | Vitest shell tests for `up/down/enter`, visible selection markers, and shortcut regression coverage. |
 | Unit | Action runner + definitions | Verify argv-only execution, read-only inline results, confirmation gates, cancellation, and stderr/exit handling. |
-| Unit | Forms and focus recovery | Verify init checkboxes, model-profile pickers/forms, Esc/Cancel behavior, and return focus markers. |
+| Unit | Forms and focus recovery | Verify init checkboxes, Model Profiles create-name and assignment-editor text entry, typed delete confirmation, Esc/Cancel behavior, and return focus markers. |
 | Unit | Screen accessibility copy | Focused screen/docs tests for help/footer text, output panel cues, and non-color-only status text. |
-| Manual | Forced-TTY TUI smoke | Visit each section, run inline `doctor`, cancel one mutating action, confirm one safe mutation in a temp fixture, return Home, exit with `q`. |
+| Manual | Forced-TTY TUI smoke | Visit each section, run inline `doctor`, trigger one direct profile switch, cancel one confirmed destructive action in a temp fixture, return Home, exit with `q`. |
 
 ## Chained PR Slicing Plan
 
@@ -120,7 +120,7 @@ Contract notes:
 10. **Accessibility polish + docs/final verify** — footer/help copy, fallback wording, docs contracts, verify evidence. (completed)
 11. **Shared action framework** — action definitions, argv runner, confirmation/output state, core tests. (~220-320 lines)
 12. **Configuration + Status actions** — inline doctor, init/update confirmation/form flow, refresh, docs/tests. (~260-360 lines)
-13. **Model Profiles interactive actions** — switch/set/create/delete forms, output/error handling, refresh, docs/tests. (~300-390 lines)
+13. **Model Profiles interactive actions** — direct focused-profile switch, create-name entry, confirmed delete, assignment-editor `S` save, degraded-guidance output, docs/tests. (~300-390 lines)
 
 ## Migration / Rollout
 

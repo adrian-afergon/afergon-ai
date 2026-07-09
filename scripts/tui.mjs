@@ -6,11 +6,14 @@ import {
   ProcessTerminal,
   truncateToWidth,
   TUI,
+  visibleWidth,
 } from "@earendil-works/pi-tui";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.mjs";
+import { hasDegradedRefreshGuidance } from "./lib/model-profiles.mjs";
+import { reapplySupportedAdapters } from "./models.mjs";
 import { resolveActionArgv } from "./lib/tui/actions/definitions.mjs";
 import {
   appendFormCharacter,
@@ -58,15 +61,152 @@ const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
 const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.mjs");
 const TEAL_ANSI = "\u001b[38;5;6m";
+const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
 const ANSI_RESET = "\u001b[0m";
 const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
+const FRAME_CORNER_WIDTH = 1;
+const FRAME_SIDE_BORDERS = 2;
+const FRAME_LABEL_PADDING = 4;
+const FRAME_HEADER_GAP = 5;
+const FRAME_FOOTER_RULE_MIN_WIDTH = 1;
+const FRAME_MIN_WIDTH = 20;
+const FRAME_RULE_LABEL_DECORATION_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_MIN_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_INNER_PADDING = 2;
+
+const ROUTE_BREADCRUMBS = Object.freeze({
+  home: "Home",
+  configuration: "Configuration",
+  status: "Status",
+  "model-profiles": "Models",
+});
 
 function padLine(text, width) {
   return truncateToWidth(text, Math.max(1, width), "");
 }
 
+function padVisibleLine(text, width) {
+  return `${text}${repeatToWidth(" ", Math.max(0, width - visibleWidth(text)))}`;
+}
+
+function centerVisibleLine(text, width) {
+  const safeText = truncateToWidth(text, Math.max(1, width), "");
+  const totalPadding = Math.max(0, width - visibleWidth(safeText));
+  const leftPadding = Math.floor(totalPadding / 2);
+  return `${repeatToWidth(" ", leftPadding)}${safeText}`;
+}
+
 function styleTeal(text) {
   return `${TEAL_ANSI}${text}${ANSI_RESET}`;
+}
+
+function styleLightGray(text) {
+  return `${LIGHT_GRAY_ANSI}${text}${ANSI_RESET}`;
+}
+
+function repeatToWidth(character, width) {
+  return character.repeat(Math.max(0, width));
+}
+
+function renderShortcutHintLine() {
+  return `Press (${styleTeal("C")})onfiguracion | (${styleTeal("S")})tatus | (${styleTeal("M")})odels`;
+}
+
+function clipBreadcrumbForFrame(breadcrumb, width) {
+  const maxBreadcrumbWidth = Math.max(1, width - FRAME_LABEL_PADDING);
+  return truncateToWidth(sanitizeTerminalOutput(breadcrumb ?? ""), maxBreadcrumbWidth, "");
+}
+
+function clipFrameLabel(label, width) {
+  const maxLabelWidth = Math.max(1, width - FRAME_LABEL_PADDING);
+  return truncateToWidth(sanitizeTerminalOutput(label ?? ""), maxLabelWidth, "");
+}
+
+function clipFooterSegment(label, maxWidth) {
+  if (!label || maxWidth < FRAME_FOOTER_SEGMENT_MIN_WIDTH) {
+    return "";
+  }
+
+  const safeLabel = truncateToWidth(
+    sanitizeTerminalOutput(label),
+    Math.max(1, maxWidth - FRAME_FOOTER_SEGMENT_INNER_PADDING),
+    "",
+  );
+  return safeLabel ? ` ${safeLabel} ` : "";
+}
+
+function renderEmbeddedFrameRule(corner, label, width) {
+  if (!label) {
+    return `${corner}${repeatToWidth("─", width - FRAME_CORNER_WIDTH)}`;
+  }
+
+  const safeLabel = clipFrameLabel(label, width);
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLabel) - FRAME_RULE_LABEL_DECORATION_WIDTH);
+  return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
+}
+
+function renderEmbeddedFrameHeader(corner, leftLabel, rightLabel, width) {
+  if (!rightLabel?.label || !rightLabel?.value) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const safeLeftLabel = clipFrameLabel(leftLabel, width);
+  const safeRightLabel = sanitizeTerminalOutput(rightLabel.label);
+  const safeRightValue = sanitizeTerminalOutput(rightLabel.value);
+  const rightText = `${safeRightLabel}: ${safeRightValue}`;
+  const minimumWidth = visibleWidth(safeLeftLabel) + visibleWidth(rightText) + FRAME_HEADER_GAP;
+
+  if (minimumWidth > width) {
+    return renderEmbeddedFrameRule(corner, safeLeftLabel, width);
+  }
+
+  const rightRendered = `${safeRightLabel}: ${styleTeal(safeRightValue)}`;
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLeftLabel) - visibleWidth(rightText) - FRAME_HEADER_GAP);
+  return `${corner} ${safeLeftLabel} ${repeatToWidth("─", ruleWidth)} ${rightRendered}`;
+}
+
+function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
+  const footerWidth = Math.max(0, width - FRAME_CORNER_WIDTH);
+  const rightSegment = clipFooterSegment(rightLabel, footerWidth);
+
+  if (!rightSegment) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const remainingWidth = Math.max(0, footerWidth - visibleWidth(rightSegment));
+  const reservedRuleWidth = remainingWidth > 0 ? FRAME_FOOTER_RULE_MIN_WIDTH : 0;
+  const leftSegment = clipFooterSegment(leftLabel, Math.max(0, remainingWidth - reservedRuleWidth));
+  const ruleWidth = Math.max(0, footerWidth - visibleWidth(leftSegment) - visibleWidth(rightSegment));
+
+  return `${corner}${leftSegment}${repeatToWidth("─", ruleWidth)}${rightSegment}`;
+}
+
+export function buildRouteBreadcrumb(navigation) {
+  const baseBreadcrumb = ROUTE_BREADCRUMBS[navigation?.route] ?? ROUTE_BREADCRUMBS.home;
+
+  if (navigation?.route !== "model-profiles") {
+    return baseBreadcrumb;
+  }
+
+  if (navigation?.modelProfiles?.mode !== "assignments") {
+    return baseBreadcrumb;
+  }
+
+  const profileName = sanitizeTerminalOutput(navigation.modelProfiles?.targetProfileName ?? "");
+  return `${baseBreadcrumb}/${profileName || "New"}`;
+}
+
+function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel } = {}) {
+  const safeWidth = Math.max(FRAME_MIN_WIDTH, width);
+  const innerWidth = Math.max(1, safeWidth - FRAME_SIDE_BORDERS);
+  const framedLines = [renderEmbeddedFrameHeader("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), headerRightLabel, safeWidth)];
+
+  for (const line of [...contentLines, ...footerLines]) {
+    framedLines.push(`│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)}`);
+  }
+
+  framedLines.push(renderEmbeddedFrameFooter("└", footerLeftLabel, footerRightLabel, safeWidth));
+  return framedLines;
 }
 
 function isDeleteKey(data) {
@@ -115,45 +255,52 @@ export function renderHomeScreen(navigation, width) {
   const homeItems = HOME_MENU_ROUTES.map((route, index) => ({
     route,
     label: route === "model-profiles" ? "Model Profiles" : route.charAt(0).toUpperCase() + route.slice(1),
-    shortcut: route === "configuration" ? "c" : route === "status" ? "s" : "m",
     selected: navigation.homeSelection === index,
   }));
 
   const useFallbackBranding = !canRenderBrandingLogo(width);
   const brandingLines = useFallbackBranding
     ? [BRANDING_LOGO.fallbackTitle, BRANDING_LOGO.fallbackCopy, "Plain-text branding mode keeps Home readable."]
-    : [...BRANDING_LOGO.lines, "", BRANDING_LOGO.tagline];
+    : [...BRANDING_LOGO.lines, BRANDING_LOGO.tagline];
+  const centeredBrandingLines = brandingLines.map((line, index) => {
+    if (!line) {
+      return line;
+    }
 
-  const lines = [
-    ...brandingLines,
-    "",
-    "Home",
-    "",
-    `Current route: ${navigation.route}`,
+    if ((!useFallbackBranding && index <= BRANDING_LOGO.lines.length) || (useFallbackBranding && index <= 1)) {
+      return centerVisibleLine(line, Math.max(1, width - FRAME_SIDE_BORDERS));
+    }
+
+    return line;
+  });
+
+  const contentLines = [
+    ...centeredBrandingLines,
     "",
     "Sections available in this MVP slice:",
-    "- Home",
     ...homeItems.map((item) => {
-      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""} (press ${item.shortcut})`;
+      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""}`;
       return item.selected ? styleTeal(line) : line;
     }),
     "",
-    "Keyboard help",
-    "Use ↑/↓ to move the Home selection.",
     "Press Enter to open the selected section.",
-    "Shortcut keys: c Configuration, s Status, m Model Profiles.",
-    "Press c for Configuration.",
-    "Press s for Status.",
-    "Press m for Model Profiles.",
-    "Press h to return Home from any section.",
-    "Selection markers: > and [selected] identify the active Home item.",
-    "Press q or Esc to exit.",
+    renderShortcutHintLine(),
   ];
+
+  const lines = renderFramedLines(contentLines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLeftLabel: "↑/↓ move",
+    footerRightLabel: "Press q or Esc to exit",
+  });
 
   return lines.map((line, index) => {
     const paddedLine = padLine(line, width);
 
-    if (!useFallbackBranding && ((index >= 0 && index < BRANDING_LOGO.lines.length) || index === BRANDING_LOGO.lines.length + 1)) {
+    if (!useFallbackBranding && index > 0 && index <= BRANDING_LOGO.lines.length + 1) {
+      return styleTeal(paddedLine);
+    }
+
+    if (useFallbackBranding && index > 0 && index <= 2) {
       return styleTeal(paddedLine);
     }
 
@@ -349,6 +496,26 @@ function appendInteractionPanels(lines, navigation, outputState, interactiveActi
   return augmentedLines;
 }
 
+function renderFramedRouteScreen(lines, navigation, width, options = {}) {
+  return renderFramedLines(lines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLeftLabel: "Press H to return home",
+    footerRightLabel: "Press q or Esc to exit",
+    ...options,
+  });
+}
+
+function buildModelProfilesHeaderLabel(routeState) {
+  const activeProfile = sanitizeTerminalOutput(routeState?.activeProfile ?? "(none)");
+  if ((routeState?.browse?.mode ?? "browse") !== "browse") {
+    return undefined;
+  }
+  return {
+    label: "Active profile",
+    value: activeProfile,
+  };
+}
+
 function renderPlaceholderScreen(route, width) {
   return [
     `${route} (coming later)`,
@@ -357,6 +524,58 @@ function renderPlaceholderScreen(route, width) {
     "Press h to return Home.",
     "Press q or Esc to exit.",
   ].map((line) => padLine(line, width));
+}
+
+function shouldSuppressSuccessfulOutputPanel(action, result) {
+  if (result?.ok !== true || action?.id !== "models-switch-focused") {
+    return false;
+  }
+
+  const stderr = sanitizeTerminalOutput(result.stderr ?? "").trim();
+  if (stderr) {
+    return false;
+  }
+
+  const stdout = sanitizeTerminalOutput(result.stdout ?? "").toLowerCase();
+  return !hasDegradedRefreshGuidance({ stdout, stderr });
+}
+
+function shouldShowProfileCreateOutput(action, result) {
+  if (result?.ok !== true || action?.id !== "model-profiles-create-profile") {
+    return false;
+  }
+
+  return hasDegradedRefreshGuidance({
+    stdout: sanitizeTerminalOutput(result.stdout ?? ""),
+    stderr: sanitizeTerminalOutput(result.stderr ?? ""),
+  });
+}
+
+function shouldShowAssignmentSaveOutput(saveResult) {
+  return saveResult?.refreshResult?.degraded === true;
+}
+
+function createAssignmentSaveOutputState(profileName, saveResult) {
+  const refreshResult = saveResult?.refreshResult ?? {};
+  return createOutputState({
+    action: {
+      id: "model-profiles-save-assignments",
+      label: "Save staged assignments",
+      cliEquivalent: "TUI assignment save",
+    },
+    result: {
+      ok: true,
+      exitCode: 0,
+      stdout: [
+        `Saved staged assignments for profile '${sanitizeTerminalOutput(profileName ?? "(unknown)")}'.`,
+        refreshResult.stdout,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      stderr: refreshResult.stderr ?? "",
+      timedOut: false,
+    },
+  });
 }
 
 function createMainScreen({
@@ -369,6 +588,7 @@ function createMainScreen({
   getInteractiveActions,
   executeAction,
   saveModelProfileAssignments,
+  refreshActiveModelProfile,
 }) {
   let outputState;
 
@@ -407,60 +627,82 @@ function createMainScreen({
     };
   }
 
-    async function runSelectedAction(action) {
-      const result = await executeAction({ action });
-      if (action.id === "model-profiles-create-profile" && result.ok) {
-        updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
-        onNavigate();
+  async function runSelectedAction(action) {
+    const result = await executeAction({ action });
+    if (action.id === "model-profiles-create-profile" && result.ok) {
+      updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
+      if (shouldShowProfileCreateOutput(action, result)) {
+        outputState = createOutputState({ action, result });
+        showModal(navigation, outputState);
+      } else {
+        outputState = undefined;
+        hideModal(navigation);
+      }
+      onNavigate();
+      return;
+    }
+    if (shouldSuppressSuccessfulOutputPanel(action, result)) {
+      outputState = undefined;
+      hideModal(navigation);
+      onNavigate();
+      return;
+    }
+    outputState = createOutputState({ action, result });
+    showModal(navigation, outputState);
+    onNavigate();
+  }
+
+  function showAssignmentSaveError(error) {
+    outputState = createOutputState({
+      action: {
+        id: "model-profiles-save-assignments",
+        label: "Save staged assignments",
+        cliEquivalent: "TUI assignment save",
+      },
+      result: {
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: error instanceof Error ? error.message : String(error),
+        timedOut: false,
+      },
+    });
+    showModal(navigation, outputState);
+    onNavigate();
+  }
+
+  function finalizeAssignmentSave(saveResult) {
+    updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
+
+    if (shouldShowAssignmentSaveOutput(saveResult)) {
+      outputState = createAssignmentSaveOutputState(saveResult.profileName, saveResult);
+      showModal(navigation, outputState);
+    } else {
+      outputState = undefined;
+      hideModal(navigation);
+    }
+
+    onNavigate();
+  }
+
+  function saveFocusedProfileAssignments() {
+    try {
+      const result = saveModelProfileAssignments({
+        profileName: navigation.modelProfiles?.targetProfileName,
+        assignments: navigation.modelProfiles?.stagedAssignments ?? {},
+        refreshActiveProfile: refreshActiveModelProfile,
+      });
+
+      if (result && typeof result.then === "function") {
+        result.then(finalizeAssignmentSave).catch(showAssignmentSaveError);
         return;
       }
-      outputState = createOutputState({ action, result });
-      showModal(navigation, outputState);
-      onNavigate();
+
+      finalizeAssignmentSave(result);
+    } catch (error) {
+      showAssignmentSaveError(error);
     }
-
-    function showAssignmentSaveError(error) {
-      outputState = createOutputState({
-        action: {
-          id: "model-profiles-save-assignments",
-          label: "Save staged assignments",
-          cliEquivalent: "TUI assignment save",
-        },
-        result: {
-          ok: false,
-          exitCode: 1,
-          stdout: "",
-          stderr: error instanceof Error ? error.message : String(error),
-          timedOut: false,
-        },
-      });
-      showModal(navigation, outputState);
-      onNavigate();
-    }
-
-    function saveFocusedProfileAssignments() {
-      try {
-        const result = saveModelProfileAssignments({
-          profileName: navigation.modelProfiles?.targetProfileName,
-          assignments: navigation.modelProfiles?.stagedAssignments ?? {},
-        });
-
-        if (result && typeof result.then === "function") {
-          result
-            .then(() => {
-              updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-              onNavigate();
-            })
-            .catch(showAssignmentSaveError);
-          return;
-        }
-
-        updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-        onNavigate();
-      } catch (error) {
-        showAssignmentSaveError(error);
-      }
-    }
+  }
 
   return {
     render(width) {
@@ -468,15 +710,26 @@ function createMainScreen({
       syncSectionActionSelection(navigation, interactiveActions.length);
 
       if (navigation.route === "configuration") {
-        return appendInteractionPanels(renderConfigurationScreen(getRouteState("configuration"), width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route === "status") {
-        return appendInteractionPanels(renderStatusScreen(getRouteState("status"), width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderStatusScreen(getRouteState("status"), width), navigation, width), navigation, outputState, interactiveActions);
       }
 
       if (navigation.route === "model-profiles") {
-        return appendInteractionPanels(renderModelProfilesScreen(getRouteState("model-profiles"), width, { styleSelected: styleTeal }), navigation, outputState, interactiveActions);
+        const routeState = getRouteState("model-profiles");
+        return appendInteractionPanels(
+          renderFramedRouteScreen(
+            renderModelProfilesScreen(routeState, width, { styleSelected: styleTeal, styleMuted: styleLightGray }),
+            navigation,
+            width,
+            { headerRightLabel: buildModelProfilesHeaderLabel(routeState) },
+          ),
+          navigation,
+          outputState,
+          interactiveActions,
+        );
       }
 
       if (navigation.route !== "home") {
@@ -571,7 +824,7 @@ function createMainScreen({
               return;
             }
 
-          if (submitState.isSubmit) {
+            if (submitState.isSubmit) {
               const validation = validateFormInput(navigation.modal);
               if (!validation.ok) {
                 navigation.modal = {
@@ -766,6 +1019,11 @@ function createMainScreen({
                   ? getModelProfilesBrowseIntent(routeState, "create")
                   : { kind: "none" };
 
+          if (intent.kind === "run-action") {
+            runSelectedAction(intent.action);
+            return;
+          }
+
           if (intent.kind === "confirm-action") {
             showModal(navigation, createConfirmationState({ action: intent.action }));
             onNavigate();
@@ -874,7 +1132,8 @@ export function createTuiApp({
   loadModelProfilesScreenState = ({ navigation } = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
-  saveModelProfileAssignments = ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments),
+  saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
+  refreshActiveModelProfile = () => reapplySupportedAdapters(),
 } = {}) {
   const navigation = createNavigationState();
   navigation.sectionActionSelection = 0;
@@ -902,6 +1161,7 @@ export function createTuiApp({
     getInteractiveActions: (route) => interactiveActionsByRoute[route] ?? [],
     executeAction,
     saveModelProfileAssignments,
+    refreshActiveModelProfile,
   });
   tui.addChild(screen);
   tui.setFocus(screen);

@@ -23,8 +23,6 @@ export function renderConfigurationScreen(status, width) {
     "",
     "Keyboard help",
     "State labels use [ok], [warn], and [fail] text markers.",
-    "Press h to return Home.",
-    "Press q or Esc to exit.",
   );
 
   return lines.map((line) => padLine(sanitizeTerminalOutput(line), width));

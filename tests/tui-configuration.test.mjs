@@ -73,6 +73,10 @@ async function flushTui() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 describe("getConfigurationStatus", () => {
   it("reports missing local configuration/install surfaces and exposes only stable CLI actions", () => {
     const tempRoot = makeTempRoot();
@@ -304,10 +308,13 @@ describe("createTuiApp configuration route", () => {
     terminal.emitInput("c");
     await flushTui();
 
+    const renderedLines = stripAnsi(terminal.output).split("\n");
+
     expect(app.navigation.route).toBe("configuration");
     expect(terminal.output).toContain("Configuration");
     expect(terminal.output).toContain("afergon-ai doctor");
-    expect(terminal.output).toContain("Press h to return Home");
+    expect(renderedLines.at(-1)).toContain("Press H to return home");
+    expect(renderedLines.at(-1)).toContain("Press q or Esc to exit");
 
     terminal.output = "";
     terminal.emitInput("h");
@@ -315,7 +322,7 @@ describe("createTuiApp configuration route", () => {
 
     expect(app.navigation.route).toBe("home");
     expect(terminal.output).toContain("Home");
-    expect(terminal.output).toContain("Press c for Configuration");
+    expect(stripAnsi(terminal.output)).toContain("Press (C)onfiguracion | (S)tatus | (M)odels");
   });
 
   it("renders configuration interactive actions from the section state, runs doctor inline, and closes output with Escape", async () => {
