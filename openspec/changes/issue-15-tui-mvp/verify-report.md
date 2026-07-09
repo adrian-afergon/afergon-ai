@@ -27,7 +27,7 @@
 
 ```text
 Command: pnpm test
-Result: 10 test files passed, 171 tests passed
+Result: 10 test files passed, 173 tests passed
 Duration: 9.30s
 Relevant TUI files passing:
 - tests/tui-dispatch.test.mjs: 15 tests
@@ -36,7 +36,7 @@ Relevant TUI files passing:
 - tests/tui-actions.test.mjs: 13 tests
 - tests/tui-configuration.test.mjs: 10 tests
 - tests/tui-status.test.mjs: 8 tests
-- tests/tui-model-profiles.test.mjs: 32 tests
+- tests/tui-model-profiles.test.mjs: 34 tests
 - tests/tui-branding.test.mjs: 11 tests
 - tests/tui-docs.test.mjs: 2 tests
 ```
@@ -49,7 +49,7 @@ Relevant TUI files passing:
 ./bin/afergon-ai tui                         ✅ exit 1; non-TTY explicit tui prints interactive-terminal guidance instead of hanging
 ./bin/afergon-ai doctor --opencode           ✅ explicit command bypass executes doctor path; exit 1 only for pre-existing local OpenCode registration gaps
 ./bin/afergon-ai models show "budget profile" ✅ quoted spaced arg stays intact as one invalid profile name; existing validation rejects it with exit 1
-AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 after a direct profile switch to `fallback`, opening the assignment editor from browse mode, canceling safely with Esc, canceling typed delete confirmation, observing active profile refresh to `fallback`, and retaining Keyboard help plus text selection markers
+AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 after a direct profile switch to `fallback`, opening the assignment editor from browse mode, canceling safely with Esc, canceling delete confirmation, observing active profile refresh to `fallback`, and retaining Keyboard help plus text selection markers
 ```
 
 **Coverage**: ➖ Not available. `openspec/config.yaml` declares no coverage tool.
@@ -60,8 +60,8 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 |-------|--------|---------|
 | TDD evidence reported | ✅ | `apply-progress.md` contains cumulative RED/GREEN/TRIANGULATE/REFACTOR evidence through PR13 and final sanitization follow-up |
 | All tasks have tests/evidence | ✅ | Runnable behavior/docs/manual tasks map to TUI tests or bounded launcher/PTY evidence; metadata task is structural |
-| RED confirmed | ✅ | Apply-progress records failing-first evidence for dispatcher, shell, screens, branding, navigation, shared actions, Configuration/Status actions, Model Profiles browse/assignment flows, typed delete confirmation, and sanitization fixes |
-| GREEN confirmed | ✅ | Current `pnpm test` passed 171/171 |
+| RED confirmed | ✅ | Apply-progress records failing-first evidence for dispatcher, shell, screens, branding, navigation, shared actions, Configuration/Status actions, Model Profiles browse/assignment flows, delete confirmation, and sanitization fixes |
+| GREEN confirmed | ✅ | Current `pnpm test` passed 173/173 |
 | Triangulation adequate | ✅ | Launcher, Home navigation, shared action flows, output bounds, Configuration/Status actions, and Model Profiles browse/assignment mutations have multiple scenario assertions |
 | Safety net for modified files | ✅ | Full suite plus focused TUI regressions cover the PR11-PR13 implementation surface |
 
@@ -71,11 +71,11 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 
 | Layer | Tests | Files | Tools |
 |-------|-------|-------|-------|
-| Unit | 121 TUI-specific tests | 9 TUI test files | Vitest |
+| Unit | 123 TUI-specific tests | 9 TUI test files | Vitest |
 | Integration | 0 | 0 | Not configured |
 | E2E | 0 | 0 | Not configured |
 | Manual/bounded smoke | launcher/TUI checks | CLI + PTY | macOS shell/Python PTY |
-| **Total runtime suite** | **171** | **10** | Vitest |
+| **Total runtime suite** | **173** | **10** | Vitest |
 
 ## Spec Compliance Matrix
 

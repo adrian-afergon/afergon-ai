@@ -697,8 +697,10 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     terminal.emitInput("\u001b[3~");
     await flushTui();
-    expect(terminal.output).toContain("Type the selected profile name to confirm deletion.");
-    expect(terminal.output).toContain("Expected text: budget");
+    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("> Submit / confirm");
+    expect(terminal.output).toContain("  Cancel");
+    expect(terminal.output).not.toContain("Expected text: budget");
     expect(terminal.output).toContain("afergon-ai models profile delete budget");
 
     terminal.emitInput("\u001b");
@@ -1210,7 +1212,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.fallback[SUPPORTED_AGENTS[0]]).toBe("openai/gpt-5.4");
   });
 
-  it("blocks delete execution when typed confirmation does not match", async () => {
+  it("ignores typed text in delete confirmation and waits for submit", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -1241,15 +1243,123 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     await emitInput(terminal, "\u001b[3~");
     await emitText(terminal, "nope");
-    await emitInput(terminal, "\r");
 
     expect(app.navigation.modal?.kind).toBe("confirm");
-    expect(terminal.output).toContain("Confirmation text must match the selected profile name.");
+    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).not.toContain("Typed text");
+    expect(terminal.output).not.toContain("nope");
     expect(executeAction).not.toHaveBeenCalled();
     expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.budget).toBeDefined();
   });
 
-  it("deletes the focused profile after typed confirmation and refreshes the browse state", async () => {
+  it("opens delete confirmation from D or d on existing profiles only", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: { "afergon-ai": "openai/gpt-5.4" },
+        },
+      },
+    });
+
+    const executeAction = vi.fn(createModelsActionExecutor(env));
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction,
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+
+    terminal.output = "";
+    await emitInput(terminal, "D");
+
+    expect(app.navigation.modal?.kind).toBe("confirm");
+    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("> Submit / confirm");
+    expect(terminal.output).toContain("  Cancel");
+    expect(terminal.output).not.toContain("Expected text: budget");
+    expect(terminal.output.split("\n").findIndex((line) => line.includes("cannot be recovered"))).toBeLessThan(
+      terminal.output.split("\n").findIndex((line) => line.startsWith("└")),
+    );
+    expect(executeAction).not.toHaveBeenCalled();
+
+    await emitInput(terminal, "\u001b");
+    await emitInput(terminal, "\u001b[B");
+    terminal.output = "";
+    await emitInput(terminal, "d");
+
+    expect(app.navigation.modal?.kind).toBe("confirm");
+    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).not.toContain("Expected text: fallback");
+    expect(executeAction).not.toHaveBeenCalled();
+
+    await emitInput(terminal, "\u001b[B");
+    expect(terminal.output).toContain("> Cancel");
+    await emitInput(terminal, "\r");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(executeAction).not.toHaveBeenCalled();
+    await emitInput(terminal, "\u001b[B");
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(2);
+
+    terminal.output = "";
+    await emitInput(terminal, "D");
+
+    expect(app.navigation.modal).toBeUndefined();
+    expect(executeAction).not.toHaveBeenCalled();
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles).toEqual({
+      budget: { "afergon-ai": "openai/gpt-5.5" },
+      fallback: { "afergon-ai": "openai/gpt-5.4" },
+    });
+  });
+
+  it("keeps typing d into the inline create profile name instead of opening delete", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const executeAction = vi.fn(createModelsActionExecutor(env));
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction,
+      saveModelProfileAssignments: ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments, { env }),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "n");
+
+    terminal.output = "";
+    await emitInput(terminal, "d");
+
+    expect(app.navigation.modal).toBeUndefined();
+    expect(app.navigation.modelProfiles?.createProfileName).toBe("d");
+    expect(terminal.output).toContain("> Profile name: d");
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
+  it("deletes the focused profile after submit confirmation and refreshes the browse state", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -1278,24 +1388,23 @@ describe("createTuiApp model-profiles route", () => {
 
     terminal.output = "";
     await emitInput(terminal, "\u001b[3~");
-    await emitText(terminal, "budget");
-    await emitInput(terminal, "\r");
-
-    const config = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
-    expect(config.models.profiles.budget).toBeUndefined();
-    expect(app.navigation.modal?.kind).toBe("output");
-    expect(terminal.output).toContain("Deleted profile 'budget'.");
+    expect(terminal.output).toContain("afergon-ai models profile delete budget");
 
     terminal.output = "";
     await emitInput(terminal, "\r");
 
+    const config = readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(config.models.profiles.budget).toBeUndefined();
     expect(app.navigation.modal).toBeUndefined();
     expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(0);
+    expect(terminal.output).not.toContain("Output [ok]");
+    expect(terminal.output).not.toContain("Deleted profile 'budget'.");
     expect(terminal.output).toContain("Active profile: ");
     expect(stripAnsi(terminal.output)).toContain("Active profile: (none)");
     expect(terminal.output).toContain("> [ ] fallback");
     expect(terminal.output).toContain("  * New Profile");
-    expect(terminal.output).not.toContain("[X] budget");
+    expect(stripAnsi(terminal.output)).not.toContain("budget");
   });
 
   it("reapplies managed host registrations when saving staged edits for the active profile", async () => {

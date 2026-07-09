@@ -84,10 +84,8 @@ export function getModelProfilesBrowseIntent(state, intent) {
         cliEquivalent: `afergon-ai models profile delete ${focusedProfile.name}`,
         confirmLabel: "Delete the selected profile permanently?",
         confirmation: {
-          kind: "typed-match",
-          prompt: "Type the selected profile name to confirm deletion.",
-          expectedText: focusedProfile.name,
-          mismatchMessage: "Confirmation text must match the selected profile name.",
+          kind: "submit-cancel",
+          prompt: "The selected profile will be deleted permanently and cannot be recovered.",
         },
       },
     };

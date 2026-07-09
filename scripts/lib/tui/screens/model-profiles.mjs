@@ -103,7 +103,7 @@ export function renderModelProfilesScreen(state, width, { styleSelected, styleMu
       ? [
           "Use ↑/↓ to move the profile selection.",
           inlineCreate ? "Type a profile name, Enter to create, or select Cancel." : "Press Enter to switch or start the focused profile flow.",
-          "Press Delete to confirm deletion, U to edit, and N to create.",
+          "Press Delete or D to confirm deletion, U to edit, and N to create.",
         ]
       : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
   ];

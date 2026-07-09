@@ -51,7 +51,7 @@ The TUI MUST provide functional Configuration, Status, and Model Profiles sectio
 - AND help text identifies how to return Home and how to exit
 
 #### Scenario: Modal or form focus stays bounded and recoverable
-- GIVEN the user opens an action confirmation, create-name editor, assignment-editor model-entry form, or typed delete confirmation
+- GIVEN the user opens an action confirmation, create-name editor, assignment-editor model-entry form, or delete submit/cancel alert
 - WHEN the user navigates with keyboard controls only
 - THEN focus remains within the active surface until submit or a documented cancel affordance
 - AND inline create-name entry exposes a visible Cancel row that returns focus to browse mode without trapping the user
@@ -86,9 +86,9 @@ The TUI MUST execute section actions only from explicit action definitions backe
 
 ### Requirement: Forms, cancellation, and output recovery
 
-The TUI MUST provide bounded input surfaces whenever additional input is required, including `init`, Model Profiles create-name entry, assignment-editor model entry, and `models profile delete` typed confirmation. `init` MUST expose checkbox choices for Pi, Claude, OpenCode, and all. Model Profiles browse-mode switching MAY use direct focused-profile activation when no extra input is required. Users MUST be able to cancel forms, confirmations, and output views with keyboard actions. After a mutating action succeeds, the affected section MUST refresh its displayed state.
+The TUI MUST provide bounded input surfaces whenever additional input is required, including `init`, Model Profiles create-name entry, assignment-editor model entry, and the `models profile delete` submit/cancel alert. `init` MUST expose checkbox choices for Pi, Claude, OpenCode, and all. Model Profiles browse-mode switching MAY use direct focused-profile activation when no extra input is required. Users MUST be able to cancel forms, confirmations, and output views with keyboard actions. After a mutating action succeeds, the affected section MUST refresh its displayed state.
 
-The current Model Profiles UX does not present a legacy action-list `models set` confirmation or picker. Browse mode enters the assignment editor with `U`, manual `provider/model` entry happens per focused agent, staged edits remain local until `S`, and that explicit `S` save executes immediately without an additional confirmation even though persistence still routes through manifest-backed `models set` argv. Typed delete confirmation remains required.
+The current Model Profiles UX does not present a legacy action-list `models set` confirmation or picker. Browse mode enters the assignment editor with `U`, manual `provider/model` entry happens per focused agent, staged edits remain local until `S`, and that explicit `S` save executes immediately without an additional confirmation even though persistence still routes through manifest-backed `models set` argv. Delete uses a floating submit/cancel alert over the Models frame without profile-name typing.
 
 #### Scenario: Init exposes bounded checkbox choices
 - GIVEN the user opens `init` from Configuration or Status
@@ -96,10 +96,10 @@ The current Model Profiles UX does not present a legacy action-list `models set`
 - THEN Pi, Claude, OpenCode, and all appear as keyboard-operable checkbox choices
 - AND submission routes only the chosen flags to the mapped argv definition
 
-#### Scenario: Model profile actions use assignment-editor entry and typed confirmation
+#### Scenario: Model profile actions use assignment-editor entry and submit/cancel delete alert
 - GIVEN the user opens a Model Profiles mutating action
 - WHEN the action needs a profile, agent, or model value
-- THEN the TUI collects it through bounded create-name text entry, assignment-editor model-entry fields, or typed delete confirmation as appropriate
+- THEN the TUI collects it through bounded create-name text entry, assignment-editor model-entry fields, or the submit/cancel delete alert as appropriate
 - AND the submitted argv matches the chosen values without shell interpolation
 
 #### Scenario: Inline profile create returns to focused browse mode and surfaces degraded refresh guidance when present

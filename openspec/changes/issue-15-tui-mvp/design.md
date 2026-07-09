@@ -49,7 +49,7 @@ scripts/lib/tui/actions/*.mjs
 | `scripts/lib/tui/command-manifest.mjs` | Modify | Expand stable argv definitions for `doctor --opencode`, `init` option sets, and model profile action builders without shell strings. |
 | `scripts/lib/tui/actions/runner.mjs` | Create | Execute bounded argv actions, capture stdout/stderr/exit status, and classify read-only vs mutating outcomes. |
 | `scripts/lib/tui/actions/definitions.mjs` | Create | Define per-section action metadata, required inputs, confirmation copy, and refresh targets. |
-| `scripts/lib/tui/actions/forms.mjs` | Create | Normalize checkbox, typed-confirmation, and text-entry state for init plus the Model Profiles create/assignment/delete flows. |
+| `scripts/lib/tui/actions/forms.mjs` | Create | Normalize checkbox, confirmation, and text-entry state for init plus the Model Profiles create/assignment/delete flows. |
 | `scripts/lib/tui/screens/*.mjs` | Modify | Render actionable lists, modal prompts, form fields, output panel, and non-color-only focus/help cues. |
 | `tests/tui-shell.test.mjs` | Modify | Cover Home selection state, arrow movement, enter activation, and retained letter shortcuts. |
 | `tests/tui-actions.test.mjs` | Create | Cover shared action definitions, runner safety, confirmations, cancellation, output capture, and refresh triggers. |
@@ -109,7 +109,7 @@ Contract notes:
 | Unit | branding module contract | Vitest assertions for canonical lines, fallback fields, and no invented variants. |
 | Unit | Home navigation behavior | Vitest shell tests for `up/down/enter`, visible selection markers, and shortcut regression coverage. |
 | Unit | Action runner + definitions | Verify argv-only execution, read-only inline results, confirmation gates, cancellation, and stderr/exit handling. |
-| Unit | Forms and focus recovery | Verify init checkboxes, Model Profiles create-name and assignment-editor text entry, typed delete confirmation, Esc/Cancel behavior, and return focus markers. |
+| Unit | Forms and focus recovery | Verify init checkboxes, Model Profiles create-name and assignment-editor text entry, delete submit/cancel alert, Esc/Cancel behavior, and return focus markers. |
 | Unit | Screen accessibility copy | Focused screen/docs tests for help/footer text, output panel cues, and non-color-only status text. |
 | Manual | Forced-TTY TUI smoke | Visit each section, run inline `doctor`, trigger one direct profile switch, cancel one confirmed destructive action in a temp fixture, return Home, exit with `q`. |
 
