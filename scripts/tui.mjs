@@ -12,6 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.mjs";
+import { hasDegradedRefreshGuidance } from "./lib/model-profiles.mjs";
+import { reapplySupportedAdapters } from "./models.mjs";
 import { resolveActionArgv } from "./lib/tui/actions/definitions.mjs";
 import {
   appendFormCharacter,
@@ -62,6 +64,15 @@ const TEAL_ANSI = "\u001b[38;5;6m";
 const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
 const ANSI_RESET = "\u001b[0m";
 const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
+const FRAME_CORNER_WIDTH = 1;
+const FRAME_SIDE_BORDERS = 2;
+const FRAME_LABEL_PADDING = 4;
+const FRAME_HEADER_GAP = 5;
+const FRAME_FOOTER_RULE_MIN_WIDTH = 1;
+const FRAME_MIN_WIDTH = 20;
+const FRAME_RULE_LABEL_DECORATION_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_MIN_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_INNER_PADDING = 2;
 
 const ROUTE_BREADCRUMBS = Object.freeze({
   home: "Home",
@@ -102,31 +113,35 @@ function renderShortcutHintLine() {
 }
 
 function clipBreadcrumbForFrame(breadcrumb, width) {
-  const maxBreadcrumbWidth = Math.max(1, width - 4);
+  const maxBreadcrumbWidth = Math.max(1, width - FRAME_LABEL_PADDING);
   return truncateToWidth(sanitizeTerminalOutput(breadcrumb ?? ""), maxBreadcrumbWidth, "");
 }
 
 function clipFrameLabel(label, width) {
-  const maxLabelWidth = Math.max(1, width - 4);
+  const maxLabelWidth = Math.max(1, width - FRAME_LABEL_PADDING);
   return truncateToWidth(sanitizeTerminalOutput(label ?? ""), maxLabelWidth, "");
 }
 
 function clipFooterSegment(label, maxWidth) {
-  if (!label || maxWidth < 3) {
+  if (!label || maxWidth < FRAME_FOOTER_SEGMENT_MIN_WIDTH) {
     return "";
   }
 
-  const safeLabel = truncateToWidth(sanitizeTerminalOutput(label), Math.max(1, maxWidth - 2), "");
+  const safeLabel = truncateToWidth(
+    sanitizeTerminalOutput(label),
+    Math.max(1, maxWidth - FRAME_FOOTER_SEGMENT_INNER_PADDING),
+    "",
+  );
   return safeLabel ? ` ${safeLabel} ` : "";
 }
 
 function renderEmbeddedFrameRule(corner, label, width) {
   if (!label) {
-    return `${corner}${repeatToWidth("─", width - 1)}`;
+    return `${corner}${repeatToWidth("─", width - FRAME_CORNER_WIDTH)}`;
   }
 
   const safeLabel = clipFrameLabel(label, width);
-  const ruleWidth = Math.max(1, width - visibleWidth(safeLabel) - 3);
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLabel) - FRAME_RULE_LABEL_DECORATION_WIDTH);
   return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
 }
 
@@ -139,19 +154,19 @@ function renderEmbeddedFrameHeader(corner, leftLabel, rightLabel, width) {
   const safeRightLabel = sanitizeTerminalOutput(rightLabel.label);
   const safeRightValue = sanitizeTerminalOutput(rightLabel.value);
   const rightText = `${safeRightLabel}: ${safeRightValue}`;
-  const minimumWidth = visibleWidth(safeLeftLabel) + visibleWidth(rightText) + 5;
+  const minimumWidth = visibleWidth(safeLeftLabel) + visibleWidth(rightText) + FRAME_HEADER_GAP;
 
   if (minimumWidth > width) {
     return renderEmbeddedFrameRule(corner, safeLeftLabel, width);
   }
 
   const rightRendered = `${safeRightLabel}: ${styleTeal(safeRightValue)}`;
-  const ruleWidth = Math.max(1, width - visibleWidth(safeLeftLabel) - visibleWidth(rightText) - 5);
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLeftLabel) - visibleWidth(rightText) - FRAME_HEADER_GAP);
   return `${corner} ${safeLeftLabel} ${repeatToWidth("─", ruleWidth)} ${rightRendered}`;
 }
 
 function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
-  const footerWidth = Math.max(0, width - 1);
+  const footerWidth = Math.max(0, width - FRAME_CORNER_WIDTH);
   const rightSegment = clipFooterSegment(rightLabel, footerWidth);
 
   if (!rightSegment) {
@@ -159,7 +174,7 @@ function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
   }
 
   const remainingWidth = Math.max(0, footerWidth - visibleWidth(rightSegment));
-  const reservedRuleWidth = remainingWidth > 0 ? 1 : 0;
+  const reservedRuleWidth = remainingWidth > 0 ? FRAME_FOOTER_RULE_MIN_WIDTH : 0;
   const leftSegment = clipFooterSegment(leftLabel, Math.max(0, remainingWidth - reservedRuleWidth));
   const ruleWidth = Math.max(0, footerWidth - visibleWidth(leftSegment) - visibleWidth(rightSegment));
 
@@ -182,8 +197,8 @@ export function buildRouteBreadcrumb(navigation) {
 }
 
 function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel } = {}) {
-  const safeWidth = Math.max(20, width);
-  const innerWidth = Math.max(1, safeWidth - 2);
+  const safeWidth = Math.max(FRAME_MIN_WIDTH, width);
+  const innerWidth = Math.max(1, safeWidth - FRAME_SIDE_BORDERS);
   const framedLines = [renderEmbeddedFrameHeader("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), headerRightLabel, safeWidth)];
 
   for (const line of [...contentLines, ...footerLines]) {
@@ -253,7 +268,7 @@ export function renderHomeScreen(navigation, width) {
     }
 
     if ((!useFallbackBranding && index <= BRANDING_LOGO.lines.length) || (useFallbackBranding && index <= 1)) {
-      return centerVisibleLine(line, Math.max(1, width - 2));
+      return centerVisibleLine(line, Math.max(1, width - FRAME_SIDE_BORDERS));
     }
 
     return line;
@@ -512,7 +527,55 @@ function renderPlaceholderScreen(route, width) {
 }
 
 function shouldSuppressSuccessfulOutputPanel(action, result) {
-  return result?.ok === true && action?.id === "models-switch-focused";
+  if (result?.ok !== true || action?.id !== "models-switch-focused") {
+    return false;
+  }
+
+  const stderr = sanitizeTerminalOutput(result.stderr ?? "").trim();
+  if (stderr) {
+    return false;
+  }
+
+  const stdout = sanitizeTerminalOutput(result.stdout ?? "").toLowerCase();
+  return !hasDegradedRefreshGuidance({ stdout, stderr });
+}
+
+function shouldShowProfileCreateOutput(action, result) {
+  if (result?.ok !== true || action?.id !== "model-profiles-create-profile") {
+    return false;
+  }
+
+  return hasDegradedRefreshGuidance({
+    stdout: sanitizeTerminalOutput(result.stdout ?? ""),
+    stderr: sanitizeTerminalOutput(result.stderr ?? ""),
+  });
+}
+
+function shouldShowAssignmentSaveOutput(saveResult) {
+  return saveResult?.refreshResult?.degraded === true;
+}
+
+function createAssignmentSaveOutputState(profileName, saveResult) {
+  const refreshResult = saveResult?.refreshResult ?? {};
+  return createOutputState({
+    action: {
+      id: "model-profiles-save-assignments",
+      label: "Save staged assignments",
+      cliEquivalent: "TUI assignment save",
+    },
+    result: {
+      ok: true,
+      exitCode: 0,
+      stdout: [
+        `Saved staged assignments for profile '${sanitizeTerminalOutput(profileName ?? "(unknown)")}'.`,
+        refreshResult.stdout,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      stderr: refreshResult.stderr ?? "",
+      timedOut: false,
+    },
+  });
 }
 
 function createMainScreen({
@@ -525,6 +588,7 @@ function createMainScreen({
   getInteractiveActions,
   executeAction,
   saveModelProfileAssignments,
+  refreshActiveModelProfile,
 }) {
   let outputState;
 
@@ -563,66 +627,82 @@ function createMainScreen({
     };
   }
 
-    async function runSelectedAction(action) {
-      const result = await executeAction({ action });
-      if (action.id === "model-profiles-create-profile" && result.ok) {
-        updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
-        onNavigate();
-        return;
-      }
-      if (shouldSuppressSuccessfulOutputPanel(action, result)) {
+  async function runSelectedAction(action) {
+    const result = await executeAction({ action });
+    if (action.id === "model-profiles-create-profile" && result.ok) {
+      updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
+      if (shouldShowProfileCreateOutput(action, result)) {
+        outputState = createOutputState({ action, result });
+        showModal(navigation, outputState);
+      } else {
         outputState = undefined;
         hideModal(navigation);
-        onNavigate();
+      }
+      onNavigate();
+      return;
+    }
+    if (shouldSuppressSuccessfulOutputPanel(action, result)) {
+      outputState = undefined;
+      hideModal(navigation);
+      onNavigate();
+      return;
+    }
+    outputState = createOutputState({ action, result });
+    showModal(navigation, outputState);
+    onNavigate();
+  }
+
+  function showAssignmentSaveError(error) {
+    outputState = createOutputState({
+      action: {
+        id: "model-profiles-save-assignments",
+        label: "Save staged assignments",
+        cliEquivalent: "TUI assignment save",
+      },
+      result: {
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: error instanceof Error ? error.message : String(error),
+        timedOut: false,
+      },
+    });
+    showModal(navigation, outputState);
+    onNavigate();
+  }
+
+  function finalizeAssignmentSave(saveResult) {
+    updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
+
+    if (shouldShowAssignmentSaveOutput(saveResult)) {
+      outputState = createAssignmentSaveOutputState(saveResult.profileName, saveResult);
+      showModal(navigation, outputState);
+    } else {
+      outputState = undefined;
+      hideModal(navigation);
+    }
+
+    onNavigate();
+  }
+
+  function saveFocusedProfileAssignments() {
+    try {
+      const result = saveModelProfileAssignments({
+        profileName: navigation.modelProfiles?.targetProfileName,
+        assignments: navigation.modelProfiles?.stagedAssignments ?? {},
+        refreshActiveProfile: refreshActiveModelProfile,
+      });
+
+      if (result && typeof result.then === "function") {
+        result.then(finalizeAssignmentSave).catch(showAssignmentSaveError);
         return;
       }
-      outputState = createOutputState({ action, result });
-      showModal(navigation, outputState);
-      onNavigate();
+
+      finalizeAssignmentSave(result);
+    } catch (error) {
+      showAssignmentSaveError(error);
     }
-
-    function showAssignmentSaveError(error) {
-      outputState = createOutputState({
-        action: {
-          id: "model-profiles-save-assignments",
-          label: "Save staged assignments",
-          cliEquivalent: "TUI assignment save",
-        },
-        result: {
-          ok: false,
-          exitCode: 1,
-          stdout: "",
-          stderr: error instanceof Error ? error.message : String(error),
-          timedOut: false,
-        },
-      });
-      showModal(navigation, outputState);
-      onNavigate();
-    }
-
-    function saveFocusedProfileAssignments() {
-      try {
-        const result = saveModelProfileAssignments({
-          profileName: navigation.modelProfiles?.targetProfileName,
-          assignments: navigation.modelProfiles?.stagedAssignments ?? {},
-        });
-
-        if (result && typeof result.then === "function") {
-          result
-            .then(() => {
-              updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-              onNavigate();
-            })
-            .catch(showAssignmentSaveError);
-          return;
-        }
-
-        updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-        onNavigate();
-      } catch (error) {
-        showAssignmentSaveError(error);
-      }
-    }
+  }
 
   return {
     render(width) {
@@ -744,7 +824,7 @@ function createMainScreen({
               return;
             }
 
-          if (submitState.isSubmit) {
+            if (submitState.isSubmit) {
               const validation = validateFormInput(navigation.modal);
               if (!validation.ok) {
                 navigation.modal = {
@@ -1052,7 +1132,8 @@ export function createTuiApp({
   loadModelProfilesScreenState = ({ navigation } = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
-  saveModelProfileAssignments = ({ profileName, assignments }) => saveAssignmentsForProfile(profileName, assignments),
+  saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
+  refreshActiveModelProfile = () => reapplySupportedAdapters(),
 } = {}) {
   const navigation = createNavigationState();
   navigation.sectionActionSelection = 0;
@@ -1080,6 +1161,7 @@ export function createTuiApp({
     getInteractiveActions: (route) => interactiveActionsByRoute[route] ?? [],
     executeAction,
     saveModelProfileAssignments,
+    refreshActiveModelProfile,
   });
   tui.addChild(screen);
   tui.setFocus(screen);

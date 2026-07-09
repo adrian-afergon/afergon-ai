@@ -34,6 +34,26 @@ const AGENT_ALIASES = new Map([
 ]);
 
 const DEFAULT_OPENCODE_MODELS_TIMEOUT_MS = 5000;
+const DEGRADED_REFRESH_GUIDANCE_PATTERNS = [
+  /\bwarning\b/u,
+  /\brecovery\b/u,
+  /\bdegraded\b/u,
+  /\bconflict\b/u,
+  /\bfailed\b/u,
+  /\btimeout\b/u,
+  /\btimed out\b/u,
+  /\bunavailable\b/u,
+  /\bskipped\b/u,
+  /\balready exists in opencode\.json\b/u,
+  /\bdoes not look managed by afergon-ai\b/u,
+  /\bkept existing non-managed\b/u,
+  /\bpreserving existing\b/u,
+  /\bnot refreshed\b/u,
+  /\brun ['`]?afergon-ai update/u,
+  /\brun ['`]?afergon-ai init --opencode/u,
+  /\bmissing managed agent file/u,
+  /\bonly afergon-ai config was updated/u,
+];
 
 function getOpenCodeModelsTimeoutMs(env = process.env) {
   const rawTimeout = env.AFERGON_AI_MODELS_LIST_TIMEOUT_MS;
@@ -528,7 +548,43 @@ export function cloneAssignments(assignments = {}) {
   return JSON.parse(JSON.stringify(asPlainObject(assignments)));
 }
 
-export function saveProfileAssignments(profileNameInput, assignments, { env = process.env, refreshActiveProfile } = {}) {
+export function hasDegradedRefreshGuidance({ stdout = "", stderr = "" } = {}) {
+  const combinedOutput = [stdout, stderr]
+    .filter((value) => typeof value === "string" && value.trim())
+    .join("\n")
+    .toLowerCase();
+
+  if (!combinedOutput) {
+    return false;
+  }
+
+  return DEGRADED_REFRESH_GUIDANCE_PATTERNS.some((pattern) => pattern.test(combinedOutput));
+}
+
+export function normalizeRefreshResult(result) {
+  if (!result || typeof result !== "object") {
+    return undefined;
+  }
+
+  const stdout = typeof result.stdout === "string" ? result.stdout.trim() : "";
+  const stderr = typeof result.stderr === "string" ? result.stderr.trim() : "";
+  const status = result.status === "degraded" || result.degraded || hasDegradedRefreshGuidance({ stdout, stderr })
+    ? "degraded"
+    : "clean";
+
+  return {
+    status,
+    stdout,
+    stderr,
+    degraded: status === "degraded",
+  };
+}
+
+export function saveProfileAssignments(
+  profileNameInput,
+  assignments,
+  { env = process.env, refreshActiveProfile, validateModelAvailability: validateAvailability = validateModelAvailability } = {},
+) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig(env);
   const profile = config.models.profiles[profileName];
@@ -546,7 +602,7 @@ export function saveProfileAssignments(profileNameInput, assignments, { env = pr
     }
 
     if (normalizedModel !== "inherit") {
-      const validation = validateModelAvailability(normalizedModel, env);
+      const validation = validateAvailability(normalizedModel, env);
       if (validation.status === "malformed") {
         throw new Error(validation.message);
       }
@@ -563,13 +619,21 @@ export function saveProfileAssignments(profileNameInput, assignments, { env = pr
   config.models.profiles[profileName] = nextAssignments;
   const configPath = saveConfig(config, env);
 
-  if (config.models.activeProfile === profileName) {
-    refreshActiveProfile?.();
-  }
-
-  return {
+  const finalizeSave = (refreshResult) => ({
     configPath,
     profileName,
     assignments: nextAssignments,
-  };
+    refreshResult: normalizeRefreshResult(refreshResult),
+  });
+
+  if (config.models.activeProfile === profileName) {
+    const refreshResult = refreshActiveProfile?.();
+    if (refreshResult && typeof refreshResult.then === "function") {
+      return refreshResult.then((resolvedRefreshResult) => finalizeSave(resolvedRefreshResult));
+    }
+
+    return finalizeSave(refreshResult);
+  }
+
+  return finalizeSave();
 }

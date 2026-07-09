@@ -1,3 +1,5 @@
+import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 
@@ -11,6 +13,8 @@ import {
   TUI_ROUTES,
 } from "../scripts/lib/tui/navigation.mjs";
 import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.mjs";
+
+const repoRoot = path.resolve(import.meta.dirname, "..");
 
 function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
@@ -40,7 +44,6 @@ function createRouteRenderApp() {
       assignments: [{ agent: "afergon-ai", model: "openai/gpt-5.4", source: "explicit" }],
       actions: [],
       interactiveActions: [],
-      supportedActions: [],
     }),
   });
 }
@@ -285,6 +288,18 @@ describe("navigation state", () => {
 });
 
 describe("createTuiApp", () => {
+  it("imports scripts/tui.mjs without running the models CLI or printing config", () => {
+    const result = spawnSync(process.execPath, ["-e", "await import('./scripts/tui.mjs')"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 10000,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("");
+  });
+
   it("starts on the home route and renders the minimal shell", async () => {
     const terminal = new FakeTerminal();
     const exits = [];
