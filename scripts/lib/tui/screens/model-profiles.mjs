@@ -14,18 +14,35 @@ function getAssignmentPlaceholderProfileName(browseState) {
   return sanitizeText(browseState?.targetProfileName ?? "") || "a new profile";
 }
 
-function renderProfiles(profiles, styleSelected) {
+function renderProfiles(profiles, styleSelected, inlineCreate) {
   if (profiles.length === 0) {
     return ["- No saved profiles yet."];
   }
 
-  return profiles.map((profile) => {
-    const marker = profile.isFocused ? ">" : " ";
+  return profiles.flatMap((profile) => {
+    const marker = profile.isFocused && !(profile.isCreate && inlineCreate) ? ">" : " ";
     const label = profile.isCreate
       ? sanitizeText(profile.name)
       : `[${profile.isActive ? "X" : " "}] ${sanitizeText(profile.name)}`;
     const line = `${marker} ${label}`;
-    return profile.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
+    const renderedLine = profile.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
+
+    if (!profile.isCreate || !inlineCreate) {
+      return [renderedLine];
+    }
+
+    const inputMarker = inlineCreate.selection === "input" ? ">" : " ";
+    const cancelMarker = inlineCreate.selection === "cancel" ? ">" : " ";
+    const inputValue = sanitizeText(inlineCreate.value) || "(empty)";
+    const inputLine = `${inputMarker} Profile name: ${inputValue}`;
+    const cancelLine = `${cancelMarker} Cancel`;
+
+    return [
+      renderedLine,
+      inlineCreate.selection === "input" && typeof styleSelected === "function" ? styleSelected(inputLine) : inputLine,
+      inlineCreate.selection === "cancel" && typeof styleSelected === "function" ? styleSelected(cancelLine) : cancelLine,
+      ...(inlineCreate.validationMessage ? [sanitizeText(inlineCreate.validationMessage)] : []),
+    ];
   });
 }
 
@@ -53,6 +70,7 @@ function renderNewProfilePlaceholderRows(agentNames = []) {
 
 export function renderModelProfilesScreen(state, width, { styleSelected, styleMuted } = {}) {
   const isBrowseMode = (state.browse?.mode ?? "browse") === "browse";
+  const inlineCreate = isBrowseMode ? state.browse?.inlineCreate : undefined;
   const showNewProfilePlaceholders = isBrowseMode && state.browse?.isCreateSelected && state.assignments.length === 0;
   const detailLines = isBrowseMode
     ? renderMutedLines(
@@ -71,7 +89,7 @@ export function renderModelProfilesScreen(state, width, { styleSelected, styleMu
     "",
     "Profile list",
     "",
-    ...renderProfiles(state.profiles, styleSelected),
+    ...renderProfiles(state.profiles, styleSelected, inlineCreate),
     "",
     ...(isBrowseMode ? renderMutedLines(["Profile Details"], styleMuted) : ["Assignment editor"]),
     "",
@@ -84,7 +102,7 @@ export function renderModelProfilesScreen(state, width, { styleSelected, styleMu
     ...(isBrowseMode
       ? [
           "Use ↑/↓ to move the profile selection.",
-          "Press Space to switch or start the focused profile flow.",
+          inlineCreate ? "Type a profile name, Enter to create, or select Cancel." : "Press Enter to switch or start the focused profile flow.",
           "Press Delete to confirm deletion, U to edit, and N to create.",
         ]
       : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),

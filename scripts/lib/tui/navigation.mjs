@@ -59,6 +59,88 @@ export function moveModelProfilesSelection(state, profileCount, direction) {
   };
 }
 
+export function enterModelProfilesInlineCreate(state) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    createProfileName: "",
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  };
+}
+
+export function exitModelProfilesInlineCreate(state, options = {}) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    focusedProfileIndex: Number.isInteger(options.focusedProfileIndex)
+      ? options.focusedProfileIndex
+      : (state?.focusedProfileIndex ?? 0),
+    createProfileName: undefined,
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  };
+}
+
+export function moveModelProfilesInlineCreateSelection(state, direction) {
+  const currentSelection = state?.createProfileSelection === "cancel" ? 1 : 0;
+  const nextSelection = (currentSelection + direction + 2) % 2;
+
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    createProfileSelection: nextSelection === 1 ? "cancel" : "input",
+    createProfileValidation: undefined,
+  };
+}
+
+export function appendModelProfilesInlineCreateCharacter(state, character) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    createProfileName: `${state?.createProfileName ?? ""}${character}`,
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  };
+}
+
+export function backspaceModelProfilesInlineCreateCharacter(state) {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    createProfileName: (state?.createProfileName ?? "").slice(0, -1),
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  };
+}
+
+export function validateModelProfilesInlineCreate(state) {
+  const profileName = (state?.createProfileName ?? "").trim();
+  if (!profileName) {
+    return {
+      ...createModelProfilesState(),
+      ...state,
+      mode: "browse",
+      createProfileSelection: "input",
+      createProfileValidation: "Profile name is required.",
+    };
+  }
+
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    createProfileName: profileName,
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  };
+}
+
 export function enterModelProfilesAssignments(state, targetProfileName) {
   return {
     ...createModelProfilesState(),

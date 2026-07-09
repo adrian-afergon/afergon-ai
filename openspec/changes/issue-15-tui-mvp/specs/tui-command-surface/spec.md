@@ -53,8 +53,8 @@ The TUI MUST provide functional Configuration, Status, and Model Profiles sectio
 #### Scenario: Modal or form focus stays bounded and recoverable
 - GIVEN the user opens an action confirmation, create-name editor, assignment-editor model-entry form, or typed delete confirmation
 - WHEN the user navigates with keyboard controls only
-- THEN focus remains within the active surface until submit or cancel
-- AND Esc or Cancel returns focus to the launching action without trapping the user
+- THEN focus remains within the active surface until submit or a documented cancel affordance
+- AND inline create-name entry exposes a visible Cancel row that returns focus to browse mode without trapping the user
 
 ### Requirement: Interactive section actions execute only defined CLI behaviors
 
@@ -74,7 +74,7 @@ The TUI MUST execute section actions only from explicit action definitions backe
 
 #### Scenario: Direct focused profile switch executes immediately
 - GIVEN the user focuses an existing profile in Model Profiles browse mode
-- WHEN the user presses `Space`
+- WHEN the user presses `Enter`
 - THEN the TUI switches to that profile immediately without a pre-execution confirmation step
 - AND clean success stays inline while failures or degraded refresh guidance remain visible in bounded output
 
@@ -102,10 +102,10 @@ The current Model Profiles UX does not present a legacy action-list `models set`
 - THEN the TUI collects it through bounded create-name text entry, assignment-editor model-entry fields, or typed delete confirmation as appropriate
 - AND the submitted argv matches the chosen values without shell interpolation
 
-#### Scenario: First profile create surfaces degraded refresh guidance when present
-- GIVEN the user creates the first profile from Model Profiles browse mode
+#### Scenario: Inline profile create returns to focused browse mode and surfaces degraded refresh guidance when present
+- GIVEN the user creates a profile from Model Profiles browse mode inline create-name entry
 - WHEN the create command succeeds but stdout or stderr includes degraded, warning, or recovery guidance
-- THEN the TUI enters the assignment editor for that new profile
+- THEN the TUI returns to browse mode with the new profile focused even when sorting changes its row position
 - AND the guidance remains visible in a bounded output panel until dismissed
 
 #### Scenario: Assignment editor save is an explicit direct action
@@ -114,9 +114,9 @@ The current Model Profiles UX does not present a legacy action-list `models set`
 - THEN the TUI saves those staged edits immediately without an extra confirmation step
 - AND clean success returns to browse mode while failures or degraded refresh guidance remain visible in bounded output
 
-#### Scenario: Cancel or escape aborts the active action safely
+#### Scenario: Documented cancellation aborts the active action safely
 - GIVEN a confirmation, form, or output panel is open
-- WHEN the user presses Esc or activates Cancel
+- WHEN the user uses the cancellation affordance documented for that active surface
 - THEN the pending action is aborted without side effects
 - AND focus returns to the invoking section action list
 

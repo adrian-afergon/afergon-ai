@@ -415,7 +415,7 @@ describe("renderModelProfilesScreen", () => {
     expect(output).not.toContain("Active profile: budget");
     expect(output).toContain("Keyboard help");
     expect(output).toContain("Use ↑/↓ to move the profile selection.");
-    expect(output).toContain("Press Space to switch or start the focused profile flow.");
+    expect(output).toContain("Press Enter to switch or start the focused profile flow.");
   });
 
   it("renders the active marker independently from the focused row", () => {
@@ -637,7 +637,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).toContain("> * New Profile");
   });
 
-  it("switches focused profiles immediately without opening an output panel while preserving delete confirmation, edit entry, and create entry", async () => {
+  it("switches focused profiles with Enter while preserving delete confirmation, edit entry, and inline create entry", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -670,6 +670,13 @@ describe("createTuiApp model-profiles route", () => {
 
     terminal.output = "";
     terminal.emitInput(" ");
+    await flushTui();
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.activeProfile).toBe("budget");
+    expect(app.navigation.modal).toBeUndefined();
+    expect(terminal.output).toBe("");
+
+    terminal.output = "";
+    terminal.emitInput("\r");
     await flushTui();
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(1);
     expect(terminal.output).not.toContain("Confirmation");
@@ -708,7 +715,8 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     terminal.emitInput("n");
     await flushTui();
-    expect(terminal.output).toContain("Create a profile");
+    expect(terminal.output).toContain("> Profile name: (empty)");
+    expect(terminal.output).toContain("  Cancel");
   });
 
   it("shows an output panel when an immediate profile switch fails", async () => {
@@ -731,7 +739,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
+    await emitInput(terminal, "\r");
 
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [fail]");
@@ -759,7 +767,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
+    await emitInput(terminal, "\r");
 
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [ok]");
@@ -787,7 +795,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
+    await emitInput(terminal, "\r");
 
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [ok]");
@@ -815,7 +823,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
+    await emitInput(terminal, "\r");
 
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [ok]");
@@ -861,7 +869,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).not.toContain("\u001b]2;");
   });
 
-  it("keeps create-name as the first step before entering assignment mode", async () => {
+  it("creates a new profile inline without confirmation and focuses it after sorted refresh", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -890,24 +898,31 @@ describe("createTuiApp model-profiles route", () => {
 
     terminal.output = "";
     await emitInput(terminal, " ");
-    expect(terminal.output).toContain("Create a profile");
+    expect(terminal.output).toBe("");
 
-    await emitInput(terminal, "d");
-    await emitInput(terminal, "r");
+    await emitInput(terminal, "\r");
+    expect(terminal.output).toContain("> Profile name: (empty)");
+    expect(terminal.output).toContain("  Cancel");
+
     await emitInput(terminal, "a");
-    await emitInput(terminal, "f");
-    await emitInput(terminal, "t");
-    await emitInput(terminal, "\u001b[B");
-    await emitInput(terminal, "\r");
+    await emitInput(terminal, "l");
+    await emitInput(terminal, "p");
+    await emitInput(terminal, "h");
+    await emitInput(terminal, "a");
     await emitInput(terminal, "\r");
 
-    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
-    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
-    expect(terminal.output).toContain("Assignment editor");
-    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeDefined();
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(0);
+    expect(app.navigation.modelProfiles?.targetProfileName).toBeUndefined();
+    expect(app.navigation.modal).toBeUndefined();
+    expect(terminal.output).toContain("> [ ] alpha");
+    expect(terminal.output).toContain("  [X] budget");
+    expect(terminal.output).toContain("  * New Profile");
+    expect(terminal.output).not.toContain("Assignment editor");
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.alpha).toBeDefined();
   });
 
-  it("shows a validation message and keeps state unchanged when create-name submit is empty", async () => {
+  it("shows an inline validation message and keeps state unchanged when create-name submit is empty", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
     writeModelConfig(env, {
@@ -935,13 +950,55 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "\u001b[B");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
-    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
     await emitInput(terminal, "\r");
 
-    expect(app.navigation.modal?.kind).toBe("form");
+    expect(app.navigation.modal).toBeUndefined();
     expect(terminal.output).toContain("Profile name is required");
+    expect(terminal.output).toContain("> Profile name: (empty)");
     expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.createProfileName).toBe("");
+    expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeUndefined();
+  });
+
+  it("cancels inline profile creation from the Cancel row", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    });
+
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+      executeAction: createModelsActionExecutor(env),
+    });
+
+    app.start();
+    await flushTui();
+    await emitInput(terminal, "m");
+    await emitInput(terminal, "\u001b[B");
+    await emitInput(terminal, "\r");
+    await emitText(terminal, "draft");
+
+    terminal.output = "";
+    await emitInput(terminal, "\u001b[B");
+    expect(terminal.output).toContain("Profile name: draft");
+
+    terminal.output = "";
+    await emitInput(terminal, "\r");
+
+    expect(app.navigation.modelProfiles?.createProfileName).toBeUndefined();
+    expect(terminal.output).toContain("> * New Profile");
+    expect(terminal.output).not.toContain("Profile name: draft");
     expect(readJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json")).models.profiles.draft).toBeUndefined();
   });
 
@@ -960,6 +1017,13 @@ describe("createTuiApp model-profiles route", () => {
         browse: {
           mode: navigation?.modelProfiles?.mode ?? "browse",
           targetProfileName: navigation?.modelProfiles?.targetProfileName,
+          inlineCreate: navigation?.modelProfiles?.createProfileName !== undefined
+            ? {
+                value: navigation.modelProfiles.createProfileName,
+                selection: navigation.modelProfiles.createProfileSelection ?? "input",
+                validationMessage: navigation.modelProfiles.createProfileValidation,
+              }
+            : undefined,
           focusedProfileName: "* New Profile",
           focusedProfile: { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
           isCreateSelected: true,
@@ -981,18 +1045,12 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
-    await emitInput(terminal, "d");
-    await emitInput(terminal, "r");
-    await emitInput(terminal, "a");
-    await emitInput(terminal, "f");
-    await emitInput(terminal, "t");
-    await emitInput(terminal, "\u001b[B");
     await emitInput(terminal, "\r");
+    await emitText(terminal, "draft");
     await emitInput(terminal, "\r");
 
-    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
-    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBeUndefined();
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [ok]");
     expect(terminal.output).toContain("OpenCode refresh timed out after 500ms");
@@ -1014,6 +1072,13 @@ describe("createTuiApp model-profiles route", () => {
         browse: {
           mode: navigation?.modelProfiles?.mode ?? "browse",
           targetProfileName: navigation?.modelProfiles?.targetProfileName,
+          inlineCreate: navigation?.modelProfiles?.createProfileName !== undefined
+            ? {
+                value: navigation.modelProfiles.createProfileName,
+                selection: navigation.modelProfiles.createProfileSelection ?? "input",
+                validationMessage: navigation.modelProfiles.createProfileValidation,
+              }
+            : undefined,
           focusedProfileName: "* New Profile",
           focusedProfile: { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
           isCreateSelected: true,
@@ -1035,18 +1100,12 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "m");
 
     terminal.output = "";
-    await emitInput(terminal, " ");
-    await emitInput(terminal, "d");
-    await emitInput(terminal, "r");
-    await emitInput(terminal, "a");
-    await emitInput(terminal, "f");
-    await emitInput(terminal, "t");
-    await emitInput(terminal, "\u001b[B");
     await emitInput(terminal, "\r");
+    await emitText(terminal, "draft");
     await emitInput(terminal, "\r");
 
-    expect(app.navigation.modelProfiles?.mode).toBe("assignments");
-    expect(app.navigation.modelProfiles?.targetProfileName).toBe("draft");
+    expect(app.navigation.modelProfiles?.mode).toBe("browse");
+    expect(app.navigation.modelProfiles?.targetProfileName).toBeUndefined();
     expect(app.navigation.modal?.kind).toBe("output");
     expect(terminal.output).toContain("Output [ok]");
     expect(terminal.output).toContain("warning: OpenCode refresh was not refreshed for the current session");
