@@ -27,7 +27,7 @@
 
 ```text
 Command: pnpm test
-Result: 10 test files passed, 170 tests passed
+Result: 10 test files passed, 171 tests passed
 Duration: 9.30s
 Relevant TUI files passing:
 - tests/tui-dispatch.test.mjs: 15 tests
@@ -36,7 +36,7 @@ Relevant TUI files passing:
 - tests/tui-actions.test.mjs: 13 tests
 - tests/tui-configuration.test.mjs: 10 tests
 - tests/tui-status.test.mjs: 8 tests
-- tests/tui-model-profiles.test.mjs: 31 tests
+- tests/tui-model-profiles.test.mjs: 32 tests
 - tests/tui-branding.test.mjs: 11 tests
 - tests/tui-docs.test.mjs: 2 tests
 ```
@@ -49,7 +49,7 @@ Relevant TUI files passing:
 ./bin/afergon-ai tui                         ✅ exit 1; non-TTY explicit tui prints interactive-terminal guidance instead of hanging
 ./bin/afergon-ai doctor --opencode           ✅ explicit command bypass executes doctor path; exit 1 only for pre-existing local OpenCode registration gaps
 ./bin/afergon-ai models show "budget profile" ✅ quoted spaced arg stays intact as one invalid profile name; existing validation rejects it with exit 1
-AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 after direct `Space` switch to `fallback`, opening the assignment editor from browse mode, canceling safely with Esc, canceling typed delete confirmation, observing active profile refresh to `fallback`, and retaining Keyboard help plus text selection markers
+AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 after a direct profile switch to `fallback`, opening the assignment editor from browse mode, canceling safely with Esc, canceling typed delete confirmation, observing active profile refresh to `fallback`, and retaining Keyboard help plus text selection markers
 ```
 
 **Coverage**: ➖ Not available. `openspec/config.yaml` declares no coverage tool.
@@ -61,7 +61,7 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 | TDD evidence reported | ✅ | `apply-progress.md` contains cumulative RED/GREEN/TRIANGULATE/REFACTOR evidence through PR13 and final sanitization follow-up |
 | All tasks have tests/evidence | ✅ | Runnable behavior/docs/manual tasks map to TUI tests or bounded launcher/PTY evidence; metadata task is structural |
 | RED confirmed | ✅ | Apply-progress records failing-first evidence for dispatcher, shell, screens, branding, navigation, shared actions, Configuration/Status actions, Model Profiles browse/assignment flows, typed delete confirmation, and sanitization fixes |
-| GREEN confirmed | ✅ | Current `pnpm test` passed 170/170 |
+| GREEN confirmed | ✅ | Current `pnpm test` passed 171/171 |
 | Triangulation adequate | ✅ | Launcher, Home navigation, shared action flows, output bounds, Configuration/Status actions, and Model Profiles browse/assignment mutations have multiple scenario assertions |
 | Safety net for modified files | ✅ | Full suite plus focused TUI regressions cover the PR11-PR13 implementation surface |
 
@@ -71,11 +71,11 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 
 | Layer | Tests | Files | Tools |
 |-------|-------|-------|-------|
-| Unit | 120 TUI-specific tests | 9 TUI test files | Vitest |
+| Unit | 121 TUI-specific tests | 9 TUI test files | Vitest |
 | Integration | 0 | 0 | Not configured |
 | E2E | 0 | 0 | Not configured |
 | Manual/bounded smoke | launcher/TUI checks | CLI + PTY | macOS shell/Python PTY |
-| **Total runtime suite** | **170** | **10** | Vitest |
+| **Total runtime suite** | **171** | **10** | Vitest |
 
 ## Spec Compliance Matrix
 
@@ -92,7 +92,7 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 | MVP sections and accessibility cues | MVP sections usable with explicit hints | Section screen tests and bounded PTY smoke | ✅ COMPLIANT |
 | MVP sections and accessibility cues | Modal/form focus bounded and recoverable | `tests/tui-actions.test.mjs`, `tests/tui-shell.test.mjs`, section tests; PTY Esc cancel | ✅ COMPLIANT |
 | Interactive section actions execute only defined CLI behaviors | Read-only action executes inline | `tests/tui-actions.test.mjs`, `tests/tui-configuration.test.mjs`, and `tests/tui-status.test.mjs`; inline `doctor` coverage only | ✅ COMPLIANT |
-| Interactive section actions execute only defined CLI behaviors | Mutation safety matches action risk | Shared action tests, Configuration/Status tests, and Model Profiles tests verify that direct `Space` switch stays immediate, assignment-editor `S` save is an explicit/direct save, persistence still uses manifest-backed `models set` argv behind the editor, and delete remains confirmed | ✅ COMPLIANT |
+| Interactive section actions execute only defined CLI behaviors | Mutation safety matches action risk | Shared action tests, Configuration/Status tests, and Model Profiles tests verify that direct `Enter` switch stays immediate, assignment-editor `S` save is an explicit/direct save, persistence still uses manifest-backed `models set` argv behind the editor, and delete remains confirmed | ✅ COMPLIANT |
 | Interactive section actions execute only defined CLI behaviors | Unsupported command is never invented | Manifest allowlist tests reject raw `bash -lc`; screen/manifest tests verify no fabricated equivalents | ✅ COMPLIANT |
 | Forms, cancellation, and output recovery | Init exposes bounded checkbox choices | `tests/tui-configuration.test.mjs`; `buildInitCommandArgv()` filters only Pi/Claude/OpenCode/all | ✅ COMPLIANT |
 | Forms, cancellation, and output recovery | Model profile actions use pickers/forms | `tests/tui-model-profiles.test.mjs` covers create-name entry, assignment-editor model entry, explicit `S` save, delete confirmation, cancel recovery, and refresh-after-mutation | ✅ COMPLIANT |
@@ -115,7 +115,7 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui via bounded PTY smoke ✅ exit 0 aft
 | Shared action framework | ✅ Implemented | `createActionDefinition()` requires manifest-built argv and classifies read vs mutate; modal/form/output state is shared |
 | Runner safety | ✅ Implemented | `runActionCommand()` uses `spawn(..., { shell: false })`, array argv copies, timeout handling, and bounded stdout/stderr collectors |
 | Output sanitization | ✅ Implemented | CSI/OSC/C1/control payloads are stripped or neutralized before output panels and section screens render |
-| Confirmation gating | ✅ Implemented | Higher-risk/destructive actions open confirmations; focused-profile `Space` switch and explicit assignment-editor `S` save remain direct actions; delete uses typed-match confirmation before execution |
+| Confirmation gating | ✅ Implemented | Higher-risk/destructive actions open confirmations; focused-profile `Enter` switch and explicit assignment-editor `S` save remain direct actions; delete uses typed-match confirmation before execution |
 | Configuration actions | ✅ Implemented | Inline doctor, init checkbox form, update confirmation, output/error panel, and section refresh are tested |
 | Status actions | ✅ Implemented | Inline `doctor --opencode`, init/update confirmation flow, bounded output, and cancel recovery are tested |
 | Model Profiles actions | ✅ Implemented | Model Profiles intentionally keeps `interactiveActions: []`; browse mode supports direct focused-profile switch plus create/delete entry points, assignment mode provides manual model entry with explicit `S` save, and tests cover refresh, degraded-output handling, and sanitization |

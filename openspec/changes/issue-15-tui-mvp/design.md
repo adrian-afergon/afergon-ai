@@ -99,7 +99,7 @@ Contract notes:
 - `c`/`s`/`m`/`h` remain valid regardless of arrow support.
 - If no safe variant exists for the terminal, Home renders `fallbackTitle` and `fallbackCopy` instead of broken art.
 - Action execution uses argv arrays only; no shell interpolation or fabricated commands are allowed.
-- Read-only actions render bounded output inline; destructive or higher-risk mutations require confirmation, while focused profile switch, successful profile-create entry into assignment mode, and explicit assignment-editor save remain direct flows that still surface bounded output when warnings or degraded refresh guidance need attention.
+- Read-only actions render bounded output inline; destructive or higher-risk mutations require confirmation, while focused profile switch, successful inline profile create returning to browse mode with the new profile focused/visible, and explicit assignment-editor save remain direct flows that still surface bounded output when warnings or degraded refresh guidance need attention.
 - Esc/Cancel dismisses the active confirm/form/output surface and restores focus to the invoking section action.
 
 ## Testing Strategy

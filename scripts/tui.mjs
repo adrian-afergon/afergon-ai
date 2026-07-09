@@ -41,10 +41,15 @@ import {
   activateHomeSelection,
   closeModal,
   createNavigationState,
+  appendModelProfilesInlineCreateCharacter,
+  backspaceModelProfilesInlineCreateCharacter,
   enterModelProfilesAssignments,
+  enterModelProfilesInlineCreate,
   exitModelProfilesAssignments,
+  exitModelProfilesInlineCreate,
   HOME_MENU_ROUTES,
   moveHomeSelection,
+  moveModelProfilesInlineCreateSelection,
   moveModelProfilesAssignmentSelection,
   moveModelProfilesSelection,
   moveSectionActionSelection,
@@ -52,6 +57,7 @@ import {
   normalizeSectionActionSelection,
   openModal,
   stageModelProfilesAssignment,
+  validateModelProfilesInlineCreate,
 } from "./lib/tui/navigation.mjs";
 import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
 import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.mjs";
@@ -630,7 +636,14 @@ function createMainScreen({
   async function runSelectedAction(action) {
     const result = await executeAction({ action });
     if (action.id === "model-profiles-create-profile" && result.ok) {
-      updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, action.targetProfileName));
+      const refreshedRouteState = getRouteState("model-profiles");
+      const createdProfileIndex = refreshedRouteState?.profiles?.findIndex((profile) => profile.name === action.targetProfileName);
+      updateModelProfilesState(
+        navigation,
+        exitModelProfilesInlineCreate(navigation.modelProfiles, {
+          focusedProfileIndex: createdProfileIndex >= 0 ? createdProfileIndex : navigation.modelProfiles?.focusedProfileIndex,
+        }),
+      );
       if (shouldShowProfileCreateOutput(action, result)) {
         outputState = createOutputState({ action, result });
         showModal(navigation, outputState);
@@ -702,6 +715,24 @@ function createMainScreen({
     } catch (error) {
       showAssignmentSaveError(error);
     }
+  }
+
+  function startInlineProfileCreate() {
+    updateModelProfilesState(navigation, enterModelProfilesInlineCreate(navigation.modelProfiles));
+    onNavigate();
+  }
+
+  function submitInlineProfileCreate() {
+    const validatedState = validateModelProfilesInlineCreate(navigation.modelProfiles);
+    updateModelProfilesState(navigation, validatedState);
+    if (validatedState.createProfileValidation) {
+      onNavigate();
+      return;
+    }
+
+    const profileName = validatedState.createProfileName;
+    const resolvedAction = resolveExecutableAction(createModelProfileCreateAction(), { profileName });
+    runSelectedAction({ ...resolvedAction, targetProfileName: profileName });
   }
 
   return {
@@ -997,6 +1028,47 @@ function createMainScreen({
         }
 
         if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "browse") {
+          const isInlineCreate = routeState?.browse?.inlineCreate !== undefined;
+
+          if (isInlineCreate) {
+            if (matchesKey(data, Key.up)) {
+              updateModelProfilesState(navigation, moveModelProfilesInlineCreateSelection(navigation.modelProfiles, -1));
+              onNavigate();
+              return;
+            }
+
+            if (matchesKey(data, Key.down)) {
+              updateModelProfilesState(navigation, moveModelProfilesInlineCreateSelection(navigation.modelProfiles, 1));
+              onNavigate();
+              return;
+            }
+
+            if (data === "\u007f") {
+              updateModelProfilesState(navigation, backspaceModelProfilesInlineCreateCharacter(navigation.modelProfiles));
+              onNavigate();
+              return;
+            }
+
+            if (matchesKey(data, Key.enter)) {
+              if (navigation.modelProfiles?.createProfileSelection === "cancel") {
+                updateModelProfilesState(navigation, exitModelProfilesInlineCreate(navigation.modelProfiles));
+                onNavigate();
+                return;
+              }
+
+              submitInlineProfileCreate();
+              return;
+            }
+
+            if (data.length === 1) {
+              updateModelProfilesState(navigation, appendModelProfilesInlineCreateCharacter(navigation.modelProfiles, data));
+              onNavigate();
+              return;
+            }
+
+            return;
+          }
+
           if (matchesKey(data, Key.up)) {
             updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, -1));
             onNavigate();
@@ -1009,7 +1081,7 @@ function createMainScreen({
             return;
           }
 
-          const intent = data === " "
+          const intent = matchesKey(data, Key.enter)
             ? getModelProfilesBrowseIntent(routeState, "switch")
             : isDeleteKey(data)
               ? getModelProfilesBrowseIntent(routeState, "delete")
@@ -1037,8 +1109,7 @@ function createMainScreen({
           }
 
           if (intent.kind === "create-entry") {
-            showModal(navigation, createFormState({ action: createModelProfileCreateAction() }));
-            onNavigate();
+            startInlineProfileCreate();
             return;
           }
         }

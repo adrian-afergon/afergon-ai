@@ -140,6 +140,13 @@ export function getModelProfilesScreenState({ cwd = process.cwd(), env = process
   const focusedAgentIndex = navigation?.modelProfiles?.focusedAgentIndex ?? 0;
   const targetProfileName = modelProfilesState.targetProfileName;
   const stagedAssignments = modelProfilesState.stagedAssignments ?? {};
+  const inlineCreate = modelProfilesState.createProfileName !== undefined
+    ? {
+        value: modelProfilesState.createProfileName,
+        selection: modelProfilesState.createProfileSelection ?? "input",
+        validationMessage: modelProfilesState.createProfileValidation,
+      }
+    : undefined;
   const profiles = getBrowseProfileRows(profileNames, activeProfileName, focusedProfileIndex);
   const focusedProfile = getFocusedProfileRow(profiles, focusedProfileIndex);
   const baseAssignments = mode === "assignments"
@@ -169,6 +176,7 @@ export function getModelProfilesScreenState({ cwd = process.cwd(), env = process
       focusedProfile,
       focusedProfileName: focusedProfile.name,
       isCreateSelected: focusedProfile.isCreate,
+      inlineCreate,
       placeholderAssignments: SUPPORTED_AGENTS,
     },
     interactiveActions: [],
