@@ -119,6 +119,13 @@ describe("startup banner and TUI home branding", () => {
     expect(lines).toContain("Home");
   });
 
+  it("renders the Home banner and selected route with additive teal styling while preserving text cues", () => {
+    const lines = renderHomeScreen(createNavigationState(), 120);
+
+    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && stripAnsi(line).includes("> Configuration [selected]"))).toBe(true);
+  });
+
   it("falls back to plain-text branding when the full banner is unsafe to render", () => {
     const lines = renderHomeScreen(createNavigationState(), 60);
 

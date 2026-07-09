@@ -164,6 +164,25 @@ describe("sanitizeTerminalOutput", () => {
 });
 
 describe("createTuiApp interactive actions", () => {
+  it("renders teal selected actions, keeps [selected], hides noisy metadata, and still requires confirmation", async () => {
+    const terminal = new FakeTerminal();
+    const executeAction = vi.fn(async () => ({ ok: true, exitCode: 0, stdout: "updated\n", stderr: "", timedOut: false }));
+    const app = createTuiApp({ terminal, exit: () => {}, loadStatusScreenState: getStatusFixture, interactiveActionsByRoute: { status: [createActionDefinition({ id: "status-update", section: "status", kind: "mutate", label: "Refresh managed files", argv: buildCommandArgv("update", ["--check"]), cliEquivalent: "afergon-ai update --check" })] }, executeAction });
+    app.start();
+    await flushTui();
+    terminal.output = "";
+    terminal.emitInput("s");
+    await flushTui();
+    expect(terminal.output).toContain("\u001b[38;5;6m> Refresh managed files [selected]\u001b[0m");
+    expect(terminal.output).not.toContain("CLI equivalent: afergon-ai update --check");
+    expect(terminal.output).not.toContain("Execution: confirmation required");
+    terminal.emitInput("\r");
+    await flushTui();
+    expect(terminal.output).toContain("Confirmation");
+    expect(terminal.output).toContain("afergon-ai update --check");
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
   it("confirms mutating actions, lets Escape cancel, and restores focus to the selected action", async () => {
     const terminal = new FakeTerminal();
     const executeAction = vi.fn(async () => ({ ok: true, exitCode: 0, stdout: "updated\n", stderr: "", timedOut: false }));
