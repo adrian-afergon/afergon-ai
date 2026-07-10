@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import * as commandManifestTypeScript from "../scripts/lib/tui/command-manifest.ts";
 import {
   COMMAND_MANIFEST,
   getCommandManifest,
@@ -7,6 +8,16 @@ import {
 } from "../scripts/lib/tui/command-manifest.mjs";
 
 describe("COMMAND_MANIFEST", () => {
+  it("keeps the TypeScript command manifest in parity with the runtime .mjs module", () => {
+    expect(commandManifestTypeScript.COMMAND_MANIFEST).toEqual(COMMAND_MANIFEST);
+    expect(commandManifestTypeScript.getCommandManifest()).toEqual(getCommandManifest());
+    expect(commandManifestTypeScript.getCommandManifestEntry("doctor")).toEqual(getCommandManifestEntry("doctor"));
+    expect(commandManifestTypeScript.getCommandManifestEntry("configuration")).toEqual(getCommandManifestEntry("configuration"));
+    expect(commandManifestTypeScript.buildCommandArgv("models", ["profile", "list"])).toEqual(
+      getCommandManifestEntry("models").argv.concat(["profile", "list"]),
+    );
+  });
+
   it("exposes only the stable CLI-equivalent commands for this MVP slice", () => {
     expect(COMMAND_MANIFEST).toEqual([
       { id: "init", label: "afergon-ai init", argv: ["init"] },
