@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
 import { getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
+import * as modelProfilesScreenTypeScript from "../scripts/lib/tui/screens/model-profiles.ts";
 import { renderModelProfilesScreen } from "../scripts/lib/tui/screens/model-profiles.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
 
@@ -373,6 +374,122 @@ describe("getModelProfilesScreenState", () => {
 });
 
 describe("renderModelProfilesScreen", () => {
+  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for browse mode", () => {
+    const state = {
+      title: "Model Profiles",
+      configPath: "/tmp/config.json",
+      summary: { state: "ok", detail: "2 profile(s) available." },
+      profiles: [
+        { name: "budget", isActive: true, isCreate: false, isFocused: true },
+        { name: "fallback", isActive: false, isCreate: false, isFocused: false },
+        { name: "* New Profile", isActive: false, isCreate: true, isFocused: false },
+      ],
+      assignments: [
+        { agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit" },
+        { agent: "afg-review", configured: "inherit", effective: "openai/gpt-5.5", source: "inherit" },
+      ],
+      browse: {
+        mode: "browse",
+        focusedProfileName: "budget",
+        isCreateSelected: false,
+      },
+    };
+
+    expect(modelProfilesScreenTypeScript.renderModelProfilesScreen(state, 120)).toEqual(
+      renderModelProfilesScreen(state, 120),
+    );
+  });
+
+  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for sanitized assignment mode", () => {
+    const state = {
+      title: "Model\u001b[31m Profiles\u001b[0m",
+      configPath: "/tmp/\u001b]2;owned\u0007config.json",
+      summary: { state: "fail", detail: "Active \u009b31mprofile\u009b0m unavailable" },
+      profiles: [{ name: "budget\u0007", isActive: true, isCreate: false, isFocused: true }],
+      assignments: [
+        { agent: "afergon-ai", configured: "\u001b[31mred\u001b[0m-model", effective: "tail\u009d2;owned\u0007", source: "explicit", isFocused: true },
+      ],
+      browse: {
+        mode: "assignments",
+        targetProfileName: "budget\u001b]2;owned\u0007\u001b[31m-red\u001b[0m",
+      },
+    };
+
+    expect(
+      modelProfilesScreenTypeScript.renderModelProfilesScreen(state, 160, {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    ).toEqual(
+      renderModelProfilesScreen(state, 160, {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    );
+  });
+
+  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for inline create browse mode", () => {
+    const state = {
+      title: "Model Profiles",
+      configPath: "/tmp/config.json",
+      summary: { state: "ok", detail: "1 profile(s) available." },
+      profiles: [
+        { name: "budget", isActive: true, isCreate: false, isFocused: false },
+        { name: "* New Profile", isActive: false, isCreate: true, isFocused: true },
+      ],
+      assignments: [],
+      browse: {
+        mode: "browse",
+        focusedProfileName: "* New Profile",
+        isCreateSelected: true,
+        inlineCreate: {
+          value: "draft\u001b]2;owned\u0007",
+          selection: "input",
+          validationMessage: "Profile name \u001b[31mis required\u001b[0m",
+        },
+        placeholderAssignments: ["afergon-ai"],
+      },
+    };
+
+    expect(
+      modelProfilesScreenTypeScript.renderModelProfilesScreen(state, 120, {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    ).toEqual(
+      renderModelProfilesScreen(state, 120, {
+        styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m`,
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    );
+  });
+
+  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for new-profile placeholder details", () => {
+    const state = {
+      title: "Model Profiles",
+      configPath: "/tmp/config.json",
+      summary: { state: "ok", detail: "0 profile(s) available." },
+      profiles: [{ name: "* New Profile", isActive: false, isCreate: true, isFocused: true }],
+      assignments: [],
+      browse: {
+        mode: "browse",
+        focusedProfileName: "* New Profile",
+        isCreateSelected: true,
+        placeholderAssignments: ["afergon-ai", "afg-review\u001b[31m"],
+      },
+    };
+
+    expect(
+      modelProfilesScreenTypeScript.renderModelProfilesScreen(state, 120, {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    ).toEqual(
+      renderModelProfilesScreen(state, 120, {
+        styleMuted: (line) => `\u001b[38;5;250m${line}\u001b[0m`,
+      }),
+    );
+  });
+
   it("renders browse mode with focused cursor, active profile checkboxes, and muted detail rows", () => {
     const lines = renderModelProfilesScreen(
       {
