@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
+import * as statusScreenTypeScript from "../scripts/lib/tui/screens/status.ts";
 import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
 
@@ -220,6 +221,48 @@ describe("getStatusScreenState", () => {
 });
 
 describe("renderStatusScreen", () => {
+  it("keeps the TypeScript status screen mirror in parity with the runtime .mjs module for readiness summaries", () => {
+    const state = {
+      title: "Status",
+      summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
+      items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Run afergon-ai init to install project files." }],
+      actions: [
+        { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
+      ],
+    };
+
+    expect(statusScreenTypeScript.renderStatusScreen(state, 100)).toEqual(renderStatusScreen(state, 100));
+  });
+
+  it("keeps the TypeScript status screen mirror in parity with the runtime .mjs module for sanitized terminal-control input", () => {
+    const state = {
+      title: "Status",
+      summary: {
+        label: "Read\u001b[32miness\u001b[0m",
+        state: "warn",
+        detail: "Inspect /repo/\u009d2;owned\u0007CLAUDE.md\u0085Run afergon-ai doctor.",
+      },
+      items: [
+        {
+          id: "claude",
+          label: "Claude\u009b31m Code\u009b0m",
+          state: "fail",
+          detail: "Repair \u001b]2;owned\u0007/tmp/CLAUDE.md and retry.",
+        },
+      ],
+      actions: [
+        {
+          id: "doctor",
+          label: "afergon-ai doctor",
+          argv: ["doctor"],
+          description: "Verify \u001b[31mcurrent\u001b[0m installation",
+        },
+      ],
+    };
+
+    expect(statusScreenTypeScript.renderStatusScreen(state, 200)).toEqual(renderStatusScreen(state, 200));
+  });
+
   it("renders readiness, item health, and stable CLI-equivalent actions", () => {
     const lines = renderStatusScreen(
       {

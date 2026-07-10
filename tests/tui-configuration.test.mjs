@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getConfigurationStatus } from "../scripts/lib/tui/config-status-adapter.mjs";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
+import * as configurationScreenTypeScript from "../scripts/lib/tui/screens/configuration.ts";
 import { renderConfigurationScreen } from "../scripts/lib/tui/screens/configuration.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
 
@@ -208,6 +209,49 @@ describe("getConfigurationStatus", () => {
 });
 
 describe("renderConfigurationScreen", () => {
+  it("keeps the TypeScript configuration screen mirror in parity with the runtime .mjs module for ordinary configuration state", () => {
+    const state = {
+      items: [
+        { id: "model-config", label: "Model config", state: "ok", detail: "Config file exists." },
+        { id: "pi", label: "Pi", state: "warn", detail: "Not installed in this project." },
+      ],
+      actions: [
+        { id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." },
+        { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
+      ],
+    };
+
+    expect(configurationScreenTypeScript.renderConfigurationScreen(state, 100)).toEqual(
+      renderConfigurationScreen(state, 100),
+    );
+  });
+
+  it("keeps the TypeScript configuration screen mirror in parity with the runtime .mjs module for sanitized terminal-control input", () => {
+    const state = {
+      title: "Configuration",
+      items: [
+        {
+          id: "model-config",
+          label: "Model\u001b[31m config\u001b[0m",
+          state: "ok",
+          detail: "Path /tmp/\u009d2;owned\u0007config.json\u0085active profile: default",
+        },
+      ],
+      actions: [
+        {
+          id: "doctor",
+          label: "afergon-ai do\u009b31mctor\u009b0m",
+          argv: ["doctor"],
+          description: "Inspect \u001b]2;owned\u0007current setup",
+        },
+      ],
+    };
+
+    expect(configurationScreenTypeScript.renderConfigurationScreen(state, 200)).toEqual(
+      renderConfigurationScreen(state, 200),
+    );
+  });
+
   it("renders configuration state plus stable CLI-equivalent actions", () => {
     const lines = renderConfigurationScreen(
       {
