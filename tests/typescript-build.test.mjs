@@ -22,6 +22,7 @@ describe("TypeScript build output", () => {
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const actionDefinitionsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
+    const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
 
     expect(readFileSync(startupBannerDeclarationPath, "utf8")).toContain("../scripts/lib/branding/logo.mjs");
@@ -35,6 +36,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(actionDefinitionsOutputPath, "utf8")).toContain("export function createActionDefinition");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
+    expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesScreenOutputPath, "utf8")).toContain("export function renderModelProfilesScreen");
     expect(existsSync(statusScreenOutputPath)).toBe(true);
     expect(readFileSync(statusScreenOutputPath, "utf8")).toContain("export function renderStatusScreen");
   });
