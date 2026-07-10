@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import * as actionRunnerTypeScript from "../scripts/lib/tui/actions/runner.ts";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { getOutputLines, sanitizeTerminalOutput } from "../scripts/lib/tui/actions/forms.mjs";
 import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
@@ -35,6 +36,133 @@ const flushTui = async () => { await new Promise((resolve) => process.nextTick(r
 const getStatusFixture = () => ({ title: "Status", summary: { label: "Readiness", state: "ok", detail: "Ready for guided workflows." }, items: [{ id: "opencode", label: "OpenCode", state: "ok", detail: "Managed install detected." }], actions: [] });
 
 describe("runActionCommand", () => {
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module for successful execution", async () => {
+    const createSpawnImpl = () => {
+      const child = new FakeChildProcess();
+      const spawnImpl = vi.fn(() => {
+        queueMicrotask(() => {
+          child.emitStdout("doctor ok\n");
+          child.emit("close", 0);
+        });
+        return child;
+      });
+
+      return { child, spawnImpl };
+    };
+
+    const runtime = createSpawnImpl();
+    const runtimeResult = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      cwd: "/tmp/afergon-ai",
+      spawnImpl: runtime.spawnImpl,
+    });
+
+    const typeScript = createSpawnImpl();
+    const typeScriptResult = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      cwd: "/tmp/afergon-ai",
+      spawnImpl: typeScript.spawnImpl,
+    });
+
+    expect(typeScriptResult).toEqual(runtimeResult);
+    expect(typeScript.spawnImpl).toHaveBeenCalledWith(
+      process.execPath,
+      ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      expect.objectContaining({ cwd: "/tmp/afergon-ai", shell: false }),
+    );
+  });
+
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module for failure and timeout paths", async () => {
+    const runtimeFailureChild = new FakeChildProcess();
+    const runtimeFailure = runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "update"],
+      spawnImpl: vi.fn(() => {
+        queueMicrotask(() => {
+          runtimeFailureChild.emitStderr("permission denied\n");
+          runtimeFailureChild.emit("close", 1);
+        });
+        return runtimeFailureChild;
+      }),
+    });
+
+    const typeScriptFailureChild = new FakeChildProcess();
+    const typeScriptFailure = actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "update"],
+      spawnImpl: vi.fn(() => {
+        queueMicrotask(() => {
+          typeScriptFailureChild.emitStderr("permission denied\n");
+          typeScriptFailureChild.emit("close", 1);
+        });
+        return typeScriptFailureChild;
+      }),
+    });
+
+    await expect(typeScriptFailure).resolves.toEqual(await runtimeFailure);
+
+    const runtimeTimeoutChild = new FakeChildProcess();
+    const runtimeTimeout = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      timeoutMs: 5,
+      spawnImpl: vi.fn(() => runtimeTimeoutChild),
+    });
+
+    const typeScriptTimeoutChild = new FakeChildProcess();
+    const typeScriptTimeout = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      timeoutMs: 5,
+      spawnImpl: vi.fn(() => typeScriptTimeoutChild),
+    });
+
+    expect(typeScriptTimeout).toEqual(runtimeTimeout);
+    expect(typeScriptTimeoutChild.kill).toHaveBeenCalled();
+  });
+
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module when output truncates at configured limits", async () => {
+    const createSpawnImpl = () => {
+      const child = new FakeChildProcess();
+      const spawnImpl = vi.fn(() => {
+        queueMicrotask(() => {
+          child.emitStdout("one\ntwo\nthree\nfour\n");
+          child.emitStderr("err-one\nerr-two\nerr-three\n");
+          child.emit("close", 1);
+        });
+        return child;
+      });
+
+      return { spawnImpl };
+    };
+
+    const runtime = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      spawnImpl: createSpawnImpl().spawnImpl,
+      maxStreamBytes: 12,
+      maxStreamLines: 2,
+    });
+
+    const typeScript = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      spawnImpl: createSpawnImpl().spawnImpl,
+      maxStreamBytes: 12,
+      maxStreamLines: 2,
+    });
+
+    expect(typeScript).toEqual(runtime);
+    expect(typeScript).toEqual(expect.objectContaining({
+      stdoutTruncated: true,
+      stderrTruncated: true,
+      stdout: "one\ntwo\n",
+      stderr: "err-one\nerr-",
+    }));
+  });
+
   it("builds explicit argv arrays from stable manifest entries without fabricating shell commands", () => {
     const argv = buildCommandArgv("doctor", ["--opencode"]);
     expect(argv).toEqual(["doctor", "--opencode"]);
