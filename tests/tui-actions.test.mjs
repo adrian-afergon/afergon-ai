@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
+import * as actionDefinitionsTypeScript from "../scripts/lib/tui/actions/definitions.ts";
 import * as actionRunnerTypeScript from "../scripts/lib/tui/actions/runner.ts";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import {
+  createActionDefinition as createActionDefinitionRuntime,
+  formatActionCliEquivalent as formatActionCliEquivalentRuntime,
+  resolveActionArgv as resolveActionArgvRuntime,
+} from "../scripts/lib/tui/actions/definitions.mjs";
 import { getOutputLines, sanitizeTerminalOutput } from "../scripts/lib/tui/actions/forms.mjs";
 import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
@@ -34,6 +40,14 @@ class FakeChildProcess {
 
 const flushTui = async () => { await new Promise((resolve) => process.nextTick(resolve)); await new Promise((resolve) => setTimeout(resolve, 0)); };
 const getStatusFixture = () => ({ title: "Status", summary: { label: "Readiness", state: "ok", detail: "Ready for guided workflows." }, items: [{ id: "opencode", label: "OpenCode", state: "ok", detail: "Managed install detected." }], actions: [] });
+const getThrownMessage = (callback) => {
+  try {
+    callback();
+    return undefined;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+};
 
 describe("runActionCommand", () => {
   it("keeps the TypeScript action runner in parity with the runtime .mjs module for successful execution", async () => {
@@ -252,6 +266,120 @@ describe("runActionCommand", () => {
   it("rejects executable action definitions that are not built from the stable manifest allowlist", () => {
     expect(() => createActionDefinition({ id: "status-unsafe", section: "status", kind: "read", label: "Unsafe", argv: ["bash", "-lc", "rm -rf /"] })).toThrow(/stable manifest/i);
     expect(createActionDefinition({ id: "status-safe", section: "status", kind: "read", label: "Safe", argv: buildCommandArgv("doctor", ["--opencode"]) })).toEqual(expect.objectContaining({ argv: ["doctor", "--opencode"] }));
+  });
+});
+
+describe("action definitions TypeScript parity", () => {
+  it("keeps formatActionCliEquivalent in parity with the runtime .mjs module across valid and invalid argv inputs", () => {
+    expect(actionDefinitionsTypeScript.formatActionCliEquivalent(["doctor", "--opencode"]))
+      .toBe(formatActionCliEquivalentRuntime(["doctor", "--opencode"]));
+
+    for (const invalidArgv of [undefined, [], ["doctor", ""], ["doctor", 1]]) {
+      expect(getThrownMessage(() => actionDefinitionsTypeScript.formatActionCliEquivalent(invalidArgv)))
+        .toBe(getThrownMessage(() => formatActionCliEquivalentRuntime(invalidArgv)));
+    }
+  });
+
+  it("keeps resolveActionArgv in parity with the runtime .mjs module for static, built, and invalid actions", () => {
+    const staticAction = createActionDefinitionRuntime({
+      id: "status-doctor",
+      section: "status",
+      kind: "read",
+      label: "Run doctor",
+      argv: buildCommandArgv("doctor", ["--opencode"]),
+    });
+    const builtAction = createActionDefinitionRuntime({
+      id: "configuration-init",
+      section: "configuration",
+      kind: "mutate",
+      label: "Initialize project files",
+      buildArgv: ({ selectedIds = [] }) => buildCommandArgv("init", selectedIds.map((id) => `--${id}`)),
+    });
+
+    expect(actionDefinitionsTypeScript.resolveActionArgv(staticAction)).toEqual(resolveActionArgvRuntime(staticAction));
+    expect(actionDefinitionsTypeScript.resolveActionArgv(builtAction, { selectedIds: ["pi", "opencode"] }))
+      .toEqual(resolveActionArgvRuntime(builtAction, { selectedIds: ["pi", "opencode"] }));
+
+    const invalidBuilderAction = {
+      ...builtAction,
+      buildArgv: () => ["bash", "-lc", "rm -rf /"],
+    };
+    const missingExecutableAction = {
+      ...staticAction,
+      argv: undefined,
+    };
+
+    expect(() => actionDefinitionsTypeScript.resolveActionArgv(invalidBuilderAction)).toThrow(/stable manifest/i);
+    expect(() => resolveActionArgvRuntime(invalidBuilderAction)).toThrow(/stable manifest/i);
+    expect(() => actionDefinitionsTypeScript.resolveActionArgv(missingExecutableAction)).toThrow(/missing executable argv/i);
+    expect(() => resolveActionArgvRuntime(missingExecutableAction)).toThrow(/missing executable argv/i);
+  });
+
+  it("keeps createActionDefinition in parity with the runtime .mjs module across supported and invalid forms", () => {
+    const checkboxDefinition = {
+      id: "configuration-init",
+      section: "configuration",
+      kind: "mutate",
+      label: "Initialize project files",
+      buildArgv: ({ selectedIds = [] }) => buildCommandArgv("init", selectedIds.map((id) => `--${id}`)),
+      form: {
+        kind: "checkboxes",
+        title: "Choose what to initialize",
+        options: [
+          { id: "pi", label: "Pi" },
+          { id: "opencode", label: "OpenCode" },
+        ],
+      },
+      confirmLabel: "Initialize the selected surfaces?",
+      refreshTarget: "configuration",
+    };
+
+    expect(actionDefinitionsTypeScript.createActionDefinition(checkboxDefinition)).toEqual(
+      createActionDefinitionRuntime(checkboxDefinition),
+    );
+
+    const pickerDefinition = {
+      id: "models-picker",
+      section: "model-profiles",
+      kind: "read",
+      label: "Choose model",
+      argv: buildCommandArgv("models"),
+      form: {
+        kind: "picker",
+        title: "Choose a model",
+        options: [{ id: "default", label: "Default" }],
+      },
+    };
+    expect(actionDefinitionsTypeScript.createActionDefinition(pickerDefinition)).toEqual(
+      createActionDefinitionRuntime(pickerDefinition),
+    );
+
+    const fieldsDefinition = {
+      id: "models-create-profile",
+      section: "model-profiles",
+      kind: "mutate",
+      label: "Create profile",
+      buildArgv: ({ profileName }) => buildCommandArgv("models", ["create-profile", profileName]),
+      form: {
+        kind: "fields",
+        title: "Create profile",
+        fields: [{ id: "profileName", label: "Profile name" }],
+      },
+    };
+    expect(actionDefinitionsTypeScript.createActionDefinition(fieldsDefinition)).toEqual(
+      createActionDefinitionRuntime(fieldsDefinition),
+    );
+
+    const invalidDefinitions = [
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "picker", options: [] } }, /non-empty options definition/i],
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "fields", fields: [] } }, /non-empty fields definition/i],
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "wizard" } }, /unsupported action form kind/i],
+    ];
+
+    for (const [definition, errorPattern] of invalidDefinitions) {
+      expect(() => actionDefinitionsTypeScript.createActionDefinition(definition)).toThrow(errorPattern);
+      expect(() => createActionDefinitionRuntime(definition)).toThrow(errorPattern);
+    }
   });
 });
 
