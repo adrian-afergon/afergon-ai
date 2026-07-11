@@ -44,15 +44,20 @@ export interface ParsedProviderModel {
   shortModelId: string;
 }
 
+export function getConfigDir(env?: NodeJS.ProcessEnv): string;
 export function getOpenCodeBaseDir(env?: NodeJS.ProcessEnv): string;
 export function getConfigPath(env?: NodeJS.ProcessEnv): string;
+export function createDefaultConfig(): AfergonModelConfig;
 export function getActiveProfile(config: AfergonModelConfig): Record<string, string> | null;
+export function ensureActiveProfile(config: AfergonModelConfig): string;
 
 export function loadConfig(env?: NodeJS.ProcessEnv): {
   config: AfergonModelConfig;
   configPath: string;
   exists: boolean;
 };
+
+export function saveConfig(config: AfergonModelConfig, env?: NodeJS.ProcessEnv): string;
 
 export function normalizeStoredModel(value: unknown): string | undefined;
 export function parseProviderModel(value: unknown): ParsedProviderModel | null;

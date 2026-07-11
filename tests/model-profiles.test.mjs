@@ -169,6 +169,199 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("exports only the intended public model profile config helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const expectedExports = [
+      "createDefaultConfig",
+      "ensureActiveProfile",
+      "getActiveProfile",
+      "getConfigDir",
+      "getConfigPath",
+      "getOpenCodeBaseDir",
+      "loadConfig",
+      "saveConfig",
+    ];
+
+    expect(Object.keys(modelProfilesConfigTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesConfigRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for env path helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+
+    const explicitConfigEnv = {
+      AFERGON_AI_CONFIG_DIR: "./custom-config",
+      HOME: "/users/example",
+      XDG_CONFIG_HOME: "/users/example/.xdg",
+    };
+    expect(modelProfilesConfigTypeScript.getConfigDir(explicitConfigEnv)).toBe(
+      modelProfilesConfigRuntime.getConfigDir(explicitConfigEnv),
+    );
+    expect(modelProfilesConfigTypeScript.getConfigPath(explicitConfigEnv)).toBe(
+      modelProfilesConfigRuntime.getConfigPath(explicitConfigEnv),
+    );
+
+    const xdgEnv = {
+      HOME: "/users/example",
+      XDG_CONFIG_HOME: "/users/example/.xdg",
+    };
+    expect(modelProfilesConfigTypeScript.getConfigDir(xdgEnv)).toBe(modelProfilesConfigRuntime.getConfigDir(xdgEnv));
+    expect(modelProfilesConfigTypeScript.getOpenCodeBaseDir(xdgEnv)).toBe(
+      modelProfilesConfigRuntime.getOpenCodeBaseDir(xdgEnv),
+    );
+
+    const cwdEnv = {};
+    expect(modelProfilesConfigTypeScript.getConfigDir(cwdEnv)).toBe(modelProfilesConfigRuntime.getConfigDir(cwdEnv));
+    expect(modelProfilesConfigTypeScript.getOpenCodeBaseDir(cwdEnv)).toBe(
+      modelProfilesConfigRuntime.getOpenCodeBaseDir(cwdEnv),
+    );
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for default profile helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+
+    const typeScriptDefaultConfig = modelProfilesConfigTypeScript.createDefaultConfig();
+    const runtimeDefaultConfig = modelProfilesConfigRuntime.createDefaultConfig();
+    expect(typeScriptDefaultConfig).toEqual(runtimeDefaultConfig);
+    expect(modelProfilesConfigTypeScript.getActiveProfile(typeScriptDefaultConfig)).toBe(
+      modelProfilesConfigRuntime.getActiveProfile(runtimeDefaultConfig),
+    );
+
+    const typeScriptMissingProfileConfig = modelProfilesConfigTypeScript.createDefaultConfig();
+    const runtimeMissingProfileConfig = modelProfilesConfigRuntime.createDefaultConfig();
+    expect(modelProfilesConfigTypeScript.ensureActiveProfile(typeScriptMissingProfileConfig)).toBe(
+      modelProfilesConfigRuntime.ensureActiveProfile(runtimeMissingProfileConfig),
+    );
+    expect(typeScriptMissingProfileConfig).toEqual(runtimeMissingProfileConfig);
+
+    const typeScriptExistingProfileConfig = {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    };
+    const runtimeExistingProfileConfig = structuredClone(typeScriptExistingProfileConfig);
+    expect(modelProfilesConfigTypeScript.ensureActiveProfile(typeScriptExistingProfileConfig)).toBe(
+      modelProfilesConfigRuntime.ensureActiveProfile(runtimeExistingProfileConfig),
+    );
+    expect(modelProfilesConfigTypeScript.getActiveProfile(typeScriptExistingProfileConfig)).toEqual(
+      modelProfilesConfigRuntime.getActiveProfile(runtimeExistingProfileConfig),
+    );
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for persistence helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = {
+      HOME: path.join(tempRoot, "home-ts"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg-ts"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config-ts"),
+    };
+    const runtimeEnv = {
+      HOME: path.join(tempRoot, "home-mjs"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg-mjs"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config-mjs"),
+    };
+
+    expect(modelProfilesConfigTypeScript.loadConfig(typeScriptEnv)).toEqual({
+      config: modelProfilesConfigTypeScript.createDefaultConfig(),
+      configPath: path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: false,
+    });
+    expect(modelProfilesConfigRuntime.loadConfig(runtimeEnv)).toEqual({
+      config: modelProfilesConfigRuntime.createDefaultConfig(),
+      configPath: path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: false,
+    });
+
+    const savedTypeScriptPath = modelProfilesConfigTypeScript.saveConfig(
+      {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              main: "openai/gpt-5.5",
+              "afg-review": "inherit",
+              ignored: "local/skip",
+            },
+          },
+        },
+      },
+      typeScriptEnv,
+    );
+    const savedRuntimePath = modelProfilesConfigRuntime.saveConfig(
+      {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              main: "openai/gpt-5.5",
+              "afg-review": "inherit",
+              ignored: "local/skip",
+            },
+          },
+        },
+      },
+      runtimeEnv,
+    );
+
+    expect(savedTypeScriptPath).toBe(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(savedRuntimePath).toBe(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(fs.readdirSync(typeScriptEnv.AFERGON_AI_CONFIG_DIR).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+    expect(fs.readdirSync(runtimeEnv.AFERGON_AI_CONFIG_DIR).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+
+    const typeScriptLoaded = modelProfilesConfigTypeScript.loadConfig(typeScriptEnv);
+    const runtimeLoaded = modelProfilesConfigRuntime.loadConfig(runtimeEnv);
+    expect(typeScriptLoaded.config).toEqual(runtimeLoaded.config);
+    expect(typeScriptLoaded.exists).toBe(runtimeLoaded.exists);
+    expect(typeScriptLoaded).toEqual({
+      config: {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+              "afg-review": "inherit",
+            },
+          },
+        },
+      },
+      configPath: path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: true,
+    });
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for invalid config errors", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptConfigDir = path.join(tempRoot, "bad-config-ts");
+    const runtimeConfigDir = path.join(tempRoot, "bad-config-mjs");
+    fs.mkdirSync(typeScriptConfigDir, { recursive: true });
+    fs.mkdirSync(runtimeConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(typeScriptConfigDir, "config.json"), JSON.stringify({ models: { activeProfile: [] } }), "utf8");
+    fs.writeFileSync(path.join(runtimeConfigDir, "config.json"), JSON.stringify({ models: { activeProfile: [] } }), "utf8");
+
+    expect(() => modelProfilesConfigTypeScript.loadConfig({ AFERGON_AI_CONFIG_DIR: typeScriptConfigDir })).toThrow(
+      "models.activeProfile must be a string or null",
+    );
+    expect(() => modelProfilesConfigRuntime.loadConfig({ AFERGON_AI_CONFIG_DIR: runtimeConfigDir })).toThrow(
+      "models.activeProfile must be a string or null",
+    );
+  });
+
   it("exports only the intended public model profile core helpers", async () => {
     const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
     const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
