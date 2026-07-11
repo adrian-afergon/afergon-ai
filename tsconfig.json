@@ -15,6 +15,7 @@
     "scripts/lib/model-profiles-core.ts",
     "scripts/lib/model-profiles-host-seeding.ts",
     "scripts/lib/model-profiles-save.ts",
+    "scripts/lib/model-profiles.ts",
     "scripts/lib/branding/**/*.ts",
     "scripts/lib/tui/command-manifest.ts",
     "scripts/lib/tui/navigation.ts",
