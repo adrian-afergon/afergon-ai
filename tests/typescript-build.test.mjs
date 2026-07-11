@@ -21,6 +21,7 @@ describe("TypeScript build output", () => {
     const copiedFormsDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms.d.mts");
     const copiedFormsConfirmationDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.d.mts");
     const copiedFormsOutputDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-output.d.mts");
+    const copiedFormsStateDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-state.d.mts");
     const copiedActionDefinitionsDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.d.mts");
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
@@ -28,6 +29,7 @@ describe("TypeScript build output", () => {
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const formsConfirmationOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.js");
     const formsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-output.js");
+    const formsStateOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-state.js");
     const actionDefinitionsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
@@ -44,6 +46,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedFormsConfirmationDeclarationPath, "utf8")).toContain('export * from "./forms-confirmation.ts"');
     expect(existsSync(copiedFormsOutputDeclarationPath)).toBe(true);
     expect(readFileSync(copiedFormsOutputDeclarationPath, "utf8")).toContain('export * from "./forms-output.ts"');
+    expect(existsSync(copiedFormsStateDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedFormsStateDeclarationPath, "utf8")).toContain('export * from "./forms-state.ts"');
     expect(existsSync(copiedActionDefinitionsDeclarationPath)).toBe(true);
     expect(readFileSync(copiedActionDefinitionsDeclarationPath, "utf8")).toContain("./definitions.ts");
     expect(existsSync(copiedModelProfilesDeclarationPath)).toBe(true);
@@ -58,6 +62,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(formsConfirmationOutputPath, "utf8")).toContain("export function validateConfirmationState");
     expect(existsSync(formsOutputPath)).toBe(true);
     expect(readFileSync(formsOutputPath, "utf8")).toContain("export function sanitizeTerminalOutput");
+    expect(existsSync(formsStateOutputPath)).toBe(true);
+    expect(readFileSync(formsStateOutputPath, "utf8")).toContain("export function createFormState");
     expect(existsSync(actionDefinitionsOutputPath)).toBe(true);
     expect(readFileSync(actionDefinitionsOutputPath, "utf8")).toContain("export function createActionDefinition");
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
