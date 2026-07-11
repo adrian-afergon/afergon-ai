@@ -38,6 +38,26 @@ export interface ValidateModelAvailabilityResult {
   warning?: string;
 }
 
+export interface OpenCodeProviderModelsOkResult {
+  status: "ok";
+  models: string[];
+}
+
+export interface OpenCodeProviderModelsUnavailableResult {
+  status: "unavailable";
+  reason: string;
+}
+
+export interface OpenCodeProviderModelsFailedResult {
+  status: "failed";
+  reason: string;
+}
+
+export type OpenCodeProviderModelsResult =
+  | OpenCodeProviderModelsOkResult
+  | OpenCodeProviderModelsUnavailableResult
+  | OpenCodeProviderModelsFailedResult;
+
 export interface ParsedProviderModel {
   provider: string;
   modelId: string;
@@ -70,6 +90,9 @@ export function hasDegradedRefreshGuidance(output?: { stdout?: unknown; stderr?:
 export function normalizeRefreshResult(result?: { status?: string; stdout?: unknown; stderr?: unknown; degraded?: unknown } | null): RefreshResult | undefined;
 
 export const SUPPORTED_AGENTS: readonly string[];
+
+export function listOpenCodeProviderModels(provider: string, env?: NodeJS.ProcessEnv): OpenCodeProviderModelsResult;
+export function validateModelAvailability(modelId: string, env?: NodeJS.ProcessEnv): ValidateModelAvailabilityResult;
 
 export function saveProfileAssignments(
   profileNameInput: string,

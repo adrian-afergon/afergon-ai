@@ -10,6 +10,7 @@
   },
   "include": [
     "extensions/**/*.ts",
+    "scripts/lib/model-profiles-availability.ts",
     "scripts/lib/model-profiles-config.ts",
     "scripts/lib/model-profiles-core.ts",
     "scripts/lib/branding/**/*.ts",
