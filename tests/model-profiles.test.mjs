@@ -1404,6 +1404,423 @@ describe("models CLI behavior", () => {
 });
 
 describe("saveProfileAssignments", () => {
+  function createSaveAssignmentsEnv(tempRoot) {
+    return {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+    };
+  }
+
+  function seedSaveAssignmentsConfig(env, config = undefined) {
+    saveConfig(
+      config ?? {
+        version: 1,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+            },
+            fallback: {
+              "afergon-ai": "openai/gpt-5.4",
+            },
+          },
+        },
+      },
+      env,
+    );
+  }
+
+  function expectSaveResultParity(typeScriptResult, runtimeResult) {
+    expect(typeScriptResult.profileName).toBe(runtimeResult.profileName);
+    expect(typeScriptResult.assignments).toEqual(runtimeResult.assignments);
+    expect(typeScriptResult.refreshResult).toEqual(runtimeResult.refreshResult);
+  }
+
+  it("exports only the intended public model profile save orchestration helpers", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const expectedExports = ["saveProfileAssignments"];
+
+    expect(Object.keys(modelProfilesSaveTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesSaveRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for inactive-profile saves", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
+    const runtimeEnv = createSaveAssignmentsEnv(path.join(tempRoot, "mjs"));
+    const validateTypeScript = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.4-mini"],
+    }));
+    const validateRuntime = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.4-mini"],
+    }));
+    const refreshTypeScript = vi.fn();
+    const refreshRuntime = vi.fn();
+    seedSaveAssignmentsConfig(typeScriptEnv);
+    seedSaveAssignmentsConfig(runtimeEnv);
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "fallback",
+      {
+        "afg-review": "openai/gpt-5.4-mini",
+      },
+      {
+        env: typeScriptEnv,
+        refreshActiveProfile: refreshTypeScript,
+        validateModelAvailability: validateTypeScript,
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "fallback",
+      {
+        "afg-review": "openai/gpt-5.4-mini",
+      },
+      {
+        env: runtimeEnv,
+        refreshActiveProfile: refreshRuntime,
+        validateModelAvailability: validateRuntime,
+      },
+    );
+
+    expectSaveResultParity(typeScriptResult, runtimeResult);
+    expect(typeScriptResult.configPath).toBe(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(runtimeResult.configPath).toBe(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(readJson(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"))).toEqual(
+      readJson(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json")),
+    );
+    expect(validateTypeScript).toHaveBeenCalledWith("openai/gpt-5.4-mini", typeScriptEnv);
+    expect(validateRuntime).toHaveBeenCalledWith("openai/gpt-5.4-mini", runtimeEnv);
+    expect(refreshTypeScript).not.toHaveBeenCalled();
+    expect(refreshRuntime).not.toHaveBeenCalled();
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for validation, missing-profile, and rejected-refresh failures", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const validationTempRoot = makeTempRoot();
+    const validationTypeScriptEnv = createSaveAssignmentsEnv(path.join(validationTempRoot, "ts"));
+    const validationRuntimeEnv = createSaveAssignmentsEnv(path.join(validationTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(validationTypeScriptEnv);
+    seedSaveAssignmentsConfig(validationRuntimeEnv);
+
+    expect(() =>
+      modelProfilesSaveTypeScript.saveProfileAssignments(
+        "fallback",
+        { "afg-review": "bad-model" },
+        {
+          env: validationTypeScriptEnv,
+          validateModelAvailability: () => ({
+            status: "malformed",
+            message: "Model 'bad-model' does not use the expected provider/model format.",
+          }),
+        },
+      ),
+    ).toThrow("Model 'bad-model' does not use the expected provider/model format.");
+    expect(() =>
+      modelProfilesSaveRuntime.saveProfileAssignments(
+        "fallback",
+        { "afg-review": "bad-model" },
+        {
+          env: validationRuntimeEnv,
+          validateModelAvailability: () => ({
+            status: "malformed",
+            message: "Model 'bad-model' does not use the expected provider/model format.",
+          }),
+        },
+      ),
+    ).toThrow("Model 'bad-model' does not use the expected provider/model format.");
+
+    const missingProfileTempRoot = makeTempRoot();
+    const missingProfileTypeScriptEnv = createSaveAssignmentsEnv(path.join(missingProfileTempRoot, "ts"));
+    const missingProfileRuntimeEnv = createSaveAssignmentsEnv(path.join(missingProfileTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(missingProfileTypeScriptEnv);
+    seedSaveAssignmentsConfig(missingProfileRuntimeEnv);
+
+    expect(() => modelProfilesSaveTypeScript.saveProfileAssignments("missing", {}, { env: missingProfileTypeScriptEnv })).toThrow(
+      "Unknown profile 'missing'.",
+    );
+    expect(() => modelProfilesSaveRuntime.saveProfileAssignments("missing", {}, { env: missingProfileRuntimeEnv })).toThrow(
+      "Unknown profile 'missing'.",
+    );
+
+    const rejectedRefresh = new Error("Refresh failed.");
+    const rejectedPromiseTypeScript = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: missingProfileTypeScriptEnv,
+        refreshActiveProfile: () => Promise.reject(rejectedRefresh),
+      },
+    );
+    const rejectedPromiseRuntime = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: missingProfileRuntimeEnv,
+        refreshActiveProfile: () => Promise.reject(rejectedRefresh),
+      },
+    );
+
+    await expect(rejectedPromiseTypeScript).rejects.toThrow("Refresh failed.");
+    await expect(rejectedPromiseRuntime).rejects.toThrow("Refresh failed.");
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for sync and async active-profile refresh results", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const syncTempRoot = makeTempRoot();
+    const syncTypeScriptEnv = createSaveAssignmentsEnv(path.join(syncTempRoot, "ts"));
+    const syncRuntimeEnv = createSaveAssignmentsEnv(path.join(syncTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(syncTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(syncRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const syncTypeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: syncTypeScriptEnv,
+        refreshActiveProfile: () => ({
+          status: "degraded",
+          stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+          stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+        }),
+      },
+    );
+    const syncRuntimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: syncRuntimeEnv,
+        refreshActiveProfile: () => ({
+          status: "degraded",
+          stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+          stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+        }),
+      },
+    );
+
+    expectSaveResultParity(syncTypeScriptResult, syncRuntimeResult);
+    expect(syncTypeScriptResult.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+      degraded: true,
+    });
+
+    const asyncTempRoot = makeTempRoot();
+    const asyncTypeScriptEnv = createSaveAssignmentsEnv(path.join(asyncTempRoot, "ts"));
+    const asyncRuntimeEnv = createSaveAssignmentsEnv(path.join(asyncTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(asyncTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(asyncRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const asyncTypeScriptResult = await modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: asyncTypeScriptEnv,
+        refreshActiveProfile: () =>
+          Promise.resolve({
+            status: "clean",
+            stdout: "OpenCode registrations refreshed on disk.",
+            stderr: "",
+          }),
+      },
+    );
+    const asyncRuntimeResult = await modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: asyncRuntimeEnv,
+        refreshActiveProfile: () =>
+          Promise.resolve({
+            status: "clean",
+            stdout: "OpenCode registrations refreshed on disk.",
+            stderr: "",
+          }),
+      },
+    );
+
+    expectSaveResultParity(asyncTypeScriptResult, asyncRuntimeResult);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for function-shaped thenable immediate return values", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const thenableTempRoot = makeTempRoot();
+    const thenableTypeScriptEnv = createSaveAssignmentsEnv(path.join(thenableTempRoot, "ts"));
+    const thenableRuntimeEnv = createSaveAssignmentsEnv(path.join(thenableTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(thenableTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(thenableRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const sentinelResult = { type: "custom-then-return" };
+
+    const createFunctionThenable = () => {
+      const thenable = () => undefined;
+      thenable.then = (resolve) => {
+        resolve({
+          status: "clean",
+          stdout: "OpenCode registrations refreshed from a function-shaped thenable.",
+          stderr: "",
+        });
+        return sentinelResult;
+      };
+      return thenable;
+    };
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: thenableTypeScriptEnv,
+        refreshActiveProfile: createFunctionThenable,
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: thenableRuntimeEnv,
+        refreshActiveProfile: createFunctionThenable,
+      },
+    );
+
+    expect(typeScriptResult).toBe(sentinelResult);
+    expect(runtimeResult).toBe(sentinelResult);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for degraded guidance normalization", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
+    const runtimeEnv = createSaveAssignmentsEnv(path.join(tempRoot, "mjs"));
+    seedSaveAssignmentsConfig(typeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(runtimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: typeScriptEnv,
+        refreshActiveProfile: () => ({
+          status: "clean",
+          stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+          stderr: "",
+        }),
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: runtimeEnv,
+        refreshActiveProfile: () => ({
+          status: "clean",
+          stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+          stderr: "",
+        }),
+      },
+    );
+
+    expectSaveResultParity(typeScriptResult, runtimeResult);
+    expect(typeScriptResult.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+      stderr: "",
+      degraded: true,
+    });
+  });
+
   it("saves staged assignments to the targeted inactive profile with injected model validation and without mutating the active profile", () => {
     const tempRoot = makeTempRoot();
     const env = {
