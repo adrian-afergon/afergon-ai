@@ -169,6 +169,112 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("exports only the intended public model profile core helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+    const expectedExports = [
+      "SUPPORTED_AGENTS",
+      "cloneAssignments",
+      "hasDegradedRefreshGuidance",
+      "normalizeAgentName",
+      "normalizeProfileName",
+      "normalizeRefreshResult",
+      "normalizeStoredModel",
+      "parseProviderModel",
+      "resolveAssignments",
+      "suggestCloseModelIds",
+    ];
+
+    expect(Object.keys(modelProfilesCoreTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesCoreRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for normalization helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+
+    expect(modelProfilesCoreTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesCoreRuntime.SUPPORTED_AGENTS);
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel("  openai/gpt-5.5  ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel("  openai/gpt-5.5  "),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel(" inherit ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel(" inherit "),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel("   ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel("   "),
+    );
+    expect(modelProfilesCoreTypeScript.parseProviderModel("openai/gpt-5.5")).toEqual(
+      modelProfilesCoreRuntime.parseProviderModel("openai/gpt-5.5"),
+    );
+    expect(modelProfilesCoreTypeScript.parseProviderModel("gpt-5.5")).toEqual(
+      modelProfilesCoreRuntime.parseProviderModel("gpt-5.5"),
+    );
+    expect(
+      modelProfilesCoreTypeScript.suggestCloseModelIds("openai/gpt-5.6", [
+        "openai/gpt-5.4",
+        "openai/gpt-5.4-fast",
+        "openai/gpt-5.5",
+      ]),
+    ).toEqual(
+      modelProfilesCoreRuntime.suggestCloseModelIds("openai/gpt-5.6", [
+        "openai/gpt-5.4",
+        "openai/gpt-5.4-fast",
+        "openai/gpt-5.5",
+      ]),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeAgentName("review")).toBe(
+      modelProfilesCoreRuntime.normalizeAgentName("review"),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeProfileName(" budget.main ")).toBe(
+      modelProfilesCoreRuntime.normalizeProfileName(" budget.main "),
+    );
+    expect(modelProfilesCoreTypeScript.hasDegradedRefreshGuidance({ stderr: "warning: recovery skipped" })).toBe(
+      modelProfilesCoreRuntime.hasDegradedRefreshGuidance({ stderr: "warning: recovery skipped" }),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for assignment and refresh helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+    const profile = {
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-review": "inherit",
+      "afg-design": "openai/gpt-4.1",
+      extra: "ignored",
+    };
+
+    expect(modelProfilesCoreTypeScript.resolveAssignments(profile)).toEqual(
+      modelProfilesCoreRuntime.resolveAssignments(profile),
+    );
+    expect(modelProfilesCoreTypeScript.cloneAssignments(profile)).toEqual(modelProfilesCoreRuntime.cloneAssignments(profile));
+    expect(modelProfilesCoreTypeScript.cloneAssignments(null)).toEqual(modelProfilesCoreRuntime.cloneAssignments(null));
+    expect(
+      modelProfilesCoreTypeScript.hasDegradedRefreshGuidance({
+        stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md",
+      }),
+    ).toBe(
+      modelProfilesCoreRuntime.hasDegradedRefreshGuidance({
+        stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md",
+      }),
+    );
+    expect(
+      modelProfilesCoreTypeScript.normalizeRefreshResult({
+        status: "clean",
+        stdout: "  Saved config. OpenCode refresh timed out after 500ms.  ",
+        stderr: "  Run 'afergon-ai update' to retry.  ",
+      }),
+    ).toEqual(
+      modelProfilesCoreRuntime.normalizeRefreshResult({
+        status: "clean",
+        stdout: "  Saved config. OpenCode refresh timed out after 500ms.  ",
+        stderr: "  Run 'afergon-ai update' to retry.  ",
+      }),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeRefreshResult(null)).toBe(
+      modelProfilesCoreRuntime.normalizeRefreshResult(null),
+    );
+  });
+
   it("treats registrar warning guidance as degraded refresh output", () => {
     expect(
       hasDegradedRefreshGuidance({
