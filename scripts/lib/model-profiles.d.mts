@@ -22,13 +22,6 @@ export interface RefreshResult {
   degraded: boolean;
 }
 
-export interface SaveProfileAssignmentsResult {
-  configPath: string;
-  profileName: string;
-  assignments: Record<string, string>;
-  refreshResult?: RefreshResult;
-}
-
 export interface ValidateModelAvailabilityResult {
   status: "known" | "unknown" | "malformed" | "unverified";
   availableModels?: string[];
@@ -94,13 +87,4 @@ export const SUPPORTED_AGENTS: readonly string[];
 export function listOpenCodeProviderModels(provider: string, env?: NodeJS.ProcessEnv): OpenCodeProviderModelsResult;
 export function validateModelAvailability(modelId: string, env?: NodeJS.ProcessEnv): ValidateModelAvailabilityResult;
 export function readOpenCodeAgentModels(env?: NodeJS.ProcessEnv): Record<string, string>;
-
-export function saveProfileAssignments(
-  profileNameInput: string,
-  assignments: Record<string, string>,
-  options?: {
-    env?: NodeJS.ProcessEnv;
-    refreshActiveProfile?: (() => unknown) | undefined;
-    validateModelAvailability?: ((modelId: string, env?: NodeJS.ProcessEnv) => ValidateModelAvailabilityResult) | undefined;
-  },
-): SaveProfileAssignmentsResult | Promise<SaveProfileAssignmentsResult>;
+export * from "./model-profiles-save.ts";

@@ -26,6 +26,8 @@ describe("TypeScript build output", () => {
     const copiedModelProfilesConfigDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-config.d.mts");
     const copiedModelProfilesAvailabilityDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-availability.d.mts");
     const copiedModelProfilesCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.d.mts");
+    const copiedModelProfilesSaveDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-save.d.mts");
+    const copiedModelProfilesSaveRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-save.mjs");
     const copiedModelProfilesHostSeedingDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.d.mts");
     const copiedModelProfilesHostSeedingRuntimePath = path.join(
       repoRoot,
@@ -35,6 +37,7 @@ describe("TypeScript build output", () => {
       "model-profiles-host-seeding.mjs",
     );
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
+    const copiedModelProfilesRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
@@ -45,6 +48,7 @@ describe("TypeScript build output", () => {
     const modelProfilesConfigOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-config.js");
     const modelProfilesAvailabilityOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-availability.js");
     const modelProfilesCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.js");
+    const modelProfilesSaveOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-save.js");
     const modelProfilesHostSeedingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
@@ -77,6 +81,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain('export * from "./model-profiles-core.ts"');
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("AGENT_ALIASES");
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("asPlainObject");
+    expect(existsSync(copiedModelProfilesSaveDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesSaveDeclarationPath, "utf8")).toContain('export * from "./model-profiles-save.ts"');
+    expect(existsSync(copiedModelProfilesSaveRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesSaveRuntimePath, "utf8")).toContain("export function saveProfileAssignments");
     expect(existsSync(copiedModelProfilesHostSeedingDeclarationPath)).toBe(true);
     expect(readFileSync(copiedModelProfilesHostSeedingDeclarationPath, "utf8")).toContain(
       'export * from "./model-profiles-host-seeding.ts"',
@@ -86,6 +94,8 @@ describe("TypeScript build output", () => {
     expect(existsSync(copiedModelProfilesDeclarationPath)).toBe(true);
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("loadConfig");
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("readOpenCodeAgentModels");
+    expect(existsSync(copiedModelProfilesRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesRuntimePath, "utf8")).toContain('./model-profiles-save.mjs');
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
@@ -106,6 +116,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(modelProfilesAvailabilityOutputPath, "utf8")).toContain("export function validateModelAvailability");
     expect(existsSync(modelProfilesCoreOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesCoreOutputPath, "utf8")).toContain("export function normalizeStoredModel");
+    expect(existsSync(modelProfilesSaveOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesSaveOutputPath, "utf8")).toContain("export function saveProfileAssignments");
     expect(existsSync(modelProfilesHostSeedingOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesHostSeedingOutputPath, "utf8")).toContain("export function readOpenCodeAgentModels");
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
