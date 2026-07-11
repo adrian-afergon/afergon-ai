@@ -55,7 +55,8 @@ function renderAssignments(assignments) {
 
 function renderAssignmentEditor(assignments, styleSelected) {
   return assignments.map((assignment) => {
-    const line = `${sanitizeText(assignment.agent)}${assignment.isFocused ? " [selected]" : ""}: configured=${sanitizeText(assignment.configured)}, effective=${sanitizeText(assignment.effective ?? "(runtime default)")}, source=${sanitizeText(assignment.source)}`;
+    const marker = assignment.isFocused ? ">" : " ";
+    const line = `${marker} ${sanitizeText(assignment.agent)}: configured=${sanitizeText(assignment.configured)}, effective=${sanitizeText(assignment.effective ?? "(runtime default)")}, source=${sanitizeText(assignment.source)}`;
     return assignment.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
   });
 }

@@ -440,6 +440,29 @@ describe("renderModelProfilesScreen", () => {
     expect(output).not.toContain("> [X] budget");
   });
 
+  it("renders assignment focus with a fixed cursor column and no selected suffix", () => {
+    const output = renderModelProfilesScreen(
+      {
+        title: "Model Profiles",
+        configPath: "/tmp/config.json",
+        summary: { state: "ok", detail: "1 profile(s) available." },
+        activeProfile: "budget",
+        profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
+        assignments: [
+          { agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit", isFocused: false },
+          { agent: "afg-review", configured: "inherit", effective: "openai/gpt-5.5", source: "inherit", isFocused: true },
+        ],
+        browse: { mode: "assignments", targetProfileName: "budget" },
+      },
+      160,
+      { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` },
+    ).join("\n");
+
+    expect(output).toContain("  afergon-ai: configured=openai/gpt-5.5");
+    expect(output).toContain("\u001b[38;5;6m> afg-review: configured=inherit");
+    expect(output).not.toContain("[selected]");
+  });
+
   it("renders placeholder detail rows for the * New Profile sentinel row to preserve layout height", () => {
     const output = renderModelProfilesScreen(
       {
@@ -1148,7 +1171,8 @@ describe("createTuiApp model-profiles route", () => {
 
     await emitInput(terminal, "\u001b[B");
     expect(app.navigation.modelProfiles?.focusedAgentIndex).toBe(1);
-    expect(terminal.output).toContain(`${SUPPORTED_AGENTS[1]} [selected]`);
+    expect(terminal.output).toContain(`> ${SUPPORTED_AGENTS[1]}:`);
+    expect(terminal.output).toContain(`  ${SUPPORTED_AGENTS[0]}:`);
 
     terminal.output = "";
     await emitInput(terminal, "\r");

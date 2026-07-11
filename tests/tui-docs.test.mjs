@@ -25,7 +25,7 @@ describe("TUI docs contract", () => {
     expect(README).toContain("Non-TTY/CI + no args: print help and exit 0.");
     expect(README).toContain("Non-TTY/CI + `tui`: fail fast with guidance instead of hanging.");
     expect(README).toContain("Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.");
-    expect(README).toContain("Selected rows add teal emphasis when the terminal supports color, while Model Profiles browse mode pairs the `>` cursor with `[X]`/`[ ]` active markers instead of a `[selected]` suffix.");
+    expect(README).toContain("Focused rows use a fixed-width `>` cursor plus teal emphasis when the terminal supports color; unfocused rows reserve the same cursor column so labels stay aligned.");
     expect(README).toContain("Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.");
     expect(README).toContain("In Model Profiles browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort.");
     expect(README).toContain("Clean successful Enter-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.");

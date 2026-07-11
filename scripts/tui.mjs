@@ -285,7 +285,7 @@ export function renderHomeScreen(navigation, width) {
     "",
     "Sections available in this MVP slice:",
     ...homeItems.map((item) => {
-      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""}`;
+      const line = `${item.selected ? ">" : " "} ${item.label}`;
       return item.selected ? styleTeal(line) : line;
     }),
     "",
@@ -373,7 +373,7 @@ function renderInteractiveActions(actions, navigation) {
     "",
     ...actions.flatMap((action, index) => {
       const selected = (navigation.sectionActionSelection ?? 0) === index;
-      const line = `${selected ? ">" : " "} ${action.label}${selected ? " [selected]" : ""}`;
+      const line = `${selected ? ">" : " "} ${action.label}`;
       return [selected ? styleTeal(line) : line];
     }),
     "",
@@ -451,7 +451,7 @@ function renderPickerFormModal(modal) {
     "",
     ...modal.action.form.options.map((option, index) => {
       const selected = modal.activeIndex === index;
-      return `${selected ? ">" : " "} ${sanitizeTerminalOutput(option.label)}${selected ? " [selected]" : ""}`;
+      return `${selected ? ">" : " "} ${sanitizeTerminalOutput(option.label)}`;
     }),
     `${modal.activeIndex === cancelIndex ? ">" : " "} Cancel`,
     "",

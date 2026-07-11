@@ -124,7 +124,7 @@ describe("startup banner and TUI home branding", () => {
 
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.lines.at(-1)))).toBe(true);
-    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && stripAnsi(line).includes("> Configuration [selected]"))).toBe(true);
+    expect(lines.some((line) => line.includes("\u001b[38;5;6m") && stripAnsi(line).includes("> Configuration"))).toBe(true);
     expect(lines.some((line) => line.includes("\u001b[38;5;6m") && line.includes(BRANDING_LOGO.tagline))).toBe(true);
     expect(lines.some((line) => line.includes("\u001b[38;5;6mC\u001b[0m") && stripAnsi(line).includes("Press (C)onfiguracion | (S)tatus | (M)odels"))).toBe(true);
     expect(lines.some((line) => stripAnsi(line).includes("Press Configuracion | Status | Models"))).toBe(false);

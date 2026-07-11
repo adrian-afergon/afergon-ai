@@ -144,7 +144,7 @@ Accessibility and keyboard notes:
 
 - Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
-- Selected rows add teal emphasis when the terminal supports color, while Model Profiles browse mode pairs the `>` cursor with `[X]`/`[ ]` active markers instead of a `[selected]` suffix.
+- Focused rows use a fixed-width `>` cursor plus teal emphasis when the terminal supports color; unfocused rows reserve the same cursor column so labels stay aligned.
 - Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.
 - In Model Profiles browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort.
 - Clean successful Enter-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.

@@ -356,7 +356,7 @@ describe("createTuiApp status route", () => {
 
     terminal.emitInput("s");
     await flushTui();
-    expect(terminal.output).toContain("> Run doctor for OpenCode [selected]");
+    expect(terminal.output).toContain("> Run doctor for OpenCode");
 
     terminal.emitInput("\r");
     await flushTui();
