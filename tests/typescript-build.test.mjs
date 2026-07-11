@@ -1,12 +1,13 @@
 import path from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
 describe("TypeScript build output", () => {
-  it("copies declaration bridges for runtime .mjs dependencies into dist", () => {
+  it("copies declaration bridges for runtime .mjs dependencies into dist", async () => {
     const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const result = spawnSync(pnpmCommand, ["run", "build"], {
       cwd: repoRoot,
@@ -38,6 +39,7 @@ describe("TypeScript build output", () => {
     );
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const copiedModelProfilesRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.mjs");
+    const copiedModelsCliCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "models-cli-core.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
@@ -51,6 +53,7 @@ describe("TypeScript build output", () => {
     const modelProfilesSaveOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-save.js");
     const modelProfilesHostSeedingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js");
     const modelProfilesOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.js");
+    const modelsCliCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "models-cli-core.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
@@ -98,6 +101,15 @@ describe("TypeScript build output", () => {
     expect(existsSync(copiedModelProfilesRuntimePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesRuntimePath, "utf8")).toContain('./model-profiles-core.mjs');
     expect(readFileSync(copiedModelProfilesRuntimePath, "utf8")).toContain('./model-profiles-save.mjs');
+    expect(existsSync(copiedModelsCliCoreRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelsCliCoreRuntimePath, "utf8")).toContain("export function parseSetCommandArguments");
+    const copiedModelsCliCore = await import(`${pathToFileURL(copiedModelsCliCoreRuntimePath).href}?build-artifact`);
+    expect(copiedModelsCliCore.parseSetCommandArguments(["--allow-unknown", "review", "openai/gpt-5.5"])).toEqual({
+      allowUnknown: true,
+      agent: "review",
+      model: "openai/gpt-5.5",
+    });
+    expect(copiedModelsCliCore.getOpenCodeRefreshTimeoutMs({ AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "0" })).toBe(10000);
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
@@ -125,6 +137,15 @@ describe("TypeScript build output", () => {
     expect(existsSync(modelProfilesOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesOutputPath, "utf8")).toContain('from "./model-profiles-core.js"');
     expect(readFileSync(modelProfilesOutputPath, "utf8")).toContain('from "./model-profiles-save.js"');
+    expect(existsSync(modelsCliCoreOutputPath)).toBe(true);
+    expect(readFileSync(modelsCliCoreOutputPath, "utf8")).toContain("export function parseSetCommandArguments");
+    const emittedModelsCliCore = await import(`${pathToFileURL(modelsCliCoreOutputPath).href}?build-artifact`);
+    expect(emittedModelsCliCore.parseSetCommandArguments(["afergon-ai", "inherit"])).toEqual({
+      allowUnknown: false,
+      agent: "afergon-ai",
+      model: "inherit",
+    });
+    expect(emittedModelsCliCore.formatEffective({ effective: null })).toBe("(runtime default)");
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);
