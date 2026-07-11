@@ -468,6 +468,106 @@ describe("model profile resolution", () => {
     );
   });
 
+  it("exports only the intended public model profile availability helpers", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const expectedExports = [
+      "listOpenCodeProviderModels",
+      "validateModelAvailability",
+    ];
+
+    expect(Object.keys(modelProfilesAvailabilityTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesAvailabilityRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for provider listing edge cases", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "  ", "openai/gpt-5.5"],
+      },
+      failingProviders: {
+        local: "provider credentials are not configured",
+      },
+      slowProviders: {
+        anthropic: 2,
+      },
+    });
+    const baseEnv = {
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    };
+
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("openai", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("openai", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("local", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("local", baseEnv),
+    );
+    expect(
+      modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("anthropic", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    ).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("anthropic", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    );
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("openai", { PATH: "" })).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("openai", { PATH: "" }),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for model validation outcomes", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "openai/gpt-5.4-fast", "openai/gpt-5.5"],
+      },
+      failingProviders: {
+        local: "provider credentials are not configured",
+      },
+      slowProviders: {
+        anthropic: 2,
+      },
+    });
+    const baseEnv = {
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    };
+
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.5", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.5", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.6", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.6", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("gpt-5.5", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("gpt-5.5", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("local/custom-model", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("local/custom-model", baseEnv),
+    );
+    expect(
+      modelProfilesAvailabilityTypeScript.validateModelAvailability("anthropic/claude-opus", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    ).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("anthropic/claude-opus", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.5", { PATH: "" })).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.5", { PATH: "" }),
+    );
+  });
+
   it("treats registrar warning guidance as degraded refresh output", () => {
     expect(
       hasDegradedRefreshGuidance({
