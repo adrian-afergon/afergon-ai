@@ -10,6 +10,7 @@
   },
   "include": [
     "extensions/**/*.ts",
+    "scripts/lib/model-profiles-core.ts",
     "scripts/lib/branding/**/*.ts",
     "scripts/lib/tui/command-manifest.ts",
     "scripts/lib/tui/navigation.ts",

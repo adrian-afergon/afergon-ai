@@ -23,6 +23,7 @@ describe("TypeScript build output", () => {
     const copiedFormsOutputDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-output.d.mts");
     const copiedFormsStateDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-state.d.mts");
     const copiedActionDefinitionsDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.d.mts");
+    const copiedModelProfilesCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.d.mts");
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
@@ -31,6 +32,7 @@ describe("TypeScript build output", () => {
     const formsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-output.js");
     const formsStateOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-state.js");
     const actionDefinitionsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.js");
+    const modelProfilesCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
@@ -50,6 +52,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedFormsStateDeclarationPath, "utf8")).toContain('export * from "./forms-state.ts"');
     expect(existsSync(copiedActionDefinitionsDeclarationPath)).toBe(true);
     expect(readFileSync(copiedActionDefinitionsDeclarationPath, "utf8")).toContain("./definitions.ts");
+    expect(existsSync(copiedModelProfilesCoreDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).toContain("export declare const SUPPORTED_AGENTS");
+    expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).toContain("export declare function normalizeStoredModel");
+    expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain('export * from "./model-profiles-core.ts"');
+    expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("AGENT_ALIASES");
+    expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("asPlainObject");
     expect(existsSync(copiedModelProfilesDeclarationPath)).toBe(true);
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("loadConfig");
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
@@ -66,6 +74,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(formsStateOutputPath, "utf8")).toContain("export function createFormState");
     expect(existsSync(actionDefinitionsOutputPath)).toBe(true);
     expect(readFileSync(actionDefinitionsOutputPath, "utf8")).toContain("export function createActionDefinition");
+    expect(existsSync(modelProfilesCoreOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesCoreOutputPath, "utf8")).toContain("export function normalizeStoredModel");
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);

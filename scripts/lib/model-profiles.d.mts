@@ -38,6 +38,12 @@ export interface ValidateModelAvailabilityResult {
   warning?: string;
 }
 
+export interface ParsedProviderModel {
+  provider: string;
+  modelId: string;
+  shortModelId: string;
+}
+
 export function getOpenCodeBaseDir(env?: NodeJS.ProcessEnv): string;
 export function getConfigPath(env?: NodeJS.ProcessEnv): string;
 export function getActiveProfile(config: AfergonModelConfig): Record<string, string> | null;
@@ -48,7 +54,15 @@ export function loadConfig(env?: NodeJS.ProcessEnv): {
   exists: boolean;
 };
 
+export function normalizeStoredModel(value: unknown): string | undefined;
+export function parseProviderModel(value: unknown): ParsedProviderModel | null;
+export function suggestCloseModelIds(requestedModelId: unknown, availableModelIds: readonly string[], limit?: number): string[];
+export function normalizeAgentName(input: unknown): string;
+export function normalizeProfileName(input: unknown): string;
 export function resolveAssignments(profile?: Record<string, string>): ResolvedAssignment[];
+export function cloneAssignments<T extends Record<string, unknown>>(assignments?: T): T;
+export function hasDegradedRefreshGuidance(output?: { stdout?: unknown; stderr?: unknown }): boolean;
+export function normalizeRefreshResult(result?: { status?: string; stdout?: unknown; stderr?: unknown; degraded?: unknown } | null): RefreshResult | undefined;
 
 export const SUPPORTED_AGENTS: readonly string[];
 
