@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getConfigurationStatus } from "../scripts/lib/tui/config-status-adapter.mjs";
+import * as configStatusAdapterTypeScript from "../scripts/lib/tui/config-status-adapter.ts";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import * as configurationScreenTypeScript from "../scripts/lib/tui/screens/configuration.ts";
@@ -78,7 +79,58 @@ function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
+function captureBuildArgvBehavior(action, inputProvided, input) {
+  if (typeof action.buildArgv !== "function") {
+    return undefined;
+  }
+
+  try {
+    const value = inputProvided ? action.buildArgv(input) : action.buildArgv();
+    return { outcome: "return", value };
+  } catch (error) {
+    return {
+      outcome: "throw",
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function normalizeInteractiveActions(actions) {
+  return actions.map((action) => ({
+    id: action.id,
+    section: action.section,
+    kind: action.kind,
+    label: action.label,
+    argv: action.argv,
+    cliEquivalent: action.cliEquivalent,
+    confirmLabel: action.confirmLabel,
+    refreshTarget: action.refreshTarget,
+    form: action.form,
+    buildArgvNoArg: captureBuildArgvBehavior(action, false),
+    buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["claude", "pi"] }),
+  }));
+}
+
+function normalizeConfigurationStatus(status) {
+  return {
+    ...status,
+    interactiveActions: normalizeInteractiveActions(status.interactiveActions),
+  };
+}
+
 describe("getConfigurationStatus", () => {
+  it("keeps buildInitCommandArgv in parity with the runtime .mjs module for default, filtered, and all-selected input", () => {
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv()).toEqual(buildCommandArgv("init"));
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude", "invalid", "pi"] })).toEqual(
+      getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1].buildArgv({ selectedIds: ["claude", "invalid", "pi"] }),
+    );
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude", "all", "pi"] })).toEqual(
+      buildCommandArgv("init", ["--all"]),
+    );
+  });
+
   it("reports missing local configuration/install surfaces and exposes only stable CLI actions", () => {
     const tempRoot = makeTempRoot();
     const env = {
@@ -204,6 +256,44 @@ describe("getConfigurationStatus", () => {
         state: "fail",
         detail: expect.stringContaining("models.activeProfile must be a string or null"),
       }),
+    );
+  });
+
+  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for missing project setup", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    expect(normalizeConfigurationStatus(configStatusAdapterTypeScript.getConfigurationStatus({ cwd: tempRoot, env }))).toEqual(
+      normalizeConfigurationStatus(getConfigurationStatus({ cwd: tempRoot, env })),
+    );
+  });
+
+  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for discovered project setup", () => {
+    const tempRoot = makeTempRoot();
+    const home = path.join(tempRoot, "home");
+    const xdgHome = path.join(tempRoot, "xdg");
+    const configDir = path.join(xdgHome, "afergon-ai");
+    const opencodeBaseDir = path.join(xdgHome, "opencode");
+
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "pi");
+    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "claude");
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(configDir, "config.json"),
+      `${JSON.stringify({ version: 1, models: { activeProfile: "default", profiles: { default: {} } } }, null, 2)}\n`,
+    );
+    fs.mkdirSync(path.join(opencodeBaseDir, "agents"), { recursive: true });
+    fs.writeFileSync(path.join(opencodeBaseDir, "opencode.json"), "{}\n");
+    fs.writeFileSync(path.join(opencodeBaseDir, "agents", "afergon-ai.md"), "agent");
+
+    const env = { HOME: home, XDG_CONFIG_HOME: xdgHome };
+
+    expect(normalizeConfigurationStatus(configStatusAdapterTypeScript.getConfigurationStatus({ cwd: tempRoot, env }))).toEqual(
+      normalizeConfigurationStatus(getConfigurationStatus({ cwd: tempRoot, env })),
     );
   });
 });
