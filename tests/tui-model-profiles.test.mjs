@@ -3,8 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import * as modelProfilesAdapterTypeScript from "../scripts/lib/tui/model-profiles-adapter.ts";
 import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
-import { getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
+import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
 import * as modelProfilesScreenTypeScript from "../scripts/lib/tui/screens/model-profiles.ts";
 import { renderModelProfilesScreen } from "../scripts/lib/tui/screens/model-profiles.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
@@ -42,6 +43,10 @@ function createIsolatedModelsEnv(tempRoot) {
 
 function writeModelConfig(env, value) {
   writeJson(path.join(env.AFERGON_AI_CONFIG_DIR, "config.json"), value);
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function createModelsActionExecutor(env) {
@@ -246,6 +251,36 @@ function stripAnsi(text) {
 }
 
 describe("getModelProfilesScreenState", () => {
+  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for browse intents", () => {
+    const browseState = {
+      browse: {
+        focusedProfile: {
+          name: "budget",
+          isCreate: false,
+        },
+      },
+    };
+
+    expect(modelProfilesAdapterTypeScript.NEW_PROFILE_ROW_LABEL).toBe("* New Profile");
+    expect(modelProfilesAdapterTypeScript.getModelProfilesBrowseIntent(browseState, "switch")).toEqual(
+      getModelProfilesBrowseIntent(browseState, "switch"),
+    );
+    expect(modelProfilesAdapterTypeScript.getModelProfilesBrowseIntent(browseState, "delete")).toEqual(
+      getModelProfilesBrowseIntent(browseState, "delete"),
+    );
+    expect(
+      modelProfilesAdapterTypeScript.getModelProfilesBrowseIntent(
+        { browse: { focusedProfile: { name: "* New Profile", isCreate: true } } },
+        "switch",
+      ),
+    ).toEqual(
+      getModelProfilesBrowseIntent(
+        { browse: { focusedProfile: { name: "* New Profile", isCreate: true } } },
+        "switch",
+      ),
+    );
+  });
+
   it("reports missing config with active-profile guidance and the current interactive-state shape", () => {
     const tempRoot = makeTempRoot();
     const env = {
@@ -370,6 +405,114 @@ describe("getModelProfilesScreenState", () => {
     expect(state.summary.detail).toContain("models.activeProfile must be a string or null");
     expect(state.profiles).toEqual([]);
     expect(state.assignments).toEqual([]);
+  });
+
+  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for isolated config state", () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+
+    writeModelConfig(env, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+            "afg-review": "inherit",
+          },
+          fallback: {
+            "afergon-ai": "openai/gpt-5.4",
+          },
+        },
+      },
+    });
+
+    const navigation = {
+      modelProfiles: {
+        mode: "assignments",
+        targetProfileName: "fallback",
+        focusedProfileIndex: 1,
+        focusedAgentIndex: 2,
+        stagedAssignments: {
+          "afg-breakdown": "openai/gpt-4.1",
+        },
+      },
+    };
+
+    expect(
+      modelProfilesAdapterTypeScript.getModelProfilesScreenState({
+        cwd: tempRoot,
+        env,
+        navigation,
+      }),
+    ).toEqual(
+      getModelProfilesScreenState({
+        cwd: tempRoot,
+        env,
+        navigation,
+      }),
+    );
+  });
+
+  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for assignment saves", async () => {
+    const initialConfig = {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    };
+
+    const typeScriptRoot = makeTempRoot();
+    const runtimeRoot = makeTempRoot();
+    const typeScriptEnv = createIsolatedModelsEnv(typeScriptRoot);
+    const runtimeEnv = createIsolatedModelsEnv(runtimeRoot);
+
+    writeModelConfig(typeScriptEnv, cloneJson(initialConfig));
+    writeModelConfig(runtimeEnv, cloneJson(initialConfig));
+
+    const createOptions = (env) => ({
+      env,
+      refreshActiveProfile: () => ({
+        stdout: "refresh complete",
+        stderr: "",
+      }),
+      validateModelAvailability: () => ({
+        status: "known",
+        availableModels: ["openai/gpt-4.1"],
+      }),
+    });
+
+    const typeScriptResult = await Promise.resolve(
+      modelProfilesAdapterTypeScript.saveAssignmentsForProfile(
+        "budget",
+        { "afg-review": "openai/gpt-4.1" },
+        createOptions(typeScriptEnv),
+      ),
+    );
+
+    const runtimeResult = await Promise.resolve(
+      saveAssignmentsForProfile(
+        "budget",
+        { "afg-review": "openai/gpt-4.1" },
+        createOptions(runtimeEnv),
+      ),
+    );
+
+    expect({
+      ...typeScriptResult,
+      configPath: path.basename(typeScriptResult.configPath),
+    }).toEqual({
+      ...runtimeResult,
+      configPath: path.basename(runtimeResult.configPath),
+    });
+    expect(readJson(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"))).toEqual(
+      readJson(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json")),
+    );
   });
 });
 
