@@ -384,6 +384,70 @@ describe("action definitions TypeScript parity", () => {
 });
 
 describe("sanitizeTerminalOutput", () => {
+  it("keeps the extracted forms-output runtime module aligned with the legacy forms.mjs helpers", async () => {
+    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-output.mjs");
+
+    expect(runtimeExtracted.sanitizeTerminalOutput("safe\n\u009b31mred\u009b0m\n")).toBe(
+      sanitizeTerminalOutput("safe\n\u009b31mred\u009b0m\n"),
+    );
+    expect(runtimeExtracted.getOutputLines({
+      action: { label: "Run doctor", cliEquivalent: "afergon-ai doctor --opencode" },
+      result: {
+        ok: false,
+        timedOut: true,
+        stdout: "alpha\nbeta\n",
+        stderr: "warn\n",
+        stdoutTruncated: false,
+        stderrTruncated: false,
+      },
+    }, {
+      maxOutputLines: 7,
+      maxOutputBytes: 80,
+    })).toEqual(getOutputLines({
+      action: { label: "Run doctor", cliEquivalent: "afergon-ai doctor --opencode" },
+      result: {
+        ok: false,
+        timedOut: true,
+        stdout: "alpha\nbeta\n",
+        stderr: "warn\n",
+        stdoutTruncated: false,
+        stderrTruncated: false,
+      },
+    }, {
+      maxOutputLines: 7,
+      maxOutputBytes: 80,
+    }));
+  });
+
+  it("keeps the extracted forms-output TypeScript mirror in parity with the runtime module", async () => {
+    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-output.mjs");
+    const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-output.ts");
+
+    for (const value of ["", "safe\n\u009b31mred\u009b0m\n\u009d2;owned\u0007tail\u0085done\n", 42, null]) {
+      expect(typeScriptExtracted.sanitizeTerminalOutput(value)).toBe(runtimeExtracted.sanitizeTerminalOutput(value));
+    }
+
+    const exactBoundaryOutputState = {
+      action: { label: "Run doctor", cliEquivalent: "afergon-ai doctor --opencode" },
+      result: {
+        ok: true,
+        timedOut: false,
+        stdout: "one\ntwo\n",
+        stderr: "12345678",
+        stdoutTruncated: false,
+        stderrTruncated: false,
+      },
+    };
+
+    expect(typeScriptExtracted.getOutputLines(exactBoundaryOutputState, {
+      maxOutputLines: 8,
+      maxOutputBytes: 8,
+    })).toEqual(runtimeExtracted.getOutputLines(exactBoundaryOutputState, {
+      maxOutputLines: 8,
+      maxOutputBytes: 8,
+    }));
+  });
+
   it("removes C1 control sequences while preserving printable text and newlines", () => {
     expect(sanitizeTerminalOutput("safe\n\u009b31mred\u009b0m\n\u009d2;owned\u0007tail\u0085done\n")).toBe("safe\nred\ntail?done\n");
   });
