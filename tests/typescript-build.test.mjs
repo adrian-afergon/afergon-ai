@@ -50,6 +50,7 @@ describe("TypeScript build output", () => {
     const modelProfilesCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.js");
     const modelProfilesSaveOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-save.js");
     const modelProfilesHostSeedingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js");
+    const modelProfilesOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
@@ -95,6 +96,7 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("loadConfig");
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("readOpenCodeAgentModels");
     expect(existsSync(copiedModelProfilesRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesRuntimePath, "utf8")).toContain('./model-profiles-core.mjs');
     expect(readFileSync(copiedModelProfilesRuntimePath, "utf8")).toContain('./model-profiles-save.mjs');
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
@@ -120,6 +122,9 @@ describe("TypeScript build output", () => {
     expect(readFileSync(modelProfilesSaveOutputPath, "utf8")).toContain("export function saveProfileAssignments");
     expect(existsSync(modelProfilesHostSeedingOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesHostSeedingOutputPath, "utf8")).toContain("export function readOpenCodeAgentModels");
+    expect(existsSync(modelProfilesOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesOutputPath, "utf8")).toContain('from "./model-profiles-core.js"');
+    expect(readFileSync(modelProfilesOutputPath, "utf8")).toContain('from "./model-profiles-save.js"');
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);

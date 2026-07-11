@@ -185,6 +185,46 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("exports only the intended public model profile facade helpers", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
+    const expectedExports = [
+      "SUPPORTED_AGENTS",
+      "cloneAssignments",
+      "createDefaultConfig",
+      "ensureActiveProfile",
+      "getActiveProfile",
+      "getConfigDir",
+      "getConfigPath",
+      "getOpenCodeBaseDir",
+      "hasDegradedRefreshGuidance",
+      "listOpenCodeProviderModels",
+      "loadConfig",
+      "normalizeAgentName",
+      "normalizeProfileName",
+      "normalizeRefreshResult",
+      "normalizeStoredModel",
+      "parseProviderModel",
+      "readOpenCodeAgentModels",
+      "resolveAssignments",
+      "saveConfig",
+      "saveProfileAssignments",
+      "suggestCloseModelIds",
+      "validateModelAvailability",
+    ];
+
+    expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the TypeScript model profile facade export surface in parity with the runtime facade", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
+
+    expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(Object.keys(modelProfilesRuntime).sort());
+    expect(modelProfilesTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesRuntime.SUPPORTED_AGENTS);
+  });
+
   it("exports only the intended public model profile config helpers", async () => {
     const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
