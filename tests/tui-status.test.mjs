@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
+import * as configStatusAdapterTypeScript from "../scripts/lib/tui/config-status-adapter.ts";
 import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
 import * as statusScreenTypeScript from "../scripts/lib/tui/screens/status.ts";
 import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
@@ -81,6 +82,47 @@ async function flushTui() {
 
 function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
+function captureBuildArgvBehavior(action, inputProvided, input) {
+  if (typeof action.buildArgv !== "function") {
+    return undefined;
+  }
+
+  try {
+    const value = inputProvided ? action.buildArgv(input) : action.buildArgv();
+    return { outcome: "return", value };
+  } catch (error) {
+    return {
+      outcome: "throw",
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function normalizeInteractiveActions(actions) {
+  return actions.map((action) => ({
+    id: action.id,
+    section: action.section,
+    kind: action.kind,
+    label: action.label,
+    argv: action.argv,
+    cliEquivalent: action.cliEquivalent,
+    confirmLabel: action.confirmLabel,
+    refreshTarget: action.refreshTarget,
+    form: action.form,
+    buildArgvNoArg: captureBuildArgvBehavior(action, false),
+    buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["claude", "pi"] }),
+  }));
+}
+
+function normalizeStatusScreenState(status) {
+  return {
+    ...status,
+    interactiveActions: normalizeInteractiveActions(status.interactiveActions),
+  };
 }
 
 describe("getStatusScreenState", () => {
@@ -216,6 +258,36 @@ describe("getStatusScreenState", () => {
         state: "fail",
         detail: expect.stringContaining("afergon-ai models show"),
       }),
+    );
+  });
+
+  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for readiness warnings", () => {
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    expect(normalizeStatusScreenState(configStatusAdapterTypeScript.getStatusScreenState({ cwd: tempRoot, env }))).toEqual(
+      normalizeStatusScreenState(getStatusScreenState({ cwd: tempRoot, env })),
+    );
+  });
+
+  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for readiness failures", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const configDir = path.join(xdgHome, "afergon-ai");
+
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), "{ invalid json\n");
+
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    expect(normalizeStatusScreenState(configStatusAdapterTypeScript.getStatusScreenState({ cwd: tempRoot, env }))).toEqual(
+      normalizeStatusScreenState(getStatusScreenState({ cwd: tempRoot, env })),
     );
   });
 });

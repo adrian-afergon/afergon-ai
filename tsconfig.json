@@ -13,6 +13,7 @@
     "scripts/lib/branding/**/*.ts",
     "scripts/lib/tui/command-manifest.ts",
     "scripts/lib/tui/navigation.ts",
+    "scripts/lib/tui/config-status-adapter.ts",
     "scripts/lib/tui/actions/definitions.ts",
     "scripts/lib/tui/actions/runner.ts",
     "scripts/lib/tui/screens/configuration.ts",

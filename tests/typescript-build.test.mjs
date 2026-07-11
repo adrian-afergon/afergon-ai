@@ -19,8 +19,11 @@ describe("TypeScript build output", () => {
     const startupBannerDeclarationPath = path.join(repoRoot, "dist", "extensions", "startup-banner.d.ts");
     const copiedBrandingDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "branding", "logo.d.mts");
     const copiedFormsDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms.d.mts");
+    const copiedActionDefinitionsDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.d.mts");
+    const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const actionDefinitionsOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "definitions.js");
+    const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -30,10 +33,16 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedBrandingDeclarationPath, "utf8")).toContain("export const BRANDING_LOGO");
     expect(existsSync(copiedFormsDeclarationPath)).toBe(true);
     expect(readFileSync(copiedFormsDeclarationPath, "utf8")).toContain("sanitizeTerminalOutput");
+    expect(existsSync(copiedActionDefinitionsDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedActionDefinitionsDeclarationPath, "utf8")).toContain("./definitions.ts");
+    expect(existsSync(copiedModelProfilesDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("loadConfig");
     expect(existsSync(actionRunnerOutputPath)).toBe(true);
     expect(readFileSync(actionRunnerOutputPath, "utf8")).toContain("export function runActionCommand");
     expect(existsSync(actionDefinitionsOutputPath)).toBe(true);
     expect(readFileSync(actionDefinitionsOutputPath, "utf8")).toContain("export function createActionDefinition");
+    expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
+    expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);
