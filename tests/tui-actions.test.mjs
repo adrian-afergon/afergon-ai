@@ -8,7 +8,14 @@ import {
   formatActionCliEquivalent as formatActionCliEquivalentRuntime,
   resolveActionArgv as resolveActionArgvRuntime,
 } from "../scripts/lib/tui/actions/definitions.mjs";
-import { getOutputLines, sanitizeTerminalOutput } from "../scripts/lib/tui/actions/forms.mjs";
+import {
+  appendConfirmationCharacter,
+  backspaceConfirmationCharacter,
+  createConfirmationState,
+  getOutputLines,
+  sanitizeTerminalOutput,
+  validateConfirmationState,
+} from "../scripts/lib/tui/actions/forms.mjs";
 import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import { createTuiApp } from "../scripts/tui.mjs";
@@ -384,6 +391,84 @@ describe("action definitions TypeScript parity", () => {
 });
 
 describe("sanitizeTerminalOutput", () => {
+  it("keeps the extracted confirmation runtime module aligned with the legacy forms.mjs helpers", async () => {
+    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.mjs");
+    const action = {
+      id: "remove-profile",
+      confirmation: {
+        kind: "typed-match",
+        expectedText: "danger\n\u009b31mprofile\u009b0m",
+        mismatchMessage: "Type the selected profile name to continue.",
+      },
+    };
+
+    expect(runtimeExtracted.createConfirmationState({ action })).toEqual(createConfirmationState({ action }));
+
+    const editedState = appendConfirmationCharacter(
+      appendConfirmationCharacter(createConfirmationState({ action }), "d"),
+      "a",
+    );
+
+    expect(runtimeExtracted.backspaceConfirmationCharacter(editedState)).toEqual(
+      backspaceConfirmationCharacter(editedState),
+    );
+    expect(runtimeExtracted.validateConfirmationState({
+      ...editedState,
+      value: "danger\nprofile",
+    })).toEqual(validateConfirmationState({
+      ...editedState,
+      value: "danger\nprofile",
+    }));
+  });
+
+  it("keeps the extracted confirmation TypeScript mirror in parity with the runtime module", async () => {
+    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.mjs");
+    const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.ts");
+    const action = {
+      id: "remove-profile",
+      confirmation: {
+        kind: "typed-match",
+        expectedText: "danger\n\u009b31mprofile\u009b0m",
+      },
+    };
+    const initialState = runtimeExtracted.createConfirmationState({ action });
+
+    expect(typeScriptExtracted.createConfirmationState({ action })).toEqual(initialState);
+    expect(typeScriptExtracted.appendConfirmationCharacter(initialState, "x")).toEqual(
+      runtimeExtracted.appendConfirmationCharacter(initialState, "x"),
+    );
+
+    const dirtyState = {
+      ...initialState,
+      value: "danger\nprofile",
+      validationMessage: "previous error",
+    };
+
+    expect(typeScriptExtracted.backspaceConfirmationCharacter(dirtyState)).toEqual(
+      runtimeExtracted.backspaceConfirmationCharacter(dirtyState),
+    );
+    expect(typeScriptExtracted.validateConfirmationState(dirtyState)).toEqual(
+      runtimeExtracted.validateConfirmationState(dirtyState),
+    );
+    expect(typeScriptExtracted.validateConfirmationState({
+      ...dirtyState,
+      value: "danger\nother",
+      confirmation: {
+        kind: "typed-match",
+        expectedText: "danger\n\u009b31mprofile\u009b0m",
+        mismatchMessage: "Type the selected profile name to continue.",
+      },
+    })).toEqual(runtimeExtracted.validateConfirmationState({
+      ...dirtyState,
+      value: "danger\nother",
+      confirmation: {
+        kind: "typed-match",
+        expectedText: "danger\n\u009b31mprofile\u009b0m",
+        mismatchMessage: "Type the selected profile name to continue.",
+      },
+    }));
+  });
+
   it("keeps the extracted forms-output runtime module aligned with the legacy forms.mjs helpers", async () => {
     const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-output.mjs");
 
@@ -480,6 +565,56 @@ describe("sanitizeTerminalOutput", () => {
       "",
       "Press Enter or Esc to close this output panel.",
     ]);
+  });
+
+  it("sanitizes typed-match confirmations and clears validation state while editing", () => {
+    const action = {
+      id: "remove-profile",
+      confirmation: {
+        kind: "typed-match",
+        expectedText: "danger\n\u009b31mprofile\u009b0m",
+        mismatchMessage: "Type the selected profile name to continue.",
+      },
+    };
+
+    const initialState = createConfirmationState({ action });
+    const editedState = appendConfirmationCharacter(
+      appendConfirmationCharacter(
+        {
+          ...initialState,
+          validationMessage: "previous error",
+        },
+        "d",
+      ),
+      "a",
+    );
+
+    expect(editedState).toEqual({
+      ...initialState,
+      value: "da",
+      validationMessage: "",
+    });
+
+    const backspacedState = backspaceConfirmationCharacter({
+      ...editedState,
+      value: "danger\nprofileX",
+      validationMessage: "another error",
+    });
+
+    expect(backspacedState).toEqual({
+      ...initialState,
+      value: "danger\nprofile",
+      validationMessage: "",
+    });
+
+    expect(validateConfirmationState(backspacedState)).toEqual({ ok: true });
+    expect(validateConfirmationState({
+      ...initialState,
+      value: "danger\nother",
+    })).toEqual({
+      ok: false,
+      message: "Type the selected profile name to continue.",
+    });
   });
 });
 
