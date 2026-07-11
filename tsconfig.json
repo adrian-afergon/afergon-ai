@@ -18,6 +18,7 @@
     "scripts/lib/tui/actions/definitions.ts",
     "scripts/lib/tui/actions/forms-confirmation.ts",
     "scripts/lib/tui/actions/forms-output.ts",
+    "scripts/lib/tui/actions/forms-state.ts",
     "scripts/lib/tui/actions/runner.ts",
     "scripts/lib/tui/screens/configuration.ts",
     "scripts/lib/tui/screens/model-profiles.ts",

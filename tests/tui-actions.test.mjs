@@ -10,11 +10,23 @@ import {
 } from "../scripts/lib/tui/actions/definitions.mjs";
 import {
   appendConfirmationCharacter,
+  appendFormCharacter,
+  backspaceFormCharacter,
   backspaceConfirmationCharacter,
+  changeFormValue,
+  createCheckboxFormState,
   createConfirmationState,
+  createFormState,
+  getCheckboxFormSubmitState,
+  getFormInput,
+  getFormSubmitState,
   getOutputLines,
+  moveCheckboxFormSelection,
+  moveFormSelection,
   sanitizeTerminalOutput,
+  toggleCheckboxFormSelection,
   validateConfirmationState,
+  validateFormInput,
 } from "../scripts/lib/tui/actions/forms.mjs";
 import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
@@ -531,6 +543,408 @@ describe("sanitizeTerminalOutput", () => {
       maxOutputLines: 8,
       maxOutputBytes: 8,
     }));
+  });
+
+  it("keeps the extracted forms-state TypeScript mirror in parity with the runtime module", async () => {
+    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-state.mjs");
+    const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-state.ts");
+    const checkboxAction = {
+      id: "configuration-init",
+      form: {
+        kind: "checkboxes",
+        options: [
+          { id: "all", label: "All" },
+          { id: "pi", label: "Pi" },
+          { id: "opencode", label: "OpenCode" },
+        ],
+      },
+    };
+    const checkboxState = runtimeExtracted.createFormState({ action: checkboxAction });
+
+    expect(typeScriptExtracted.createFormState({ action: checkboxAction })).toEqual(checkboxState);
+    expect(typeScriptExtracted.moveFormSelection({ ...checkboxState, validationMessage: "old" }, -1)).toEqual(
+      runtimeExtracted.moveFormSelection({ ...checkboxState, validationMessage: "old" }, -1),
+    );
+    expect(typeScriptExtracted.toggleCheckboxFormSelection({
+      ...checkboxState,
+      activeIndex: 1,
+      validationMessage: "old",
+    })).toEqual(runtimeExtracted.toggleCheckboxFormSelection({
+      ...checkboxState,
+      activeIndex: 1,
+      validationMessage: "old",
+    }));
+    expect(typeScriptExtracted.getFormSubmitState({ ...checkboxState, activeIndex: 3 })).toEqual(
+      runtimeExtracted.getFormSubmitState({ ...checkboxState, activeIndex: 3 }),
+    );
+    expect(typeScriptExtracted.getFormInput({ ...checkboxState, selectedIds: ["pi", "opencode"] })).toEqual(
+      runtimeExtracted.getFormInput({ ...checkboxState, selectedIds: ["pi", "opencode"] }),
+    );
+
+    const fieldsAction = {
+      id: "remove-profile",
+      form: {
+        kind: "fields",
+        fields: [
+          { id: "profileName", label: "Profile name", type: "text", required: true },
+          {
+            id: "confirmName",
+            label: "Confirm profile name",
+            type: "text",
+            matchesSanitizedFieldId: "profileName",
+            mismatchMessage: "Type the selected profile name to continue.",
+          },
+          { id: "applyEverywhere", label: "Apply everywhere", type: "toggle", initialValue: true },
+          {
+            id: "adapter",
+            label: "Adapter",
+            type: "picker",
+            options: [{ id: "claude", label: "Claude" }, { id: "gemini", label: "Gemini" }],
+          },
+        ],
+      },
+    };
+    const fieldsState = runtimeExtracted.createFormState({ action: fieldsAction });
+
+    expect(typeScriptExtracted.changeFormValue({ ...fieldsState, activeIndex: 2, validationMessage: "old" }, 1)).toEqual(
+      runtimeExtracted.changeFormValue({ ...fieldsState, activeIndex: 2, validationMessage: "old" }, 1),
+    );
+    expect(typeScriptExtracted.changeFormValue({ ...fieldsState, activeIndex: 3, validationMessage: "old" }, -1)).toEqual(
+      runtimeExtracted.changeFormValue({ ...fieldsState, activeIndex: 3, validationMessage: "old" }, -1),
+    );
+    expect(typeScriptExtracted.appendFormCharacter({ ...fieldsState, validationMessage: "old" }, "A")).toEqual(
+      runtimeExtracted.appendFormCharacter({ ...fieldsState, validationMessage: "old" }, "A"),
+    );
+    expect(typeScriptExtracted.backspaceFormCharacter({
+      ...fieldsState,
+      values: { ...fieldsState.values, profileName: "Alice" },
+      validationMessage: "old",
+    })).toEqual(runtimeExtracted.backspaceFormCharacter({
+      ...fieldsState,
+      values: { ...fieldsState.values, profileName: "Alice" },
+      validationMessage: "old",
+    }));
+    expect(typeScriptExtracted.validateFormInput({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "\u009b31mAlice\u009b0m",
+        confirmName: "Alice",
+      },
+    })).toEqual(runtimeExtracted.validateFormInput({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "\u009b31mAlice\u009b0m",
+        confirmName: "Alice",
+      },
+    }));
+
+    const omittedTypeAction = {
+      id: "omitted-type",
+      form: {
+        kind: "fields",
+        fields: [
+          {
+            id: "implicitText",
+            label: "Implicit text",
+            initialValue: "seed",
+            required: true,
+            matchesSanitizedFieldId: "explicitText",
+          },
+          {
+            id: "explicitText",
+            label: "Explicit text",
+            type: "text",
+            initialValue: "reference",
+          },
+        ],
+      },
+    };
+    const omittedTypeState = runtimeExtracted.createFormState({ action: omittedTypeAction });
+
+    expect(typeScriptExtracted.createFormState({ action: omittedTypeAction })).toEqual(omittedTypeState);
+    expect(typeScriptExtracted.appendFormCharacter({ ...omittedTypeState, validationMessage: "old" }, "A")).toEqual(
+      runtimeExtracted.appendFormCharacter({ ...omittedTypeState, validationMessage: "old" }, "A"),
+    );
+    expect(typeScriptExtracted.backspaceFormCharacter({
+      ...omittedTypeState,
+      values: { ...omittedTypeState.values, implicitText: "value" },
+      validationMessage: "old",
+    })).toEqual(runtimeExtracted.backspaceFormCharacter({
+      ...omittedTypeState,
+      values: { ...omittedTypeState.values, implicitText: "value" },
+      validationMessage: "old",
+    }));
+    expect(typeScriptExtracted.validateFormInput({
+      ...omittedTypeState,
+      values: { ...omittedTypeState.values, implicitText: "", explicitText: "reference" },
+    })).toEqual(runtimeExtracted.validateFormInput({
+      ...omittedTypeState,
+      values: { ...omittedTypeState.values, implicitText: "", explicitText: "reference" },
+    }));
+
+    const nonStringInitialValueAction = {
+      id: "non-string-initial-value",
+      form: {
+        kind: "fields",
+        fields: [
+          {
+            id: "profileName",
+            label: "Profile name",
+            type: "text",
+            initialValue: 42,
+          },
+        ],
+      },
+    };
+    const nonStringInitialValueState = runtimeExtracted.createFormState({ action: nonStringInitialValueAction });
+
+    expect(typeScriptExtracted.createFormState({ action: nonStringInitialValueAction })).toEqual(nonStringInitialValueState);
+    expect(typeScriptExtracted.appendFormCharacter({ ...nonStringInitialValueState, validationMessage: "old" }, "A")).toEqual(
+      runtimeExtracted.appendFormCharacter({ ...nonStringInitialValueState, validationMessage: "old" }, "A"),
+    );
+    expect(typeScriptExtracted.backspaceFormCharacter({ ...nonStringInitialValueState, validationMessage: "old" })).toEqual(
+      runtimeExtracted.backspaceFormCharacter({ ...nonStringInitialValueState, validationMessage: "old" }),
+    );
+  });
+
+  it("creates and updates checkbox form state while clearing validation noise", () => {
+    const action = {
+      id: "configuration-init",
+      form: {
+        kind: "checkboxes",
+        options: [
+          { id: "all", label: "All" },
+          { id: "pi", label: "Pi" },
+          { id: "opencode", label: "OpenCode" },
+        ],
+      },
+    };
+
+    const initialState = createCheckboxFormState({ action });
+    expect(initialState).toEqual({
+      kind: "form",
+      formKind: "checkboxes",
+      actionId: "configuration-init",
+      action,
+      activeIndex: 0,
+      selectedIds: ["all"],
+      validationMessage: "",
+    });
+    expect(createFormState({ action })).toEqual(initialState);
+
+    const wrappedState = moveCheckboxFormSelection({
+      ...initialState,
+      validationMessage: "Choose at least one option.",
+    }, -1);
+    expect(wrappedState).toEqual({
+      ...initialState,
+      activeIndex: 4,
+      validationMessage: "",
+    });
+    expect(moveFormSelection({ ...initialState, validationMessage: "old" }, 1)).toEqual({
+      ...initialState,
+      activeIndex: 1,
+      validationMessage: "",
+    });
+
+    const selectedSpecific = toggleCheckboxFormSelection({
+      ...initialState,
+      activeIndex: 1,
+      validationMessage: "old",
+    });
+    expect(selectedSpecific).toEqual({
+      ...initialState,
+      activeIndex: 1,
+      selectedIds: ["pi"],
+      validationMessage: "",
+    });
+    expect(toggleCheckboxFormSelection({
+      ...selectedSpecific,
+      activeIndex: 1,
+    })).toEqual({
+      ...selectedSpecific,
+      activeIndex: 1,
+      selectedIds: [],
+      validationMessage: "",
+    });
+    expect(toggleCheckboxFormSelection({
+      ...selectedSpecific,
+      activeIndex: 0,
+    })).toEqual({
+      ...selectedSpecific,
+      activeIndex: 0,
+      selectedIds: ["all"],
+      validationMessage: "",
+    });
+    const missingCheckboxOptionState = { ...initialState, activeIndex: 9 };
+    expect(toggleCheckboxFormSelection(missingCheckboxOptionState)).toBe(missingCheckboxOptionState);
+    expect(getCheckboxFormSubmitState({ ...initialState, activeIndex: 3 })).toEqual({ isSubmit: true, isCancel: false });
+    expect(getCheckboxFormSubmitState({ ...initialState, activeIndex: 4 })).toEqual({ isSubmit: false, isCancel: true });
+    expect(getFormSubmitState({ ...initialState, activeIndex: 4 })).toEqual({ isSubmit: false, isCancel: true });
+    expect(getFormInput({ ...selectedSpecific, selectedIds: ["pi", "opencode"] })).toEqual({
+      selectedIds: ["pi", "opencode"],
+    });
+  });
+
+  it("handles picker and field form state navigation, editing, and validation", () => {
+    const pickerAction = {
+      id: "models-picker",
+      form: {
+        kind: "picker",
+        options: [{ id: "claude", label: "Claude" }, { id: "gemini", label: "Gemini" }],
+      },
+    };
+    const pickerState = createFormState({ action: pickerAction });
+
+    expect(pickerState).toEqual({
+      kind: "form",
+      formKind: "picker",
+      actionId: "models-picker",
+      action: pickerAction,
+      activeIndex: 0,
+      selectedId: "claude",
+      validationMessage: "",
+    });
+    expect(moveFormSelection({ ...pickerState, validationMessage: "old" }, -1)).toEqual({
+      ...pickerState,
+      activeIndex: 2,
+      validationMessage: "",
+    });
+    expect(getFormSubmitState({ ...pickerState, activeIndex: 1 })).toEqual({ isSubmit: true, isCancel: false });
+    expect(getFormSubmitState({ ...pickerState, activeIndex: 2 })).toEqual({ isSubmit: false, isCancel: true });
+    expect(getFormInput({ ...pickerState, activeIndex: 1 })).toEqual({ selectedId: "gemini" });
+    expect(getFormInput({ ...pickerState, activeIndex: 9 })).toEqual({ selectedId: "claude" });
+
+    const fieldsAction = {
+      id: "remove-profile",
+      form: {
+        kind: "fields",
+        fields: [
+          { id: "profileName", label: "Profile name", type: "text", required: true, requiredMessage: "Profile name is required." },
+          {
+            id: "confirmName",
+            label: "Confirm profile name",
+            type: "text",
+            matchesSanitizedFieldId: "profileName",
+            mismatchMessage: "Type the selected profile name to continue.",
+          },
+          { id: "applyEverywhere", label: "Apply everywhere", type: "toggle", initialValue: true },
+          {
+            id: "adapter",
+            label: "Adapter",
+            type: "picker",
+            options: [{ id: "claude", label: "Claude" }, { id: "gemini", label: "Gemini" }],
+          },
+        ],
+      },
+    };
+    const fieldsState = createFormState({ action: fieldsAction });
+
+    expect(fieldsState).toEqual({
+      kind: "form",
+      formKind: "fields",
+      actionId: "remove-profile",
+      action: fieldsAction,
+      activeIndex: 0,
+      values: {
+        profileName: "",
+        confirmName: "",
+        applyEverywhere: true,
+        adapter: "claude",
+      },
+      validationMessage: "",
+    });
+    expect(moveFormSelection({ ...fieldsState, validationMessage: "old" }, -1).activeIndex).toBe(5);
+    expect(changeFormValue({ ...fieldsState, activeIndex: 2, validationMessage: "old" }, 1)).toEqual({
+      ...fieldsState,
+      activeIndex: 2,
+      values: {
+        ...fieldsState.values,
+        applyEverywhere: false,
+      },
+      validationMessage: "",
+    });
+    expect(changeFormValue({ ...fieldsState, activeIndex: 3, validationMessage: "old" }, -1)).toEqual({
+      ...fieldsState,
+      activeIndex: 3,
+      values: {
+        ...fieldsState.values,
+        adapter: "gemini",
+      },
+      validationMessage: "",
+    });
+    const inactiveTextFieldState = { ...fieldsState, activeIndex: 0 };
+    expect(changeFormValue(inactiveTextFieldState, 1)).toBe(inactiveTextFieldState);
+
+    const appended = appendFormCharacter({ ...fieldsState, validationMessage: "old" }, "A");
+    expect(appended).toEqual({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "A",
+      },
+      validationMessage: "",
+    });
+    expect(backspaceFormCharacter({
+      ...appended,
+      values: {
+        ...appended.values,
+        profileName: "Alice",
+      },
+      validationMessage: "old",
+    })).toEqual({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "Alic",
+      },
+      validationMessage: "",
+    });
+    const toggleFieldState = { ...fieldsState, activeIndex: 2 };
+    expect(appendFormCharacter(toggleFieldState, "A")).toBe(toggleFieldState);
+    expect(backspaceFormCharacter(toggleFieldState)).toBe(toggleFieldState);
+
+    expect(validateFormInput(fieldsState)).toEqual({
+      ok: false,
+      message: "Profile name is required.",
+      activeIndex: 0,
+    });
+    expect(validateFormInput({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "\u009b31mAlice\u009b0m",
+        confirmName: "Alice",
+      },
+    })).toEqual({
+      ok: true,
+      input: {
+        profileName: "\u009b31mAlice\u009b0m",
+        confirmName: "Alice",
+        applyEverywhere: true,
+        adapter: "claude",
+      },
+    });
+    expect(validateFormInput({
+      ...fieldsState,
+      values: {
+        ...fieldsState.values,
+        profileName: "Alice",
+        confirmName: "Bob",
+      },
+    })).toEqual({
+      ok: false,
+      message: "Type the selected profile name to continue.",
+      activeIndex: 1,
+    });
+    expect(getFormSubmitState({ ...fieldsState, activeIndex: 4 })).toEqual({ isSubmit: true, isCancel: false });
+    expect(getFormSubmitState({ ...fieldsState, activeIndex: 5 })).toEqual({ isSubmit: false, isCancel: true });
+    expect(getFormInput(fieldsState)).toEqual(fieldsState.values);
+    expect(() => createFormState({ action: { id: "bad", form: { kind: "wizard" } } })).toThrow(
+      "Unsupported form kind: wizard",
+    );
   });
 
   it("removes C1 control sequences while preserving printable text and newlines", () => {
