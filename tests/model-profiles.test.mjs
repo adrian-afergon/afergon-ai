@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -837,6 +838,80 @@ describe("agent aliases", () => {
 });
 
 describe("models CLI behavior", () => {
+  it("exports only the intended public models CLI core helpers", async () => {
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
+    const expectedExports = [
+      "createRefreshResult",
+      "createRegistrationEnv",
+      "formatEffective",
+      "formatUnknownModelError",
+      "getOpenCodeRefreshTimeoutMs",
+      "getProfileOrThrow",
+      "isDirectExecution",
+      "parseSetCommandArguments",
+      "printHelp",
+    ];
+
+    expect(Object.keys(typeScriptCore).sort()).toEqual(expectedExports);
+    expect(Object.keys(runtimeCore).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the TypeScript models CLI core mirror in parity with the runtime module", async () => {
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
+    const moduleUrl = new URL("../scripts/models.mjs", import.meta.url);
+    const config = {
+      models: {
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: {},
+        },
+      },
+    };
+    const validEnv = {
+      AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "250",
+      AFERGON_AI_CONFIG_DIR: "./config",
+      XDG_CONFIG_HOME: "./xdg",
+    };
+    const invalidEnv = { AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "0" };
+    const capturedTypeScriptHelp = [];
+    const capturedRuntimeHelp = [];
+
+    expect(typeScriptCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
+    expect(runtimeCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
+    expect(typeScriptCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
+    expect(runtimeCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
+    expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(validEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(validEnv));
+    expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(invalidEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(invalidEnv));
+    expect(typeScriptCore.createRegistrationEnv(validEnv)).toEqual(runtimeCore.createRegistrationEnv(validEnv));
+    expect(typeScriptCore.createRefreshResult({ status: "clean", stdout: " warning " })).toEqual(
+      runtimeCore.createRefreshResult({ status: "clean", stdout: " warning " }),
+    );
+    expect(typeScriptCore.formatUnknownModelError("openai/gpt-5.6", "openai", ["openai/gpt-5.5"])).toBe(
+      runtimeCore.formatUnknownModelError("openai/gpt-5.6", "openai", ["openai/gpt-5.5"]),
+    );
+    expect(typeScriptCore.formatUnknownModelError("local/custom", "local", [])).toBe(
+      runtimeCore.formatUnknownModelError("local/custom", "local", []),
+    );
+    expect(typeScriptCore.formatEffective({ effective: null })).toBe(runtimeCore.formatEffective({ effective: null }));
+    expect(typeScriptCore.formatEffective({ effective: "openai/gpt-5.5" })).toBe(
+      runtimeCore.formatEffective({ effective: "openai/gpt-5.5" }),
+    );
+    expect(typeScriptCore.getProfileOrThrow(config, "budget")).toEqual(runtimeCore.getProfileOrThrow(config, "budget"));
+    expect(() => typeScriptCore.getProfileOrThrow(config, "missing")).toThrow("Unknown profile 'missing'.");
+    expect(() => runtimeCore.getProfileOrThrow(config, "missing")).toThrow("Unknown profile 'missing'.");
+    expect(typeScriptCore.parseSetCommandArguments(["--allow-unknown", "review", "openai/gpt-5.5"])).toEqual(
+      runtimeCore.parseSetCommandArguments(["--allow-unknown", "review", "openai/gpt-5.5"]),
+    );
+    expect(() => typeScriptCore.parseSetCommandArguments(["review"])).toThrow("Usage: afergon-ai models set");
+    expect(() => runtimeCore.parseSetCommandArguments(["review"])).toThrow("Usage: afergon-ai models set");
+
+    typeScriptCore.printHelp((line) => capturedTypeScriptHelp.push(line));
+    runtimeCore.printHelp((line) => capturedRuntimeHelp.push(line));
+    expect(capturedTypeScriptHelp).toEqual(capturedRuntimeHelp);
+  });
+
   it("writes afergon-ai config atomically without leaving a temp file", () => {
     const tempRoot = makeTempRoot();
     const configDir = path.join(tempRoot, "config");
@@ -1075,6 +1150,36 @@ describe("models CLI behavior", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
+  });
+
+  it("preserves the models wrapper export contract and callable adapter helpers", async () => {
+    const modelsWrapper = await import("../scripts/models.mjs");
+    const refreshResult = {
+      status: "degraded",
+      stdout: "Saved config.",
+      stderr: "Refresh skipped.",
+    };
+    const logged = [];
+    const warned = [];
+    const tempRoot = makeTempRoot();
+
+    expect(Object.keys(modelsWrapper).sort()).toEqual(["reapplySupportedAdapters", "reportAdapterRefreshResult"]);
+    expect(modelsWrapper.reportAdapterRefreshResult()).toBeUndefined();
+    expect(modelsWrapper.reportAdapterRefreshResult(refreshResult, {
+      log: (message) => logged.push(message),
+      warn: (message) => warned.push(message),
+    })).toBe(refreshResult);
+    expect(logged).toEqual(["Saved config."]);
+    expect(warned).toEqual(["Refresh skipped."]);
+    expect(modelsWrapper.reapplySupportedAdapters({
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    })).toEqual({
+      status: "degraded",
+      stdout: "Saved config. No managed OpenCode install detected, so only afergon-ai config was updated.",
+      stderr: "",
+      degraded: true,
+    });
   });
 
   it("passes an absolute afergon-ai config dir into the OpenCode registrar", () => {
