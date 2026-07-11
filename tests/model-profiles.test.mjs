@@ -61,6 +61,22 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function captureWarnings(run) {
+  const warnings = [];
+  const warnSpy = vi.spyOn(console, "warn").mockImplementation((message) => {
+    warnings.push(String(message));
+  });
+
+  try {
+    return {
+      result: run(),
+      warnings,
+    };
+  } finally {
+    warnSpy.mockRestore();
+  }
+}
+
 function copyManagedAgents(xdgHome) {
   const agentsDir = path.join(xdgHome, "opencode", "agents");
   fs.mkdirSync(agentsDir, { recursive: true });
@@ -478,6 +494,107 @@ describe("model profile resolution", () => {
 
     expect(Object.keys(modelProfilesAvailabilityTypeScript).sort()).toEqual(expectedExports);
     expect(Object.keys(modelProfilesAvailabilityRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("exports only the intended public model profile host seeding helpers", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const expectedExports = ["readOpenCodeAgentModels"];
+
+    expect(Object.keys(modelProfilesHostSeedingTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesHostSeedingRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for missing and empty host config cases", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const missingConfigEnv = {
+      HOME: path.join(tempRoot, "missing-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "missing-xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(missingConfigEnv)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(missingConfigEnv),
+    );
+
+    const emptyConfigDir = path.join(tempRoot, "empty-xdg", "opencode");
+    fs.mkdirSync(emptyConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(emptyConfigDir, "opencode.json"), JSON.stringify({}), "utf8");
+    const emptyConfigEnv = {
+      HOME: path.join(tempRoot, "empty-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "empty-xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(emptyConfigEnv)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(emptyConfigEnv),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for seeded snapshots", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const opencodeDir = path.join(tempRoot, "xdg", "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify(
+        {
+          agent: {
+            "afergon-ai": { model: "  openai/gpt-5.5  " },
+            "afg-review": { model: "inherit" },
+            "afg-design": { model: "openai/gpt-4.1" },
+            outsider: { model: "openai/ignored" },
+            "afg-breakdown": { model: "   " },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(env)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(env),
+    );
+    expect(modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(env)).toEqual({
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-design": "openai/gpt-4.1",
+    });
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for warning cases", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const invalidConfigDir = path.join(tempRoot, "invalid-xdg", "opencode");
+    const arrayConfigDir = path.join(tempRoot, "array-xdg", "opencode");
+    fs.mkdirSync(invalidConfigDir, { recursive: true });
+    fs.mkdirSync(arrayConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(invalidConfigDir, "opencode.json"), "{not-json", "utf8");
+    fs.writeFileSync(path.join(arrayConfigDir, "opencode.json"), JSON.stringify([]), "utf8");
+
+    const invalidConfigEnv = {
+      HOME: path.join(tempRoot, "invalid-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "invalid-xdg"),
+    };
+    const arrayConfigEnv = {
+      HOME: path.join(tempRoot, "array-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "array-xdg"),
+    };
+
+    const typeScriptInvalid = captureWarnings(() => modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(invalidConfigEnv));
+    const runtimeInvalid = captureWarnings(() => modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(invalidConfigEnv));
+    expect(typeScriptInvalid).toEqual(runtimeInvalid);
+
+    const typeScriptArray = captureWarnings(() => modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(arrayConfigEnv));
+    const runtimeArray = captureWarnings(() => modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(arrayConfigEnv));
+    expect(typeScriptArray).toEqual(runtimeArray);
   });
 
   it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for provider listing edge cases", async () => {

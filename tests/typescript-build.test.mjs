@@ -26,6 +26,14 @@ describe("TypeScript build output", () => {
     const copiedModelProfilesConfigDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-config.d.mts");
     const copiedModelProfilesAvailabilityDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-availability.d.mts");
     const copiedModelProfilesCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.d.mts");
+    const copiedModelProfilesHostSeedingDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.d.mts");
+    const copiedModelProfilesHostSeedingRuntimePath = path.join(
+      repoRoot,
+      "dist",
+      "scripts",
+      "lib",
+      "model-profiles-host-seeding.mjs",
+    );
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
@@ -37,6 +45,7 @@ describe("TypeScript build output", () => {
     const modelProfilesConfigOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-config.js");
     const modelProfilesAvailabilityOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-availability.js");
     const modelProfilesCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-core.js");
+    const modelProfilesHostSeedingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
@@ -68,8 +77,15 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain('export * from "./model-profiles-core.ts"');
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("AGENT_ALIASES");
     expect(readFileSync(copiedModelProfilesCoreDeclarationPath, "utf8")).not.toContain("asPlainObject");
+    expect(existsSync(copiedModelProfilesHostSeedingDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesHostSeedingDeclarationPath, "utf8")).toContain(
+      'export * from "./model-profiles-host-seeding.ts"',
+    );
+    expect(existsSync(copiedModelProfilesHostSeedingRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesHostSeedingRuntimePath, "utf8")).toContain("readOpenCodeAgentModels");
     expect(existsSync(copiedModelProfilesDeclarationPath)).toBe(true);
     expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("loadConfig");
+    expect(readFileSync(copiedModelProfilesDeclarationPath, "utf8")).toContain("readOpenCodeAgentModels");
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
@@ -90,6 +106,8 @@ describe("TypeScript build output", () => {
     expect(readFileSync(modelProfilesAvailabilityOutputPath, "utf8")).toContain("export function validateModelAvailability");
     expect(existsSync(modelProfilesCoreOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesCoreOutputPath, "utf8")).toContain("export function normalizeStoredModel");
+    expect(existsSync(modelProfilesHostSeedingOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesHostSeedingOutputPath, "utf8")).toContain("export function readOpenCodeAgentModels");
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);

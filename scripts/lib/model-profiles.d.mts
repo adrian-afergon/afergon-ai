@@ -93,6 +93,7 @@ export const SUPPORTED_AGENTS: readonly string[];
 
 export function listOpenCodeProviderModels(provider: string, env?: NodeJS.ProcessEnv): OpenCodeProviderModelsResult;
 export function validateModelAvailability(modelId: string, env?: NodeJS.ProcessEnv): ValidateModelAvailabilityResult;
+export function readOpenCodeAgentModels(env?: NodeJS.ProcessEnv): Record<string, string>;
 
 export function saveProfileAssignments(
   profileNameInput: string,
