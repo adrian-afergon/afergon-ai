@@ -12,9 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.mjs";
-import { hasDegradedRefreshGuidance } from "./lib/model-profiles.mjs";
 import { reapplySupportedAdapters } from "./models.mjs";
-import { resolveActionArgv } from "./lib/tui/actions/definitions.mjs";
 import {
   createConfirmationState,
   createFormState,
@@ -24,6 +22,7 @@ import {
   validateFormInput,
 } from "./lib/tui/actions/forms.mjs";
 import { createModalInputController } from "./lib/tui/modal-controller.mjs";
+import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
 import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
@@ -525,20 +524,6 @@ function renderPlaceholderScreen(route, width) {
   ].map((line) => padLine(line, width));
 }
 
-function shouldSuppressSuccessfulOutputPanel(action, result) {
-  if (result?.ok !== true || !["models-switch-focused", "models-delete-focused"].includes(action?.id)) {
-    return false;
-  }
-
-  const stderr = sanitizeTerminalOutput(result.stderr ?? "").trim();
-  if (stderr) {
-    return false;
-  }
-
-  const stdout = sanitizeTerminalOutput(result.stdout ?? "").toLowerCase();
-  return !hasDegradedRefreshGuidance({ stdout, stderr });
-}
-
 function finalizeSuccessfulModelProfilesDelete(navigation, routeState) {
   const currentIndex = Number.isInteger(navigation.modelProfiles?.focusedProfileIndex)
     ? navigation.modelProfiles.focusedProfileIndex
@@ -597,31 +582,18 @@ function createMainScreen({
     return getInteractiveActions(route);
   }
 
-  function resolveExecutableAction(action, input = {}) {
-    const argv = resolveActionArgv(action, input);
-    return {
-      ...action,
-      argv,
-      cliEquivalent: action.buildArgv ? `afergon-ai ${argv.join(" ")}` : (action.cliEquivalent ?? `afergon-ai ${argv.join(" ")}`),
-      confirmation: typeof action.buildConfirmation === "function" ? action.buildConfirmation(input) : action.confirmation,
-    };
-  }
-
-  async function runSelectedAction(action) {
-    const result = await executeAction({ action });
-    if (shouldSuppressSuccessfulOutputPanel(action, result)) {
-      if (action.id === "models-delete-focused") {
-        finalizeSuccessfulModelProfilesDelete(navigation, getRouteState("model-profiles"));
-      }
-      outputState = undefined;
-      hideModal(navigation);
-      onNavigate();
-      return;
-    }
-    outputState = createOutputState({ action, result });
-    showModal(navigation, outputState);
-    onNavigate();
-  }
+  const actionExecutionPolicy = createActionExecutionPolicy({
+    executeAction,
+    createOutputState,
+    showModal: (modal) => showModal(navigation, modal),
+    hideModal: () => hideModal(navigation),
+    onNavigate,
+    getRouteState: () => getRouteState("model-profiles"),
+    setOutputState: (nextOutputState) => { outputState = nextOutputState; },
+    sanitizeOutput: sanitizeTerminalOutput,
+    finalizeSuccessfulDelete: (routeState) => finalizeSuccessfulModelProfilesDelete(navigation, routeState),
+  });
+  const { resolveExecutableAction, runSelectedAction } = actionExecutionPolicy;
 
   const modelProfilesController = createModelProfilesInputController({
     navigation,

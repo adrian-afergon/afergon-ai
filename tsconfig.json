@@ -25,6 +25,7 @@
     "scripts/lib/tui/model-profiles-adapter.ts",
     "scripts/lib/tui/model-profiles-controller.ts",
     "scripts/lib/tui/modal-controller.ts",
+    "scripts/lib/tui/action-execution-policy.ts",
     "scripts/lib/tui/actions/definitions.ts",
     "scripts/lib/tui/actions/forms-confirmation.ts",
     "scripts/lib/tui/actions/forms-output.ts",
