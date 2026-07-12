@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +14,7 @@ import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.ts";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const dispatcherPath = path.join(repoRoot, "scripts", "cli-dispatch.mjs");
+const packageMetadata = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
 
 function executeDispatcher(argv) {
   return spawnSync(process.execPath, [dispatcherPath, ...argv], {
@@ -214,16 +216,144 @@ describe("dispatcher CLI wrapper", () => {
 });
 
 describe("launcher parity boundaries", () => {
-  it("keeps the POSIX launcher delegated to the shared dispatcher", () => {
+  it("keeps the POSIX launcher delegated to the built shared dispatcher", () => {
     const launcher = fs.readFileSync(path.join(repoRoot, "bin/afergon-ai"), "utf8");
 
-    expect(launcher).toContain('exec node "$PACKAGE_ROOT/scripts/cli-dispatch.mjs" "$@"');
+    expect(launcher).toContain('RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.mjs"');
+    expect(launcher).toContain('exec node "$RUNTIME_ENTRYPOINT" "$@"');
   });
 
-  it("keeps the Windows launcher delegated with %* instead of fixed positional forwarding", () => {
+  it("keeps the Windows launcher delegated to dist with %* instead of fixed positional forwarding", () => {
     const launcher = fs.readFileSync(path.join(repoRoot, "bin/afergon-ai.cmd"), "utf8");
 
-    expect(launcher).toContain('scripts\\cli-dispatch.mjs" %*');
+    expect(launcher).toContain('dist\\scripts\\cli-dispatch.mjs');
+    expect(launcher).toContain('node "%RUNTIME_ENTRYPOINT%" %*');
     expect(launcher).not.toMatch(/%2|%3|%4|%5/);
   });
+
+  it("fails before Node starts when the package has not been built", () => {
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-unbuilt-"));
+    const fixtureBin = path.join(fixtureRoot, "bin");
+    fs.mkdirSync(fixtureBin);
+    fs.copyFileSync(path.join(repoRoot, "bin/afergon-ai"), path.join(fixtureBin, "afergon-ai"));
+
+    try {
+      const result = spawnSync("bash", [path.join(fixtureBin, "afergon-ai"), "--help"], {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toContain("afergon-ai has not been built yet.");
+      expect(result.stderr).toContain("pnpm build");
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it.runIf(process.platform === "win32")("executes the Windows launcher against a built runtime", () => {
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-built-windows-"));
+    const fixtureBin = path.join(fixtureRoot, "bin");
+    fs.mkdirSync(fixtureBin);
+    fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
+    fs.cpSync(path.join(repoRoot, "dist"), path.join(fixtureRoot, "dist"), { recursive: true });
+
+    try {
+      const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" --help`], {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+        env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe(formatHelp());
+      expect(result.stderr).toBe("");
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it.runIf(process.platform === "win32")("fails the Windows launcher before Node starts when the package is unbuilt", () => {
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-unbuilt-windows-"));
+    const fixtureBin = path.join(fixtureRoot, "bin");
+    fs.mkdirSync(fixtureBin);
+    fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
+
+    try {
+      const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" --help`], {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toContain("afergon-ai has not been built yet.");
+      expect(result.stderr).toContain("pnpm build");
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("package build lifecycle", () => {
+  it("builds the ignored dist runtime before package creation and documents consumer installation accurately", () => {
+    expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
+
+    const readme = fs.readFileSync(path.join(repoRoot, "README.md"), "utf8");
+    expect(readme).toContain("The published package already includes the generated `dist/` runtime.");
+    expect(readme).not.toContain("From the afergon-ai package root, run:\n\n```bash\npnpm build\nafergon-ai --help");
+  });
+
+  it("packs a clean checkout with a standalone dist dispatcher runtime", () => {
+    const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-pack-"));
+    const archiveDirectory = path.join(fixtureRoot, "archives");
+    const extractionDirectory = path.join(fixtureRoot, "extracted");
+    const distDirectory = path.join(repoRoot, "dist");
+    fs.mkdirSync(archiveDirectory);
+    fs.mkdirSync(extractionDirectory);
+
+    try {
+      fs.rmSync(distDirectory, { recursive: true, force: true });
+
+      const packResult = spawnSync(pnpmCommand, ["pack", "--pack-destination", archiveDirectory], {
+        cwd: repoRoot,
+        encoding: "utf8",
+        timeout: 120000,
+      });
+      expect(packResult.status).toBe(0);
+
+      const archives = fs.readdirSync(archiveDirectory).filter((entry) => entry.endsWith(".tgz"));
+      expect(archives).toHaveLength(1);
+      const archivePath = path.join(archiveDirectory, archives[0]);
+      const archiveContents = spawnSync("tar", ["-tzf", archivePath], { encoding: "utf8", timeout: 120000 });
+      expect(archiveContents.status).toBe(0);
+      expect(archiveContents.stdout).toContain("package/dist/scripts/cli-dispatch.mjs");
+      expect(archiveContents.stdout).toContain("package/dist/scripts/lib/cli-dispatch-core.mjs");
+
+      const extractionResult = spawnSync("tar", ["-xzf", archivePath, "-C", extractionDirectory], {
+        encoding: "utf8",
+        timeout: 120000,
+      });
+      expect(extractionResult.status).toBe(0);
+
+      const extractedPackageRoot = path.join(extractionDirectory, "package");
+      fs.rmSync(path.join(extractedPackageRoot, "scripts", "lib"), { recursive: true, force: true });
+      expect(fs.existsSync(path.join(extractedPackageRoot, "scripts", "lib"))).toBe(false);
+      const extractedDispatcherPath = path.join(extractedPackageRoot, "dist", "scripts", "cli-dispatch.mjs");
+      expect(fs.readFileSync(extractedDispatcherPath, "utf8")).toContain("main();");
+
+      const helpResult = spawnSync(process.execPath, [extractedDispatcherPath, "--help"], {
+        cwd: extractionDirectory,
+        encoding: "utf8",
+        env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
+      });
+      expect(helpResult.status).toBe(0);
+      expect(helpResult.stderr).toBe("");
+      expect(helpResult.stdout).toBe(formatHelp());
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  }, 120000);
 });

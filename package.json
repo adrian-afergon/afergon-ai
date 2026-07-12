@@ -34,8 +34,9 @@
   ],
   "scripts": {
     "build": "node ./scripts/build-typescript.mjs",
+    "prepack": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "pnpm build && vitest run --no-file-parallelism",
     "test:watch": "vitest"
   },
   "peerDependencies": {
@@ -51,6 +52,7 @@
   "files": [
     "adapters/",
     "bin/",
+    "dist/",
     "extensions/",
     "prompts/",
     "scripts/",

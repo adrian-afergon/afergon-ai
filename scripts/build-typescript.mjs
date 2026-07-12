@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(repoRoot, "dist");
-const runtimeDirsToCopy = ["scripts"];
+const runtimeDirsToCopy = ["adapters", "prompts", "scripts", "skills"];
 
 await rm(distRoot, { recursive: true, force: true });
 
@@ -26,7 +26,7 @@ for (const relativeDir of runtimeDirsToCopy) {
     recursive: true,
     filter: (sourcePath) => {
       const entryPath = path.resolve(sourcePath);
-      return !entryPath.endsWith(".ts");
+      return !entryPath.endsWith(".ts") && path.basename(entryPath) !== ".DS_Store";
     },
   });
 }

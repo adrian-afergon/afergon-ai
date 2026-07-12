@@ -37,13 +37,18 @@ It provides:
 
 ```bash
 pnpm add -g afergon-ai
+afergon-ai --help
 ```
+
+The published package already includes the generated `dist/` runtime. Package creation runs the build lifecycle before `dist/` is packed, so global consumers do not need TypeScript or a post-install build step.
 
 **From the repo (stable snapshot):**
 
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
+pnpm install
+pnpm build
 pnpm add -g .
 ```
 
@@ -54,10 +59,25 @@ pnpm add -g .
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
+pnpm install
+pnpm build
 pnpm link --global
 ```
 
-`pnpm link --global` creates a global symlink to your local checkout, so changes are picked up immediately.
+`pnpm link --global` creates a global symlink to your local checkout. Build again with `pnpm build` after changing runtime files; the CLI intentionally runs the generated `dist/` runtime, not source `scripts/`.
+
+### Development build step
+
+When running from a source checkout or linked development mode, generate the runtime before the first CLI launch:
+
+```bash
+pnpm build
+afergon-ai --help
+```
+
+In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing.
+
+Phase 1 of the TypeScript transition executes the built `dist/scripts/` runtime. The `tui`, `models`, and dispatcher entrypoints remain intentional `.mjs` transition wrappers there, so this is not a JavaScript-only runtime yet. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
 
 ### Step 2 — Initialize a project
 

@@ -130,6 +130,6 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   run(plan);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && path.basename(process.argv[1]) === "cli-dispatch.mjs") {
   main();
 }
