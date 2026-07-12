@@ -14,8 +14,6 @@ import { fileURLToPath } from "node:url";
 import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.mjs";
 import { reapplySupportedAdapters } from "./models.mjs";
 import {
-  createConfirmationState,
-  createFormState,
   createOutputState,
   getOutputLines,
   sanitizeTerminalOutput,
@@ -23,6 +21,7 @@ import {
 } from "./lib/tui/actions/forms.mjs";
 import { createModalInputController } from "./lib/tui/modal-controller.mjs";
 import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.mjs";
+import { createSectionActionInputController } from "./lib/tui/section-action-controller.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
 import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
@@ -34,9 +33,7 @@ import {
   createNavigationState,
   HOME_MENU_ROUTES,
   moveHomeSelection,
-  moveSectionActionSelection,
   navigateTo,
-  normalizeSectionActionSelection,
   openModal,
   stageModelProfilesAssignment,
 } from "./lib/tui/navigation.mjs";
@@ -284,14 +281,6 @@ function activateSelectedHomeRoute(navigation) {
   Object.assign(navigation, activateHomeSelection(navigation));
 }
 
-function moveSelectedSectionAction(navigation, actionCount, direction) {
-  Object.assign(navigation, moveSectionActionSelection(navigation, actionCount, direction));
-}
-
-function syncSectionActionSelection(navigation, actionCount) {
-  Object.assign(navigation, normalizeSectionActionSelection(navigation, actionCount));
-}
-
 function showModal(navigation, modal) {
   navigation.modal = openModal(navigation, modal).modal;
 }
@@ -308,8 +297,6 @@ function renderInteractiveActions(actions, navigation) {
   if (actions.length === 0) {
     return [];
   }
-
-  syncSectionActionSelection(navigation, actions.length);
 
   return [
     "",
@@ -654,12 +641,25 @@ function createMainScreen({
       escape: (data) => matchesKey(data, Key.escape),
     },
   });
+  const sectionActionController = createSectionActionInputController({
+    navigation,
+    getRouteInteractiveActions,
+    onNavigate,
+    showModal: (modal) => showModal(navigation, modal),
+    runSelectedAction,
+    resolveExecutableAction,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+    },
+  });
 
   return {
     render(width) {
       const activeOutputState = modalController.getOutputState();
       const interactiveActions = getRouteInteractiveActions(navigation.route);
-      syncSectionActionSelection(navigation, interactiveActions.length);
+      sectionActionController.syncSelection(interactiveActions);
 
       if (navigation.route === "configuration") {
         return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, activeOutputState, interactiveActions);
@@ -703,9 +703,6 @@ function createMainScreen({
       }
 
       const printable = data.length === 1 ? data.toLowerCase() : undefined;
-      const interactiveActions = getRouteInteractiveActions(navigation.route);
-      syncSectionActionSelection(navigation, interactiveActions.length);
-
       if (navigation.route === "home" && matchesKey(data, Key.up)) {
         updateHomeSelection(navigation, -1);
         onNavigate();
@@ -724,38 +721,7 @@ function createMainScreen({
         return;
       }
 
-      if (navigation.route !== "home" && interactiveActions.length > 0 && matchesKey(data, Key.up)) {
-        moveSelectedSectionAction(navigation, interactiveActions.length, -1);
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route !== "home" && interactiveActions.length > 0 && matchesKey(data, Key.down)) {
-        moveSelectedSectionAction(navigation, interactiveActions.length, 1);
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route !== "home" && interactiveActions.length > 0 && matchesKey(data, Key.enter)) {
-        const selectedAction = interactiveActions[navigation.sectionActionSelection ?? 0];
-        if (!selectedAction) {
-          onNavigate();
-          return;
-        }
-
-        if (selectedAction.form) {
-          showModal(navigation, createFormState({ action: selectedAction }));
-          onNavigate();
-          return;
-        }
-
-        if (selectedAction.kind === "mutate") {
-          showModal(navigation, createConfirmationState({ action: resolveExecutableAction(selectedAction) }));
-          onNavigate();
-          return;
-        }
-
-        runSelectedAction(resolveExecutableAction(selectedAction));
+      if (sectionActionController.handleInput(data)) {
         return;
       }
 
