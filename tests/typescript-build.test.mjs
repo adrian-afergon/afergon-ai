@@ -40,6 +40,9 @@ describe("TypeScript build output", () => {
     const copiedModelProfilesDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.d.mts");
     const copiedModelProfilesRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.mjs");
     const copiedModelsCliCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "models-cli-core.mjs");
+    const copiedCliDispatchCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.mjs");
+    const copiedCliDispatchCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.d.mts");
+    const copiedCliDispatchWrapperPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
@@ -54,6 +57,7 @@ describe("TypeScript build output", () => {
     const modelProfilesHostSeedingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js");
     const modelProfilesOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "model-profiles.js");
     const modelsCliCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "models-cli-core.js");
+    const cliDispatchCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
@@ -110,6 +114,37 @@ describe("TypeScript build output", () => {
       model: "openai/gpt-5.5",
     });
     expect(copiedModelsCliCore.getOpenCodeRefreshTimeoutMs({ AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "0" })).toBe(10000);
+    expect(existsSync(copiedCliDispatchCoreDeclarationPath)).toBe(true);
+    expect(readFileSync(copiedCliDispatchCoreDeclarationPath, "utf8")).toContain('export * from "./cli-dispatch-core.ts"');
+    expect(existsSync(copiedCliDispatchCoreRuntimePath)).toBe(true);
+    expect(readFileSync(copiedCliDispatchCoreRuntimePath, "utf8")).toContain("export function resolveDispatchPlan");
+    const copiedCliDispatchCore = await import(`${pathToFileURL(copiedCliDispatchCoreRuntimePath).href}?build-artifact`);
+    expect(copiedCliDispatchCore.resolveDispatchPlan({ argv: ["TUI"], isInteractiveTTY: true, isCI: false })).toEqual({
+      kind: "tui",
+      forwardedArgs: [],
+    });
+    expect(existsSync(copiedCliDispatchWrapperPath)).toBe(true);
+    const copiedCliDispatchWrapper = await import(`${pathToFileURL(copiedCliDispatchWrapperPath).href}?build-artifact`);
+    expect(copiedCliDispatchWrapper.resolveDispatchPlan({ argv: ["--help"], isInteractiveTTY: false, isCI: true })).toEqual({
+      kind: "help",
+      exitCode: 0,
+    });
+    const copiedCliDispatchHelp = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "--help"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true", PATH: "" },
+    });
+    expect(copiedCliDispatchHelp.status).toBe(0);
+    expect(copiedCliDispatchHelp.stdout).toBe(copiedCliDispatchWrapper.formatHelp());
+    expect(copiedCliDispatchHelp.stderr).toBe("");
+    const copiedCliDispatchError = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "not-a-command"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true", PATH: "" },
+    });
+    expect(copiedCliDispatchError.status).toBe(1);
+    expect(copiedCliDispatchError.stdout).toBe("");
+    expect(copiedCliDispatchError.stderr).toBe("Unknown command: not-a-command\nRun 'afergon-ai --help' for usage.\n");
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
@@ -146,6 +181,14 @@ describe("TypeScript build output", () => {
       model: "inherit",
     });
     expect(emittedModelsCliCore.formatEffective({ effective: null })).toBe("(runtime default)");
+    expect(existsSync(cliDispatchCoreOutputPath)).toBe(true);
+    expect(readFileSync(cliDispatchCoreOutputPath, "utf8")).toContain("export function resolveDispatchPlan");
+    const emittedCliDispatchCore = await import(`${pathToFileURL(cliDispatchCoreOutputPath).href}?build-artifact`);
+    expect(emittedCliDispatchCore.resolveDispatchPlan({ argv: ["invalid"], isInteractiveTTY: false, isCI: true })).toEqual({
+      kind: "error",
+      exitCode: 1,
+      message: "Unknown command: invalid\nRun 'afergon-ai --help' for usage.",
+    });
     expect(existsSync(configStatusAdapterOutputPath)).toBe(true);
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);
