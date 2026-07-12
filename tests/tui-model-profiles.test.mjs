@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as modelProfilesAdapterTypeScript from "../scripts/lib/tui/model-profiles-adapter.ts";
@@ -700,27 +701,35 @@ describe("renderModelProfilesScreen", () => {
     expect(output).not.toContain("> [X] budget");
   });
 
-  it("renders assignment focus with a fixed cursor column and no selected suffix", () => {
-    const output = renderModelProfilesScreen(
-      {
-        title: "Model Profiles",
-        configPath: "/tmp/config.json",
-        summary: { state: "ok", detail: "1 profile(s) available." },
-        activeProfile: "budget",
-        profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
-        assignments: [
-          { agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit", isFocused: false },
-          { agent: "afg-review", configured: "inherit", effective: "openai/gpt-5.5", source: "inherit", isFocused: true },
-        ],
-        browse: { mode: "assignments", targetProfileName: "budget" },
-      },
-      160,
-      { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` },
-    ).join("\n");
+  it("keeps assignment cursor columns and truncation in TypeScript parity with the runtime screen", () => {
+    const state = {
+      title: "Model Profiles",
+      configPath: "/tmp/config.json",
+      summary: { state: "ok", detail: "1 profile(s) available." },
+      activeProfile: "budget",
+      profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
+      assignments: [
+        { agent: "afergon-ai", configured: "openai/gpt-5.5", effective: "openai/gpt-5.5", source: "explicit", isFocused: false },
+        { agent: "afg-review", configured: "inherit", effective: "openai/gpt-5.5", source: "inherit", isFocused: true },
+      ],
+      browse: { mode: "assignments", targetProfileName: "budget" },
+    };
+    const styles = { styleSelected: (line) => `\u001b[38;5;6m${line}\u001b[0m` };
 
-    expect(output).toContain("  afergon-ai: configured=openai/gpt-5.5");
-    expect(output).toContain("\u001b[38;5;6m> afg-review: configured=inherit");
-    expect(output).not.toContain("[selected]");
+    for (const width of [160, 28]) {
+      const runtimeLines = renderModelProfilesScreen(state, width, styles);
+      const typeScriptLines = modelProfilesScreenTypeScript.renderModelProfilesScreen(state, width, styles);
+      const runtimeOutput = runtimeLines.join("\n");
+
+      expect(typeScriptLines).toEqual(runtimeLines);
+      expect(runtimeLines.every((line) => visibleWidth(line) <= width)).toBe(true);
+
+      if (width === 160) {
+        expect(runtimeOutput).toContain("  afergon-ai: configured=openai/gpt-5.5");
+        expect(runtimeOutput).toContain("\u001b[38;5;6m> afg-review: configured=inherit");
+        expect(runtimeOutput).not.toContain("[selected]");
+      }
+    }
   });
 
   it("renders placeholder detail rows for the * New Profile sentinel row to preserve layout height", () => {
