@@ -50,6 +50,8 @@ describe("TypeScript build output", () => {
     const copiedModalControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.mjs");
     const copiedActionExecutionPolicyBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.d.mts");
     const copiedActionExecutionPolicyRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.mjs");
+    const copiedSectionActionControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.d.mts");
+    const copiedSectionActionControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const formsConfirmationOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.js");
@@ -69,6 +71,7 @@ describe("TypeScript build output", () => {
     const modelProfilesControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.js");
     const modalControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.js");
     const actionExecutionPolicyOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.js");
+    const sectionActionControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -176,6 +179,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedActionExecutionPolicyRuntimePath, "utf8")).toContain("createActionExecutionPolicy");
     const copiedActionExecutionPolicy = await import(`${pathToFileURL(copiedActionExecutionPolicyRuntimePath).href}?build-artifact`);
     expect(typeof copiedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(copiedSectionActionControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedSectionActionControllerBridgePath, "utf8")).toContain('export * from "./section-action-controller.ts"');
+    expect(existsSync(copiedSectionActionControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedSectionActionControllerRuntimePath, "utf8")).toContain("createSectionActionInputController");
+    const copiedSectionActionController = await import(`${pathToFileURL(copiedSectionActionControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedSectionActionController.createSectionActionInputController).toBe("function");
     expect(existsSync(actionRunnerOutputPath)).toBe(true);
     expect(readFileSync(actionRunnerOutputPath, "utf8")).toContain("export function runActionCommand");
     expect(existsSync(formsConfirmationOutputPath)).toBe(true);
@@ -232,6 +241,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(actionExecutionPolicyOutputPath, "utf8")).toContain('from "./action-execution-policy.mjs"');
     const emittedActionExecutionPolicy = await import(`${pathToFileURL(actionExecutionPolicyOutputPath).href}?build-artifact`);
     expect(typeof emittedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(sectionActionControllerOutputPath)).toBe(true);
+    expect(readFileSync(sectionActionControllerOutputPath, "utf8")).toContain('from "./section-action-controller.mjs"');
+    const emittedSectionActionController = await import(`${pathToFileURL(sectionActionControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedSectionActionController.createSectionActionInputController).toBe("function");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);
