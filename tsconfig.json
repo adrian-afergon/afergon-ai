@@ -27,6 +27,7 @@
     "scripts/lib/tui/modal-controller.ts",
     "scripts/lib/tui/action-execution-policy.ts",
     "scripts/lib/tui/home-menu-controller.ts",
+    "scripts/lib/tui/global-home-fallback-controller.ts",
     "scripts/lib/tui/section-action-controller.ts",
     "scripts/lib/tui/actions/definitions.ts",
     "scripts/lib/tui/actions/forms-confirmation.ts",
