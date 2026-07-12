@@ -16,23 +16,14 @@ import { hasDegradedRefreshGuidance } from "./lib/model-profiles.mjs";
 import { reapplySupportedAdapters } from "./models.mjs";
 import { resolveActionArgv } from "./lib/tui/actions/definitions.mjs";
 import {
-  appendFormCharacter,
-  appendConfirmationCharacter,
-  backspaceFormCharacter,
-  backspaceConfirmationCharacter,
   createConfirmationState,
   createFormState,
   createOutputState,
-  getFormInput,
-  getFormSubmitState,
   getOutputLines,
-  moveFormSelection,
-  changeFormValue,
   sanitizeTerminalOutput,
-  toggleCheckboxFormSelection,
-  validateConfirmationState,
   validateFormInput,
 } from "./lib/tui/actions/forms.mjs";
+import { createModalInputController } from "./lib/tui/modal-controller.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
 import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
@@ -646,10 +637,55 @@ function createMainScreen({
       escape: (data) => matchesKey(data, Key.escape),
     },
   });
+  const modalController = createModalInputController({
+    navigation,
+    getOutputState: () => modelProfilesController.getOutputState() ?? outputState,
+    clearOutputState: () => {
+      outputState = undefined;
+      modelProfilesController.clearOutputState();
+    },
+    onNavigate,
+    onFormSubmit: ({ modal, submitState }) => {
+      if (modal.action.id !== "model-profiles-stage-assignment") return false;
+      if (submitState.isCancel) {
+        hideModal(navigation);
+        return true;
+      }
+      if (!submitState.isSubmit) return false;
+      const validation = validateFormInput(modal);
+      if (!validation.ok) {
+        navigation.modal = {
+          ...modal,
+          activeIndex: validation.activeIndex ?? modal.activeIndex,
+          validationMessage: validation.message,
+        };
+        return true;
+      }
+      updateModelProfilesState(
+        navigation,
+        stageModelProfilesAssignment(navigation.modelProfiles, modal.action.agentName, validation.input.model),
+      );
+      hideModal(navigation);
+      return true;
+    },
+    runSelectedAction,
+    resolveExecutableAction,
+    showModal: (modal) => showModal(navigation, modal),
+    hideModal: () => hideModal(navigation),
+    shouldDismissOutput: shouldExitTui,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      left: (data) => matchesKey(data, Key.left),
+      right: (data) => matchesKey(data, Key.right),
+      enter: (data) => matchesKey(data, Key.enter),
+      escape: (data) => matchesKey(data, Key.escape),
+    },
+  });
 
   return {
     render(width) {
-      const activeOutputState = modelProfilesController.getOutputState() ?? outputState;
+      const activeOutputState = modalController.getOutputState();
       const interactiveActions = getRouteInteractiveActions(navigation.route);
       syncSectionActionSelection(navigation, interactiveActions.length);
 
@@ -683,232 +719,7 @@ function createMainScreen({
       return renderHomeScreen(navigation, width);
     },
     handleInput(data) {
-      if (navigation.modal?.kind === "form") {
-        if (matchesKey(data, Key.up)) {
-          navigation.modal = moveFormSelection(navigation.modal, -1);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.down)) {
-          navigation.modal = moveFormSelection(navigation.modal, 1);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.escape)) {
-          hideModal(navigation);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.left)) {
-          navigation.modal = changeFormValue(navigation.modal, -1);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.right) || data === " ") {
-          if (navigation.modal.formKind === "checkboxes") {
-            navigation.modal = toggleCheckboxFormSelection(navigation.modal);
-          } else {
-            navigation.modal = changeFormValue(navigation.modal, 1);
-          }
-          onNavigate();
-          return;
-        }
-
-        if (data === "\u007f") {
-          navigation.modal = backspaceFormCharacter(navigation.modal);
-          onNavigate();
-          return;
-        }
-
-        if (data.length === 1 && data !== "\r") {
-          navigation.modal = appendFormCharacter(navigation.modal, data);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.enter)) {
-          if (navigation.modal.action.id === "model-profiles-stage-assignment") {
-            const submitState = getFormSubmitState(navigation.modal);
-            if (submitState.isCancel) {
-              hideModal(navigation);
-              onNavigate();
-              return;
-            }
-            if (submitState.isSubmit) {
-              const validation = validateFormInput(navigation.modal);
-              if (!validation.ok) {
-                navigation.modal = {
-                  ...navigation.modal,
-                  activeIndex: validation.activeIndex ?? navigation.modal.activeIndex,
-                  validationMessage: validation.message,
-                };
-                onNavigate();
-                return;
-              }
-
-              updateModelProfilesState(
-                navigation,
-                stageModelProfilesAssignment(navigation.modelProfiles, navigation.modal.action.agentName, validation.input.model),
-              );
-              hideModal(navigation);
-              onNavigate();
-              return;
-            }
-          }
-
-          if (navigation.modal.formKind === "checkboxes") {
-            const submitState = getFormSubmitState(navigation.modal);
-            if (submitState.isCancel) {
-              hideModal(navigation);
-              onNavigate();
-              return;
-            }
-
-            if (submitState.isSubmit) {
-              const validation = validateFormInput(navigation.modal);
-              if (!validation.ok) {
-                navigation.modal = {
-                  ...navigation.modal,
-                  activeIndex: validation.activeIndex ?? navigation.modal.activeIndex,
-                  validationMessage: validation.message,
-                };
-                onNavigate();
-                return;
-              }
-
-              const resolvedAction = resolveExecutableAction(navigation.modal.action, validation.input);
-              showModal(navigation, createConfirmationState({ action: resolvedAction }));
-              onNavigate();
-              return;
-            }
-
-            navigation.modal = toggleCheckboxFormSelection(navigation.modal);
-            onNavigate();
-            return;
-          }
-
-          const submitState = getFormSubmitState(navigation.modal);
-          if (submitState.isCancel) {
-            hideModal(navigation);
-            onNavigate();
-            return;
-          }
-
-          if (submitState.isSubmit || navigation.modal.formKind === "picker") {
-            if (navigation.modal.formKind === "fields" && submitState.isSubmit) {
-              const validation = validateFormInput(navigation.modal);
-              if (!validation.ok) {
-                navigation.modal = {
-                  ...navigation.modal,
-                  activeIndex: validation.activeIndex ?? navigation.modal.activeIndex,
-                  validationMessage: validation.message,
-                };
-                onNavigate();
-                return;
-              }
-
-              const resolvedAction = resolveExecutableAction(navigation.modal.action, validation.input);
-              if (navigation.modal.action.id === "model-profiles-create-profile") {
-                showModal(navigation, createConfirmationState({ action: { ...resolvedAction, targetProfileName: validation.input.profileName } }));
-                onNavigate();
-                return;
-              }
-              showModal(navigation, createConfirmationState({ action: resolvedAction }));
-              onNavigate();
-              return;
-            }
-
-            const resolvedAction = resolveExecutableAction(navigation.modal.action, getFormInput(navigation.modal));
-            if (resolvedAction.kind === "mutate") {
-              showModal(navigation, createConfirmationState({ action: resolvedAction }));
-            } else {
-              hideModal(navigation);
-              runSelectedAction(resolvedAction);
-            }
-            onNavigate();
-            return;
-          }
-
-          navigation.modal = changeFormValue(navigation.modal, 1);
-          onNavigate();
-          return;
-        }
-
-        if (data === " ") {
-          navigation.modal = toggleCheckboxFormSelection(navigation.modal);
-          onNavigate();
-          return;
-        }
-
-        return;
-      }
-
-      if (navigation.modal?.kind === "confirm") {
-        if (navigation.modal.confirmation?.kind === "submit-cancel" && (matchesKey(data, Key.up) || matchesKey(data, Key.down))) {
-          navigation.modal = {
-            ...navigation.modal,
-            activeChoice: navigation.modal.activeChoice === "cancel" ? "submit" : "cancel",
-          };
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.escape)) {
-          hideModal(navigation);
-          onNavigate();
-          return;
-        }
-
-        if (navigation.modal.confirmation?.kind === "typed-match" && data === "\u007f") {
-          navigation.modal = backspaceConfirmationCharacter(navigation.modal);
-          onNavigate();
-          return;
-        }
-
-        if (navigation.modal.confirmation?.kind === "typed-match" && data.length === 1 && data !== "\r") {
-          navigation.modal = appendConfirmationCharacter(navigation.modal, data);
-          onNavigate();
-          return;
-        }
-
-        if (matchesKey(data, Key.enter)) {
-          if (navigation.modal.confirmation?.kind === "submit-cancel" && navigation.modal.activeChoice === "cancel") {
-            hideModal(navigation);
-            onNavigate();
-            return;
-          }
-
-          const validation = validateConfirmationState(navigation.modal);
-          if (!validation.ok) {
-            navigation.modal = {
-              ...navigation.modal,
-              validationMessage: validation.message,
-            };
-            onNavigate();
-            return;
-          }
-
-          const pendingAction = navigation.modal.action;
-          hideModal(navigation);
-          runSelectedAction(pendingAction);
-          return;
-        }
-        return;
-      }
-
-      if (navigation.modal?.kind === "output") {
-        if (matchesKey(data, Key.enter) || matchesKey(data, Key.escape) || shouldExitTui(data)) {
-          outputState = undefined;
-          modelProfilesController.clearOutputState();
-          hideModal(navigation);
-          onNavigate();
-        }
-        return;
-      }
+      if (modalController.handleInput(data)) return;
 
       if (modelProfilesController.handleInput(data)) {
         return;
