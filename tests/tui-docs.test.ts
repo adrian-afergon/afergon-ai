@@ -36,7 +36,7 @@ describe("TUI docs contract", () => {
     expect(README).toContain("Status and failure cues use text markers such as `[ok]`, `[warn]`, and `[fail]`, not color alone.");
     expect(README).toContain("Do not invent CLI equivalents for unsupported or read-only TUI actions.");
     expect(README).toContain("PR7 docs/polish");
-    expect(README).toContain("`tests/tui-docs.test.mjs`");
+    expect(README).toContain("`tests/tui-docs.test.ts`");
     expect(README).toContain("Final verification checklist");
     expect(README).toContain("pnpm test");
     expect(README).toContain("./bin/afergon-ai  # expected: prints help and exits 0 in non-TTY mode");
@@ -65,6 +65,6 @@ describe("TUI docs contract", () => {
     expect(PROMPT).toContain("Windows launchers must match POSIX behavior and preserve the full argv surface");
     expect(PROMPT).toContain("Home accessibility cues must stay text-first: arrow selection plus Enter, direct `c`/`s`/`m`/`h` shortcuts, explicit exit hints, and plain-text branding fallback when the banner is unsafe.");
     expect(PROMPT).toContain("Show CLI equivalents only where a stable explicit command already exists");
-    expect(PROMPT).toContain("`tests/tui-docs.test.mjs`");
+    expect(PROMPT).toContain("`tests/tui-docs.test.ts`");
   });
 });

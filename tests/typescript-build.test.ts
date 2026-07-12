@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -7,11 +7,75 @@ import { describe, expect, it } from "vitest";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
 describe("TypeScript build output", () => {
+  it("uses a TypeScript Vitest configuration", () => {
+    expect(existsSync(path.join(repoRoot, "vitest.config.ts"))).toBe(true);
+  });
+
   it("declares a package lifecycle build for the ignored dist runtime", () => {
     const packageMetadata = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
 
     expect(packageMetadata.files).toContain("dist/");
     expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
+  });
+
+  it("runs the repository test command in the Windows release gate", () => {
+    const workflow = readFileSync(path.join(repoRoot, ".github", "workflows", "windows-launcher.yml"), "utf8");
+
+    expect(workflow).toContain("- run: pnpm run build");
+    expect(workflow).toContain("- run: pnpm test");
+    expect(workflow).toContain(".\\bin\\afergon-ai.cmd --help");
+    expect(workflow).toContain(".\\bin\\afergon-ai.cmd not-a-command");
+  });
+
+  it("preserves the previous dist runtime when copying a staged artifact fails", () => {
+    const fixtureRoot = mkdtempSync(path.join(repoRoot, ".typescript-build-failure-"));
+    const fixtureDist = path.join(fixtureRoot, "dist");
+    const fixtureScript = path.join(fixtureRoot, "scripts", "build-typescript.mjs");
+    const fixturePnpm = path.join(fixtureRoot, "pnpm");
+    const fixtureTsc = path.join(fixtureRoot, "successful-tsc.mjs");
+    const fixtureTscMarker = path.join(fixtureRoot, "tsc-ran");
+
+    try {
+      mkdirSync(path.join(fixtureRoot, "source"), { recursive: true });
+      mkdirSync(path.join(fixtureRoot, "adapters"));
+      mkdirSync(path.join(fixtureRoot, "prompts"));
+      mkdirSync(path.join(fixtureRoot, "skills"));
+      mkdirSync(path.join(fixtureRoot, "scripts"));
+      mkdirSync(fixtureDist);
+      cpSync(path.join(repoRoot, "scripts", "build-typescript.mjs"), fixtureScript);
+      writeFileSync(path.join(fixtureRoot, "package.json"), '{"name":"build-failure-fixture","private":true}\n');
+      mkdirSync(path.join(fixtureDist, "scripts"));
+      writeFileSync(path.join(fixtureDist, "scripts", "cli-dispatch.mjs"), "known-good-runtime\n");
+      writeFileSync(
+        path.join(fixtureRoot, "tsconfig.build.json"),
+        JSON.stringify({ compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" }, include: ["source/**/*.ts"] }),
+      );
+      writeFileSync(path.join(fixtureRoot, "source", "valid.ts"), "export const valid = true;\n");
+      writeFileSync(fixtureTsc, `import { mkdirSync, writeFileSync } from "node:fs";\nconst outDir = process.argv[process.argv.indexOf("--outDir") + 1];\nmkdirSync(outDir, { recursive: true });\nwriteFileSync(${JSON.stringify(fixtureTscMarker)}, "ran\\n");\n`);
+      writeFileSync(fixturePnpm, `#!/bin/sh\nexec "${process.execPath}" "${fixtureTsc}" "$@"\n`, { mode: 0o755 });
+
+      const result = spawnSync(process.execPath, [fixtureScript], {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+        timeout: 120000,
+        env: {
+          ...process.env,
+          AFERGON_AI_TEST_FAIL_RUNTIME_COPY: "adapters",
+          PATH: `${fixtureRoot}${path.delimiter}${process.env.PATH}`,
+        },
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(readFileSync(fixtureTscMarker, "utf8")).toBe("ran\n");
+      expect(result.stderr).toContain("Injected runtime artifact copy failure: adapters");
+      expect(readFileSync(path.join(fixtureDist, "scripts", "cli-dispatch.mjs"), "utf8")).toBe("known-good-runtime\n");
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not emit source tests into the runtime distribution", () => {
+    expect(existsSync(path.join(repoRoot, "dist", "tests"))).toBe(false);
   });
 
   it("copies declaration bridges for runtime .mjs dependencies into dist", async () => {
