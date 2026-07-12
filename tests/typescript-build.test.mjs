@@ -44,6 +44,8 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.d.mts");
     const copiedCliDispatchWrapperPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
+    const copiedModelProfilesControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.d.mts");
+    const copiedModelProfilesControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const formsConfirmationOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.js");
@@ -60,6 +62,7 @@ describe("TypeScript build output", () => {
     const cliDispatchCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
+    const modelProfilesControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -149,6 +152,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
     expect(readFileSync(emittedModelProfilesAdapterDeclarationPath, "utf8")).toContain('from "../model-profiles.mjs"');
+    expect(existsSync(copiedModelProfilesControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesControllerBridgePath, "utf8")).toContain('export * from "./model-profiles-controller.ts"');
+    expect(existsSync(copiedModelProfilesControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesControllerRuntimePath, "utf8")).toContain("createModelProfilesInputController");
+    const copiedModelProfilesController = await import(`${pathToFileURL(copiedModelProfilesControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedModelProfilesController.createModelProfilesInputController).toBe("function");
     expect(existsSync(actionRunnerOutputPath)).toBe(true);
     expect(readFileSync(actionRunnerOutputPath, "utf8")).toContain("export function runActionCommand");
     expect(existsSync(formsConfirmationOutputPath)).toBe(true);
@@ -193,6 +202,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesAdapterOutputPath, "utf8")).toContain("export function getModelProfilesScreenState");
+    expect(existsSync(modelProfilesControllerOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesControllerOutputPath, "utf8")).toContain('from "./model-profiles-controller.mjs"');
+    const emittedModelProfilesController = await import(`${pathToFileURL(modelProfilesControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedModelProfilesController.createModelProfilesInputController).toBe("function");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);

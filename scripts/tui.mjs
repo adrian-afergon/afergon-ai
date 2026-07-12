@@ -35,30 +35,20 @@ import {
 } from "./lib/tui/actions/forms.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
-import { buildCommandArgv } from "./lib/tui/command-manifest.mjs";
-import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
+import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
+import { createModelProfilesInputController } from "./lib/tui/model-profiles-controller.mjs";
 import { renderFocusLine } from "./lib/tui/rendering.mjs";
 import {
   activateHomeSelection,
   closeModal,
   createNavigationState,
-  appendModelProfilesInlineCreateCharacter,
-  backspaceModelProfilesInlineCreateCharacter,
-  enterModelProfilesAssignments,
-  enterModelProfilesInlineCreate,
-  exitModelProfilesAssignments,
-  exitModelProfilesInlineCreate,
   HOME_MENU_ROUTES,
   moveHomeSelection,
-  moveModelProfilesInlineCreateSelection,
-  moveModelProfilesAssignmentSelection,
-  moveModelProfilesSelection,
   moveSectionActionSelection,
   navigateTo,
   normalizeSectionActionSelection,
   openModal,
   stageModelProfilesAssignment,
-  validateModelProfilesInlineCreate,
 } from "./lib/tui/navigation.mjs";
 import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
 import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.mjs";
@@ -70,7 +60,6 @@ const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url))
 const TEAL_ANSI = "\u001b[38;5;6m";
 const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
 const ANSI_RESET = "\u001b[0m";
-const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
 const FRAME_CORNER_WIDTH = 1;
 const FRAME_SIDE_BORDERS = 2;
 const FRAME_LABEL_PADDING = 4;
@@ -214,42 +203,6 @@ function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, f
 
   framedLines.push(renderEmbeddedFrameFooter("└", footerLeftLabel, footerRightLabel, safeWidth));
   return framedLines;
-}
-
-function isDeleteKey(data) {
-  return matchesKey(data, Key.delete) || data === DELETE_ESCAPE_SEQUENCE;
-}
-
-function createModelProfileCreateAction() {
-  return {
-    id: "model-profiles-create-profile",
-    section: "model-profiles",
-    kind: "mutate",
-    label: "Create a profile",
-    cliEquivalent: "afergon-ai models profile create <name>",
-    confirmLabel: "Create this profile now?",
-    buildArgv: ({ profileName }) => buildCommandArgv("models", ["profile", "create", profileName]),
-    form: {
-      kind: "fields",
-      title: "Create a profile",
-      fields: [{ id: "profileName", label: "Profile name", type: "text", initialValue: "", required: true, requiredMessage: "Profile name is required." }],
-    },
-  };
-}
-
-function createModelProfileStageAction(assignment) {
-  return {
-    id: "model-profiles-stage-assignment",
-    section: "model-profiles",
-    kind: "draft",
-    label: `Set model for ${assignment.agent}`,
-    agentName: assignment.agent,
-    form: {
-      kind: "fields",
-      title: `Set model for ${assignment.agent}`,
-      fields: [{ id: "model", label: "Model", type: "text", initialValue: "", required: true, requiredMessage: "Model is required." }],
-    },
-  };
 }
 
 export function shouldExitTui(data) {
@@ -614,44 +567,6 @@ function finalizeSuccessfulModelProfilesDelete(navigation, routeState) {
   });
 }
 
-function shouldShowProfileCreateOutput(action, result) {
-  if (result?.ok !== true || action?.id !== "model-profiles-create-profile") {
-    return false;
-  }
-
-  return hasDegradedRefreshGuidance({
-    stdout: sanitizeTerminalOutput(result.stdout ?? ""),
-    stderr: sanitizeTerminalOutput(result.stderr ?? ""),
-  });
-}
-
-function shouldShowAssignmentSaveOutput(saveResult) {
-  return saveResult?.refreshResult?.degraded === true;
-}
-
-function createAssignmentSaveOutputState(profileName, saveResult) {
-  const refreshResult = saveResult?.refreshResult ?? {};
-  return createOutputState({
-    action: {
-      id: "model-profiles-save-assignments",
-      label: "Save staged assignments",
-      cliEquivalent: "TUI assignment save",
-    },
-    result: {
-      ok: true,
-      exitCode: 0,
-      stdout: [
-        `Saved staged assignments for profile '${sanitizeTerminalOutput(profileName ?? "(unknown)")}'.`,
-        refreshResult.stdout,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-      stderr: refreshResult.stderr ?? "",
-      timedOut: false,
-    },
-  });
-}
-
 function createMainScreen({
   navigation,
   onExit,
@@ -703,25 +618,6 @@ function createMainScreen({
 
   async function runSelectedAction(action) {
     const result = await executeAction({ action });
-    if (action.id === "model-profiles-create-profile" && result.ok) {
-      const refreshedRouteState = getRouteState("model-profiles");
-      const createdProfileIndex = refreshedRouteState?.profiles?.findIndex((profile) => profile.name === action.targetProfileName);
-      updateModelProfilesState(
-        navigation,
-        exitModelProfilesInlineCreate(navigation.modelProfiles, {
-          focusedProfileIndex: createdProfileIndex >= 0 ? createdProfileIndex : navigation.modelProfiles?.focusedProfileIndex,
-        }),
-      );
-      if (shouldShowProfileCreateOutput(action, result)) {
-        outputState = createOutputState({ action, result });
-        showModal(navigation, outputState);
-      } else {
-        outputState = undefined;
-        hideModal(navigation);
-      }
-      onNavigate();
-      return;
-    }
     if (shouldSuppressSuccessfulOutputPanel(action, result)) {
       if (action.id === "models-delete-focused") {
         finalizeSuccessfulModelProfilesDelete(navigation, getRouteState("model-profiles"));
@@ -736,87 +632,33 @@ function createMainScreen({
     onNavigate();
   }
 
-  function showAssignmentSaveError(error) {
-    outputState = createOutputState({
-      action: {
-        id: "model-profiles-save-assignments",
-        label: "Save staged assignments",
-        cliEquivalent: "TUI assignment save",
-      },
-      result: {
-        ok: false,
-        exitCode: 1,
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-        timedOut: false,
-      },
-    });
-    showModal(navigation, outputState);
-    onNavigate();
-  }
-
-  function finalizeAssignmentSave(saveResult) {
-    updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-
-    if (shouldShowAssignmentSaveOutput(saveResult)) {
-      outputState = createAssignmentSaveOutputState(saveResult.profileName, saveResult);
-      showModal(navigation, outputState);
-    } else {
-      outputState = undefined;
-      hideModal(navigation);
-    }
-
-    onNavigate();
-  }
-
-  function saveFocusedProfileAssignments() {
-    try {
-      const result = saveModelProfileAssignments({
-        profileName: navigation.modelProfiles?.targetProfileName,
-        assignments: navigation.modelProfiles?.stagedAssignments ?? {},
-        refreshActiveProfile: refreshActiveModelProfile,
-      });
-
-      if (result && typeof result.then === "function") {
-        result.then(finalizeAssignmentSave).catch(showAssignmentSaveError);
-        return;
-      }
-
-      finalizeAssignmentSave(result);
-    } catch (error) {
-      showAssignmentSaveError(error);
-    }
-  }
-
-  function startInlineProfileCreate() {
-    updateModelProfilesState(navigation, enterModelProfilesInlineCreate(navigation.modelProfiles));
-    onNavigate();
-  }
-
-  function submitInlineProfileCreate() {
-    const validatedState = validateModelProfilesInlineCreate(navigation.modelProfiles);
-    updateModelProfilesState(navigation, validatedState);
-    if (validatedState.createProfileValidation) {
-      onNavigate();
-      return;
-    }
-
-    const profileName = validatedState.createProfileName;
-    const resolvedAction = resolveExecutableAction(createModelProfileCreateAction(), { profileName });
-    runSelectedAction({ ...resolvedAction, targetProfileName: profileName });
-  }
+  const modelProfilesController = createModelProfilesInputController({
+    navigation,
+    onNavigate,
+    getRouteState: () => getRouteState("model-profiles"),
+    executeAction,
+    saveModelProfileAssignments,
+    refreshActiveModelProfile,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+      escape: (data) => matchesKey(data, Key.escape),
+    },
+  });
 
   return {
     render(width) {
+      const activeOutputState = modelProfilesController.getOutputState() ?? outputState;
       const interactiveActions = getRouteInteractiveActions(navigation.route);
       syncSectionActionSelection(navigation, interactiveActions.length);
 
       if (navigation.route === "configuration") {
-        return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, activeOutputState, interactiveActions);
       }
 
       if (navigation.route === "status") {
-        return appendInteractionPanels(renderFramedRouteScreen(renderStatusScreen(getRouteState("status"), width), navigation, width), navigation, outputState, interactiveActions);
+        return appendInteractionPanels(renderFramedRouteScreen(renderStatusScreen(getRouteState("status"), width), navigation, width), navigation, activeOutputState, interactiveActions);
       }
 
       if (navigation.route === "model-profiles") {
@@ -829,7 +671,7 @@ function createMainScreen({
             { headerRightLabel: buildModelProfilesHeaderLabel(routeState) },
           ),
           navigation,
-          outputState,
+          activeOutputState,
           interactiveActions,
         );
       }
@@ -1061,15 +903,14 @@ function createMainScreen({
       if (navigation.modal?.kind === "output") {
         if (matchesKey(data, Key.enter) || matchesKey(data, Key.escape) || shouldExitTui(data)) {
           outputState = undefined;
+          modelProfilesController.clearOutputState();
           hideModal(navigation);
           onNavigate();
         }
         return;
       }
 
-      if (navigation.route === "model-profiles" && navigation.modelProfiles?.mode === "assignments" && matchesKey(data, Key.escape)) {
-        updateModelProfilesState(navigation, exitModelProfilesAssignments(navigation.modelProfiles));
-        onNavigate();
+      if (modelProfilesController.handleInput(data)) {
         return;
       }
 
@@ -1081,125 +922,6 @@ function createMainScreen({
       const printable = data.length === 1 ? data.toLowerCase() : undefined;
       const interactiveActions = getRouteInteractiveActions(navigation.route);
       syncSectionActionSelection(navigation, interactiveActions.length);
-
-      if (navigation.route === "model-profiles") {
-        const routeState = getRouteState("model-profiles");
-
-        if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "assignments") {
-          if (matchesKey(data, Key.up)) {
-            updateModelProfilesState(navigation, moveModelProfilesAssignmentSelection(navigation.modelProfiles, routeState?.assignments?.length ?? 1, -1));
-            onNavigate();
-            return;
-          }
-
-          if (matchesKey(data, Key.down)) {
-            updateModelProfilesState(navigation, moveModelProfilesAssignmentSelection(navigation.modelProfiles, routeState?.assignments?.length ?? 1, 1));
-            onNavigate();
-            return;
-          }
-
-          if (matchesKey(data, Key.enter)) {
-            const focusedAssignment = routeState?.assignments?.[navigation.modelProfiles?.focusedAgentIndex ?? 0];
-            if (focusedAssignment) {
-              showModal(navigation, createFormState({ action: createModelProfileStageAction(focusedAssignment) }));
-              onNavigate();
-            }
-            return;
-          }
-
-          if (printable === "s") {
-            saveFocusedProfileAssignments();
-            return;
-          }
-        }
-
-        if ((routeState?.browse?.mode ?? navigation.modelProfiles?.mode) === "browse") {
-          const isInlineCreate = routeState?.browse?.inlineCreate !== undefined;
-
-          if (isInlineCreate) {
-            if (matchesKey(data, Key.up)) {
-              updateModelProfilesState(navigation, moveModelProfilesInlineCreateSelection(navigation.modelProfiles, -1));
-              onNavigate();
-              return;
-            }
-
-            if (matchesKey(data, Key.down)) {
-              updateModelProfilesState(navigation, moveModelProfilesInlineCreateSelection(navigation.modelProfiles, 1));
-              onNavigate();
-              return;
-            }
-
-            if (data === "\u007f") {
-              updateModelProfilesState(navigation, backspaceModelProfilesInlineCreateCharacter(navigation.modelProfiles));
-              onNavigate();
-              return;
-            }
-
-            if (matchesKey(data, Key.enter)) {
-              if (navigation.modelProfiles?.createProfileSelection === "cancel") {
-                updateModelProfilesState(navigation, exitModelProfilesInlineCreate(navigation.modelProfiles));
-                onNavigate();
-                return;
-              }
-
-              submitInlineProfileCreate();
-              return;
-            }
-
-            if (data.length === 1) {
-              updateModelProfilesState(navigation, appendModelProfilesInlineCreateCharacter(navigation.modelProfiles, data));
-              onNavigate();
-              return;
-            }
-
-            return;
-          }
-
-          if (matchesKey(data, Key.up)) {
-            updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, -1));
-            onNavigate();
-            return;
-          }
-
-          if (matchesKey(data, Key.down)) {
-            updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, 1));
-            onNavigate();
-            return;
-          }
-
-          const intent = matchesKey(data, Key.enter)
-            ? getModelProfilesBrowseIntent(routeState, "switch")
-            : isDeleteKey(data) || printable === "d"
-              ? getModelProfilesBrowseIntent(routeState, "delete")
-              : printable === "u"
-                ? getModelProfilesBrowseIntent(routeState, "edit")
-                : printable === "n"
-                  ? getModelProfilesBrowseIntent(routeState, "create")
-                  : { kind: "none" };
-
-          if (intent.kind === "run-action") {
-            runSelectedAction(intent.action);
-            return;
-          }
-
-          if (intent.kind === "confirm-action") {
-            showModal(navigation, createConfirmationState({ action: intent.action }));
-            onNavigate();
-            return;
-          }
-
-          if (intent.kind === "assignments-entry") {
-            updateModelProfilesState(navigation, enterModelProfilesAssignments(navigation.modelProfiles, intent.targetProfileName));
-            onNavigate();
-            return;
-          }
-
-          if (intent.kind === "create-entry") {
-            startInlineProfileCreate();
-            return;
-          }
-        }
-      }
 
       if (navigation.route === "home" && matchesKey(data, Key.up)) {
         updateHomeSelection(navigation, -1);
