@@ -22,6 +22,7 @@ import {
 import { createModalInputController } from "./lib/tui/modal-controller.mjs";
 import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.mjs";
 import { createHomeMenuInputController } from "./lib/tui/home-menu-controller.mjs";
+import { createGlobalHomeFallbackController } from "./lib/tui/global-home-fallback-controller.mjs";
 import { createSectionActionInputController } from "./lib/tui/section-action-controller.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
@@ -656,6 +657,12 @@ function createMainScreen({
       enter: (data) => matchesKey(data, Key.enter),
     },
   });
+  const globalHomeFallbackController = createGlobalHomeFallbackController({
+    navigation,
+    onNavigate,
+    setRoute: (route) => setRoute(navigation, route),
+    normalizeInput: (data) => (data.length === 1 ? data.toLowerCase() : undefined),
+  });
 
   return {
     render(width) {
@@ -710,12 +717,7 @@ function createMainScreen({
         return;
       }
 
-      const printable = data.length === 1 ? data.toLowerCase() : undefined;
-
-      if (navigation.route !== "home" && printable === "h") {
-        setRoute(navigation, "home");
-        onNavigate();
-      }
+      globalHomeFallbackController.handleInput(data);
     },
     invalidate() {},
   };

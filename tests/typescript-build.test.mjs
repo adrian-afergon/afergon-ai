@@ -52,6 +52,8 @@ describe("TypeScript build output", () => {
     const copiedActionExecutionPolicyRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.mjs");
     const copiedHomeMenuControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.d.mts");
     const copiedHomeMenuControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.mjs");
+    const copiedGlobalHomeFallbackControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.d.mts");
+    const copiedGlobalHomeFallbackControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.mjs");
     const copiedSectionActionControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.d.mts");
     const copiedSectionActionControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
@@ -74,6 +76,7 @@ describe("TypeScript build output", () => {
     const modalControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.js");
     const actionExecutionPolicyOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.js");
     const homeMenuControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.js");
+    const globalHomeFallbackControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.js");
     const sectionActionControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
@@ -188,6 +191,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedHomeMenuControllerRuntimePath, "utf8")).toContain("createHomeMenuInputController");
     const copiedHomeMenuController = await import(`${pathToFileURL(copiedHomeMenuControllerRuntimePath).href}?build-artifact`);
     expect(typeof copiedHomeMenuController.createHomeMenuInputController).toBe("function");
+    expect(existsSync(copiedGlobalHomeFallbackControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedGlobalHomeFallbackControllerBridgePath, "utf8")).toContain('export * from "./global-home-fallback-controller.ts"');
+    expect(existsSync(copiedGlobalHomeFallbackControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedGlobalHomeFallbackControllerRuntimePath, "utf8")).toContain("createGlobalHomeFallbackController");
+    const copiedGlobalHomeFallbackController = await import(`${pathToFileURL(copiedGlobalHomeFallbackControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedGlobalHomeFallbackController.createGlobalHomeFallbackController).toBe("function");
     expect(existsSync(copiedSectionActionControllerBridgePath)).toBe(true);
     expect(readFileSync(copiedSectionActionControllerBridgePath, "utf8")).toContain('export * from "./section-action-controller.ts"');
     expect(existsSync(copiedSectionActionControllerRuntimePath)).toBe(true);
@@ -254,6 +263,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(homeMenuControllerOutputPath, "utf8")).toContain('from "./home-menu-controller.mjs"');
     const emittedHomeMenuController = await import(`${pathToFileURL(homeMenuControllerOutputPath).href}?build-artifact`);
     expect(typeof emittedHomeMenuController.createHomeMenuInputController).toBe("function");
+    expect(existsSync(globalHomeFallbackControllerOutputPath)).toBe(true);
+    expect(readFileSync(globalHomeFallbackControllerOutputPath, "utf8")).toContain('from "./global-home-fallback-controller.mjs"');
+    const emittedGlobalHomeFallbackController = await import(`${pathToFileURL(globalHomeFallbackControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedGlobalHomeFallbackController.createGlobalHomeFallbackController).toBe("function");
     expect(existsSync(sectionActionControllerOutputPath)).toBe(true);
     expect(readFileSync(sectionActionControllerOutputPath, "utf8")).toContain('from "./section-action-controller.mjs"');
     const emittedSectionActionController = await import(`${pathToFileURL(sectionActionControllerOutputPath).href}?build-artifact`);
