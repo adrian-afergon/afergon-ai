@@ -21,6 +21,7 @@
     "scripts/lib/branding/**/*.ts",
     "scripts/lib/tui/command-manifest.ts",
     "scripts/lib/tui/navigation.ts",
+    "scripts/lib/tui/rendering.ts",
     "scripts/lib/tui/config-status-adapter.ts",
     "scripts/lib/tui/model-profiles-adapter.ts",
     "scripts/lib/tui/model-profiles-controller.ts",
