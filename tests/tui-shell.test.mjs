@@ -314,9 +314,10 @@ describe("createTuiApp", () => {
     expect(terminal.output).toContain("AFERGON-AI");
     expect(terminal.output).toContain("debate · specify · implement · review");
     expect(terminal.output).toContain("┌ Home");
-    expect(terminal.output).toContain("> Configuration [selected]");
+    expect(terminal.output).toContain("> Configuration");
     expect(terminal.output).toContain("  Status");
     expect(terminal.output).toContain("  Model Profiles");
+    expect(terminal.output).not.toContain("[selected]");
     expect(terminal.output).not.toContain("Current route: home");
     expect(stripAnsi(terminal.output)).toContain("└ ↑/↓ move ");
     expect(stripAnsi(terminal.output)).toContain("Press q or Esc to exit");
@@ -338,7 +339,8 @@ describe("createTuiApp", () => {
     await flushTui();
 
     expect(app.navigation.homeSelection).toBe(1);
-    expect(terminal.output).toContain("> Status [selected]");
+    expect(terminal.output).toContain("> Status");
+    expect(terminal.output).not.toContain("[selected]");
   
     terminal.emitInput("\r");
     await flushTui();

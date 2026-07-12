@@ -164,7 +164,7 @@ describe("sanitizeTerminalOutput", () => {
 });
 
 describe("createTuiApp interactive actions", () => {
-  it("renders teal selected actions, keeps [selected], hides noisy metadata, and still requires confirmation", async () => {
+  it("renders selected actions with a teal fixed cursor, hides noisy metadata, and still requires confirmation", async () => {
     const terminal = new FakeTerminal();
     const executeAction = vi.fn(async () => ({ ok: true, exitCode: 0, stdout: "updated\n", stderr: "", timedOut: false }));
     const app = createTuiApp({ terminal, exit: () => {}, loadStatusScreenState: getStatusFixture, interactiveActionsByRoute: { status: [createActionDefinition({ id: "status-update", section: "status", kind: "mutate", label: "Refresh managed files", argv: buildCommandArgv("update", ["--check"]), cliEquivalent: "afergon-ai update --check" })] }, executeAction });
@@ -173,7 +173,7 @@ describe("createTuiApp interactive actions", () => {
     terminal.output = "";
     terminal.emitInput("s");
     await flushTui();
-    expect(terminal.output).toContain("\u001b[38;5;6m> Refresh managed files [selected]\u001b[0m");
+    expect(terminal.output).toContain("\u001b[38;5;6m> Refresh managed files\u001b[0m");
     expect(terminal.output).not.toContain("CLI equivalent: afergon-ai update --check");
     expect(terminal.output).not.toContain("Execution: confirmation required");
     terminal.emitInput("\r");
@@ -192,7 +192,7 @@ describe("createTuiApp interactive actions", () => {
     terminal.output = "";
     terminal.emitInput("s");
     await flushTui();
-    expect(terminal.output).toContain("> Refresh managed files [selected]");
+    expect(terminal.output).toContain("> Refresh managed files");
     terminal.emitInput("\r");
     await flushTui();
     expect(terminal.output).toContain("Confirmation");
@@ -258,7 +258,7 @@ describe("createTuiApp interactive actions", () => {
     terminal.emitInput("s");
     await flushTui();
     expect(app.navigation.sectionActionSelection).toBe(0);
-    expect(terminal.output).toContain("> Run doctor [selected]");
+    expect(terminal.output).toContain("> Run doctor");
     terminal.emitInput("\r");
     await flushTui();
     expect(executeAction).toHaveBeenCalledWith(expect.objectContaining({ action: expect.objectContaining({ id: "status-doctor" }) }));

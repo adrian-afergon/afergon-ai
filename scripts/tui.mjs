@@ -37,6 +37,7 @@ import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
 import { buildCommandArgv } from "./lib/tui/command-manifest.mjs";
 import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
+import { renderFocusLine } from "./lib/tui/rendering.mjs";
 import {
   activateHomeSelection,
   closeModal,
@@ -285,7 +286,7 @@ export function renderHomeScreen(navigation, width) {
     "",
     "Sections available in this MVP slice:",
     ...homeItems.map((item) => {
-      const line = `${item.selected ? ">" : " "} ${item.label}${item.selected ? " [selected]" : ""}`;
+      const line = renderFocusLine(item.label, item.selected);
       return item.selected ? styleTeal(line) : line;
     }),
     "",
@@ -373,7 +374,7 @@ function renderInteractiveActions(actions, navigation) {
     "",
     ...actions.flatMap((action, index) => {
       const selected = (navigation.sectionActionSelection ?? 0) === index;
-      const line = `${selected ? ">" : " "} ${action.label}${selected ? " [selected]" : ""}`;
+      const line = renderFocusLine(action.label, selected);
       return [selected ? styleTeal(line) : line];
     }),
     "",
@@ -405,8 +406,8 @@ function renderConfirmationModal(modal) {
     ...(isSubmitCancel
       ? [
           "Choices:",
-          `${activeChoice === "submit" ? ">" : " "} Submit / confirm`,
-          `${activeChoice === "cancel" ? ">" : " "} Cancel`,
+          renderFocusLine("Submit / confirm", activeChoice === "submit"),
+          renderFocusLine("Cancel", activeChoice === "cancel"),
           "Use ↑/↓ to choose Submit or Cancel.",
           "Press Enter to choose.",
         ]
@@ -451,9 +452,9 @@ function renderPickerFormModal(modal) {
     "",
     ...modal.action.form.options.map((option, index) => {
       const selected = modal.activeIndex === index;
-      return `${selected ? ">" : " "} ${sanitizeTerminalOutput(option.label)}${selected ? " [selected]" : ""}`;
+      return renderFocusLine(sanitizeTerminalOutput(option.label), selected);
     }),
-    `${modal.activeIndex === cancelIndex ? ">" : " "} Cancel`,
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
     "",
     ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
     "Use ↑/↓ to move within the picker.",
@@ -472,14 +473,20 @@ function renderFieldsFormModal(modal) {
     ...(modal.action.cliEquivalent ? [`CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent)}`] : []),
     "",
     ...modal.action.form.fields.map((field, index) => {
-      const marker = modal.activeIndex === index ? ">" : " ";
+      const isFocused = modal.activeIndex === index;
       if (field.type === "toggle") {
-        return `${marker} ${sanitizeTerminalOutput(field.label)}: [${modal.values[field.id] ? "x" : " "}]`;
+        return renderFocusLine(
+          `${sanitizeTerminalOutput(field.label)}: [${modal.values[field.id] ? "x" : " "}]`,
+          isFocused,
+        );
       }
-      return `${marker} ${sanitizeTerminalOutput(field.label)}: ${sanitizeTerminalOutput(modal.values[field.id] || "(empty)")}`;
+      return renderFocusLine(
+        `${sanitizeTerminalOutput(field.label)}: ${sanitizeTerminalOutput(modal.values[field.id] || "(empty)")}`,
+        isFocused,
+      );
     }),
-    `${modal.activeIndex === submitIndex ? ">" : " "} Submit`,
-    `${modal.activeIndex === cancelIndex ? ">" : " "} Cancel`,
+    renderFocusLine("Submit", modal.activeIndex === submitIndex),
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
     "",
     ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
     "Use ↑/↓ to move within the form.",
@@ -499,12 +506,14 @@ function renderCheckboxFormModal(modal) {
     ...(modal.action.cliEquivalent ? [`CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent)}`] : []),
     "",
     ...options.map((option, index) => {
-      const marker = modal.activeIndex === index ? ">" : " ";
       const checked = modal.selectedIds.includes(option.id) ? "x" : " ";
-      return `${marker} ${sanitizeTerminalOutput(option.label)} [${checked}]`;
+      return renderFocusLine(
+        `${sanitizeTerminalOutput(option.label)} [${checked}]`,
+        modal.activeIndex === index,
+      );
     }),
-    `${modal.activeIndex === submitIndex ? ">" : " "} Submit`,
-    `${modal.activeIndex === cancelIndex ? ">" : " "} Cancel`,
+    renderFocusLine("Submit", modal.activeIndex === submitIndex),
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
     "",
     ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
     "Use ↑/↓ to move within the form.",
