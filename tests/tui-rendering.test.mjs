@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import * as renderingTypeScript from "../scripts/lib/tui/rendering.ts";
 import { renderFocusLine } from "../scripts/lib/tui/rendering.mjs";
 
 describe("renderFocusLine", () => {
-  it("renders a focused row with the cursor prefix", () => {
-    expect(renderFocusLine("Configuration", true)).toBe("> Configuration");
+  it("keeps the TypeScript public surface in parity with the runtime MJS helper", () => {
+    expect(Object.keys(renderingTypeScript).sort()).toEqual(["renderFocusLine"]);
   });
 
-  it("reserves the cursor column for an unfocused row", () => {
-    expect(renderFocusLine("Configuration", false)).toBe("  Configuration");
+  it("renders focused and unfocused content in MJS and TypeScript parity", () => {
+    for (const [content, isFocused, expected] of [
+      ["Configuration", true, "> Configuration"],
+      ["Status", false, "  Status"],
+      ["", false, "  "],
+    ]) {
+      expect(renderFocusLine(content, isFocused)).toBe(expected);
+      expect(renderingTypeScript.renderFocusLine(content, isFocused)).toBe(expected);
+      expect(renderingTypeScript.renderFocusLine(content, isFocused)).toBe(renderFocusLine(content, isFocused));
+    }
   });
 });

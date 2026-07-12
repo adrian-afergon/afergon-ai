@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -43,6 +43,8 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.mjs");
     const copiedCliDispatchCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.d.mts");
     const copiedCliDispatchWrapperPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.mjs");
+    const copiedRenderingBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.d.mts");
+    const copiedRenderingRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
     const copiedModelProfilesControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.d.mts");
     const copiedModelProfilesControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.mjs");
@@ -78,6 +80,8 @@ describe("TypeScript build output", () => {
     const homeMenuControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.js");
     const globalHomeFallbackControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.js");
     const sectionActionControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.js");
+    const renderingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.js");
+    const emittedRenderingDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.d.ts");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -163,6 +167,52 @@ describe("TypeScript build output", () => {
     expect(copiedCliDispatchError.status).toBe(1);
     expect(copiedCliDispatchError.stdout).toBe("");
     expect(copiedCliDispatchError.stderr).toBe("Unknown command: not-a-command\nRun 'afergon-ai --help' for usage.\n");
+    expect(existsSync(copiedRenderingBridgePath)).toBe(true);
+    expect(readFileSync(copiedRenderingBridgePath, "utf8")).toContain("export function renderFocusLine");
+    expect(readFileSync(copiedRenderingBridgePath, "utf8")).not.toContain(".ts");
+    expect(existsSync(copiedRenderingRuntimePath)).toBe(true);
+    expect(readFileSync(copiedRenderingRuntimePath, "utf8")).toContain("export function renderFocusLine");
+    const emittedRenderingDeclaration = readFileSync(emittedRenderingDeclarationPath, "utf8");
+    rmSync(emittedRenderingDeclarationPath);
+    const externalConsumerDirectory = mkdtempSync(path.join(repoRoot, ".rendering-consumer-"));
+    const externalConsumerPath = path.join(externalConsumerDirectory, "consumer.mts");
+    try {
+      writeFileSync(
+        externalConsumerPath,
+        [
+          'import { renderFocusLine } from "../dist/scripts/lib/tui/rendering.mjs";',
+          'const focused: string = renderFocusLine("Status", true);',
+          'const unfocused: string = renderFocusLine("Status", false);',
+          'const unspecifiedFocus: string = renderFocusLine("Status", undefined);',
+          "void focused;",
+          "void unfocused;",
+          "void unspecifiedFocus;",
+          "",
+        ].join("\n"),
+      );
+      const externalConsumerTypecheck = spawnSync(
+        pnpmCommand,
+        [
+          "exec",
+          "tsc",
+          "--noEmit",
+          "--strict",
+          "--target",
+          "ES2022",
+          "--module",
+          "NodeNext",
+          "--moduleResolution",
+          "NodeNext",
+          externalConsumerPath,
+        ],
+        { cwd: repoRoot, encoding: "utf8", timeout: 120000 },
+      );
+      expect(externalConsumerTypecheck.status).toBe(0);
+      expect(externalConsumerTypecheck.stderr).toBe("");
+    } finally {
+      rmSync(externalConsumerDirectory, { recursive: true, force: true });
+      writeFileSync(emittedRenderingDeclarationPath, emittedRenderingDeclaration);
+    }
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
@@ -271,6 +321,9 @@ describe("TypeScript build output", () => {
     expect(readFileSync(sectionActionControllerOutputPath, "utf8")).toContain('from "./section-action-controller.mjs"');
     const emittedSectionActionController = await import(`${pathToFileURL(sectionActionControllerOutputPath).href}?build-artifact`);
     expect(typeof emittedSectionActionController.createSectionActionInputController).toBe("function");
+    expect(existsSync(renderingOutputPath)).toBe(true);
+    const emittedRendering = await import(`${pathToFileURL(renderingOutputPath).href}?build-artifact`);
+    expect(emittedRendering.renderFocusLine("Status", true)).toBe("> Status");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);
