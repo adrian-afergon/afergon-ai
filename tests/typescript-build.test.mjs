@@ -7,6 +7,13 @@ import { describe, expect, it } from "vitest";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
 describe("TypeScript build output", () => {
+  it("declares a package lifecycle build for the ignored dist runtime", () => {
+    const packageMetadata = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+
+    expect(packageMetadata.files).toContain("dist/");
+    expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
+  });
+
   it("copies declaration bridges for runtime .mjs dependencies into dist", async () => {
     const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const result = spawnSync(pnpmCommand, ["run", "build"], {
@@ -43,6 +50,9 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.mjs");
     const copiedCliDispatchCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.d.mts");
     const copiedCliDispatchWrapperPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.mjs");
+    const copiedPromptPath = path.join(repoRoot, "dist", "prompts", "afergon-ai.md");
+    const copiedAdapterPath = path.join(repoRoot, "dist", "adapters", "opencode", "opencode.json");
+    const copiedSkillPath = path.join(repoRoot, "dist", "skills", "implement", "SKILL.md");
     const copiedRenderingBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.d.mts");
     const copiedRenderingRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
@@ -146,6 +156,9 @@ describe("TypeScript build output", () => {
       forwardedArgs: [],
     });
     expect(existsSync(copiedCliDispatchWrapperPath)).toBe(true);
+    expect(existsSync(copiedPromptPath)).toBe(true);
+    expect(existsSync(copiedAdapterPath)).toBe(true);
+    expect(existsSync(copiedSkillPath)).toBe(true);
     const copiedCliDispatchWrapper = await import(`${pathToFileURL(copiedCliDispatchWrapperPath).href}?build-artifact`);
     expect(copiedCliDispatchWrapper.resolveDispatchPlan({ argv: ["--help"], isInteractiveTTY: false, isCI: true })).toEqual({
       kind: "help",
@@ -154,11 +167,19 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchHelp = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "--help"], {
       cwd: repoRoot,
       encoding: "utf8",
-      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true", PATH: "" },
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
     });
     expect(copiedCliDispatchHelp.status).toBe(0);
     expect(copiedCliDispatchHelp.stdout).toBe(copiedCliDispatchWrapper.formatHelp());
     expect(copiedCliDispatchHelp.stderr).toBe("");
+    const builtBinHelp = spawnSync("bash", [path.join(repoRoot, "bin", "afergon-ai"), "--help"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
+    });
+    expect(builtBinHelp.status).toBe(0);
+    expect(builtBinHelp.stdout).toBe(copiedCliDispatchWrapper.formatHelp());
+    expect(builtBinHelp.stderr).toBe("");
     const copiedCliDispatchError = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "not-a-command"], {
       cwd: repoRoot,
       encoding: "utf8",
