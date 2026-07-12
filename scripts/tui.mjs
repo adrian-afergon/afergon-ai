@@ -21,6 +21,7 @@ import {
 } from "./lib/tui/actions/forms.mjs";
 import { createModalInputController } from "./lib/tui/modal-controller.mjs";
 import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.mjs";
+import { createHomeMenuInputController } from "./lib/tui/home-menu-controller.mjs";
 import { createSectionActionInputController } from "./lib/tui/section-action-controller.mjs";
 import { runActionCommand } from "./lib/tui/actions/runner.mjs";
 import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
@@ -28,11 +29,9 @@ import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tu
 import { createModelProfilesInputController } from "./lib/tui/model-profiles-controller.mjs";
 import { renderFocusLine } from "./lib/tui/rendering.mjs";
 import {
-  activateHomeSelection,
   closeModal,
   createNavigationState,
   HOME_MENU_ROUTES,
-  moveHomeSelection,
   navigateTo,
   openModal,
   stageModelProfilesAssignment,
@@ -271,14 +270,6 @@ export function createHomeScreen({ navigation, onExit }) {
 
 function setRoute(navigation, route) {
   Object.assign(navigation, navigateTo(navigation, route));
-}
-
-function updateHomeSelection(navigation, direction) {
-  Object.assign(navigation, moveHomeSelection(navigation, direction));
-}
-
-function activateSelectedHomeRoute(navigation) {
-  Object.assign(navigation, activateHomeSelection(navigation));
 }
 
 function showModal(navigation, modal) {
@@ -654,6 +645,17 @@ function createMainScreen({
       enter: (data) => matchesKey(data, Key.enter),
     },
   });
+  const homeMenuController = createHomeMenuInputController({
+    navigation,
+    onNavigate,
+    setRoute: (route) => setRoute(navigation, route),
+    normalizeInput: (data) => (data.length === 1 ? data.toLowerCase() : undefined),
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+    },
+  });
 
   return {
     render(width) {
@@ -702,46 +704,13 @@ function createMainScreen({
         return;
       }
 
-      const printable = data.length === 1 ? data.toLowerCase() : undefined;
-      if (navigation.route === "home" && matchesKey(data, Key.up)) {
-        updateHomeSelection(navigation, -1);
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route === "home" && matchesKey(data, Key.down)) {
-        updateHomeSelection(navigation, 1);
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route === "home" && matchesKey(data, Key.enter)) {
-        activateSelectedHomeRoute(navigation);
-        onNavigate();
-        return;
-      }
+      if (homeMenuController.handleInput(data)) return;
 
       if (sectionActionController.handleInput(data)) {
         return;
       }
 
-      if (navigation.route === "home" && printable === "c") {
-        setRoute(navigation, "configuration");
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route === "home" && printable === "s") {
-        setRoute(navigation, "status");
-        onNavigate();
-        return;
-      }
-
-      if (navigation.route === "home" && printable === "m") {
-        setRoute(navigation, "model-profiles");
-        onNavigate();
-        return;
-      }
+      const printable = data.length === 1 ? data.toLowerCase() : undefined;
 
       if (navigation.route !== "home" && printable === "h") {
         setRoute(navigation, "home");

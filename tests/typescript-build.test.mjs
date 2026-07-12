@@ -50,6 +50,8 @@ describe("TypeScript build output", () => {
     const copiedModalControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.mjs");
     const copiedActionExecutionPolicyBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.d.mts");
     const copiedActionExecutionPolicyRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.mjs");
+    const copiedHomeMenuControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.d.mts");
+    const copiedHomeMenuControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.mjs");
     const copiedSectionActionControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.d.mts");
     const copiedSectionActionControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
@@ -71,6 +73,7 @@ describe("TypeScript build output", () => {
     const modelProfilesControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.js");
     const modalControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.js");
     const actionExecutionPolicyOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.js");
+    const homeMenuControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.js");
     const sectionActionControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
@@ -179,6 +182,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedActionExecutionPolicyRuntimePath, "utf8")).toContain("createActionExecutionPolicy");
     const copiedActionExecutionPolicy = await import(`${pathToFileURL(copiedActionExecutionPolicyRuntimePath).href}?build-artifact`);
     expect(typeof copiedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(copiedHomeMenuControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedHomeMenuControllerBridgePath, "utf8")).toContain('export * from "./home-menu-controller.ts"');
+    expect(existsSync(copiedHomeMenuControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedHomeMenuControllerRuntimePath, "utf8")).toContain("createHomeMenuInputController");
+    const copiedHomeMenuController = await import(`${pathToFileURL(copiedHomeMenuControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedHomeMenuController.createHomeMenuInputController).toBe("function");
     expect(existsSync(copiedSectionActionControllerBridgePath)).toBe(true);
     expect(readFileSync(copiedSectionActionControllerBridgePath, "utf8")).toContain('export * from "./section-action-controller.ts"');
     expect(existsSync(copiedSectionActionControllerRuntimePath)).toBe(true);
@@ -241,6 +250,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(actionExecutionPolicyOutputPath, "utf8")).toContain('from "./action-execution-policy.mjs"');
     const emittedActionExecutionPolicy = await import(`${pathToFileURL(actionExecutionPolicyOutputPath).href}?build-artifact`);
     expect(typeof emittedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(homeMenuControllerOutputPath)).toBe(true);
+    expect(readFileSync(homeMenuControllerOutputPath, "utf8")).toContain('from "./home-menu-controller.mjs"');
+    const emittedHomeMenuController = await import(`${pathToFileURL(homeMenuControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedHomeMenuController.createHomeMenuInputController).toBe("function");
     expect(existsSync(sectionActionControllerOutputPath)).toBe(true);
     expect(readFileSync(sectionActionControllerOutputPath, "utf8")).toContain('from "./section-action-controller.mjs"');
     const emittedSectionActionController = await import(`${pathToFileURL(sectionActionControllerOutputPath).href}?build-artifact`);
