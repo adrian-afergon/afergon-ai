@@ -48,6 +48,8 @@ describe("TypeScript build output", () => {
     const copiedModelProfilesControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.mjs");
     const copiedModalControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.d.mts");
     const copiedModalControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.mjs");
+    const copiedActionExecutionPolicyBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.d.mts");
+    const copiedActionExecutionPolicyRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const formsConfirmationOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.js");
@@ -66,6 +68,7 @@ describe("TypeScript build output", () => {
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
     const modelProfilesControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.js");
     const modalControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.js");
+    const actionExecutionPolicyOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.js");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -167,6 +170,12 @@ describe("TypeScript build output", () => {
     expect(readFileSync(copiedModalControllerRuntimePath, "utf8")).toContain("createModalInputController");
     const copiedModalController = await import(`${pathToFileURL(copiedModalControllerRuntimePath).href}?build-artifact`);
     expect(typeof copiedModalController.createModalInputController).toBe("function");
+    expect(existsSync(copiedActionExecutionPolicyBridgePath)).toBe(true);
+    expect(readFileSync(copiedActionExecutionPolicyBridgePath, "utf8")).toContain('export * from "./action-execution-policy.ts"');
+    expect(existsSync(copiedActionExecutionPolicyRuntimePath)).toBe(true);
+    expect(readFileSync(copiedActionExecutionPolicyRuntimePath, "utf8")).toContain("createActionExecutionPolicy");
+    const copiedActionExecutionPolicy = await import(`${pathToFileURL(copiedActionExecutionPolicyRuntimePath).href}?build-artifact`);
+    expect(typeof copiedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
     expect(existsSync(actionRunnerOutputPath)).toBe(true);
     expect(readFileSync(actionRunnerOutputPath, "utf8")).toContain("export function runActionCommand");
     expect(existsSync(formsConfirmationOutputPath)).toBe(true);
@@ -219,6 +228,10 @@ describe("TypeScript build output", () => {
     expect(readFileSync(modalControllerOutputPath, "utf8")).toContain('from "./modal-controller.mjs"');
     const emittedModalController = await import(`${pathToFileURL(modalControllerOutputPath).href}?build-artifact`);
     expect(typeof emittedModalController.createModalInputController).toBe("function");
+    expect(existsSync(actionExecutionPolicyOutputPath)).toBe(true);
+    expect(readFileSync(actionExecutionPolicyOutputPath, "utf8")).toContain('from "./action-execution-policy.mjs"');
+    const emittedActionExecutionPolicy = await import(`${pathToFileURL(actionExecutionPolicyOutputPath).href}?build-artifact`);
+    expect(typeof emittedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);

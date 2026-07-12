@@ -1,6 +1,5 @@
-import { hasDegradedRefreshGuidance } from "../model-profiles.mjs";
-import { resolveActionArgv } from "./actions/definitions.mjs";
 import { createConfirmationState, createFormState, createOutputState } from "./actions/forms.mjs";
+import { createActionExecutionPolicy } from "./action-execution-policy.mjs";
 import { getModelProfilesBrowseIntent } from "./model-profiles-adapter.mjs";
 import {
   appendModelProfilesInlineCreateCharacter,
@@ -59,22 +58,6 @@ function hideModal(navigation) {
   navigation.modal = closeModal(navigation).modal;
 }
 
-function shouldSuppressSuccessfulOutputPanel(action, result) {
-  if (result?.ok !== true || !["models-switch-focused", "models-delete-focused"].includes(action?.id)) {
-    return false;
-  }
-
-  const stderr = String(result.stderr ?? "").trim();
-  return !stderr && !hasDegradedRefreshGuidance({ stdout: String(result.stdout ?? "").toLowerCase(), stderr });
-}
-
-function shouldShowProfileCreateOutput(action, result) {
-  return result?.ok === true && action?.id === "model-profiles-create-profile" && hasDegradedRefreshGuidance({
-    stdout: String(result.stdout ?? ""),
-    stderr: String(result.stderr ?? ""),
-  });
-}
-
 /**
  * Creates the route-local Model Profiles input controller.
  * Key recognition is injected so this module remains independent of Pi TUI.
@@ -89,16 +72,6 @@ export function createModelProfilesInputController({
   keyMatches,
 }) {
   let outputState;
-
-  function resolveExecutableAction(action, input = {}) {
-    const argv = resolveActionArgv(action, input);
-    return {
-      ...action,
-      argv,
-      cliEquivalent: action.buildArgv ? `afergon-ai ${argv.join(" ")}` : (action.cliEquivalent ?? `afergon-ai ${argv.join(" ")}`),
-      confirmation: typeof action.buildConfirmation === "function" ? action.buildConfirmation(input) : action.confirmation,
-    };
-  }
 
   function finalizeSuccessfulDelete(routeState) {
     const currentIndex = Number.isInteger(navigation.modelProfiles?.focusedProfileIndex) ? navigation.modelProfiles.focusedProfileIndex : 0;
@@ -116,39 +89,24 @@ export function createModelProfilesInputController({
     });
   }
 
-  async function runSelectedAction(action) {
-    const result = await executeAction({ action });
-    if (action.id === "model-profiles-create-profile" && result.ok) {
+  const actionExecutionPolicy = createActionExecutionPolicy({
+    executeAction,
+    createOutputState,
+    showModal: (modal) => showModal(navigation, modal),
+    hideModal: () => hideModal(navigation),
+    onNavigate,
+    getRouteState,
+    setOutputState: (nextOutputState) => { outputState = nextOutputState; },
+    finalizeSuccessfulDelete,
+    finalizeSuccessfulProfileCreate: (action) => {
       const refreshedRouteState = getRouteState();
       const createdProfileIndex = refreshedRouteState?.profiles?.findIndex((profile) => profile.name === action.targetProfileName);
       updateModelProfilesState(navigation, exitModelProfilesInlineCreate(navigation.modelProfiles, {
         focusedProfileIndex: createdProfileIndex >= 0 ? createdProfileIndex : navigation.modelProfiles?.focusedProfileIndex,
       }));
-      if (shouldShowProfileCreateOutput(action, result)) {
-        outputState = createOutputState({ action, result });
-        showModal(navigation, outputState);
-      } else {
-        outputState = undefined;
-        hideModal(navigation);
-      }
-      onNavigate();
-      return;
-    }
-
-    if (shouldSuppressSuccessfulOutputPanel(action, result)) {
-      if (action.id === "models-delete-focused") {
-        finalizeSuccessfulDelete(getRouteState());
-      }
-      outputState = undefined;
-      hideModal(navigation);
-      onNavigate();
-      return;
-    }
-
-    outputState = createOutputState({ action, result });
-    showModal(navigation, outputState);
-    onNavigate();
-  }
+    },
+  });
+  const { resolveExecutableAction, runSelectedAction } = actionExecutionPolicy;
 
   function showAssignmentSaveError(error) {
     outputState = createOutputState({
