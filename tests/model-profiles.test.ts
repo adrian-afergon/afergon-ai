@@ -1,8 +1,10 @@
+// This parity suite retains dynamic imports of the authoritative MJS runtime during Phase 2.
+// @ts-nocheck
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -187,7 +189,7 @@ exit 127
 
 describe("model profile resolution", () => {
   it("exports only the intended public model profile facade helpers", async () => {
-    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.js");
     const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
     const expectedExports = [
       "SUPPORTED_AGENTS",
@@ -219,7 +221,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the TypeScript model profile facade export surface in parity with the runtime facade", async () => {
-    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.js");
     const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
 
     expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(Object.keys(modelProfilesRuntime).sort());
@@ -227,7 +229,7 @@ describe("model profile resolution", () => {
   });
 
   it("exports only the intended public model profile config helpers", async () => {
-    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
     const expectedExports = [
       "createDefaultConfig",
@@ -245,7 +247,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for env path helpers", async () => {
-    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
 
     const explicitConfigEnv = {
@@ -277,7 +279,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for default profile helpers", async () => {
-    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
 
     const typeScriptDefaultConfig = modelProfilesConfigTypeScript.createDefaultConfig();
@@ -315,7 +317,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for persistence helpers", async () => {
-    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
     const tempRoot = makeTempRoot();
     const typeScriptEnv = {
@@ -401,7 +403,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for invalid config errors", async () => {
-    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
     const tempRoot = makeTempRoot();
     const typeScriptConfigDir = path.join(tempRoot, "bad-config-ts");
@@ -420,7 +422,7 @@ describe("model profile resolution", () => {
   });
 
   it("exports only the intended public model profile core helpers", async () => {
-    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.js");
     const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
     const expectedExports = [
       "SUPPORTED_AGENTS",
@@ -440,7 +442,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for normalization helpers", async () => {
-    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.js");
     const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
 
     expect(modelProfilesCoreTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesCoreRuntime.SUPPORTED_AGENTS);
@@ -484,7 +486,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for assignment and refresh helpers", async () => {
-    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.js");
     const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
     const profile = {
       "afergon-ai": "openai/gpt-5.5",
@@ -526,7 +528,7 @@ describe("model profile resolution", () => {
   });
 
   it("exports only the intended public model profile availability helpers", async () => {
-    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.js");
     const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
     const expectedExports = [
       "listOpenCodeProviderModels",
@@ -538,7 +540,7 @@ describe("model profile resolution", () => {
   });
 
   it("exports only the intended public model profile host seeding helpers", async () => {
-    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.js");
     const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
     const expectedExports = ["readOpenCodeAgentModels"];
 
@@ -547,7 +549,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for missing and empty host config cases", async () => {
-    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.js");
     const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
     const tempRoot = makeTempRoot();
     const missingConfigEnv = {
@@ -573,7 +575,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for seeded snapshots", async () => {
-    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.js");
     const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
     const tempRoot = makeTempRoot();
     const opencodeDir = path.join(tempRoot, "xdg", "opencode");
@@ -609,8 +611,10 @@ describe("model profile resolution", () => {
     });
   });
 
-  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for warning cases", async () => {
-    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+  it("keeps the emitted NodeNext host-seeding JavaScript warning behavior in parity with the runtime .mjs module", async () => {
+    const modelProfilesHostSeedingTypeScript = await import(
+      pathToFileURL(path.join(repoRoot, "dist", "scripts", "lib", "model-profiles-host-seeding.js")).href,
+    );
     const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
     const tempRoot = makeTempRoot();
     const invalidConfigDir = path.join(tempRoot, "invalid-xdg", "opencode");
@@ -639,7 +643,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for provider listing edge cases", async () => {
-    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.js");
     const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
     const tempRoot = makeTempRoot();
     const fakeBin = writeFakeOpencodeCli(tempRoot, {
@@ -680,7 +684,7 @@ describe("model profile resolution", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for model validation outcomes", async () => {
-    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.js");
     const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
     const tempRoot = makeTempRoot();
     const fakeBin = writeFakeOpencodeCli(tempRoot, {
@@ -839,7 +843,7 @@ describe("agent aliases", () => {
 
 describe("models CLI behavior", () => {
   it("exports only the intended public models CLI core helpers", async () => {
-    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.js");
     const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
     const expectedExports = [
       "createRefreshResult",
@@ -858,7 +862,7 @@ describe("models CLI behavior", () => {
   });
 
   it("keeps the TypeScript models CLI core mirror in parity with the runtime module", async () => {
-    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.js");
     const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
     const moduleUrl = new URL("../scripts/models.mjs", import.meta.url);
     const config = {
@@ -1584,7 +1588,7 @@ describe("saveProfileAssignments", () => {
   }
 
   it("exports only the intended public model profile save orchestration helpers", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
     const expectedExports = ["saveProfileAssignments"];
 
@@ -1593,7 +1597,7 @@ describe("saveProfileAssignments", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for inactive-profile saves", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
     const tempRoot = makeTempRoot();
     const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
@@ -1647,7 +1651,7 @@ describe("saveProfileAssignments", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for validation, missing-profile, and rejected-refresh failures", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
 
     const validationTempRoot = makeTempRoot();
@@ -1719,7 +1723,7 @@ describe("saveProfileAssignments", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for sync and async active-profile refresh results", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
 
     const syncTempRoot = makeTempRoot();
@@ -1838,7 +1842,7 @@ describe("saveProfileAssignments", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for function-shaped thenable immediate return values", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
 
     const thenableTempRoot = makeTempRoot();
@@ -1904,7 +1908,7 @@ describe("saveProfileAssignments", () => {
   });
 
   it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for degraded guidance normalization", async () => {
-    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.js");
     const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
     const tempRoot = makeTempRoot();
     const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
