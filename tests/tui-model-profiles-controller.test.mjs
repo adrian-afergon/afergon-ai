@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/model-profiles-controller.ts";
-import { createModelProfilesInputController } from "../scripts/lib/tui/model-profiles-controller.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+import { createModelProfilesInputController } from "../scripts/lib/tui/model-profiles-controller.js";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
 
 const keys = {
   up: (data) => data === "up",

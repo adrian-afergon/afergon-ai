@@ -29,7 +29,7 @@ describe("Windows CMD launcher argv contract", () => {
     fs.mkdirSync(fixtureDist, { recursive: true });
     fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
     fs.copyFileSync(process.execPath, path.join(fixtureBin, "node.exe"));
-    fs.writeFileSync(path.join(fixtureDist, "cli-dispatch.mjs"), "throw new Error('argv probe should exit first');\n");
+    fs.writeFileSync(path.join(fixtureDist, "cli-dispatch.js"), "throw new Error('argv probe should exit first');\n");
     writeProbePreload(preloadPath);
 
     // In a batch caller, %% produces one literal percent. value is intentionally
@@ -55,7 +55,7 @@ describe("Windows CMD launcher argv contract", () => {
       expect(result.status).toBe(0);
       expect(result.stderr).toBe("");
       expect(JSON.parse(fs.readFileSync(probePath, "utf8"))).toEqual([
-        path.join(fixtureDist, "cli-dispatch.mjs"),
+        path.join(fixtureDist, "cli-dispatch.js"),
         "space value",
         "bang!value!",
         "percent%value%",

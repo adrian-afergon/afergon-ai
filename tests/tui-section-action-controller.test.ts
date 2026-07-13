@@ -3,8 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/section-action-controller.ts";
-import { createSectionActionInputController } from "../scripts/lib/tui/section-action-controller.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+import { createSectionActionInputController } from "../scripts/lib/tui/section-action-controller.js";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
 
 const keys = {
   up: (data) => data === "up",

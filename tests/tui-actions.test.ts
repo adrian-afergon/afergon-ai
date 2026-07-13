@@ -4,12 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import * as actionDefinitionsTypeScript from "../scripts/lib/tui/actions/definitions.ts";
 import * as actionRunnerTypeScript from "../scripts/lib/tui/actions/runner.ts";
-import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.js";
 import {
   createActionDefinition as createActionDefinitionRuntime,
   formatActionCliEquivalent as formatActionCliEquivalentRuntime,
   resolveActionArgv as resolveActionArgvRuntime,
-} from "../scripts/lib/tui/actions/definitions.mjs";
+} from "../scripts/lib/tui/actions/definitions.js";
 import {
   appendConfirmationCharacter,
   appendFormCharacter,
@@ -29,10 +29,10 @@ import {
   toggleCheckboxFormSelection,
   validateConfirmationState,
   validateFormInput,
-} from "../scripts/lib/tui/actions/forms.mjs";
-import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
-import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+} from "../scripts/lib/tui/actions/forms.js";
+import { runActionCommand } from "../scripts/lib/tui/actions/runner.js";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.js";
+import { createTuiApp } from "../scripts/tui.js";
 
 class FakeTerminal {
   constructor() { this.columns = 100; this.rows = 30; this.kittyProtocolActive = false; this.output = ""; this.stopCalls = 0; }
@@ -88,7 +88,7 @@ describe("runActionCommand", () => {
     const runtime = createSpawnImpl();
     const runtimeResult = await runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       cwd: "/tmp/afergon-ai",
       spawnImpl: runtime.spawnImpl,
     });
@@ -96,7 +96,7 @@ describe("runActionCommand", () => {
     const typeScript = createSpawnImpl();
     const typeScriptResult = await actionRunnerTypeScript.runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       cwd: "/tmp/afergon-ai",
       spawnImpl: typeScript.spawnImpl,
     });
@@ -104,7 +104,7 @@ describe("runActionCommand", () => {
     expect(typeScriptResult).toEqual(runtimeResult);
     expect(typeScript.spawnImpl).toHaveBeenCalledWith(
       process.execPath,
-      ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       expect.objectContaining({ cwd: "/tmp/afergon-ai", shell: false }),
     );
   });
@@ -113,7 +113,7 @@ describe("runActionCommand", () => {
     const runtimeFailureChild = new FakeChildProcess();
     const runtimeFailure = runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "update"],
+      argv: ["scripts/cli-dispatch.js", "update"],
       spawnImpl: vi.fn(() => {
         queueMicrotask(() => {
           runtimeFailureChild.emitStderr("permission denied\n");
@@ -126,7 +126,7 @@ describe("runActionCommand", () => {
     const typeScriptFailureChild = new FakeChildProcess();
     const typeScriptFailure = actionRunnerTypeScript.runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "update"],
+      argv: ["scripts/cli-dispatch.js", "update"],
       spawnImpl: vi.fn(() => {
         queueMicrotask(() => {
           typeScriptFailureChild.emitStderr("permission denied\n");
@@ -141,7 +141,7 @@ describe("runActionCommand", () => {
     const runtimeTimeoutChild = new FakeChildProcess();
     const runtimeTimeout = await runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      argv: ["scripts/cli-dispatch.js", "doctor"],
       timeoutMs: 5,
       spawnImpl: vi.fn(() => runtimeTimeoutChild),
     });
@@ -149,7 +149,7 @@ describe("runActionCommand", () => {
     const typeScriptTimeoutChild = new FakeChildProcess();
     const typeScriptTimeout = await actionRunnerTypeScript.runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      argv: ["scripts/cli-dispatch.js", "doctor"],
       timeoutMs: 5,
       spawnImpl: vi.fn(() => typeScriptTimeoutChild),
     });
@@ -175,7 +175,7 @@ describe("runActionCommand", () => {
 
     const runtime = await runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       spawnImpl: createSpawnImpl().spawnImpl,
       maxStreamBytes: 12,
       maxStreamLines: 2,
@@ -183,7 +183,7 @@ describe("runActionCommand", () => {
 
     const typeScript = await actionRunnerTypeScript.runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       spawnImpl: createSpawnImpl().spawnImpl,
       maxStreamBytes: 12,
       maxStreamLines: 2,
@@ -208,18 +208,18 @@ describe("runActionCommand", () => {
   it("spawns explicit argv arrays with shell disabled and captures output", async () => {
     const child = new FakeChildProcess();
     const spawnImpl = vi.fn(() => { queueMicrotask(() => { child.emitStdout("doctor ok\n"); child.emit("close", 0); }); return child; });
-    const result = await runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"], cwd: "/tmp/afergon-ai", spawnImpl });
-    expect(spawnImpl).toHaveBeenCalledWith(process.execPath, ["scripts/cli-dispatch.mjs", "doctor", "--opencode"], expect.objectContaining({ cwd: "/tmp/afergon-ai", shell: false }));
+    const result = await runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"], cwd: "/tmp/afergon-ai", spawnImpl });
+    expect(spawnImpl).toHaveBeenCalledWith(process.execPath, ["scripts/cli-dispatch.js", "doctor", "--opencode"], expect.objectContaining({ cwd: "/tmp/afergon-ai", shell: false }));
     expect(result).toEqual(expect.objectContaining({ ok: true, exitCode: 0, stdout: "doctor ok\n", stderr: "" }));
   });
 
   it("reports stderr and timeout failures without falling back to a shell string", async () => {
     const failureChild = new FakeChildProcess();
-    const failureResult = runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.mjs", "update"], spawnImpl: vi.fn(() => { queueMicrotask(() => { failureChild.emitStderr("permission denied\n"); failureChild.emit("close", 1); }); return failureChild; }) });
+    const failureResult = runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.js", "update"], spawnImpl: vi.fn(() => { queueMicrotask(() => { failureChild.emitStderr("permission denied\n"); failureChild.emit("close", 1); }); return failureChild; }) });
     await expect(failureResult).resolves.toEqual(expect.objectContaining({ ok: false, exitCode: 1, stderr: "permission denied\n", timedOut: false }));
 
     const timeoutChild = new FakeChildProcess();
-    const timeoutResult = await runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.mjs", "doctor"], timeoutMs: 5, spawnImpl: vi.fn(() => timeoutChild) });
+    const timeoutResult = await runActionCommand({ command: process.execPath, argv: ["scripts/cli-dispatch.js", "doctor"], timeoutMs: 5, spawnImpl: vi.fn(() => timeoutChild) });
     expect(timeoutChild.kill).toHaveBeenCalled();
     expect(timeoutResult).toEqual(expect.objectContaining({ ok: false, exitCode: null, timedOut: true }));
   });
@@ -237,7 +237,7 @@ describe("runActionCommand", () => {
 
     const result = await runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       spawnImpl,
       maxStreamBytes: 12,
       maxStreamLines: 2,
@@ -267,7 +267,7 @@ describe("runActionCommand", () => {
 
     const result = await runActionCommand({
       command: process.execPath,
-      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      argv: ["scripts/cli-dispatch.js", "doctor", "--opencode"],
       spawnImpl,
       maxStreamBytes: 8,
       maxStreamLines: 2,

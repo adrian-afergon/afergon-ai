@@ -3,18 +3,18 @@ import path from "node:path";
 import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import type { DispatchRequest } from "../scripts/lib/cli-dispatch-core.mjs";
+import type { DispatchRequest } from "../scripts/lib/cli-dispatch-core.js";
 
 import {
   buildExecution,
   formatHelp,
   resolveDispatchPlan,
-} from "../scripts/cli-dispatch.mjs";
+} from "../scripts/cli-dispatch.js";
 import * as dispatchCoreRuntime from "../scripts/lib/cli-dispatch-core.mjs";
 import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const dispatcherPath = path.join(repoRoot, "scripts", "cli-dispatch.mjs");
+const dispatcherPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.js");
 const packageMetadata = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
 
 function executeDispatcher(argv: readonly string[]) {
@@ -134,7 +134,7 @@ describe("dispatcher execution metadata", () => {
       ),
     ).toEqual({
       command: process.execPath,
-      args: [path.join(repoRoot, "scripts/models.mjs"), "show", "budget"],
+      args: [path.join(repoRoot, "scripts/models.js"), "show", "budget"],
       cwd: "/tmp/caller-project",
     });
   });
@@ -193,6 +193,26 @@ describe("dispatcher execution metadata", () => {
     });
   });
 
+  it("routes Windows doctor through its native PowerShell verifier without requiring bash", () => {
+    expect(
+      buildExecution(
+        { kind: "command", command: "doctor", forwardedArgs: ["--opencode"] },
+        { packageRoot: repoRoot, cwd: "C:\\work\\demo", platform: "win32" },
+      ),
+    ).toEqual({
+      command: "powershell.exe",
+      args: [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        path.join(repoRoot, "scripts/verify-install.ps1"),
+        "--opencode",
+      ],
+      cwd: "C:\\work\\demo",
+    });
+  });
+
   it("formats help with the explicit tui entrypoint documented", () => {
     expect(formatHelp()).toContain("afergon-ai tui");
   });
@@ -220,14 +240,14 @@ describe("launcher parity boundaries", () => {
   it("keeps the POSIX launcher delegated to the built shared dispatcher", () => {
     const launcher = fs.readFileSync(path.join(repoRoot, "bin/afergon-ai"), "utf8");
 
-    expect(launcher).toContain('RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.mjs"');
+    expect(launcher).toContain('RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.js"');
     expect(launcher).toContain('exec node "$RUNTIME_ENTRYPOINT" "$@"');
   });
 
   it("keeps the Windows launcher delegated to dist with safe %* forwarding", () => {
     const launcher = fs.readFileSync(path.join(repoRoot, "bin/afergon-ai.cmd"), "utf8");
 
-    expect(launcher).toContain('dist\\scripts\\cli-dispatch.mjs');
+    expect(launcher).toContain('dist\\scripts\\cli-dispatch.js');
     expect(launcher).toContain("setlocal DisableDelayedExpansion");
     expect(launcher).toContain('node "%RUNTIME_ENTRYPOINT%" %*');
     expect(launcher).not.toMatch(/%2|%3|%4|%5/);
@@ -286,7 +306,7 @@ describe("launcher parity boundaries", () => {
     fs.mkdirSync(fixtureBin, { recursive: true });
     fs.mkdirSync(fixtureDistScripts, { recursive: true });
     fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
-    fs.writeFileSync(path.join(fixtureDistScripts, "cli-dispatch.mjs"), "");
+    fs.writeFileSync(path.join(fixtureDistScripts, "cli-dispatch.js"), "");
     fs.writeFileSync(probePath, 'import { writeFileSync } from "node:fs";\nwriteFileSync(process.env.ARG_CAPTURE, JSON.stringify(process.argv.slice(3)));\n');
     fs.writeFileSync(
       mockNodePath,
@@ -366,8 +386,11 @@ describe("package build lifecycle", () => {
       const archivePath = path.join(archiveDirectory, archives[0]);
       const archiveContents = spawnSync("tar", ["-tzf", archivePath], { encoding: "utf8", timeout: 120000 });
       expect(archiveContents.status).toBe(0);
-      expect(archiveContents.stdout).toContain("package/dist/scripts/cli-dispatch.mjs");
-      expect(archiveContents.stdout).toContain("package/dist/scripts/lib/cli-dispatch-core.mjs");
+      expect(archiveContents.stdout).toContain("package/dist/scripts/cli-dispatch.js");
+      expect(archiveContents.stdout).toContain("package/dist/scripts/models.js");
+      expect(archiveContents.stdout).toContain("package/dist/scripts/lib/cli-dispatch-core.js");
+      expect(archiveContents.stdout).toContain("package/dist/scripts/tui.js");
+      expect(archiveContents.stdout).not.toContain("package/dist/scripts/tui.mjs");
 
       const extractionResult = spawnSync("tar", ["-xzf", archivePath, "-C", extractionDirectory], {
         encoding: "utf8",
@@ -378,7 +401,7 @@ describe("package build lifecycle", () => {
       const extractedPackageRoot = path.join(extractionDirectory, "package");
       fs.rmSync(path.join(extractedPackageRoot, "scripts", "lib"), { recursive: true, force: true });
       expect(fs.existsSync(path.join(extractedPackageRoot, "scripts", "lib"))).toBe(false);
-      const extractedDispatcherPath = path.join(extractedPackageRoot, "dist", "scripts", "cli-dispatch.mjs");
+      const extractedDispatcherPath = path.join(extractedPackageRoot, "dist", "scripts", "cli-dispatch.js");
       expect(fs.readFileSync(extractedDispatcherPath, "utf8")).toContain("main();");
 
       const helpResult = spawnSync(process.execPath, [extractedDispatcherPath, "--help"], {
@@ -398,8 +421,8 @@ describe("package build lifecycle", () => {
       fs.writeFileSync(
         externalConsumerPath,
         [
-          'import { buildExecution, formatHelp, resolveDispatchPlan } from "afergon-ai/dist/scripts/cli-dispatch.mjs";',
-          'import type { DispatchPlan } from "afergon-ai/dist/scripts/lib/cli-dispatch-core.mjs";',
+          'import { buildExecution, formatHelp, resolveDispatchPlan } from "afergon-ai/dist/scripts/cli-dispatch.js";',
+          'import type { DispatchPlan } from "afergon-ai/dist/scripts/lib/cli-dispatch-core.js";',
           'const plan: DispatchPlan = resolveDispatchPlan({ argv: ["models"], isInteractiveTTY: false, isCI: true });',
           'const help: string = formatHelp();',
           'const execution = plan.kind === "command" || plan.kind === "tui" ? buildExecution(plan) : undefined;',

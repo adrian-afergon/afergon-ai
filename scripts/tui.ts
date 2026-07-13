@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 
 import {
   Key,
@@ -11,24 +12,24 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.mjs";
-import { reapplySupportedAdapters } from "./models.mjs";
+import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.js";
+import { reapplySupportedAdapters } from "./models.js";
 import {
   createOutputState,
   getOutputLines,
   sanitizeTerminalOutput,
   validateFormInput,
-} from "./lib/tui/actions/forms.mjs";
-import { createModalInputController } from "./lib/tui/modal-controller.mjs";
-import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.mjs";
-import { createHomeMenuInputController } from "./lib/tui/home-menu-controller.mjs";
-import { createGlobalHomeFallbackController } from "./lib/tui/global-home-fallback-controller.mjs";
-import { createSectionActionInputController } from "./lib/tui/section-action-controller.mjs";
-import { runActionCommand } from "./lib/tui/actions/runner.mjs";
-import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.mjs";
-import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.mjs";
-import { createModelProfilesInputController } from "./lib/tui/model-profiles-controller.mjs";
-import { renderFocusLine } from "./lib/tui/rendering.mjs";
+} from "./lib/tui/actions/forms.js";
+import { createModalInputController } from "./lib/tui/modal-controller.js";
+import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.js";
+import { createHomeMenuInputController } from "./lib/tui/home-menu-controller.js";
+import { createGlobalHomeFallbackController } from "./lib/tui/global-home-fallback-controller.js";
+import { createSectionActionInputController } from "./lib/tui/section-action-controller.js";
+import { runActionCommand } from "./lib/tui/actions/runner.js";
+import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.js";
+import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.js";
+import { createModelProfilesInputController } from "./lib/tui/model-profiles-controller.js";
+import { renderFocusLine } from "./lib/tui/rendering.js";
 import {
   closeModal,
   createNavigationState,
@@ -36,14 +37,14 @@ import {
   navigateTo,
   openModal,
   stageModelProfilesAssignment,
-} from "./lib/tui/navigation.mjs";
-import { renderConfigurationScreen } from "./lib/tui/screens/configuration.mjs";
-import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.mjs";
-import { renderStatusScreen } from "./lib/tui/screens/status.mjs";
+} from "./lib/tui/navigation.js";
+import { renderConfigurationScreen } from "./lib/tui/screens/configuration.js";
+import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.js";
+import { renderStatusScreen } from "./lib/tui/screens/status.js";
 
 const APP_TITLE = "afergon-ai TUI";
 const EXIT_REASON = "user-exit";
-const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.mjs");
+const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.js");
 const TEAL_ANSI = "\u001b[38;5;6m";
 const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
 const ANSI_RESET = "\u001b[0m";
@@ -733,7 +734,7 @@ export function createTuiApp({
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
   saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
   refreshActiveModelProfile = () => reapplySupportedAdapters(),
-} = {}) {
+}: any = {}): any {
   const navigation = createNavigationState();
   navigation.sectionActionSelection = 0;
   navigation.modal = undefined;

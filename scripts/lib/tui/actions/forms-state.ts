@@ -1,4 +1,4 @@
-import { sanitizeTerminalOutput } from "./forms-output.mjs";
+import { sanitizeTerminalOutput } from "./forms-output.js";
 
 interface ActionFormOption {
   readonly id: string;

@@ -11,7 +11,7 @@ import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
 import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
 import * as modelProfilesScreenTypeScript from "../scripts/lib/tui/screens/model-profiles.ts";
 import { renderModelProfilesScreen } from "../scripts/lib/tui/screens/model-profiles.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+import { createTuiApp } from "../scripts/tui.js";
 
 const tempRoots = [];
 

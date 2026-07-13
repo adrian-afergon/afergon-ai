@@ -3,8 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/home-menu-controller.ts";
-import { createHomeMenuInputController } from "../scripts/lib/tui/home-menu-controller.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+import { createHomeMenuInputController } from "../scripts/lib/tui/home-menu-controller.js";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
 
 const keys = {
   up: (data) => data === "up",

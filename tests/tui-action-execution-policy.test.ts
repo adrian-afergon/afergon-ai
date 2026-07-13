@@ -7,11 +7,11 @@ import {
   createActionExecutionPolicy,
   resolveExecutableAction,
   shouldSuppressSuccessfulOutputPanel,
-} from "../scripts/lib/tui/action-execution-policy.mjs";
-import { createFormState } from "../scripts/lib/tui/actions/forms.mjs";
-import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
-import { createModalInputController } from "../scripts/lib/tui/modal-controller.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+} from "../scripts/lib/tui/action-execution-policy.js";
+import { createFormState } from "../scripts/lib/tui/actions/forms.js";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.js";
+import { createModalInputController } from "../scripts/lib/tui/modal-controller.js";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
 
 const keys = {
   up: (data) => data === "up",

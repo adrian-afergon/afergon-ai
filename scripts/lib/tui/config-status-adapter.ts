@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { createActionDefinition, type ActionDefinition } from "./actions/definitions.mjs";
-import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.mjs";
-import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.mjs";
+import { createActionDefinition, type ActionDefinition } from "./actions/definitions.js";
+import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
+import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
 
 type SupportedInitId = "pi" | "claude" | "opencode" | "all";
 type ManifestActionId = CommandManifestEntry["id"];

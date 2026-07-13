@@ -1,6 +1,6 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
-import { sanitizeTerminalOutput } from "../actions/forms.mjs";
+import { sanitizeTerminalOutput } from "../actions/forms.js";
 
 interface ConfigurationItem {
   readonly label: string;

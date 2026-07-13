@@ -1,4 +1,4 @@
-// This parity suite retains dynamic imports of the authoritative MJS runtime during Phase 2.
+// This parity suite retains dynamic imports of the authoritative MJS library runtime during Phase 2.
 // @ts-nocheck
 import fs from "node:fs";
 import os from "node:os";
@@ -49,7 +49,7 @@ function runCli(args, env = {}) {
 }
 
 function runModelsScript(args, env = {}) {
-  return spawnSync(process.execPath, [path.join(repoRoot, "scripts/models.mjs"), ...args], {
+  return spawnSync(process.execPath, [path.join(repoRoot, "dist", "scripts", "models.js"), ...args], {
     cwd: repoRoot,
     encoding: "utf8",
     timeout: 10000,
@@ -864,7 +864,7 @@ describe("models CLI behavior", () => {
   it("keeps the TypeScript models CLI core mirror in parity with the runtime module", async () => {
     const typeScriptCore = await import("../scripts/lib/models-cli-core.js");
     const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
-    const moduleUrl = new URL("../scripts/models.mjs", import.meta.url);
+    const moduleUrl = new URL("../scripts/models.js", import.meta.url);
     const config = {
       models: {
         profiles: {
@@ -884,8 +884,8 @@ describe("models CLI behavior", () => {
 
     expect(typeScriptCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
     expect(runtimeCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
-    expect(typeScriptCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
-    expect(runtimeCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
+    expect(typeScriptCore.isDirectExecution([process.execPath, "other.js"], moduleUrl.href)).toBe(false);
+    expect(runtimeCore.isDirectExecution([process.execPath, "other.js"], moduleUrl.href)).toBe(false);
     expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(validEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(validEnv));
     expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(invalidEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(invalidEnv));
     expect(typeScriptCore.createRegistrationEnv(validEnv)).toEqual(runtimeCore.createRegistrationEnv(validEnv));
@@ -1144,8 +1144,8 @@ describe("models CLI behavior", () => {
     expect(result.stdout).toContain("- afergon-ai: configured=openai/gpt-5.5, effective=openai/gpt-5.5, source=explicit");
   });
 
-  it("imports scripts/models.mjs without running the CLI entrypoint", () => {
-    const result = spawnSync(process.execPath, ["-e", "await import('./scripts/models.mjs')"], {
+  it("imports emitted scripts/models.js without running the CLI entrypoint", () => {
+    const result = spawnSync(process.execPath, ["-e", "await import('./dist/scripts/models.js')"], {
       cwd: repoRoot,
       encoding: "utf8",
       timeout: 10000,
@@ -1157,7 +1157,7 @@ describe("models CLI behavior", () => {
   });
 
   it("preserves the models wrapper export contract and callable adapter helpers", async () => {
-    const modelsWrapper = await import("../scripts/models.mjs");
+    const modelsWrapper = await import("../scripts/models.js");
     const refreshResult = {
       status: "degraded",
       stdout: "Saved config.",

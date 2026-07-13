@@ -5,13 +5,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getConfigurationStatus } from "../scripts/lib/tui/config-status-adapter.mjs";
+import { getConfigurationStatus } from "../scripts/lib/tui/config-status-adapter.js";
 import * as configStatusAdapterTypeScript from "../scripts/lib/tui/config-status-adapter.ts";
-import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
-import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
+import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.js";
+import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.js";
 import * as configurationScreenTypeScript from "../scripts/lib/tui/screens/configuration.ts";
-import { renderConfigurationScreen } from "../scripts/lib/tui/screens/configuration.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+import { renderConfigurationScreen } from "../scripts/lib/tui/screens/configuration.js";
+import { createTuiApp } from "../scripts/tui.js";
 
 const tempRoots = [];
 

@@ -11,7 +11,7 @@ import * as configStatusAdapterTypeScript from "../scripts/lib/tui/config-status
 import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
 import * as statusScreenTypeScript from "../scripts/lib/tui/screens/status.ts";
 import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
-import { createTuiApp } from "../scripts/tui.mjs";
+import { createTuiApp } from "../scripts/tui.js";
 
 const tempRoots = [];
 

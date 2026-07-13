@@ -29,6 +29,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd --help exited with $LASTEXITCODE" }
           if (($helpOutput -join "`n") -notmatch [regex]::Escape("Usage: afergon-ai")) { throw "afergon-ai.cmd --help did not print usage" }
 
-          $errorOutput = & .\bin\afergon-ai.cmd not-a-command 2>&1
-          if ($LASTEXITCODE -ne 1) { throw "afergon-ai.cmd unknown command exited with $LASTEXITCODE" }
-          if (($errorOutput -join "`n") -notmatch [regex]::Escape("Unknown command: not-a-command")) { throw "afergon-ai.cmd unknown command did not print the expected error" }
+           $errorOutput = & .\bin\afergon-ai.cmd not-a-command 2>&1
+           if ($LASTEXITCODE -ne 1) { throw "afergon-ai.cmd unknown command exited with $LASTEXITCODE" }
+           if (($errorOutput -join "`n") -notmatch [regex]::Escape("Unknown command: not-a-command")) { throw "afergon-ai.cmd unknown command did not print the expected error" }
+
+           $env:PATH = "$PWD\bin;$env:PATH"
+           $doctorOutput = & .\bin\afergon-ai.cmd doctor 2>&1
+           if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd doctor exited with $LASTEXITCODE" }
+           if (($doctorOutput -join "`n") -notmatch [regex]::Escape("Verificación finalizada.")) { throw "afergon-ai.cmd doctor did not run the Windows verifier" }

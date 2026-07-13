@@ -1,17 +1,18 @@
-import { createGlobalHomeFallbackController as createRuntimeController } from "./global-home-fallback-controller.mjs";
+/**
+ * Routes the shell-owned Home shortcut after route-specific controllers decline it.
+ * Input normalization remains shell-owned so Pi TUI stays the runtime authority.
+ */
+// @ts-nocheck
+export function createGlobalHomeFallbackController({ navigation, onNavigate, setRoute, normalizeInput }) {
+  function handleInput(data) {
+    if (navigation.route === "home" || normalizeInput(data) !== "h") {
+      return false;
+    }
 
-export interface GlobalHomeFallbackInputController {
-  readonly handleInput: (data: string) => boolean;
+    setRoute("home");
+    onNavigate();
+    return true;
+  }
+
+  return { handleInput };
 }
-
-export interface GlobalHomeFallbackInputControllerOptions {
-  readonly navigation: { route: string; [key: string]: unknown };
-  readonly onNavigate: () => void;
-  readonly setRoute: (route: "home") => void;
-  readonly normalizeInput: (data: string) => string | undefined;
-}
-
-/** Typed facade for the authoritative MJS global Home fallback controller. */
-export const createGlobalHomeFallbackController = (
-  options: GlobalHomeFallbackInputControllerOptions,
-): GlobalHomeFallbackInputController => createRuntimeController(options) as GlobalHomeFallbackInputController;

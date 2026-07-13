@@ -6,7 +6,8 @@ import { spawnSync } from "node:child_process";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(repoRoot, "dist");
-const runtimeDirsToCopy = ["adapters", "prompts", "scripts", "skills"];
+const runtimeDirsToCopy = ["adapters", "prompts", "skills"];
+const runtimeScriptAssets = ["init-project.ps1", "init-project.sh", "register-opencode-agents.sh", "update.ps1", "update.sh", "verify-install.ps1", "verify-install.sh"];
 const injectedCopyFailure = process.env.AFERGON_AI_TEST_FAIL_RUNTIME_COPY;
 const buildId = `${process.pid}-${Date.now()}`;
 const stagingRoot = path.join(repoRoot, `.dist-staging-${buildId}`);
@@ -70,6 +71,10 @@ try {
           return !entryPath.endsWith(".ts") && path.basename(entryPath) !== ".DS_Store";
         },
       });
+    }
+
+    for (const relativePath of runtimeScriptAssets) {
+      await cp(path.join(repoRoot, "scripts", relativePath), path.join(stagingRoot, "scripts", relativePath));
     }
 
     await publishBuild();

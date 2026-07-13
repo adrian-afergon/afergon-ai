@@ -3,8 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/global-home-fallback-controller.ts";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
-import { createGlobalHomeFallbackController } from "../scripts/lib/tui/global-home-fallback-controller.mjs";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
+import { createGlobalHomeFallbackController } from "../scripts/lib/tui/global-home-fallback-controller.js";
 
 function createHarness(factory, { route = "status" } = {}) {
   const navigation = createNavigationState(route);

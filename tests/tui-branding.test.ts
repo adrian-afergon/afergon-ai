@@ -9,9 +9,9 @@ import {
   BRANDING_LOGO,
   canRenderBrandingLogo,
   getBrandingLines,
-} from "../scripts/lib/branding/logo.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
-import { renderHomeScreen } from "../scripts/tui.mjs";
+} from "../scripts/lib/branding/logo.js";
+import { createNavigationState } from "../scripts/lib/tui/navigation.js";
+import { renderHomeScreen } from "../scripts/tui.js";
 import startupBannerExtension, {
   STARTUP_BANNER_BRANDING,
 } from "../extensions/startup-banner.ts";
@@ -106,11 +106,11 @@ describe("branding logo contract", () => {
 });
 
 describe("startup banner and TUI home branding", () => {
-  it("imports the runtime branding .mjs module instead of a non-emitted .js artifact", () => {
+  it("imports the emitted JavaScript branding module", () => {
     const startupBannerSource = readFileSync(new URL("../extensions/startup-banner.ts", import.meta.url), "utf8");
 
-    expect(startupBannerSource).toContain('../scripts/lib/branding/logo.mjs');
-    expect(startupBannerSource).not.toContain('../scripts/lib/branding/logo.js');
+    expect(startupBannerSource).toContain('../scripts/lib/branding/logo.js');
+    expect(startupBannerSource).not.toContain('../scripts/lib/branding/logo.mjs');
   });
 
   it("reuses the shared branding source in the startup banner", () => {

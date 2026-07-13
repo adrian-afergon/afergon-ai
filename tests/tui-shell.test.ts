@@ -31,7 +31,7 @@ import {
   TUI_ROUTES,
   validateModelProfilesInlineCreate,
 } from "../scripts/lib/tui/navigation.mjs";
-import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.mjs";
+import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
@@ -397,8 +397,8 @@ describe("navigation state", () => {
 });
 
 describe("createTuiApp", () => {
-  it("imports scripts/tui.mjs without running the models CLI or printing config", () => {
-    const result = spawnSync(process.execPath, ["-e", "await import('./scripts/tui.mjs')"], {
+  it("imports emitted scripts/tui.js without running the models CLI or printing config", () => {
+    const result = spawnSync(process.execPath, ["-e", "await import('./dist/scripts/tui.js')"], {
       cwd: repoRoot,
       encoding: "utf8",
       timeout: 10000,
