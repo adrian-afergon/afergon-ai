@@ -1,4 +1,4 @@
-// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// This contract suite exercises TypeScript sources and emitted JavaScript runtime modules.
 // @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 
@@ -71,7 +71,7 @@ const getThrownMessage = (callback) => {
 };
 
 describe("runActionCommand", () => {
-  it("keeps the TypeScript action runner in parity with the runtime .mjs module for successful execution", async () => {
+  it("keeps the TypeScript action runner aligned with the source runtime contract for successful execution", async () => {
     const createSpawnImpl = () => {
       const child = new FakeChildProcess();
       const spawnImpl = vi.fn(() => {
@@ -109,7 +109,7 @@ describe("runActionCommand", () => {
     );
   });
 
-  it("keeps the TypeScript action runner in parity with the runtime .mjs module for failure and timeout paths", async () => {
+  it("keeps the TypeScript action runner aligned with the source runtime contract for failure and timeout paths", async () => {
     const runtimeFailureChild = new FakeChildProcess();
     const runtimeFailure = runActionCommand({
       command: process.execPath,
@@ -158,7 +158,7 @@ describe("runActionCommand", () => {
     expect(typeScriptTimeoutChild.kill).toHaveBeenCalled();
   });
 
-  it("keeps the TypeScript action runner in parity with the runtime .mjs module when output truncates at configured limits", async () => {
+  it("keeps the TypeScript action runner aligned with the source runtime contract when output truncates at configured limits", async () => {
     const createSpawnImpl = () => {
       const child = new FakeChildProcess();
       const spawnImpl = vi.fn(() => {
@@ -291,7 +291,7 @@ describe("runActionCommand", () => {
 });
 
 describe("action definitions TypeScript parity", () => {
-  it("keeps formatActionCliEquivalent in parity with the runtime .mjs module across valid and invalid argv inputs", () => {
+  it("keeps formatActionCliEquivalent aligned with the source runtime contract across valid and invalid argv inputs", () => {
     expect(actionDefinitionsTypeScript.formatActionCliEquivalent(["doctor", "--opencode"]))
       .toBe(formatActionCliEquivalentRuntime(["doctor", "--opencode"]));
 
@@ -301,7 +301,7 @@ describe("action definitions TypeScript parity", () => {
     }
   });
 
-  it("keeps resolveActionArgv in parity with the runtime .mjs module for static, built, and invalid actions", () => {
+  it("keeps resolveActionArgv aligned with the source runtime contract for static, built, and invalid actions", () => {
     const staticAction = createActionDefinitionRuntime({
       id: "status-doctor",
       section: "status",
@@ -336,7 +336,7 @@ describe("action definitions TypeScript parity", () => {
     expect(() => resolveActionArgvRuntime(missingExecutableAction)).toThrow(/missing executable argv/i);
   });
 
-  it("keeps createActionDefinition in parity with the runtime .mjs module across supported and invalid forms", () => {
+  it("keeps createActionDefinition aligned with the source runtime contract across supported and invalid forms", () => {
     const checkboxDefinition = {
       id: "configuration-init",
       section: "configuration",
@@ -405,8 +405,8 @@ describe("action definitions TypeScript parity", () => {
 });
 
 describe("sanitizeTerminalOutput", () => {
-  it("keeps the extracted confirmation runtime module aligned with the legacy forms.mjs helpers", async () => {
-    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.mjs");
+  it("keeps the extracted confirmation runtime module aligned with shared form helpers", async () => {
+    const runtimeExtracted = await import("../dist/scripts/lib/tui/actions/forms-confirmation.js");
     const action = {
       id: "remove-profile",
       confirmation: {
@@ -436,7 +436,7 @@ describe("sanitizeTerminalOutput", () => {
   });
 
   it("keeps the extracted confirmation TypeScript mirror in parity with the runtime module", async () => {
-    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.mjs");
+    const runtimeExtracted = await import("../dist/scripts/lib/tui/actions/forms-confirmation.js");
     const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-confirmation.ts");
     const action = {
       id: "remove-profile",
@@ -483,8 +483,8 @@ describe("sanitizeTerminalOutput", () => {
     }));
   });
 
-  it("keeps the extracted forms-output runtime module aligned with the legacy forms.mjs helpers", async () => {
-    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-output.mjs");
+  it("keeps the extracted forms-output runtime module aligned with shared form helpers", async () => {
+    const runtimeExtracted = await import("../dist/scripts/lib/tui/actions/forms-output.js");
 
     expect(runtimeExtracted.sanitizeTerminalOutput("safe\n\u009b31mred\u009b0m\n")).toBe(
       sanitizeTerminalOutput("safe\n\u009b31mred\u009b0m\n"),
@@ -519,7 +519,7 @@ describe("sanitizeTerminalOutput", () => {
   });
 
   it("keeps the extracted forms-output TypeScript mirror in parity with the runtime module", async () => {
-    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-output.mjs");
+    const runtimeExtracted = await import("../dist/scripts/lib/tui/actions/forms-output.js");
     const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-output.ts");
 
     for (const value of ["", "safe\n\u009b31mred\u009b0m\n\u009d2;owned\u0007tail\u0085done\n", 42, null]) {
@@ -548,7 +548,7 @@ describe("sanitizeTerminalOutput", () => {
   });
 
   it("keeps the extracted forms-state TypeScript mirror in parity with the runtime module", async () => {
-    const runtimeExtracted = await import("../scripts/lib/tui/actions/forms-state.mjs");
+    const runtimeExtracted = await import("../dist/scripts/lib/tui/actions/forms-state.js");
     const typeScriptExtracted = await import("../scripts/lib/tui/actions/forms-state.ts");
     const checkboxAction = {
       id: "configuration-init",

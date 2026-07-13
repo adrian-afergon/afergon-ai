@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import * as renderingTypeScript from "../scripts/lib/tui/rendering.ts";
-import { renderFocusLine } from "../scripts/lib/tui/rendering.mjs";
+import { renderFocusLine } from "../dist/scripts/lib/tui/rendering.js";
 
 describe("renderFocusLine", () => {
   it("keeps the TypeScript public surface in parity with the runtime MJS helper", () => {

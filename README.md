@@ -77,7 +77,7 @@ afergon-ai --help
 
 In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing. A failed build leaves the last successfully published `dist/` runtime intact, so fix the build error and rerun `pnpm build` rather than recovering generated files manually.
 
-Phase 2 of the TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher and models entrypoints are emitted JavaScript from TypeScript; the TUI remains an intentional `.mjs` transition wrapper until its coordinated cutover. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
+Phase 2 of the TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher, models, TUI, and their library modules are emitted JavaScript from TypeScript; only the minimal `scripts/build-typescript.mjs` build bootstrap remains MJS. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
 
 ### Step 2 — Initialize a project
 
@@ -183,7 +183,7 @@ PR2 shell rollback boundary: revert `scripts/tui.ts` and `scripts/lib/tui/naviga
 Chained rollback notes:
 
 - PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.ts` together.
-- PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.mjs` with its tests if command labels drift.
+- PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.ts` with its tests if command labels drift.
 - PR4/PR5/PR6 screens: revert the matching adapter + screen + focused tests together (`configuration`, `status`, or `model-profiles`).
 - PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.ts`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
 

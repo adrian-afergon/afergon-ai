@@ -123,7 +123,7 @@ function normalizeConfigurationStatus(status) {
 }
 
 describe("getConfigurationStatus", () => {
-  it("keeps buildInitCommandArgv in parity with the runtime .mjs module for default, filtered, and all-selected input", () => {
+  it("keeps buildInitCommandArgv aligned with the source runtime contract for default, filtered, and all-selected input", () => {
     expect(configStatusAdapterTypeScript.buildInitCommandArgv()).toEqual(buildCommandArgv("init"));
     expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude", "invalid", "pi"] })).toEqual(
       getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1].buildArgv({ selectedIds: ["claude", "invalid", "pi"] }),
@@ -261,7 +261,7 @@ describe("getConfigurationStatus", () => {
     );
   });
 
-  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for missing project setup", () => {
+  it("keeps the TypeScript config-status adapter aligned with the source runtime contract for missing project setup", () => {
     const tempRoot = makeTempRoot();
     const env = {
       HOME: path.join(tempRoot, "home"),
@@ -273,7 +273,7 @@ describe("getConfigurationStatus", () => {
     );
   });
 
-  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for discovered project setup", () => {
+  it("keeps the TypeScript config-status adapter aligned with the source runtime contract for discovered project setup", () => {
     const tempRoot = makeTempRoot();
     const home = path.join(tempRoot, "home");
     const xdgHome = path.join(tempRoot, "xdg");
@@ -301,7 +301,7 @@ describe("getConfigurationStatus", () => {
 });
 
 describe("renderConfigurationScreen", () => {
-  it("keeps the TypeScript configuration screen mirror in parity with the runtime .mjs module for ordinary configuration state", () => {
+  it("keeps the TypeScript configuration screen aligned with the source runtime contract for ordinary configuration state", () => {
     const state = {
       items: [
         { id: "model-config", label: "Model config", state: "ok", detail: "Config file exists." },
@@ -318,7 +318,7 @@ describe("renderConfigurationScreen", () => {
     );
   });
 
-  it("keeps the TypeScript configuration screen mirror in parity with the runtime .mjs module for sanitized terminal-control input", () => {
+  it("keeps the TypeScript configuration screen aligned with the source runtime contract for sanitized terminal-control input", () => {
     const state = {
       title: "Configuration",
       items: [

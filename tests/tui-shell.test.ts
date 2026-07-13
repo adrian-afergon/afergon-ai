@@ -1,4 +1,4 @@
-// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// This contract suite compares TypeScript sources with the emitted JavaScript runtime.
 // @ts-nocheck
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -6,8 +6,8 @@ import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 
 import * as navigationTypeScript from "../scripts/lib/tui/navigation.ts";
-import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
-import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
+import { createActionDefinition } from "../dist/scripts/lib/tui/actions/definitions.js";
+import { buildCommandArgv } from "../dist/scripts/lib/tui/command-manifest.js";
 import {
   appendModelProfilesInlineCreateCharacter,
   activateHomeSelection,
@@ -30,7 +30,7 @@ import {
   stageModelProfilesAssignment,
   TUI_ROUTES,
   validateModelProfilesInlineCreate,
-} from "../scripts/lib/tui/navigation.mjs";
+} from "../dist/scripts/lib/tui/navigation.js";
 import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
@@ -123,7 +123,7 @@ async function flushTui() {
 }
 
 describe("navigation state", () => {
-  it("keeps the TypeScript navigation export surface in parity with the runtime .mjs module", () => {
+  it("keeps the TypeScript navigation export surface aligned with the emitted runtime module", () => {
     expect(Object.keys(navigationTypeScript).sort()).toEqual([
       "HOME_MENU_ROUTES",
       "TUI_ROUTES",
@@ -149,7 +149,7 @@ describe("navigation state", () => {
     ]);
   });
 
-  it("keeps every exported navigation value and helper in parity with the runtime .mjs module", () => {
+  it("keeps every exported navigation value and helper aligned with the emitted runtime module", () => {
     const runtimeState = createNavigationState("home", 1);
     const typeScriptState = navigationTypeScript.createNavigationState("home", 1);
     const inlineCreateState = {

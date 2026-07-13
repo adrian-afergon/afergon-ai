@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/modal-controller.ts";
 import { createModalInputController } from "../scripts/lib/tui/modal-controller.js";
-import { createFormState, createConfirmationState, createOutputState } from "../scripts/lib/tui/actions/forms.mjs";
-import { createNavigationState } from "../scripts/lib/tui/navigation.mjs";
+import { createFormState, createConfirmationState, createOutputState } from "../dist/scripts/lib/tui/actions/forms.js";
+import { createNavigationState } from "../dist/scripts/lib/tui/navigation.js";
 
 const keys = {
   up: (data) => data === "up",

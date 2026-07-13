@@ -68,7 +68,7 @@ function renderStartupBanner(width) {
 }
 
 describe("branding logo contract", () => {
-  it("keeps the TypeScript branding module in parity with the runtime .mjs module", () => {
+  it("keeps the TypeScript branding module aligned with the emitted JavaScript runtime", () => {
     expect(brandingLogoTypeScript.BRANDING_LOGO).toEqual(BRANDING_LOGO);
     expect(brandingLogoTypeScript.getBrandingLines()).toEqual(getBrandingLines());
     expect(brandingLogoTypeScript.getBrandingLines("default")).toEqual(getBrandingLines("default"));

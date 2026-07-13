@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
-import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
+import { createActionDefinition } from "../dist/scripts/lib/tui/actions/definitions.js";
+import { buildCommandArgv } from "../dist/scripts/lib/tui/command-manifest.js";
 import * as configStatusAdapterTypeScript from "../scripts/lib/tui/config-status-adapter.ts";
-import { getStatusScreenState } from "../scripts/lib/tui/config-status-adapter.mjs";
+import { getStatusScreenState } from "../dist/scripts/lib/tui/config-status-adapter.js";
 import * as statusScreenTypeScript from "../scripts/lib/tui/screens/status.ts";
-import { renderStatusScreen } from "../scripts/lib/tui/screens/status.mjs";
+import { renderStatusScreen } from "../dist/scripts/lib/tui/screens/status.js";
 import { createTuiApp } from "../scripts/tui.js";
 
 const tempRoots = [];
@@ -263,7 +263,7 @@ describe("getStatusScreenState", () => {
     );
   });
 
-  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for readiness warnings", () => {
+  it("keeps the TypeScript config-status adapter aligned with emitted JavaScript for readiness warnings", () => {
     const tempRoot = makeTempRoot();
     const env = {
       HOME: path.join(tempRoot, "home"),
@@ -275,7 +275,7 @@ describe("getStatusScreenState", () => {
     );
   });
 
-  it("keeps the TypeScript config-status adapter mirror in parity with the runtime .mjs module for readiness failures", () => {
+  it("keeps the TypeScript config-status adapter aligned with emitted JavaScript for readiness failures", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
     const configDir = path.join(xdgHome, "afergon-ai");
@@ -295,7 +295,7 @@ describe("getStatusScreenState", () => {
 });
 
 describe("renderStatusScreen", () => {
-  it("keeps the TypeScript status screen mirror in parity with the runtime .mjs module for readiness summaries", () => {
+  it("keeps the TypeScript status screen aligned with emitted JavaScript for readiness summaries", () => {
     const state = {
       title: "Status",
       summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
@@ -308,7 +308,7 @@ describe("renderStatusScreen", () => {
     expect(statusScreenTypeScript.renderStatusScreen(state, 100)).toEqual(renderStatusScreen(state, 100));
   });
 
-  it("keeps the TypeScript status screen mirror in parity with the runtime .mjs module for sanitized terminal-control input", () => {
+  it("keeps the TypeScript status screen aligned with emitted JavaScript for sanitized terminal-control input", () => {
     const state = {
       title: "Status",
       summary: {

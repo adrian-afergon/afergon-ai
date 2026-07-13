@@ -32,9 +32,9 @@ describe("TypeScript build output", () => {
     ]) {
       expect(existsSync(path.join(distScripts, runtimePath))).toBe(true);
     }
-    for (const obsoleteRuntimePath of ["tui.mjs", "lib/tui/modal-controller.mjs", "lib/model-profiles.mjs"]) {
-      expect(existsSync(path.join(distScripts, obsoleteRuntimePath))).toBe(false);
-    }
+    expect(existsSync(path.join(distScripts, "tui.mjs"))).toBe(false);
+    expect(existsSync(path.join(distScripts, "lib/tui/modal-controller.mjs"))).toBe(false);
+    expect(existsSync(path.join(distScripts, "lib/model-profiles.mjs"))).toBe(false);
 
     const tui = await import(`${pathToFileURL(path.join(distScripts, "tui.js")).href}?build-artifact`);
     expect(typeof tui.createTuiApp).toBe("function");
@@ -73,6 +73,7 @@ describe("TypeScript build output", () => {
       expect(archiveContents.stdout).toContain("package/dist/scripts/tui.js");
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/tui.mjs");
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/lib/tui/modal-controller.mjs");
+      expect(archiveContents.stdout).not.toMatch(/package\/(?:dist\/)?scripts\/lib\/.*\.mjs\n/);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

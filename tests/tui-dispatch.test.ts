@@ -10,7 +10,7 @@ import {
   formatHelp,
   resolveDispatchPlan,
 } from "../scripts/cli-dispatch.js";
-import * as dispatchCoreRuntime from "../scripts/lib/cli-dispatch-core.mjs";
+import * as dispatchCoreRuntime from "../dist/scripts/lib/cli-dispatch-core.js";
 import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
@@ -93,7 +93,7 @@ describe("resolveDispatchPlan", () => {
   });
 });
 
-describe("dispatch core TypeScript/runtime parity", () => {
+describe("dispatch core TypeScript/emitted-runtime contract", () => {
   const dispatchCases: Array<{ name: string; input: DispatchRequest }> = [
     { name: "interactive empty argv", input: { argv: [], isInteractiveTTY: true, isCI: false } },
     { name: "non-interactive empty argv", input: { argv: [], isInteractiveTTY: false, isCI: false } },
@@ -301,7 +301,7 @@ describe("launcher parity boundaries", () => {
     const fixtureBin = path.join(fixtureRoot, "bin");
     const fixtureDistScripts = path.join(fixtureRoot, "dist", "scripts");
     const capturePath = path.join(fixtureRoot, "argv.json");
-    const probePath = path.join(fixtureRoot, "capture-argv.mjs");
+    const probePath = path.join(fixtureRoot, "capture-argv.js");
     const mockNodePath = path.join(fixtureRoot, "node.cmd");
     fs.mkdirSync(fixtureBin, { recursive: true });
     fs.mkdirSync(fixtureDistScripts, { recursive: true });
@@ -391,6 +391,7 @@ describe("package build lifecycle", () => {
       expect(archiveContents.stdout).toContain("package/dist/scripts/lib/cli-dispatch-core.js");
       expect(archiveContents.stdout).toContain("package/dist/scripts/tui.js");
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/tui.mjs");
+      expect(archiveContents.stdout).not.toMatch(/package\/(?:dist\/)?scripts\/lib\/.*\.mjs\n/);
 
       const extractionResult = spawnSync("tar", ["-xzf", archivePath, "-C", extractionDirectory], {
         encoding: "utf8",

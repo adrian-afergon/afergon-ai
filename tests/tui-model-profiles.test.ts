@@ -7,10 +7,10 @@ import { visibleWidth } from "@earendil-works/pi-tui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as modelProfilesAdapterTypeScript from "../scripts/lib/tui/model-profiles-adapter.ts";
-import { SUPPORTED_AGENTS } from "../scripts/lib/model-profiles.mjs";
-import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "../scripts/lib/tui/model-profiles-adapter.mjs";
+import { SUPPORTED_AGENTS } from "../dist/scripts/lib/model-profiles.js";
+import { getModelProfilesBrowseIntent, getModelProfilesScreenState, saveAssignmentsForProfile } from "../dist/scripts/lib/tui/model-profiles-adapter.js";
 import * as modelProfilesScreenTypeScript from "../scripts/lib/tui/screens/model-profiles.ts";
-import { renderModelProfilesScreen } from "../scripts/lib/tui/screens/model-profiles.mjs";
+import { renderModelProfilesScreen } from "../dist/scripts/lib/tui/screens/model-profiles.js";
 import { createTuiApp } from "../scripts/tui.js";
 
 const tempRoots = [];
@@ -254,7 +254,7 @@ function stripAnsi(text) {
 }
 
 describe("getModelProfilesScreenState", () => {
-  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for browse intents", () => {
+  it("keeps the TypeScript model-profiles adapter aligned with emitted JavaScript for browse intents", () => {
     const browseState = {
       browse: {
         focusedProfile: {
@@ -410,7 +410,7 @@ describe("getModelProfilesScreenState", () => {
     expect(state.assignments).toEqual([]);
   });
 
-  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for isolated config state", () => {
+  it("keeps the TypeScript model-profiles adapter aligned with emitted JavaScript for isolated config state", () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
 
@@ -457,7 +457,7 @@ describe("getModelProfilesScreenState", () => {
     );
   });
 
-  it("keeps the TypeScript model-profiles adapter mirror in parity with the runtime .mjs module for assignment saves", async () => {
+  it("keeps the TypeScript model-profiles adapter aligned with emitted JavaScript for assignment saves", async () => {
     const initialConfig = {
       version: 1,
       models: {
@@ -520,7 +520,7 @@ describe("getModelProfilesScreenState", () => {
 });
 
 describe("renderModelProfilesScreen", () => {
-  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for browse mode", () => {
+  it("keeps the TypeScript model-profiles screen aligned with emitted JavaScript for browse mode", () => {
     const state = {
       title: "Model Profiles",
       configPath: "/tmp/config.json",
@@ -546,7 +546,7 @@ describe("renderModelProfilesScreen", () => {
     );
   });
 
-  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for sanitized assignment mode", () => {
+  it("keeps the TypeScript model-profiles screen aligned with emitted JavaScript for sanitized assignment mode", () => {
     const state = {
       title: "Model\u001b[31m Profiles\u001b[0m",
       configPath: "/tmp/\u001b]2;owned\u0007config.json",
@@ -574,7 +574,7 @@ describe("renderModelProfilesScreen", () => {
     );
   });
 
-  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for inline create browse mode", () => {
+  it("keeps the TypeScript model-profiles screen aligned with emitted JavaScript for inline create browse mode", () => {
     const state = {
       title: "Model Profiles",
       configPath: "/tmp/config.json",
@@ -610,7 +610,7 @@ describe("renderModelProfilesScreen", () => {
     );
   });
 
-  it("keeps the TypeScript model-profiles screen mirror in parity with the runtime .mjs module for new-profile placeholder details", () => {
+  it("keeps the TypeScript model-profiles screen aligned with emitted JavaScript for new-profile placeholder details", () => {
     const state = {
       title: "Model Profiles",
       configPath: "/tmp/config.json",
