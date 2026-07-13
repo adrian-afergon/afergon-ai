@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { assertCompilerBootstrapSucceeded, createCompilerBootstrapInvocation } from "./lib/typescript-build-bootstrap.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(repoRoot, "dist");
@@ -65,32 +66,20 @@ try {
   await recoverInterruptedPublication();
   await mkdir(stagingRoot, { recursive: true });
 
-  const tscCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-  const tscArguments = [
-    "exec",
-    "tsc",
-    "-p",
-    "tsconfig.build.json",
-    "--outDir",
+  const compilerInvocation = createCompilerBootstrapInvocation({
+    platform: process.platform,
+    repoRoot,
     stagingRoot,
-    "--tsBuildInfoFile",
-    path.join(stagingRoot, ".tsbuildinfo"),
-  ];
-  if (injectedCompilerFailure) {
-    tscArguments.push("--afergon-ai-test-invalid-compiler-option");
-  }
+    injectCompilerFailure: Boolean(injectedCompilerFailure),
+  });
   const tscResult = spawnSync(
-    tscCommand,
-    tscArguments,
-    {
-      cwd: repoRoot,
-      stdio: "inherit",
-    },
+    compilerInvocation.command,
+    compilerInvocation.arguments,
+    compilerInvocation.options,
   );
+  assertCompilerBootstrapSucceeded(tscResult, compilerInvocation.description);
 
-  if (tscResult.status !== 0) {
-    process.exitCode = tscResult.status ?? 1;
-  } else {
+  {
     for (const relativeDir of runtimeDirsToCopy) {
       if (injectedCopyFailure === relativeDir) {
         throw new Error(`Injected runtime artifact copy failure: ${relativeDir}`);
