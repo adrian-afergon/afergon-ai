@@ -1,3 +1,5 @@
+// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// @ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 
 import * as controllerTypeScript from "../scripts/lib/tui/section-action-controller.ts";
