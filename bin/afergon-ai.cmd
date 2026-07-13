@@ -1,5 +1,5 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal DisableDelayedExpansion
 set "PACKAGE_ROOT=%~dp0.."
 set "RUNTIME_ENTRYPOINT=%PACKAGE_ROOT%\dist\scripts\cli-dispatch.mjs"
 if not exist "%RUNTIME_ENTRYPOINT%" (

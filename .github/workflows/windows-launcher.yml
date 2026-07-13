@@ -18,6 +18,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
+      - name: Verify Windows CMD argv contract
+        run: pnpm exec vitest run tests/windows-launcher-argv.test.mjs --no-file-parallelism
       - run: pnpm test
       - name: Smoke the built Windows launcher
         shell: pwsh
