@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
-function writeProbePreload(probePath) {
+function writeProbePreload(probePath: string) {
   fs.writeFileSync(
     probePath,
     `const fs = require("node:fs");
