@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 
 import {
   Key,
@@ -180,7 +179,7 @@ export function buildRouteBreadcrumb(navigation) {
   return `${baseBreadcrumb}/${profileName || "New"}`;
 }
 
-function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel } = {}) {
+function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel }: any = {}) {
   const safeWidth = Math.max(FRAME_MIN_WIDTH, width);
   const innerWidth = Math.max(1, safeWidth - FRAME_SIDE_BORDERS);
   const framedLines = [renderEmbeddedFrameHeader("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), headerRightLabel, safeWidth)];
@@ -570,8 +569,9 @@ function createMainScreen({
     onNavigate,
     getRouteState: () => getRouteState("model-profiles"),
     setOutputState: (nextOutputState) => { outputState = nextOutputState; },
-    sanitizeOutput: sanitizeTerminalOutput,
+    sanitizeOutput: sanitizeTerminalOutput as typeof String,
     finalizeSuccessfulDelete: (routeState) => finalizeSuccessfulModelProfilesDelete(navigation, routeState),
+    finalizeSuccessfulProfileCreate: undefined,
   });
   const { resolveExecutableAction, runSelectedAction } = actionExecutionPolicy;
 
@@ -604,7 +604,7 @@ function createMainScreen({
         return true;
       }
       if (!submitState.isSubmit) return false;
-      const validation = validateFormInput(modal);
+      const validation: any = validateFormInput(modal);
       if (!validation.ok) {
         navigation.modal = {
           ...modal,
@@ -726,16 +726,16 @@ function createMainScreen({
 
 export function createTuiApp({
   terminal = new ProcessTerminal(),
-  exit = ({ code }) => process.exit(code),
+  exit = ({ code }: any) => process.exit(code),
   loadConfigurationStatus = () => getConfigurationStatus(),
   loadStatusScreenState = () => getStatusScreenState(),
-  loadModelProfilesScreenState = ({ navigation } = {}) => getModelProfilesScreenState({ navigation }),
+  loadModelProfilesScreenState = ({ navigation }: any = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
   saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
   refreshActiveModelProfile = () => reapplySupportedAdapters(),
 }: any = {}): any {
-  const navigation = createNavigationState();
+  const navigation: any = createNavigationState();
   navigation.sectionActionSelection = 0;
   navigation.modal = undefined;
   const tui = new TUI(terminal);

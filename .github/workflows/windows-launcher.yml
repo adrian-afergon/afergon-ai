@@ -18,6 +18,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
+      - run: pnpm run typecheck
+      - run: pnpm run health:runtime
       - name: Verify Windows CMD argv contract
         run: pnpm exec vitest run tests/windows-launcher-argv.test.ts --no-file-parallelism
       - run: pnpm test

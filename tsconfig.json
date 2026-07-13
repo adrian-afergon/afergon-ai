@@ -21,6 +21,7 @@
     "scripts/lib/cli-dispatch-core.ts",
     "scripts/cli-dispatch.ts",
     "scripts/build-typescript.ts",
+    "scripts/check-dist-runtime.ts",
     "scripts/models.ts",
     "scripts/tui.ts",
     "scripts/lib/branding/**/*.ts",

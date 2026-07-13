@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createConfirmationState, createFormState, createOutputState } from "./actions/forms.js";
 import { createActionExecutionPolicy } from "./action-execution-policy.js";
 import { getModelProfilesBrowseIntent } from "./model-profiles-adapter.js";
@@ -29,7 +28,7 @@ function createProfileCreateAction() {
     cliEquivalent: "afergon-ai models profile create <name>",
     confirmLabel: "Create this profile now?",
     buildArgv: ({ profileName }) => buildCommandArgv("models", ["profile", "create", profileName]),
-  };
+  } as const;
 }
 
 function createAssignmentStageAction(assignment) {
@@ -44,7 +43,7 @@ function createAssignmentStageAction(assignment) {
       title: `Set model for ${assignment.agent}`,
       fields: [{ id: "model", label: "Model", type: "text", initialValue: "", required: true, requiredMessage: "Model is required." }],
     },
-  };
+  } as const;
 }
 
 function updateModelProfilesState(navigation, nextState) {
@@ -227,7 +226,7 @@ export function createModelProfilesInputController({
       onNavigate();
       return true;
     }
-    const intent = keyMatches.enter(data)
+    const intent: ReturnType<typeof getModelProfilesBrowseIntent> = keyMatches.enter(data)
       ? getModelProfilesBrowseIntent(routeState, "switch")
       : (data === DELETE_ESCAPE_SEQUENCE || printable === "d")
         ? getModelProfilesBrowseIntent(routeState, "delete")

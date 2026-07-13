@@ -34,8 +34,10 @@
   ],
   "scripts": {
     "build": "tsx ./scripts/build-typescript.ts",
+    "health:runtime": "node ./dist/scripts/check-dist-runtime.js",
+    "doctor:runtime": "node ./dist/scripts/check-dist-runtime.js --report",
     "prepack": "pnpm run build",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.runtime.json --noEmit",
     "test": "pnpm build && vitest run --no-file-parallelism",
     "test:watch": "vitest"
   },

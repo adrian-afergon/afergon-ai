@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, utimesSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -24,9 +24,11 @@ describe("TypeScript build output", () => {
     expect(packageMetadata.files).toContain("dist/");
     expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
     expect(packageMetadata.scripts.build).toBe("tsx ./scripts/build-typescript.ts");
+    expect(packageMetadata.scripts.typecheck).toBe("tsc -p tsconfig.runtime.json --noEmit");
     expect(packageMetadata.devDependencies.tsx).toBeDefined();
     expect(existsSync(path.join(repoRoot, "scripts", "build-typescript.ts"))).toBe(true);
     expect(existsSync(path.join(repoRoot, "scripts", "build-typescript.mjs"))).toBe(false);
+    expect(readFileSync(path.join(repoRoot, "scripts", "tui.ts"), "utf8")).not.toContain("@ts-nocheck");
   });
 
   it("emits the dispatcher, models, and TUI as NodeNext JavaScript without copied runtime MJS", async () => {
@@ -52,6 +54,69 @@ describe("TypeScript build output", () => {
     const tui = await import(`${pathToFileURL(path.join(distScripts, "tui.js")).href}?build-artifact`);
     expect(typeof tui.createTuiApp).toBe("function");
     expect(typeof tui.renderHomeScreen).toBe("function");
+  }, 120000);
+
+  it("reports actionable local health for the emitted dist runtime without remote telemetry", () => {
+    expect(runBuild().status).toBe(0);
+
+    const result = spawnSync(pnpmCommand, ["run", "health:runtime"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 120000,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("OK dist/scripts/tui.js imports successfully");
+    expect(result.stdout).toContain("no remote telemetry");
+  }, 120000);
+
+  it("persists failed dist health checks locally and exposes them through doctor", () => {
+    expect(runBuild().status).toBe(0);
+    const logPath = path.join(mkdtempSync(path.join(repoRoot, ".runtime-health-")), "failures.jsonl");
+    const runtimePath = path.join(distScripts, "tui.js");
+    const unavailableRuntimePath = `${runtimePath}.unavailable`;
+
+    try {
+      renameSync(runtimePath, unavailableRuntimePath);
+      const failedHealth = spawnSync(pnpmCommand, ["run", "health:runtime"], {
+        cwd: repoRoot, encoding: "utf8", env: { ...process.env, AFERGON_AI_RUNTIME_HEALTH_LOG: logPath },
+      });
+      const doctor = spawnSync(pnpmCommand, ["run", "doctor:runtime"], {
+        cwd: repoRoot, encoding: "utf8", env: { ...process.env, AFERGON_AI_RUNTIME_HEALTH_LOG: logPath },
+      });
+
+      expect(failedHealth.status).not.toBe(0);
+      expect(doctor.status).toBe(1);
+      expect(doctor.stdout).toContain("Missing built runtime: dist/scripts/tui.js");
+      expect(doctor.stdout).toContain("local-only");
+    } finally {
+      renameSync(unavailableRuntimePath, runtimePath);
+      rmSync(path.dirname(logPath), { recursive: true, force: true });
+    }
+  }, 120000);
+
+  it("reports doctor success when the local health log is missing or empty", () => {
+    expect(runBuild().status).toBe(0);
+    const logDirectory = mkdtempSync(path.join(repoRoot, ".runtime-health-"));
+    const logPath = path.join(logDirectory, "failures.jsonl");
+    const environment = { ...process.env, AFERGON_AI_RUNTIME_HEALTH_LOG: logPath };
+
+    try {
+      for (const setup of [
+        () => {},
+        () => writeFileSync(logPath, "\n"),
+      ]) {
+        setup();
+        const doctor = spawnSync(pnpmCommand, ["run", "doctor:runtime"], {
+          cwd: repoRoot, encoding: "utf8", env: environment,
+        });
+
+        expect(doctor.status).toBe(0);
+        expect(doctor.stdout).toContain(`Runtime doctor: no recorded local-only health failures (${logPath}).`);
+      }
+    } finally {
+      rmSync(logDirectory, { recursive: true, force: true });
+    }
   }, 120000);
 
   it("keeps generated runtime launchers on emitted JavaScript", () => {
