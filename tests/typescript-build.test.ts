@@ -1,11 +1,21 @@
 import path from "node:path";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, utimesSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const distScripts = path.join(repoRoot, "dist", "scripts");
+const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+
+function runBuild(environment: NodeJS.ProcessEnv = {}) {
+  return spawnSync(pnpmCommand, ["run", "build"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    env: { ...process.env, ...environment },
+    timeout: 120000,
+  });
+}
 
 describe("TypeScript build output", () => {
   it("declares a package lifecycle build for the ignored dist runtime", () => {
@@ -13,11 +23,14 @@ describe("TypeScript build output", () => {
 
     expect(packageMetadata.files).toContain("dist/");
     expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
+    expect(packageMetadata.scripts.build).toBe("tsx ./scripts/build-typescript.ts");
+    expect(packageMetadata.devDependencies.tsx).toBeDefined();
+    expect(existsSync(path.join(repoRoot, "scripts", "build-typescript.ts"))).toBe(true);
+    expect(existsSync(path.join(repoRoot, "scripts", "build-typescript.mjs"))).toBe(false);
   });
 
   it("emits the dispatcher, models, and TUI as NodeNext JavaScript without copied runtime MJS", async () => {
-    const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-    const result = spawnSync(pnpmCommand, ["run", "build"], { cwd: repoRoot, encoding: "utf8", timeout: 120000 });
+    const result = runBuild();
 
     expect(result.status).toBe(0);
     for (const runtimePath of [
@@ -53,7 +66,6 @@ describe("TypeScript build output", () => {
   });
 
   it("packs a clean checkout with a standalone JavaScript TUI runtime", () => {
-    const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const fixtureRoot = mkdtempSync(path.join(repoRoot, ".typescript-pack-"));
     const archiveDirectory = path.join(fixtureRoot, "archives");
 
@@ -77,5 +89,98 @@ describe("TypeScript build output", () => {
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
+  }, 120000);
+
+  it("recovers an interrupted dist-to-backup publication before the next build", () => {
+    expect(runBuild().status).toBe(0);
+
+    const backupRoot = path.join(repoRoot, ".dist-backup-interrupted-build-test");
+    const runtimePath = path.join(distScripts, "tui.js");
+    const previousRuntime = readFileSync(runtimePath, "utf8");
+
+    rmSync(backupRoot, { recursive: true, force: true });
+    renameSync(path.join(repoRoot, "dist"), backupRoot);
+
+    try {
+      const result = runBuild({ AFERGON_AI_TEST_FAIL_RUNTIME_COPY: "adapters" });
+
+      expect(result.status).not.toBe(0);
+      expect(existsSync(path.join(repoRoot, "dist"))).toBe(true);
+      expect(existsSync(backupRoot)).toBe(false);
+      expect(readFileSync(runtimePath, "utf8")).toBe(previousRuntime);
+    } finally {
+      if (!existsSync(path.join(repoRoot, "dist")) && existsSync(backupRoot)) {
+        renameSync(backupRoot, path.join(repoRoot, "dist"));
+      }
+      rmSync(backupRoot, { recursive: true, force: true });
+    }
+  }, 120000);
+
+  it("restores the newest backup and retains older backups after cleanup failure and interrupted publication", () => {
+    expect(runBuild().status).toBe(0);
+
+    const olderBackup = path.join(repoRoot, ".dist-backup-cleanup-failure-test");
+    const newestBackup = path.join(repoRoot, ".dist-backup-interrupted-publication-test");
+    const runtimePath = path.join(distScripts, "tui.js");
+
+    rmSync(olderBackup, { recursive: true, force: true });
+    rmSync(newestBackup, { recursive: true, force: true });
+
+    try {
+      const backupsBeforeCleanupFailure = new Set(
+        readdirSync(repoRoot).filter((entry) => entry.startsWith(".dist-backup-")),
+      );
+      expect(runBuild({ AFERGON_AI_TEST_FAIL_BACKUP_CLEANUP: "1" }).status).not.toBe(0);
+      const cleanupFailureBackup = readdirSync(repoRoot).find(
+        (entry) => entry.startsWith(".dist-backup-") && !backupsBeforeCleanupFailure.has(entry),
+      );
+      expect(cleanupFailureBackup).toBeDefined();
+      renameSync(path.join(repoRoot, cleanupFailureBackup!), olderBackup);
+
+      const newestRuntime = readFileSync(runtimePath, "utf8");
+      renameSync(path.join(repoRoot, "dist"), newestBackup);
+      utimesSync(olderBackup, new Date(1), new Date(1));
+      utimesSync(newestBackup, new Date(2), new Date(2));
+
+      const result = runBuild({ AFERGON_AI_TEST_FAIL_RUNTIME_COPY: "adapters" });
+
+      expect(result.status).not.toBe(0);
+      expect(readFileSync(runtimePath, "utf8")).toBe(newestRuntime);
+      expect(existsSync(olderBackup)).toBe(true);
+      expect(existsSync(newestBackup)).toBe(false);
+    } finally {
+      if (!existsSync(path.join(repoRoot, "dist"))) {
+        for (const backup of [newestBackup, olderBackup]) {
+          if (existsSync(backup)) {
+            renameSync(backup, path.join(repoRoot, "dist"));
+            break;
+          }
+        }
+      }
+      rmSync(olderBackup, { recursive: true, force: true });
+      rmSync(newestBackup, { recursive: true, force: true });
+    }
+  }, 120000);
+
+  it("preserves the prior dist runtime when runtime artifact copying fails", () => {
+    expect(runBuild().status).toBe(0);
+
+    const runtimePath = path.join(distScripts, "tui.js");
+    const previousRuntime = readFileSync(runtimePath, "utf8");
+    const result = runBuild({ AFERGON_AI_TEST_FAIL_RUNTIME_COPY: "adapters" });
+
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(runtimePath, "utf8")).toBe(previousRuntime);
+  }, 120000);
+
+  it("preserves the prior dist runtime when the compiler fails before publication", () => {
+    expect(runBuild().status).toBe(0);
+
+    const runtimePath = path.join(distScripts, "tui.js");
+    const previousRuntime = readFileSync(runtimePath, "utf8");
+    const result = runBuild({ AFERGON_AI_TEST_FAIL_COMPILER: "1" });
+
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(runtimePath, "utf8")).toBe(previousRuntime);
   }, 120000);
 });

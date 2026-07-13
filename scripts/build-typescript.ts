@@ -1,4 +1,4 @@
-import { cp, mkdir, rename, rm } from "node:fs/promises";
+import { cp, mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,9 +9,33 @@ const distRoot = path.join(repoRoot, "dist");
 const runtimeDirsToCopy = ["adapters", "prompts", "skills"];
 const runtimeScriptAssets = ["init-project.ps1", "init-project.sh", "register-opencode-agents.sh", "update.ps1", "update.sh", "verify-install.ps1", "verify-install.sh"];
 const injectedCopyFailure = process.env.AFERGON_AI_TEST_FAIL_RUNTIME_COPY;
+const injectedCompilerFailure = process.env.AFERGON_AI_TEST_FAIL_COMPILER;
+const injectedBackupCleanupFailure = process.env.AFERGON_AI_TEST_FAIL_BACKUP_CLEANUP;
 const buildId = `${process.pid}-${Date.now()}`;
 const stagingRoot = path.join(repoRoot, `.dist-staging-${buildId}`);
 const backupRoot = path.join(repoRoot, `.dist-backup-${buildId}`);
+
+async function recoverInterruptedPublication() {
+  if (existsSync(distRoot)) return;
+
+  const backupEntries = await readdir(repoRoot, { withFileTypes: true });
+  const strandedBackups = await Promise.all(
+    backupEntries
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith(".dist-backup-"))
+      .map(async (entry) => {
+        const backupPath = path.join(repoRoot, entry.name);
+        return { name: entry.name, path: backupPath, modifiedAt: (await stat(backupPath)).mtimeMs };
+      }),
+  );
+
+  if (strandedBackups.length === 0) return;
+
+  // An interrupted later publication can leave an older cleanup-failed backup beside
+  // the most recently moved dist. Restore the newest one, breaking timestamp ties by
+  // backup name, and retain every older backup for manual recovery rather than deleting it.
+  strandedBackups.sort((left, right) => right.modifiedAt - left.modifiedAt || right.name.localeCompare(left.name));
+  await rename(strandedBackups[0].path, distRoot);
+}
 
 async function publishBuild() {
   const hasPreviousDist = existsSync(distRoot);
@@ -30,26 +54,34 @@ async function publishBuild() {
   }
 
   if (hasPreviousDist) {
+    if (injectedBackupCleanupFailure) {
+      throw new Error("Injected backup cleanup failure");
+    }
     await rm(backupRoot, { recursive: true, force: true });
   }
 }
 
 try {
+  await recoverInterruptedPublication();
   await mkdir(stagingRoot, { recursive: true });
 
   const tscCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const tscArguments = [
+    "exec",
+    "tsc",
+    "-p",
+    "tsconfig.build.json",
+    "--outDir",
+    stagingRoot,
+    "--tsBuildInfoFile",
+    path.join(stagingRoot, ".tsbuildinfo"),
+  ];
+  if (injectedCompilerFailure) {
+    tscArguments.push("--afergon-ai-test-invalid-compiler-option");
+  }
   const tscResult = spawnSync(
     tscCommand,
-    [
-      "exec",
-      "tsc",
-      "-p",
-      "tsconfig.build.json",
-      "--outDir",
-      stagingRoot,
-      "--tsBuildInfoFile",
-      path.join(stagingRoot, ".tsbuildinfo"),
-    ],
+    tscArguments,
     {
       cwd: repoRoot,
       stdio: "inherit",
