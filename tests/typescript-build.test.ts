@@ -211,7 +211,10 @@ describe("TypeScript build output", () => {
     });
     expect(copiedModelsCliCore.getOpenCodeRefreshTimeoutMs({ AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "0" })).toBe(10000);
     expect(existsSync(copiedCliDispatchCoreDeclarationPath)).toBe(true);
-    expect(readFileSync(copiedCliDispatchCoreDeclarationPath, "utf8")).toContain('export * from "./cli-dispatch-core.ts"');
+    const copiedCliDispatchCoreDeclaration = readFileSync(copiedCliDispatchCoreDeclarationPath, "utf8");
+    expect(copiedCliDispatchCoreDeclaration).toContain('export type DispatchCommand = "init" | "doctor" | "update" | "models"');
+    expect(copiedCliDispatchCoreDeclaration).toContain("export function resolveDispatchPlan");
+    expect(copiedCliDispatchCoreDeclaration).not.toContain(".ts");
     expect(existsSync(copiedCliDispatchCoreRuntimePath)).toBe(true);
     expect(readFileSync(copiedCliDispatchCoreRuntimePath, "utf8")).toContain("export function resolveDispatchPlan");
     const copiedCliDispatchCore = await import(`${pathToFileURL(copiedCliDispatchCoreRuntimePath).href}?build-artifact`);
@@ -415,5 +418,5 @@ describe("TypeScript build output", () => {
     expect(readFileSync(modelProfilesScreenOutputPath, "utf8")).toContain("export function renderModelProfilesScreen");
     expect(existsSync(statusScreenOutputPath)).toBe(true);
     expect(readFileSync(statusScreenOutputPath, "utf8")).toContain("export function renderStatusScreen");
-  });
+  }, 120000);
 });

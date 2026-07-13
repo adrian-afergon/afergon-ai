@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import type { DispatchRequest } from "../scripts/lib/cli-dispatch-core.mjs";
 
 import {
   buildExecution,
@@ -10,13 +11,13 @@ import {
   resolveDispatchPlan,
 } from "../scripts/cli-dispatch.mjs";
 import * as dispatchCoreRuntime from "../scripts/lib/cli-dispatch-core.mjs";
-import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.ts";
+import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const dispatcherPath = path.join(repoRoot, "scripts", "cli-dispatch.mjs");
 const packageMetadata = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
 
-function executeDispatcher(argv) {
+function executeDispatcher(argv: readonly string[]) {
   return spawnSync(process.execPath, [dispatcherPath, ...argv], {
     cwd: repoRoot,
     encoding: "utf8",
@@ -93,7 +94,7 @@ describe("resolveDispatchPlan", () => {
 });
 
 describe("dispatch core TypeScript/runtime parity", () => {
-  const dispatchCases = [
+  const dispatchCases: Array<{ name: string; input: DispatchRequest }> = [
     { name: "interactive empty argv", input: { argv: [], isInteractiveTTY: true, isCI: false } },
     { name: "non-interactive empty argv", input: { argv: [], isInteractiveTTY: false, isCI: false } },
     { name: "CI empty argv", input: { argv: [], isInteractiveTTY: true, isCI: true } },
@@ -223,10 +224,11 @@ describe("launcher parity boundaries", () => {
     expect(launcher).toContain('exec node "$RUNTIME_ENTRYPOINT" "$@"');
   });
 
-  it("keeps the Windows launcher delegated to dist with %* instead of fixed positional forwarding", () => {
+  it("keeps the Windows launcher delegated to dist with safe %* forwarding", () => {
     const launcher = fs.readFileSync(path.join(repoRoot, "bin/afergon-ai.cmd"), "utf8");
 
     expect(launcher).toContain('dist\\scripts\\cli-dispatch.mjs');
+    expect(launcher).toContain("setlocal DisableDelayedExpansion");
     expect(launcher).toContain('node "%RUNTIME_ENTRYPOINT%" %*');
     expect(launcher).not.toMatch(/%2|%3|%4|%5/);
   });
@@ -274,6 +276,41 @@ describe("launcher parity boundaries", () => {
     }
   });
 
+  it.runIf(process.platform === "win32")("forwards exclamation marks to the built dispatcher unchanged", () => {
+    const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-windows-argv-"));
+    const fixtureBin = path.join(fixtureRoot, "bin");
+    const fixtureDistScripts = path.join(fixtureRoot, "dist", "scripts");
+    const capturePath = path.join(fixtureRoot, "argv.json");
+    const probePath = path.join(fixtureRoot, "capture-argv.mjs");
+    const mockNodePath = path.join(fixtureRoot, "node.cmd");
+    fs.mkdirSync(fixtureBin, { recursive: true });
+    fs.mkdirSync(fixtureDistScripts, { recursive: true });
+    fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
+    fs.writeFileSync(path.join(fixtureDistScripts, "cli-dispatch.mjs"), "");
+    fs.writeFileSync(probePath, 'import { writeFileSync } from "node:fs";\nwriteFileSync(process.env.ARG_CAPTURE, JSON.stringify(process.argv.slice(3)));\n');
+    fs.writeFileSync(
+      mockNodePath,
+      `@echo off\r\nsetlocal DisableDelayedExpansion\r\n"${process.execPath}" "${probePath}" %*\r\nexit /b %ERRORLEVEL%\r\n`,
+    );
+
+    try {
+      const result = spawnSync(
+        "cmd.exe",
+        ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" models "value!bang!" "with spaces"`],
+        {
+          cwd: fixtureRoot,
+          encoding: "utf8",
+          env: { ...process.env, ARG_CAPTURE: capturePath, PATH: `${fixtureRoot};${process.env.PATH}` },
+        },
+      );
+
+      expect(result.status).toBe(0);
+      expect(JSON.parse(fs.readFileSync(capturePath, "utf8"))).toEqual(["models", "value!bang!", "with spaces"]);
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it.runIf(process.platform === "win32")("fails the Windows launcher before Node starts when the package is unbuilt", () => {
     const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-unbuilt-windows-"));
     const fixtureBin = path.join(fixtureRoot, "bin");
@@ -305,7 +342,7 @@ describe("package build lifecycle", () => {
     expect(readme).not.toContain("From the afergon-ai package root, run:\n\n```bash\npnpm build\nafergon-ai --help");
   });
 
-  it("packs a clean checkout with a standalone dist dispatcher runtime", () => {
+  it("packs a clean checkout with standalone dispatcher runtime and declarations", () => {
     const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-pack-"));
     const archiveDirectory = path.join(fixtureRoot, "archives");
@@ -352,6 +389,44 @@ describe("package build lifecycle", () => {
       expect(helpResult.status).toBe(0);
       expect(helpResult.stderr).toBe("");
       expect(helpResult.stdout).toBe(formatHelp());
+
+      const externalConsumerDirectory = path.join(fixtureRoot, "consumer");
+      const externalConsumerPath = path.join(externalConsumerDirectory, "consumer.mts");
+      const installedPackageRoot = path.join(externalConsumerDirectory, "node_modules", "afergon-ai");
+      fs.mkdirSync(externalConsumerDirectory, { recursive: true });
+      fs.cpSync(extractedPackageRoot, installedPackageRoot, { recursive: true });
+      fs.writeFileSync(
+        externalConsumerPath,
+        [
+          'import { buildExecution, formatHelp, resolveDispatchPlan } from "afergon-ai/dist/scripts/cli-dispatch.mjs";',
+          'import type { DispatchPlan } from "afergon-ai/dist/scripts/lib/cli-dispatch-core.mjs";',
+          'const plan: DispatchPlan = resolveDispatchPlan({ argv: ["models"], isInteractiveTTY: false, isCI: true });',
+          'const help: string = formatHelp();',
+          'const execution = plan.kind === "command" || plan.kind === "tui" ? buildExecution(plan) : undefined;',
+          "void help;",
+          "void execution;",
+          "",
+        ].join("\n"),
+      );
+      const externalConsumerTypecheck = spawnSync(
+        pnpmCommand,
+        [
+          "exec",
+          "tsc",
+          "--noEmit",
+          "--strict",
+          "--target",
+          "ES2022",
+          "--module",
+          "NodeNext",
+          "--moduleResolution",
+          "NodeNext",
+          externalConsumerPath,
+        ],
+        { cwd: repoRoot, encoding: "utf8", timeout: 120000 },
+      );
+      expect(externalConsumerTypecheck.status).toBe(0);
+      expect(externalConsumerTypecheck.stderr).toBe("");
     } finally {
       fs.rmSync(fixtureRoot, { recursive: true, force: true });
     }
