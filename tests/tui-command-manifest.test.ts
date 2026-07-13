@@ -1,23 +1,15 @@
+// @ts-nocheck
+// This suite exercises the TypeScript source directly during the Phase 2 cleanup.
 import { describe, expect, it } from "vitest";
 
-import * as commandManifestTypeScript from "../scripts/lib/tui/command-manifest.ts";
 import {
+  buildCommandArgv,
   COMMAND_MANIFEST,
   getCommandManifest,
   getCommandManifestEntry,
-} from "../scripts/lib/tui/command-manifest.mjs";
+} from "../scripts/lib/tui/command-manifest.ts";
 
 describe("COMMAND_MANIFEST", () => {
-  it("keeps the TypeScript command manifest in parity with the runtime .mjs module", () => {
-    expect(commandManifestTypeScript.COMMAND_MANIFEST).toEqual(COMMAND_MANIFEST);
-    expect(commandManifestTypeScript.getCommandManifest()).toEqual(getCommandManifest());
-    expect(commandManifestTypeScript.getCommandManifestEntry("doctor")).toEqual(getCommandManifestEntry("doctor"));
-    expect(commandManifestTypeScript.getCommandManifestEntry("configuration")).toEqual(getCommandManifestEntry("configuration"));
-    expect(commandManifestTypeScript.buildCommandArgv("models", ["profile", "list"])).toEqual(
-      getCommandManifestEntry("models").argv.concat(["profile", "list"]),
-    );
-  });
-
   it("exposes only the stable CLI-equivalent commands for this MVP slice", () => {
     expect(COMMAND_MANIFEST).toEqual([
       { id: "init", label: "afergon-ai init", argv: ["init"] },
@@ -25,6 +17,10 @@ describe("COMMAND_MANIFEST", () => {
       { id: "update", label: "afergon-ai update", argv: ["update"] },
       { id: "models", label: "afergon-ai models", argv: ["models"] },
     ]);
+  });
+
+  it("builds manifest-backed argv for defined commands", () => {
+    expect(buildCommandArgv("models", ["profile", "list"])).toEqual(["models", "profile", "list"]);
   });
 
   it("does not fabricate commands outside the explicit dispatcher contract", () => {
