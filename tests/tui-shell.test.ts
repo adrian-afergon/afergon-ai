@@ -1,3 +1,5 @@
+// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// @ts-nocheck
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { visibleWidth } from "@earendil-works/pi-tui";

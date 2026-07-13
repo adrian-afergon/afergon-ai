@@ -1,3 +1,5 @@
+// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// @ts-nocheck
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it, vi } from "vitest";

@@ -1,3 +1,5 @@
+// This parity suite retains imports of the authoritative MJS runtime during Phase 2.
+// @ts-nocheck
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
