@@ -7,10 +7,16 @@ import { assertCompilerBootstrapSucceeded, createCompilerBootstrapInvocation } f
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const distScripts = path.join(repoRoot, "dist", "scripts");
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+function runPnpm(args: string[], options: Parameters<typeof spawnSync>[2] = {}) {
+  return spawnSync(
+    process.platform === "win32" ? "cmd.exe" : "pnpm",
+    process.platform === "win32" ? ["/d", "/v:off", "/s", "/c", `pnpm.cmd ${args.join(" ")}`] : args,
+    options,
+  );
+}
 
 function runBuild(environment: NodeJS.ProcessEnv = {}) {
-  return spawnSync(pnpmCommand, ["run", "build"], {
+  return runPnpm(["run", "build"], {
     cwd: repoRoot,
     encoding: "utf8",
     env: { ...process.env, ...environment },
@@ -33,10 +39,10 @@ describe("TypeScript build output", () => {
       "/v:off",
       "/s",
       "/c",
-      "pnpm.cmd exec tsc -p tsconfig.build.json --outDir \"%AFERGON_AI_TSCONFIG_OUTDIR%\" --tsBuildInfoFile \"%AFERGON_AI_TSBUILDINFO%\"",
+      "pnpm.cmd exec tsc -p tsconfig.build.json --outDir %AFERGON_AI_TSCONFIG_OUTDIR% --tsBuildInfoFile %AFERGON_AI_TSBUILDINFO%",
     ]);
     expect(invocation.options.env?.AFERGON_AI_TSCONFIG).toBeUndefined();
-    expect(invocation.options.env?.AFERGON_AI_TSCONFIG_OUTDIR).toBe(stagingRoot);
+    expect(invocation.options.env?.AFERGON_AI_TSCONFIG_OUTDIR).toBe(`"${stagingRoot}"`);
     expect(invocation.arguments.join(" ")).not.toContain(stagingRoot);
 
     expect(() => assertCompilerBootstrapSucceeded({ error: new Error("spawnSync cmd.exe ENOENT"), signal: null, status: null }, invocation.description))
@@ -84,7 +90,7 @@ describe("TypeScript build output", () => {
   it("reports actionable local health for the emitted dist runtime without remote telemetry", () => {
     expect(runBuild().status).toBe(0);
 
-    const result = spawnSync(pnpmCommand, ["run", "health:runtime"], {
+    const result = runPnpm(["run", "health:runtime"], {
       cwd: repoRoot,
       encoding: "utf8",
       timeout: 120000,
@@ -103,10 +109,10 @@ describe("TypeScript build output", () => {
 
     try {
       renameSync(runtimePath, unavailableRuntimePath);
-      const failedHealth = spawnSync(pnpmCommand, ["run", "health:runtime"], {
+      const failedHealth = runPnpm(["run", "health:runtime"], {
         cwd: repoRoot, encoding: "utf8", env: { ...process.env, AFERGON_AI_RUNTIME_HEALTH_LOG: logPath },
       });
-      const doctor = spawnSync(pnpmCommand, ["run", "doctor:runtime"], {
+      const doctor = runPnpm(["run", "doctor:runtime"], {
         cwd: repoRoot, encoding: "utf8", env: { ...process.env, AFERGON_AI_RUNTIME_HEALTH_LOG: logPath },
       });
 
@@ -132,7 +138,7 @@ describe("TypeScript build output", () => {
         () => writeFileSync(logPath, "\n"),
       ]) {
         setup();
-        const doctor = spawnSync(pnpmCommand, ["run", "doctor:runtime"], {
+        const doctor = runPnpm(["run", "doctor:runtime"], {
           cwd: repoRoot, encoding: "utf8", env: environment,
         });
 
@@ -160,7 +166,7 @@ describe("TypeScript build output", () => {
     const archiveDirectory = path.join(fixtureRoot, "archives");
 
     try {
-      const packResult = spawnSync(pnpmCommand, ["pack", "--pack-destination", archiveDirectory], {
+      const packResult = runPnpm(["pack", "--pack-destination", archiveDirectory], {
         cwd: repoRoot,
         encoding: "utf8",
         timeout: 120000,

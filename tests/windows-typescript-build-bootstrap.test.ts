@@ -23,13 +23,23 @@ function runBuild(environment: NodeJS.ProcessEnv = {}) {
   return runPnpmScript("build", environment);
 }
 
+function describeProcessFailure(result: ReturnType<typeof runBuild>) {
+  return [
+    `status=${result.status ?? "null"}`,
+    `signal=${result.signal ?? "null"}`,
+    `error=${result.error?.message ?? "none"}`,
+    `stdout=${result.stdout ?? ""}`,
+    `stderr=${result.stderr ?? ""}`,
+  ].join("\n");
+}
+
 describe("Windows TypeScript compiler bootstrap", () => {
   it.runIf(process.platform === "win32")("executes the CMD pnpm.cmd bootstrap before the workflow build and preserves dist after a compiler failure", () => {
     const successfulBuild = runBuild();
 
     expect(successfulBuild.error).toBeUndefined();
     expect(successfulBuild.signal).toBeNull();
-    expect(successfulBuild.status).toBe(0);
+    expect(successfulBuild.status, describeProcessFailure(successfulBuild)).toBe(0);
 
     const healthCheck = runPnpmScript("health:runtime");
     expect(healthCheck.status).toBe(0);

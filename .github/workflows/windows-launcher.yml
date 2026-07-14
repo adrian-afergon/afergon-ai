@@ -9,12 +9,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24.18.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Verify Windows TypeScript compiler bootstrap before workflow build
@@ -23,8 +21,11 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run health:runtime
       - name: Verify Windows CMD argv contract
+        shell: bash
         run: pnpm exec vitest run tests/windows-launcher-argv.test.ts --no-file-parallelism
-      - run: pnpm test
+      - name: Run the cross-platform suite under Git Bash
+        shell: bash
+        run: pnpm test
       - name: Smoke the built Windows launcher
         shell: pwsh
         run: |
