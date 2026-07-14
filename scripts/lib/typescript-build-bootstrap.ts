@@ -1,6 +1,9 @@
 import { type SpawnSyncOptions, type SpawnSyncReturns } from "node:child_process";
 
-const windowsCompilerCommand = "pnpm.cmd exec tsc -p \"%AFERGON_AI_TSCONFIG%\" --outDir \"%AFERGON_AI_TSCONFIG_OUTDIR%\" --tsBuildInfoFile \"%AFERGON_AI_TSBUILDINFO%\"";
+// tsconfig.build.json is relative to cwd and intentionally stays literal. Quoting
+// its CMD expansion makes pnpm.cmd forward the quote characters to tsc on Windows.
+// Paths that can contain spaces remain quoted environment expansions.
+const windowsCompilerCommand = "pnpm.cmd exec tsc -p tsconfig.build.json --outDir \"%AFERGON_AI_TSCONFIG_OUTDIR%\" --tsBuildInfoFile \"%AFERGON_AI_TSBUILDINFO%\"";
 const windowsCompilerCommandWithInjectedFailure = `${windowsCompilerCommand} --afergon-ai-test-invalid-compiler-option`;
 
 export interface CompilerBootstrapInvocation {
@@ -49,7 +52,6 @@ export function createCompilerBootstrapInvocation({
         cwd: repoRoot,
         env: {
           ...process.env,
-          AFERGON_AI_TSCONFIG: "tsconfig.build.json",
           AFERGON_AI_TSCONFIG_OUTDIR: stagingRoot,
           AFERGON_AI_TSBUILDINFO: `${stagingRoot}/.tsbuildinfo`,
         },

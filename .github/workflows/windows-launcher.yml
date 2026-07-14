@@ -17,6 +17,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify Windows TypeScript compiler bootstrap before workflow build
+        run: pnpm exec vitest run tests/windows-typescript-build-bootstrap.test.ts --no-file-parallelism
       - run: pnpm run build
       - run: pnpm run typecheck
       - run: pnpm run health:runtime

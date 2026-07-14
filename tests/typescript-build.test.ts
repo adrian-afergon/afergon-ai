@@ -33,37 +33,15 @@ describe("TypeScript build output", () => {
       "/v:off",
       "/s",
       "/c",
-      "pnpm.cmd exec tsc -p \"%AFERGON_AI_TSCONFIG%\" --outDir \"%AFERGON_AI_TSCONFIG_OUTDIR%\" --tsBuildInfoFile \"%AFERGON_AI_TSBUILDINFO%\"",
+      "pnpm.cmd exec tsc -p tsconfig.build.json --outDir \"%AFERGON_AI_TSCONFIG_OUTDIR%\" --tsBuildInfoFile \"%AFERGON_AI_TSBUILDINFO%\"",
     ]);
+    expect(invocation.options.env?.AFERGON_AI_TSCONFIG).toBeUndefined();
     expect(invocation.options.env?.AFERGON_AI_TSCONFIG_OUTDIR).toBe(stagingRoot);
     expect(invocation.arguments.join(" ")).not.toContain(stagingRoot);
 
     expect(() => assertCompilerBootstrapSucceeded({ error: new Error("spawnSync cmd.exe ENOENT"), signal: null, status: null }, invocation.description))
       .toThrow("Ensure pnpm is installed and available on PATH. Spawn error: spawnSync cmd.exe ENOENT");
   });
-
-  it.runIf(process.platform === "win32")("executes the CMD pnpm.cmd compiler bootstrap and preserves usable dist after a compiler failure", () => {
-    const successfulBuild = runBuild();
-
-    expect(successfulBuild.error).toBeUndefined();
-    expect(successfulBuild.signal).toBeNull();
-    expect(successfulBuild.status).toBe(0);
-
-    const healthCheck = spawnSync(pnpmCommand, ["run", "health:runtime"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      timeout: 120000,
-    });
-    expect(healthCheck.status).toBe(0);
-    expect(healthCheck.stdout).toContain("OK dist/scripts/tui.js imports successfully");
-
-    const runtimePath = path.join(distScripts, "tui.js");
-    const previousRuntime = readFileSync(runtimePath, "utf8");
-    const failedBuild = runBuild({ AFERGON_AI_TEST_FAIL_COMPILER: "1" });
-
-    expect(failedBuild.status).not.toBe(0);
-    expect(readFileSync(runtimePath, "utf8")).toBe(previousRuntime);
-  }, 180000);
 
   it("declares a package lifecycle build for the ignored dist runtime", () => {
     const packageMetadata = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
