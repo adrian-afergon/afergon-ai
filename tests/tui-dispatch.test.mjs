@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,8 +8,24 @@ import {
   formatHelp,
   resolveDispatchPlan,
 } from "../scripts/cli-dispatch.mjs";
+import * as dispatchCoreRuntime from "../scripts/lib/cli-dispatch-core.mjs";
+import * as dispatchCoreTypeScript from "../scripts/lib/cli-dispatch-core.ts";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
+const dispatcherPath = path.join(repoRoot, "scripts", "cli-dispatch.mjs");
+
+function executeDispatcher(argv) {
+  return spawnSync(process.execPath, [dispatcherPath, ...argv], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      AFERGON_AI_FORCE_TTY: "0",
+      CI: "true",
+      PATH: "",
+    },
+  });
+}
 
 describe("resolveDispatchPlan", () => {
   it("routes interactive no-argument launches to the TUI", () => {
@@ -70,6 +87,38 @@ describe("resolveDispatchPlan", () => {
       kind: "help",
       exitCode: 0,
     });
+  });
+});
+
+describe("dispatch core TypeScript/runtime parity", () => {
+  const dispatchCases = [
+    { name: "interactive empty argv", input: { argv: [], isInteractiveTTY: true, isCI: false } },
+    { name: "non-interactive empty argv", input: { argv: [], isInteractiveTTY: false, isCI: false } },
+    { name: "CI empty argv", input: { argv: [], isInteractiveTTY: true, isCI: true } },
+    { name: "long help flag", input: { argv: ["--help"], isInteractiveTTY: true, isCI: false } },
+    { name: "short help flag", input: { argv: ["-h"], isInteractiveTTY: false, isCI: true } },
+    { name: "interactive TUI with forwarding", input: { argv: ["TuI", "--debug"], isInteractiveTTY: true, isCI: false } },
+    { name: "non-interactive TUI", input: { argv: ["tui"], isInteractiveTTY: false, isCI: false } },
+    { name: "CI TUI", input: { argv: ["tui"], isInteractiveTTY: true, isCI: true } },
+    { name: "init command", input: { argv: ["INIT", "--all"], isInteractiveTTY: false, isCI: true } },
+    { name: "doctor command", input: { argv: ["doctor", "--opencode"], isInteractiveTTY: false, isCI: true } },
+    { name: "update command", input: { argv: ["update", "--dry-run"], isInteractiveTTY: false, isCI: true } },
+    { name: "models command", input: { argv: ["models", "show", "budget"], isInteractiveTTY: false, isCI: true } },
+    { name: "unknown command", input: { argv: ["Unknown", "--value"], isInteractiveTTY: false, isCI: true } },
+  ];
+
+  it("exports only the public pure dispatch helpers from both implementations", () => {
+    expect(Object.keys(dispatchCoreRuntime).sort()).toEqual(["formatHelp", "resolveDispatchPlan"]);
+    expect(Object.keys(dispatchCoreTypeScript).sort()).toEqual(["formatHelp", "resolveDispatchPlan"]);
+  });
+
+  it.each(dispatchCases)("keeps $name dispatch plans in parity", ({ input }) => {
+    expect(dispatchCoreTypeScript.resolveDispatchPlan(input)).toEqual(dispatchCoreRuntime.resolveDispatchPlan(input));
+  });
+
+  it("keeps help output in parity including its final newline", () => {
+    expect(dispatchCoreTypeScript.formatHelp()).toBe(dispatchCoreRuntime.formatHelp());
+    expect(dispatchCoreRuntime.formatHelp()).toMatch(/\n$/);
   });
 });
 
@@ -143,6 +192,24 @@ describe("dispatcher execution metadata", () => {
 
   it("formats help with the explicit tui entrypoint documented", () => {
     expect(formatHelp()).toContain("afergon-ai tui");
+  });
+});
+
+describe("dispatcher CLI wrapper", () => {
+  it("writes help to stdout and does not require a runnable runtime command", () => {
+    const result = executeDispatcher(["--help"]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(formatHelp());
+    expect(result.stderr).toBe("");
+  });
+
+  it("writes unknown-command errors to stderr and does not spawn a runtime command", () => {
+    const result = executeDispatcher(["not-a-command"]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("Unknown command: not-a-command\nRun 'afergon-ai --help' for usage.\n");
   });
 });
 

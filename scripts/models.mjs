@@ -7,12 +7,10 @@ import path from "node:path";
 import {
   cloneAssignments,
   ensureActiveProfile,
-  getConfigDir,
   getActiveProfile,
   getOpenCodeBaseDir,
   loadConfig,
   normalizeAgentName,
-  normalizeRefreshResult,
   normalizeProfileName,
   normalizeStoredModel,
   readOpenCodeAgentModels,
@@ -21,36 +19,19 @@ import {
   SUPPORTED_AGENTS,
   validateModelAvailability,
 } from "./lib/model-profiles.mjs";
+import {
+  createRefreshResult,
+  createRegistrationEnv,
+  formatEffective,
+  formatUnknownModelError,
+  getOpenCodeRefreshTimeoutMs,
+  getProfileOrThrow,
+  isDirectExecution,
+  parseSetCommandArguments,
+  printHelp,
+} from "./lib/models-cli-core.mjs";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS = 10000;
-
-function isDirectExecution(argv = process.argv) {
-  return Boolean(argv[1]) && path.resolve(argv[1]) === fileURLToPath(import.meta.url);
-}
-
-function getOpenCodeRefreshTimeoutMs(env = process.env) {
-  const rawTimeout = env.AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS;
-  if (!rawTimeout) {
-    return DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS;
-  }
-
-  const timeout = Number.parseInt(rawTimeout, 10);
-  return Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS;
-}
-
-function createRegistrationEnv(env = process.env) {
-  return {
-    ...env,
-    AFERGON_AI_CONFIG_DIR: getConfigDir(env),
-    AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
-    ...(env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: path.resolve(env.XDG_CONFIG_HOME) } : {}),
-  };
-}
-
-function createRefreshResult(result) {
-  return normalizeRefreshResult(result);
-}
 
 export function reportAdapterRefreshResult(result, { log = console.log, warn = console.warn } = {}) {
   if (!result) {
@@ -67,57 +48,6 @@ export function reportAdapterRefreshResult(result, { log = console.log, warn = c
   return result;
 }
 
-function printHelp() {
-  console.log("afergon-ai models — manage afergon-ai model profiles");
-  console.log("");
-  console.log("Usage:");
-  console.log("  afergon-ai models");
-  console.log("  afergon-ai models show");
-  console.log("  afergon-ai models show <profile>");
-  console.log("  afergon-ai models list");
-  console.log("  afergon-ai models switch <profile>");
-  console.log("  afergon-ai models set [--allow-unknown] <agent> <model|inherit>");
-  console.log("  afergon-ai models profile show <name>");
-  console.log("  afergon-ai models profile create <name>");
-  console.log("  afergon-ai models profile delete <name>");
-  console.log("");
-  console.log(`Supported agents: ${SUPPORTED_AGENTS.join(", ")}`);
-  console.log("Aliases: orchestrator, main, debate, breakdown, specify, plannify, implement, review, design");
-  console.log("");
-  console.log("Notes:");
-  console.log("  - Missing agent assignments inherit from afergon-ai.");
-  console.log("  - 'inherit' means defer to afergon-ai; if that is also unset, runtime defaults are preserved.");
-  console.log("  - Concrete model strings should use provider/model format, for example 'openai/gpt-5.5'.");
-  console.log("  - Concrete models are validated with 'opencode models <provider>' when available.");
-  console.log("  - Use '--allow-unknown' to save an unlisted or custom concrete model after reviewing the warning.");
-  console.log("  - Changes update afergon-ai-owned config and refresh compatible host config on disk when supported.");
-  console.log("  - Live hot-swap is not guaranteed for already-running sessions.");
-}
-
-function formatUnknownModelError(model, provider, suggestions) {
-  const lines = [`Requested model '${model}' is not available from provider '${provider}'.`];
-  if (suggestions.length > 0) {
-    lines.push(`Did you mean: ${suggestions.join(", ")}?`);
-  }
-  lines.push("If you really need to save it anyway, rerun with '--allow-unknown'.");
-  return lines.join(" ");
-}
-
-function formatEffective(entry) {
-  return entry.effective ?? "(runtime default)";
-}
-
-function getProfileOrThrow(config, profileNameInput) {
-  const profileName = normalizeProfileName(profileNameInput);
-  const profile = config.models.profiles[profileName];
-  if (!profile) {
-    const available = Object.keys(config.models.profiles).sort();
-    const suffix = available.length > 0 ? ` Available profiles: ${available.join(", ")}` : " No profiles exist yet.";
-    throw new Error(`Unknown profile '${profileName}'.${suffix}`);
-  }
-
-  return { profileName, profile };
-}
 
 function showCurrentConfig(profileNameInput) {
   const { config, configPath, exists } = loadConfig();
@@ -291,29 +221,6 @@ function setAgentModel(agentInput, modelInput, options = {}) {
   reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
-function parseSetCommandArguments(args) {
-  let allowUnknown = false;
-  const positional = [];
-
-  for (const arg of args) {
-    if (arg === "--allow-unknown") {
-      allowUnknown = true;
-      continue;
-    }
-    positional.push(arg);
-  }
-
-  if (positional.length !== 2) {
-    throw new Error("Usage: afergon-ai models set [--allow-unknown] <agent> <model|inherit>");
-  }
-
-  return {
-    allowUnknown,
-    agent: positional[0],
-    model: positional[1],
-  };
-}
-
 function createProfile(profileNameInput) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig();
@@ -411,7 +318,7 @@ function main(argv) {
   }
 }
 
-if (isDirectExecution()) {
+if (isDirectExecution(process.argv, import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

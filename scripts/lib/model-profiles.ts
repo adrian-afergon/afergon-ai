@@ -9,7 +9,7 @@ import {
   parseProviderModel,
   resolveAssignments,
   suggestCloseModelIds,
-} from "./model-profiles-core.mjs";
+} from "./model-profiles-core.js";
 import {
   createDefaultConfig,
   ensureActiveProfile,
@@ -19,10 +19,10 @@ import {
   getOpenCodeBaseDir,
   loadConfig,
   saveConfig,
-} from "./model-profiles-config.mjs";
-import { readOpenCodeAgentModels } from "./model-profiles-host-seeding.mjs";
-import { listOpenCodeProviderModels, validateModelAvailability } from "./model-profiles-availability.mjs";
-import { saveProfileAssignments } from "./model-profiles-save.mjs";
+} from "./model-profiles-config.js";
+import { readOpenCodeAgentModels } from "./model-profiles-host-seeding.js";
+import { listOpenCodeProviderModels, validateModelAvailability } from "./model-profiles-availability.js";
+import { saveProfileAssignments } from "./model-profiles-save.js";
 
 export {
   SUPPORTED_AGENTS,

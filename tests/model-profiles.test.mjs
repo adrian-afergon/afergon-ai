@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -59,6 +60,22 @@ function runModelsScript(args, env = {}) {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function captureWarnings(run) {
+  const warnings = [];
+  const warnSpy = vi.spyOn(console, "warn").mockImplementation((message) => {
+    warnings.push(String(message));
+  });
+
+  try {
+    return {
+      result: run(),
+      warnings,
+    };
+  } finally {
+    warnSpy.mockRestore();
+  }
 }
 
 function copyManagedAgents(xdgHome) {
@@ -169,6 +186,546 @@ exit 127
 }
 
 describe("model profile resolution", () => {
+  it("exports only the intended public model profile facade helpers", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
+    const expectedExports = [
+      "SUPPORTED_AGENTS",
+      "cloneAssignments",
+      "createDefaultConfig",
+      "ensureActiveProfile",
+      "getActiveProfile",
+      "getConfigDir",
+      "getConfigPath",
+      "getOpenCodeBaseDir",
+      "hasDegradedRefreshGuidance",
+      "listOpenCodeProviderModels",
+      "loadConfig",
+      "normalizeAgentName",
+      "normalizeProfileName",
+      "normalizeRefreshResult",
+      "normalizeStoredModel",
+      "parseProviderModel",
+      "readOpenCodeAgentModels",
+      "resolveAssignments",
+      "saveConfig",
+      "saveProfileAssignments",
+      "suggestCloseModelIds",
+      "validateModelAvailability",
+    ];
+
+    expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the TypeScript model profile facade export surface in parity with the runtime facade", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.ts");
+    const modelProfilesRuntime = await import("../scripts/lib/model-profiles.mjs");
+
+    expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(Object.keys(modelProfilesRuntime).sort());
+    expect(modelProfilesTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesRuntime.SUPPORTED_AGENTS);
+  });
+
+  it("exports only the intended public model profile config helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const expectedExports = [
+      "createDefaultConfig",
+      "ensureActiveProfile",
+      "getActiveProfile",
+      "getConfigDir",
+      "getConfigPath",
+      "getOpenCodeBaseDir",
+      "loadConfig",
+      "saveConfig",
+    ];
+
+    expect(Object.keys(modelProfilesConfigTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesConfigRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for env path helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+
+    const explicitConfigEnv = {
+      AFERGON_AI_CONFIG_DIR: "./custom-config",
+      HOME: "/users/example",
+      XDG_CONFIG_HOME: "/users/example/.xdg",
+    };
+    expect(modelProfilesConfigTypeScript.getConfigDir(explicitConfigEnv)).toBe(
+      modelProfilesConfigRuntime.getConfigDir(explicitConfigEnv),
+    );
+    expect(modelProfilesConfigTypeScript.getConfigPath(explicitConfigEnv)).toBe(
+      modelProfilesConfigRuntime.getConfigPath(explicitConfigEnv),
+    );
+
+    const xdgEnv = {
+      HOME: "/users/example",
+      XDG_CONFIG_HOME: "/users/example/.xdg",
+    };
+    expect(modelProfilesConfigTypeScript.getConfigDir(xdgEnv)).toBe(modelProfilesConfigRuntime.getConfigDir(xdgEnv));
+    expect(modelProfilesConfigTypeScript.getOpenCodeBaseDir(xdgEnv)).toBe(
+      modelProfilesConfigRuntime.getOpenCodeBaseDir(xdgEnv),
+    );
+
+    const cwdEnv = {};
+    expect(modelProfilesConfigTypeScript.getConfigDir(cwdEnv)).toBe(modelProfilesConfigRuntime.getConfigDir(cwdEnv));
+    expect(modelProfilesConfigTypeScript.getOpenCodeBaseDir(cwdEnv)).toBe(
+      modelProfilesConfigRuntime.getOpenCodeBaseDir(cwdEnv),
+    );
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for default profile helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+
+    const typeScriptDefaultConfig = modelProfilesConfigTypeScript.createDefaultConfig();
+    const runtimeDefaultConfig = modelProfilesConfigRuntime.createDefaultConfig();
+    expect(typeScriptDefaultConfig).toEqual(runtimeDefaultConfig);
+    expect(modelProfilesConfigTypeScript.getActiveProfile(typeScriptDefaultConfig)).toBe(
+      modelProfilesConfigRuntime.getActiveProfile(runtimeDefaultConfig),
+    );
+
+    const typeScriptMissingProfileConfig = modelProfilesConfigTypeScript.createDefaultConfig();
+    const runtimeMissingProfileConfig = modelProfilesConfigRuntime.createDefaultConfig();
+    expect(modelProfilesConfigTypeScript.ensureActiveProfile(typeScriptMissingProfileConfig)).toBe(
+      modelProfilesConfigRuntime.ensureActiveProfile(runtimeMissingProfileConfig),
+    );
+    expect(typeScriptMissingProfileConfig).toEqual(runtimeMissingProfileConfig);
+
+    const typeScriptExistingProfileConfig = {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    };
+    const runtimeExistingProfileConfig = structuredClone(typeScriptExistingProfileConfig);
+    expect(modelProfilesConfigTypeScript.ensureActiveProfile(typeScriptExistingProfileConfig)).toBe(
+      modelProfilesConfigRuntime.ensureActiveProfile(runtimeExistingProfileConfig),
+    );
+    expect(modelProfilesConfigTypeScript.getActiveProfile(typeScriptExistingProfileConfig)).toEqual(
+      modelProfilesConfigRuntime.getActiveProfile(runtimeExistingProfileConfig),
+    );
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for persistence helpers", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = {
+      HOME: path.join(tempRoot, "home-ts"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg-ts"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config-ts"),
+    };
+    const runtimeEnv = {
+      HOME: path.join(tempRoot, "home-mjs"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg-mjs"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config-mjs"),
+    };
+
+    expect(modelProfilesConfigTypeScript.loadConfig(typeScriptEnv)).toEqual({
+      config: modelProfilesConfigTypeScript.createDefaultConfig(),
+      configPath: path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: false,
+    });
+    expect(modelProfilesConfigRuntime.loadConfig(runtimeEnv)).toEqual({
+      config: modelProfilesConfigRuntime.createDefaultConfig(),
+      configPath: path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: false,
+    });
+
+    const savedTypeScriptPath = modelProfilesConfigTypeScript.saveConfig(
+      {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              main: "openai/gpt-5.5",
+              "afg-review": "inherit",
+              ignored: "local/skip",
+            },
+          },
+        },
+      },
+      typeScriptEnv,
+    );
+    const savedRuntimePath = modelProfilesConfigRuntime.saveConfig(
+      {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              main: "openai/gpt-5.5",
+              "afg-review": "inherit",
+              ignored: "local/skip",
+            },
+          },
+        },
+      },
+      runtimeEnv,
+    );
+
+    expect(savedTypeScriptPath).toBe(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(savedRuntimePath).toBe(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(fs.readdirSync(typeScriptEnv.AFERGON_AI_CONFIG_DIR).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+    expect(fs.readdirSync(runtimeEnv.AFERGON_AI_CONFIG_DIR).some((entry) => entry.endsWith(".tmp"))).toBe(false);
+
+    const typeScriptLoaded = modelProfilesConfigTypeScript.loadConfig(typeScriptEnv);
+    const runtimeLoaded = modelProfilesConfigRuntime.loadConfig(runtimeEnv);
+    expect(typeScriptLoaded.config).toEqual(runtimeLoaded.config);
+    expect(typeScriptLoaded.exists).toBe(runtimeLoaded.exists);
+    expect(typeScriptLoaded).toEqual({
+      config: {
+        version: 7,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+              "afg-review": "inherit",
+            },
+          },
+        },
+      },
+      configPath: path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
+      exists: true,
+    });
+  });
+
+  it("keeps the extracted TypeScript model profile config mirror in parity with the runtime .mjs module for invalid config errors", async () => {
+    const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.ts");
+    const modelProfilesConfigRuntime = await import("../scripts/lib/model-profiles-config.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptConfigDir = path.join(tempRoot, "bad-config-ts");
+    const runtimeConfigDir = path.join(tempRoot, "bad-config-mjs");
+    fs.mkdirSync(typeScriptConfigDir, { recursive: true });
+    fs.mkdirSync(runtimeConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(typeScriptConfigDir, "config.json"), JSON.stringify({ models: { activeProfile: [] } }), "utf8");
+    fs.writeFileSync(path.join(runtimeConfigDir, "config.json"), JSON.stringify({ models: { activeProfile: [] } }), "utf8");
+
+    expect(() => modelProfilesConfigTypeScript.loadConfig({ AFERGON_AI_CONFIG_DIR: typeScriptConfigDir })).toThrow(
+      "models.activeProfile must be a string or null",
+    );
+    expect(() => modelProfilesConfigRuntime.loadConfig({ AFERGON_AI_CONFIG_DIR: runtimeConfigDir })).toThrow(
+      "models.activeProfile must be a string or null",
+    );
+  });
+
+  it("exports only the intended public model profile core helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+    const expectedExports = [
+      "SUPPORTED_AGENTS",
+      "cloneAssignments",
+      "hasDegradedRefreshGuidance",
+      "normalizeAgentName",
+      "normalizeProfileName",
+      "normalizeRefreshResult",
+      "normalizeStoredModel",
+      "parseProviderModel",
+      "resolveAssignments",
+      "suggestCloseModelIds",
+    ];
+
+    expect(Object.keys(modelProfilesCoreTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesCoreRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for normalization helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+
+    expect(modelProfilesCoreTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesCoreRuntime.SUPPORTED_AGENTS);
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel("  openai/gpt-5.5  ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel("  openai/gpt-5.5  "),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel(" inherit ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel(" inherit "),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeStoredModel("   ")).toBe(
+      modelProfilesCoreRuntime.normalizeStoredModel("   "),
+    );
+    expect(modelProfilesCoreTypeScript.parseProviderModel("openai/gpt-5.5")).toEqual(
+      modelProfilesCoreRuntime.parseProviderModel("openai/gpt-5.5"),
+    );
+    expect(modelProfilesCoreTypeScript.parseProviderModel("gpt-5.5")).toEqual(
+      modelProfilesCoreRuntime.parseProviderModel("gpt-5.5"),
+    );
+    expect(
+      modelProfilesCoreTypeScript.suggestCloseModelIds("openai/gpt-5.6", [
+        "openai/gpt-5.4",
+        "openai/gpt-5.4-fast",
+        "openai/gpt-5.5",
+      ]),
+    ).toEqual(
+      modelProfilesCoreRuntime.suggestCloseModelIds("openai/gpt-5.6", [
+        "openai/gpt-5.4",
+        "openai/gpt-5.4-fast",
+        "openai/gpt-5.5",
+      ]),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeAgentName("review")).toBe(
+      modelProfilesCoreRuntime.normalizeAgentName("review"),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeProfileName(" budget.main ")).toBe(
+      modelProfilesCoreRuntime.normalizeProfileName(" budget.main "),
+    );
+    expect(modelProfilesCoreTypeScript.hasDegradedRefreshGuidance({ stderr: "warning: recovery skipped" })).toBe(
+      modelProfilesCoreRuntime.hasDegradedRefreshGuidance({ stderr: "warning: recovery skipped" }),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles core mirror in parity with the runtime .mjs module for assignment and refresh helpers", async () => {
+    const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.ts");
+    const modelProfilesCoreRuntime = await import("../scripts/lib/model-profiles-core.mjs");
+    const profile = {
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-review": "inherit",
+      "afg-design": "openai/gpt-4.1",
+      extra: "ignored",
+    };
+
+    expect(modelProfilesCoreTypeScript.resolveAssignments(profile)).toEqual(
+      modelProfilesCoreRuntime.resolveAssignments(profile),
+    );
+    expect(modelProfilesCoreTypeScript.cloneAssignments(profile)).toEqual(modelProfilesCoreRuntime.cloneAssignments(profile));
+    expect(modelProfilesCoreTypeScript.cloneAssignments(null)).toEqual(modelProfilesCoreRuntime.cloneAssignments(null));
+    expect(
+      modelProfilesCoreTypeScript.hasDegradedRefreshGuidance({
+        stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md",
+      }),
+    ).toBe(
+      modelProfilesCoreRuntime.hasDegradedRefreshGuidance({
+        stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md",
+      }),
+    );
+    expect(
+      modelProfilesCoreTypeScript.normalizeRefreshResult({
+        status: "clean",
+        stdout: "  Saved config. OpenCode refresh timed out after 500ms.  ",
+        stderr: "  Run 'afergon-ai update' to retry.  ",
+      }),
+    ).toEqual(
+      modelProfilesCoreRuntime.normalizeRefreshResult({
+        status: "clean",
+        stdout: "  Saved config. OpenCode refresh timed out after 500ms.  ",
+        stderr: "  Run 'afergon-ai update' to retry.  ",
+      }),
+    );
+    expect(modelProfilesCoreTypeScript.normalizeRefreshResult(null)).toBe(
+      modelProfilesCoreRuntime.normalizeRefreshResult(null),
+    );
+  });
+
+  it("exports only the intended public model profile availability helpers", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const expectedExports = [
+      "listOpenCodeProviderModels",
+      "validateModelAvailability",
+    ];
+
+    expect(Object.keys(modelProfilesAvailabilityTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesAvailabilityRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("exports only the intended public model profile host seeding helpers", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const expectedExports = ["readOpenCodeAgentModels"];
+
+    expect(Object.keys(modelProfilesHostSeedingTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesHostSeedingRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for missing and empty host config cases", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const missingConfigEnv = {
+      HOME: path.join(tempRoot, "missing-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "missing-xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(missingConfigEnv)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(missingConfigEnv),
+    );
+
+    const emptyConfigDir = path.join(tempRoot, "empty-xdg", "opencode");
+    fs.mkdirSync(emptyConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(emptyConfigDir, "opencode.json"), JSON.stringify({}), "utf8");
+    const emptyConfigEnv = {
+      HOME: path.join(tempRoot, "empty-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "empty-xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(emptyConfigEnv)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(emptyConfigEnv),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for seeded snapshots", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const opencodeDir = path.join(tempRoot, "xdg", "opencode");
+    fs.mkdirSync(opencodeDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(opencodeDir, "opencode.json"),
+      JSON.stringify(
+        {
+          agent: {
+            "afergon-ai": { model: "  openai/gpt-5.5  " },
+            "afg-review": { model: "inherit" },
+            "afg-design": { model: "openai/gpt-4.1" },
+            outsider: { model: "openai/ignored" },
+            "afg-breakdown": { model: "   " },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    expect(modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(env)).toEqual(
+      modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(env),
+    );
+    expect(modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(env)).toEqual({
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-design": "openai/gpt-4.1",
+    });
+  });
+
+  it("keeps the extracted TypeScript model-profiles host seeding mirror in parity with the runtime .mjs module for warning cases", async () => {
+    const modelProfilesHostSeedingTypeScript = await import("../scripts/lib/model-profiles-host-seeding.ts");
+    const modelProfilesHostSeedingRuntime = await import("../scripts/lib/model-profiles-host-seeding.mjs");
+    const tempRoot = makeTempRoot();
+    const invalidConfigDir = path.join(tempRoot, "invalid-xdg", "opencode");
+    const arrayConfigDir = path.join(tempRoot, "array-xdg", "opencode");
+    fs.mkdirSync(invalidConfigDir, { recursive: true });
+    fs.mkdirSync(arrayConfigDir, { recursive: true });
+    fs.writeFileSync(path.join(invalidConfigDir, "opencode.json"), "{not-json", "utf8");
+    fs.writeFileSync(path.join(arrayConfigDir, "opencode.json"), JSON.stringify([]), "utf8");
+
+    const invalidConfigEnv = {
+      HOME: path.join(tempRoot, "invalid-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "invalid-xdg"),
+    };
+    const arrayConfigEnv = {
+      HOME: path.join(tempRoot, "array-home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "array-xdg"),
+    };
+
+    const typeScriptInvalid = captureWarnings(() => modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(invalidConfigEnv));
+    const runtimeInvalid = captureWarnings(() => modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(invalidConfigEnv));
+    expect(typeScriptInvalid).toEqual(runtimeInvalid);
+
+    const typeScriptArray = captureWarnings(() => modelProfilesHostSeedingTypeScript.readOpenCodeAgentModels(arrayConfigEnv));
+    const runtimeArray = captureWarnings(() => modelProfilesHostSeedingRuntime.readOpenCodeAgentModels(arrayConfigEnv));
+    expect(typeScriptArray).toEqual(runtimeArray);
+  });
+
+  it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for provider listing edge cases", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "  ", "openai/gpt-5.5"],
+      },
+      failingProviders: {
+        local: "provider credentials are not configured",
+      },
+      slowProviders: {
+        anthropic: 2,
+      },
+    });
+    const baseEnv = {
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    };
+
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("openai", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("openai", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("local", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("local", baseEnv),
+    );
+    expect(
+      modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("anthropic", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    ).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("anthropic", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    );
+    expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("openai", { PATH: "" })).toEqual(
+      modelProfilesAvailabilityRuntime.listOpenCodeProviderModels("openai", { PATH: "" }),
+    );
+  });
+
+  it("keeps the extracted TypeScript model-profiles availability mirror in parity with the runtime .mjs module for model validation outcomes", async () => {
+    const modelProfilesAvailabilityTypeScript = await import("../scripts/lib/model-profiles-availability.ts");
+    const modelProfilesAvailabilityRuntime = await import("../scripts/lib/model-profiles-availability.mjs");
+    const tempRoot = makeTempRoot();
+    const fakeBin = writeFakeOpencodeCli(tempRoot, {
+      modelListings: {
+        openai: ["openai/gpt-5.4", "openai/gpt-5.4-fast", "openai/gpt-5.5"],
+      },
+      failingProviders: {
+        local: "provider credentials are not configured",
+      },
+      slowProviders: {
+        anthropic: 2,
+      },
+    });
+    const baseEnv = {
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    };
+
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.5", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.5", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.6", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.6", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("gpt-5.5", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("gpt-5.5", baseEnv),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("local/custom-model", baseEnv)).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("local/custom-model", baseEnv),
+    );
+    expect(
+      modelProfilesAvailabilityTypeScript.validateModelAvailability("anthropic/claude-opus", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    ).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("anthropic/claude-opus", {
+        ...baseEnv,
+        AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
+      }),
+    );
+    expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.5", { PATH: "" })).toEqual(
+      modelProfilesAvailabilityRuntime.validateModelAvailability("openai/gpt-5.5", { PATH: "" }),
+    );
+  });
+
   it("treats registrar warning guidance as degraded refresh output", () => {
     expect(
       hasDegradedRefreshGuidance({
@@ -281,6 +838,80 @@ describe("agent aliases", () => {
 });
 
 describe("models CLI behavior", () => {
+  it("exports only the intended public models CLI core helpers", async () => {
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
+    const expectedExports = [
+      "createRefreshResult",
+      "createRegistrationEnv",
+      "formatEffective",
+      "formatUnknownModelError",
+      "getOpenCodeRefreshTimeoutMs",
+      "getProfileOrThrow",
+      "isDirectExecution",
+      "parseSetCommandArguments",
+      "printHelp",
+    ];
+
+    expect(Object.keys(typeScriptCore).sort()).toEqual(expectedExports);
+    expect(Object.keys(runtimeCore).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the TypeScript models CLI core mirror in parity with the runtime module", async () => {
+    const typeScriptCore = await import("../scripts/lib/models-cli-core.ts");
+    const runtimeCore = await import("../scripts/lib/models-cli-core.mjs");
+    const moduleUrl = new URL("../scripts/models.mjs", import.meta.url);
+    const config = {
+      models: {
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+          fallback: {},
+        },
+      },
+    };
+    const validEnv = {
+      AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "250",
+      AFERGON_AI_CONFIG_DIR: "./config",
+      XDG_CONFIG_HOME: "./xdg",
+    };
+    const invalidEnv = { AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "0" };
+    const capturedTypeScriptHelp = [];
+    const capturedRuntimeHelp = [];
+
+    expect(typeScriptCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
+    expect(runtimeCore.isDirectExecution([process.execPath, fileURLToPath(moduleUrl)], moduleUrl.href)).toBe(true);
+    expect(typeScriptCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
+    expect(runtimeCore.isDirectExecution([process.execPath, "other.mjs"], moduleUrl.href)).toBe(false);
+    expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(validEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(validEnv));
+    expect(typeScriptCore.getOpenCodeRefreshTimeoutMs(invalidEnv)).toBe(runtimeCore.getOpenCodeRefreshTimeoutMs(invalidEnv));
+    expect(typeScriptCore.createRegistrationEnv(validEnv)).toEqual(runtimeCore.createRegistrationEnv(validEnv));
+    expect(typeScriptCore.createRefreshResult({ status: "clean", stdout: " warning " })).toEqual(
+      runtimeCore.createRefreshResult({ status: "clean", stdout: " warning " }),
+    );
+    expect(typeScriptCore.formatUnknownModelError("openai/gpt-5.6", "openai", ["openai/gpt-5.5"])).toBe(
+      runtimeCore.formatUnknownModelError("openai/gpt-5.6", "openai", ["openai/gpt-5.5"]),
+    );
+    expect(typeScriptCore.formatUnknownModelError("local/custom", "local", [])).toBe(
+      runtimeCore.formatUnknownModelError("local/custom", "local", []),
+    );
+    expect(typeScriptCore.formatEffective({ effective: null })).toBe(runtimeCore.formatEffective({ effective: null }));
+    expect(typeScriptCore.formatEffective({ effective: "openai/gpt-5.5" })).toBe(
+      runtimeCore.formatEffective({ effective: "openai/gpt-5.5" }),
+    );
+    expect(typeScriptCore.getProfileOrThrow(config, "budget")).toEqual(runtimeCore.getProfileOrThrow(config, "budget"));
+    expect(() => typeScriptCore.getProfileOrThrow(config, "missing")).toThrow("Unknown profile 'missing'.");
+    expect(() => runtimeCore.getProfileOrThrow(config, "missing")).toThrow("Unknown profile 'missing'.");
+    expect(typeScriptCore.parseSetCommandArguments(["--allow-unknown", "review", "openai/gpt-5.5"])).toEqual(
+      runtimeCore.parseSetCommandArguments(["--allow-unknown", "review", "openai/gpt-5.5"]),
+    );
+    expect(() => typeScriptCore.parseSetCommandArguments(["review"])).toThrow("Usage: afergon-ai models set");
+    expect(() => runtimeCore.parseSetCommandArguments(["review"])).toThrow("Usage: afergon-ai models set");
+
+    typeScriptCore.printHelp((line) => capturedTypeScriptHelp.push(line));
+    runtimeCore.printHelp((line) => capturedRuntimeHelp.push(line));
+    expect(capturedTypeScriptHelp).toEqual(capturedRuntimeHelp);
+  });
+
   it("writes afergon-ai config atomically without leaving a temp file", () => {
     const tempRoot = makeTempRoot();
     const configDir = path.join(tempRoot, "config");
@@ -519,6 +1150,36 @@ describe("models CLI behavior", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
+  });
+
+  it("preserves the models wrapper export contract and callable adapter helpers", async () => {
+    const modelsWrapper = await import("../scripts/models.mjs");
+    const refreshResult = {
+      status: "degraded",
+      stdout: "Saved config.",
+      stderr: "Refresh skipped.",
+    };
+    const logged = [];
+    const warned = [];
+    const tempRoot = makeTempRoot();
+
+    expect(Object.keys(modelsWrapper).sort()).toEqual(["reapplySupportedAdapters", "reportAdapterRefreshResult"]);
+    expect(modelsWrapper.reportAdapterRefreshResult()).toBeUndefined();
+    expect(modelsWrapper.reportAdapterRefreshResult(refreshResult, {
+      log: (message) => logged.push(message),
+      warn: (message) => warned.push(message),
+    })).toBe(refreshResult);
+    expect(logged).toEqual(["Saved config."]);
+    expect(warned).toEqual(["Refresh skipped."]);
+    expect(modelsWrapper.reapplySupportedAdapters({
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    })).toEqual({
+      status: "degraded",
+      stdout: "Saved config. No managed OpenCode install detected, so only afergon-ai config was updated.",
+      stderr: "",
+      degraded: true,
+    });
   });
 
   it("passes an absolute afergon-ai config dir into the OpenCode registrar", () => {
@@ -888,6 +1549,423 @@ describe("models CLI behavior", () => {
 });
 
 describe("saveProfileAssignments", () => {
+  function createSaveAssignmentsEnv(tempRoot) {
+    return {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+    };
+  }
+
+  function seedSaveAssignmentsConfig(env, config = undefined) {
+    saveConfig(
+      config ?? {
+        version: 1,
+        models: {
+          activeProfile: "budget",
+          profiles: {
+            budget: {
+              "afergon-ai": "openai/gpt-5.5",
+            },
+            fallback: {
+              "afergon-ai": "openai/gpt-5.4",
+            },
+          },
+        },
+      },
+      env,
+    );
+  }
+
+  function expectSaveResultParity(typeScriptResult, runtimeResult) {
+    expect(typeScriptResult.profileName).toBe(runtimeResult.profileName);
+    expect(typeScriptResult.assignments).toEqual(runtimeResult.assignments);
+    expect(typeScriptResult.refreshResult).toEqual(runtimeResult.refreshResult);
+  }
+
+  it("exports only the intended public model profile save orchestration helpers", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const expectedExports = ["saveProfileAssignments"];
+
+    expect(Object.keys(modelProfilesSaveTypeScript).sort()).toEqual(expectedExports);
+    expect(Object.keys(modelProfilesSaveRuntime).sort()).toEqual(expectedExports);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for inactive-profile saves", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
+    const runtimeEnv = createSaveAssignmentsEnv(path.join(tempRoot, "mjs"));
+    const validateTypeScript = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.4-mini"],
+    }));
+    const validateRuntime = vi.fn(() => ({
+      status: "known",
+      availableModels: ["openai/gpt-5.4-mini"],
+    }));
+    const refreshTypeScript = vi.fn();
+    const refreshRuntime = vi.fn();
+    seedSaveAssignmentsConfig(typeScriptEnv);
+    seedSaveAssignmentsConfig(runtimeEnv);
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "fallback",
+      {
+        "afg-review": "openai/gpt-5.4-mini",
+      },
+      {
+        env: typeScriptEnv,
+        refreshActiveProfile: refreshTypeScript,
+        validateModelAvailability: validateTypeScript,
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "fallback",
+      {
+        "afg-review": "openai/gpt-5.4-mini",
+      },
+      {
+        env: runtimeEnv,
+        refreshActiveProfile: refreshRuntime,
+        validateModelAvailability: validateRuntime,
+      },
+    );
+
+    expectSaveResultParity(typeScriptResult, runtimeResult);
+    expect(typeScriptResult.configPath).toBe(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(runtimeResult.configPath).toBe(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json"));
+    expect(readJson(path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"))).toEqual(
+      readJson(path.join(runtimeEnv.AFERGON_AI_CONFIG_DIR, "config.json")),
+    );
+    expect(validateTypeScript).toHaveBeenCalledWith("openai/gpt-5.4-mini", typeScriptEnv);
+    expect(validateRuntime).toHaveBeenCalledWith("openai/gpt-5.4-mini", runtimeEnv);
+    expect(refreshTypeScript).not.toHaveBeenCalled();
+    expect(refreshRuntime).not.toHaveBeenCalled();
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for validation, missing-profile, and rejected-refresh failures", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const validationTempRoot = makeTempRoot();
+    const validationTypeScriptEnv = createSaveAssignmentsEnv(path.join(validationTempRoot, "ts"));
+    const validationRuntimeEnv = createSaveAssignmentsEnv(path.join(validationTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(validationTypeScriptEnv);
+    seedSaveAssignmentsConfig(validationRuntimeEnv);
+
+    expect(() =>
+      modelProfilesSaveTypeScript.saveProfileAssignments(
+        "fallback",
+        { "afg-review": "bad-model" },
+        {
+          env: validationTypeScriptEnv,
+          validateModelAvailability: () => ({
+            status: "malformed",
+            message: "Model 'bad-model' does not use the expected provider/model format.",
+          }),
+        },
+      ),
+    ).toThrow("Model 'bad-model' does not use the expected provider/model format.");
+    expect(() =>
+      modelProfilesSaveRuntime.saveProfileAssignments(
+        "fallback",
+        { "afg-review": "bad-model" },
+        {
+          env: validationRuntimeEnv,
+          validateModelAvailability: () => ({
+            status: "malformed",
+            message: "Model 'bad-model' does not use the expected provider/model format.",
+          }),
+        },
+      ),
+    ).toThrow("Model 'bad-model' does not use the expected provider/model format.");
+
+    const missingProfileTempRoot = makeTempRoot();
+    const missingProfileTypeScriptEnv = createSaveAssignmentsEnv(path.join(missingProfileTempRoot, "ts"));
+    const missingProfileRuntimeEnv = createSaveAssignmentsEnv(path.join(missingProfileTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(missingProfileTypeScriptEnv);
+    seedSaveAssignmentsConfig(missingProfileRuntimeEnv);
+
+    expect(() => modelProfilesSaveTypeScript.saveProfileAssignments("missing", {}, { env: missingProfileTypeScriptEnv })).toThrow(
+      "Unknown profile 'missing'.",
+    );
+    expect(() => modelProfilesSaveRuntime.saveProfileAssignments("missing", {}, { env: missingProfileRuntimeEnv })).toThrow(
+      "Unknown profile 'missing'.",
+    );
+
+    const rejectedRefresh = new Error("Refresh failed.");
+    const rejectedPromiseTypeScript = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: missingProfileTypeScriptEnv,
+        refreshActiveProfile: () => Promise.reject(rejectedRefresh),
+      },
+    );
+    const rejectedPromiseRuntime = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: missingProfileRuntimeEnv,
+        refreshActiveProfile: () => Promise.reject(rejectedRefresh),
+      },
+    );
+
+    await expect(rejectedPromiseTypeScript).rejects.toThrow("Refresh failed.");
+    await expect(rejectedPromiseRuntime).rejects.toThrow("Refresh failed.");
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for sync and async active-profile refresh results", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const syncTempRoot = makeTempRoot();
+    const syncTypeScriptEnv = createSaveAssignmentsEnv(path.join(syncTempRoot, "ts"));
+    const syncRuntimeEnv = createSaveAssignmentsEnv(path.join(syncTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(syncTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(syncRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const syncTypeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: syncTypeScriptEnv,
+        refreshActiveProfile: () => ({
+          status: "degraded",
+          stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+          stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+        }),
+      },
+    );
+    const syncRuntimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: syncRuntimeEnv,
+        refreshActiveProfile: () => ({
+          status: "degraded",
+          stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+          stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+        }),
+      },
+    );
+
+    expectSaveResultParity(syncTypeScriptResult, syncRuntimeResult);
+    expect(syncTypeScriptResult.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "Saved config. OpenCode refresh timed out after 500ms.",
+      stderr: "Run 'afergon-ai update' to retry the host registration refresh.",
+      degraded: true,
+    });
+
+    const asyncTempRoot = makeTempRoot();
+    const asyncTypeScriptEnv = createSaveAssignmentsEnv(path.join(asyncTempRoot, "ts"));
+    const asyncRuntimeEnv = createSaveAssignmentsEnv(path.join(asyncTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(asyncTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(asyncRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const asyncTypeScriptResult = await modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: asyncTypeScriptEnv,
+        refreshActiveProfile: () =>
+          Promise.resolve({
+            status: "clean",
+            stdout: "OpenCode registrations refreshed on disk.",
+            stderr: "",
+          }),
+      },
+    );
+    const asyncRuntimeResult = await modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: asyncRuntimeEnv,
+        refreshActiveProfile: () =>
+          Promise.resolve({
+            status: "clean",
+            stdout: "OpenCode registrations refreshed on disk.",
+            stderr: "",
+          }),
+      },
+    );
+
+    expectSaveResultParity(asyncTypeScriptResult, asyncRuntimeResult);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for function-shaped thenable immediate return values", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+
+    const thenableTempRoot = makeTempRoot();
+    const thenableTypeScriptEnv = createSaveAssignmentsEnv(path.join(thenableTempRoot, "ts"));
+    const thenableRuntimeEnv = createSaveAssignmentsEnv(path.join(thenableTempRoot, "mjs"));
+    seedSaveAssignmentsConfig(thenableTypeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(thenableRuntimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const sentinelResult = { type: "custom-then-return" };
+
+    const createFunctionThenable = () => {
+      const thenable = () => undefined;
+      thenable.then = (resolve) => {
+        resolve({
+          status: "clean",
+          stdout: "OpenCode registrations refreshed from a function-shaped thenable.",
+          stderr: "",
+        });
+        return sentinelResult;
+      };
+      return thenable;
+    };
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: thenableTypeScriptEnv,
+        refreshActiveProfile: createFunctionThenable,
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: thenableRuntimeEnv,
+        refreshActiveProfile: createFunctionThenable,
+      },
+    );
+
+    expect(typeScriptResult).toBe(sentinelResult);
+    expect(runtimeResult).toBe(sentinelResult);
+  });
+
+  it("keeps the extracted TypeScript model-profiles save mirror in parity with the runtime .mjs module for degraded guidance normalization", async () => {
+    const modelProfilesSaveTypeScript = await import("../scripts/lib/model-profiles-save.ts");
+    const modelProfilesSaveRuntime = await import("../scripts/lib/model-profiles-save.mjs");
+    const tempRoot = makeTempRoot();
+    const typeScriptEnv = createSaveAssignmentsEnv(path.join(tempRoot, "ts"));
+    const runtimeEnv = createSaveAssignmentsEnv(path.join(tempRoot, "mjs"));
+    seedSaveAssignmentsConfig(typeScriptEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+    seedSaveAssignmentsConfig(runtimeEnv, {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: {
+            "afergon-ai": "openai/gpt-5.5",
+          },
+        },
+      },
+    });
+
+    const typeScriptResult = modelProfilesSaveTypeScript.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: typeScriptEnv,
+        refreshActiveProfile: () => ({
+          status: "clean",
+          stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+          stderr: "",
+        }),
+      },
+    );
+    const runtimeResult = modelProfilesSaveRuntime.saveProfileAssignments(
+      "budget",
+      { "afg-review": "inherit" },
+      {
+        env: runtimeEnv,
+        refreshActiveProfile: () => ({
+          status: "clean",
+          stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+          stderr: "",
+        }),
+      },
+    );
+
+    expectSaveResultParity(typeScriptResult, runtimeResult);
+    expect(typeScriptResult.refreshResult).toEqual({
+      status: "degraded",
+      stdout: "OpenCode: warning: missing managed agent file(s): afergon-ai.md\nRun 'afergon-ai update' or 'afergon-ai init --opencode' to repair.",
+      stderr: "",
+      degraded: true,
+    });
+  });
+
   it("saves staged assignments to the targeted inactive profile with injected model validation and without mutating the active profile", () => {
     const tempRoot = makeTempRoot();
     const env = {
