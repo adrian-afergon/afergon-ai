@@ -32,7 +32,9 @@ jobs:
           $ErrorActionPreference = "Stop"
           $helpOutput = & .\bin\afergon-ai.cmd --help 2>&1
           if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd --help exited with $LASTEXITCODE" }
-          if (($helpOutput -join "`n") -notmatch [regex]::Escape("Usage: afergon-ai")) { throw "afergon-ai.cmd --help did not print usage" }
+          $helpText = $helpOutput -join "`n"
+          if ($helpText -notmatch [regex]::Escape("Usage:")) { throw "afergon-ai.cmd --help did not print usage" }
+          if ($helpText -notmatch [regex]::Escape("afergon-ai tui")) { throw "afergon-ai.cmd --help did not document the TUI command" }
 
            $errorOutput = & .\bin\afergon-ai.cmd not-a-command 2>&1
            if ($LASTEXITCODE -ne 1) { throw "afergon-ai.cmd unknown command exited with $LASTEXITCODE" }
