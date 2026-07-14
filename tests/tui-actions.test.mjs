@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
+import * as actionDefinitionsTypeScript from "../scripts/lib/tui/actions/definitions.ts";
+import * as actionRunnerTypeScript from "../scripts/lib/tui/actions/runner.ts";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
+import {
+  createActionDefinition as createActionDefinitionRuntime,
+  formatActionCliEquivalent as formatActionCliEquivalentRuntime,
+  resolveActionArgv as resolveActionArgvRuntime,
+} from "../scripts/lib/tui/actions/definitions.mjs";
 import { getOutputLines, sanitizeTerminalOutput } from "../scripts/lib/tui/actions/forms.mjs";
 import { runActionCommand } from "../scripts/lib/tui/actions/runner.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
@@ -33,8 +40,143 @@ class FakeChildProcess {
 
 const flushTui = async () => { await new Promise((resolve) => process.nextTick(resolve)); await new Promise((resolve) => setTimeout(resolve, 0)); };
 const getStatusFixture = () => ({ title: "Status", summary: { label: "Readiness", state: "ok", detail: "Ready for guided workflows." }, items: [{ id: "opencode", label: "OpenCode", state: "ok", detail: "Managed install detected." }], actions: [] });
+const getThrownMessage = (callback) => {
+  try {
+    callback();
+    return undefined;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+};
 
 describe("runActionCommand", () => {
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module for successful execution", async () => {
+    const createSpawnImpl = () => {
+      const child = new FakeChildProcess();
+      const spawnImpl = vi.fn(() => {
+        queueMicrotask(() => {
+          child.emitStdout("doctor ok\n");
+          child.emit("close", 0);
+        });
+        return child;
+      });
+
+      return { child, spawnImpl };
+    };
+
+    const runtime = createSpawnImpl();
+    const runtimeResult = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      cwd: "/tmp/afergon-ai",
+      spawnImpl: runtime.spawnImpl,
+    });
+
+    const typeScript = createSpawnImpl();
+    const typeScriptResult = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      cwd: "/tmp/afergon-ai",
+      spawnImpl: typeScript.spawnImpl,
+    });
+
+    expect(typeScriptResult).toEqual(runtimeResult);
+    expect(typeScript.spawnImpl).toHaveBeenCalledWith(
+      process.execPath,
+      ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      expect.objectContaining({ cwd: "/tmp/afergon-ai", shell: false }),
+    );
+  });
+
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module for failure and timeout paths", async () => {
+    const runtimeFailureChild = new FakeChildProcess();
+    const runtimeFailure = runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "update"],
+      spawnImpl: vi.fn(() => {
+        queueMicrotask(() => {
+          runtimeFailureChild.emitStderr("permission denied\n");
+          runtimeFailureChild.emit("close", 1);
+        });
+        return runtimeFailureChild;
+      }),
+    });
+
+    const typeScriptFailureChild = new FakeChildProcess();
+    const typeScriptFailure = actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "update"],
+      spawnImpl: vi.fn(() => {
+        queueMicrotask(() => {
+          typeScriptFailureChild.emitStderr("permission denied\n");
+          typeScriptFailureChild.emit("close", 1);
+        });
+        return typeScriptFailureChild;
+      }),
+    });
+
+    await expect(typeScriptFailure).resolves.toEqual(await runtimeFailure);
+
+    const runtimeTimeoutChild = new FakeChildProcess();
+    const runtimeTimeout = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      timeoutMs: 5,
+      spawnImpl: vi.fn(() => runtimeTimeoutChild),
+    });
+
+    const typeScriptTimeoutChild = new FakeChildProcess();
+    const typeScriptTimeout = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor"],
+      timeoutMs: 5,
+      spawnImpl: vi.fn(() => typeScriptTimeoutChild),
+    });
+
+    expect(typeScriptTimeout).toEqual(runtimeTimeout);
+    expect(typeScriptTimeoutChild.kill).toHaveBeenCalled();
+  });
+
+  it("keeps the TypeScript action runner in parity with the runtime .mjs module when output truncates at configured limits", async () => {
+    const createSpawnImpl = () => {
+      const child = new FakeChildProcess();
+      const spawnImpl = vi.fn(() => {
+        queueMicrotask(() => {
+          child.emitStdout("one\ntwo\nthree\nfour\n");
+          child.emitStderr("err-one\nerr-two\nerr-three\n");
+          child.emit("close", 1);
+        });
+        return child;
+      });
+
+      return { spawnImpl };
+    };
+
+    const runtime = await runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      spawnImpl: createSpawnImpl().spawnImpl,
+      maxStreamBytes: 12,
+      maxStreamLines: 2,
+    });
+
+    const typeScript = await actionRunnerTypeScript.runActionCommand({
+      command: process.execPath,
+      argv: ["scripts/cli-dispatch.mjs", "doctor", "--opencode"],
+      spawnImpl: createSpawnImpl().spawnImpl,
+      maxStreamBytes: 12,
+      maxStreamLines: 2,
+    });
+
+    expect(typeScript).toEqual(runtime);
+    expect(typeScript).toEqual(expect.objectContaining({
+      stdoutTruncated: true,
+      stderrTruncated: true,
+      stdout: "one\ntwo\n",
+      stderr: "err-one\nerr-",
+    }));
+  });
+
   it("builds explicit argv arrays from stable manifest entries without fabricating shell commands", () => {
     const argv = buildCommandArgv("doctor", ["--opencode"]);
     expect(argv).toEqual(["doctor", "--opencode"]);
@@ -124,6 +266,120 @@ describe("runActionCommand", () => {
   it("rejects executable action definitions that are not built from the stable manifest allowlist", () => {
     expect(() => createActionDefinition({ id: "status-unsafe", section: "status", kind: "read", label: "Unsafe", argv: ["bash", "-lc", "rm -rf /"] })).toThrow(/stable manifest/i);
     expect(createActionDefinition({ id: "status-safe", section: "status", kind: "read", label: "Safe", argv: buildCommandArgv("doctor", ["--opencode"]) })).toEqual(expect.objectContaining({ argv: ["doctor", "--opencode"] }));
+  });
+});
+
+describe("action definitions TypeScript parity", () => {
+  it("keeps formatActionCliEquivalent in parity with the runtime .mjs module across valid and invalid argv inputs", () => {
+    expect(actionDefinitionsTypeScript.formatActionCliEquivalent(["doctor", "--opencode"]))
+      .toBe(formatActionCliEquivalentRuntime(["doctor", "--opencode"]));
+
+    for (const invalidArgv of [undefined, [], ["doctor", ""], ["doctor", 1]]) {
+      expect(getThrownMessage(() => actionDefinitionsTypeScript.formatActionCliEquivalent(invalidArgv)))
+        .toBe(getThrownMessage(() => formatActionCliEquivalentRuntime(invalidArgv)));
+    }
+  });
+
+  it("keeps resolveActionArgv in parity with the runtime .mjs module for static, built, and invalid actions", () => {
+    const staticAction = createActionDefinitionRuntime({
+      id: "status-doctor",
+      section: "status",
+      kind: "read",
+      label: "Run doctor",
+      argv: buildCommandArgv("doctor", ["--opencode"]),
+    });
+    const builtAction = createActionDefinitionRuntime({
+      id: "configuration-init",
+      section: "configuration",
+      kind: "mutate",
+      label: "Initialize project files",
+      buildArgv: ({ selectedIds = [] }) => buildCommandArgv("init", selectedIds.map((id) => `--${id}`)),
+    });
+
+    expect(actionDefinitionsTypeScript.resolveActionArgv(staticAction)).toEqual(resolveActionArgvRuntime(staticAction));
+    expect(actionDefinitionsTypeScript.resolveActionArgv(builtAction, { selectedIds: ["pi", "opencode"] }))
+      .toEqual(resolveActionArgvRuntime(builtAction, { selectedIds: ["pi", "opencode"] }));
+
+    const invalidBuilderAction = {
+      ...builtAction,
+      buildArgv: () => ["bash", "-lc", "rm -rf /"],
+    };
+    const missingExecutableAction = {
+      ...staticAction,
+      argv: undefined,
+    };
+
+    expect(() => actionDefinitionsTypeScript.resolveActionArgv(invalidBuilderAction)).toThrow(/stable manifest/i);
+    expect(() => resolveActionArgvRuntime(invalidBuilderAction)).toThrow(/stable manifest/i);
+    expect(() => actionDefinitionsTypeScript.resolveActionArgv(missingExecutableAction)).toThrow(/missing executable argv/i);
+    expect(() => resolveActionArgvRuntime(missingExecutableAction)).toThrow(/missing executable argv/i);
+  });
+
+  it("keeps createActionDefinition in parity with the runtime .mjs module across supported and invalid forms", () => {
+    const checkboxDefinition = {
+      id: "configuration-init",
+      section: "configuration",
+      kind: "mutate",
+      label: "Initialize project files",
+      buildArgv: ({ selectedIds = [] }) => buildCommandArgv("init", selectedIds.map((id) => `--${id}`)),
+      form: {
+        kind: "checkboxes",
+        title: "Choose what to initialize",
+        options: [
+          { id: "pi", label: "Pi" },
+          { id: "opencode", label: "OpenCode" },
+        ],
+      },
+      confirmLabel: "Initialize the selected surfaces?",
+      refreshTarget: "configuration",
+    };
+
+    expect(actionDefinitionsTypeScript.createActionDefinition(checkboxDefinition)).toEqual(
+      createActionDefinitionRuntime(checkboxDefinition),
+    );
+
+    const pickerDefinition = {
+      id: "models-picker",
+      section: "model-profiles",
+      kind: "read",
+      label: "Choose model",
+      argv: buildCommandArgv("models"),
+      form: {
+        kind: "picker",
+        title: "Choose a model",
+        options: [{ id: "default", label: "Default" }],
+      },
+    };
+    expect(actionDefinitionsTypeScript.createActionDefinition(pickerDefinition)).toEqual(
+      createActionDefinitionRuntime(pickerDefinition),
+    );
+
+    const fieldsDefinition = {
+      id: "models-create-profile",
+      section: "model-profiles",
+      kind: "mutate",
+      label: "Create profile",
+      buildArgv: ({ profileName }) => buildCommandArgv("models", ["create-profile", profileName]),
+      form: {
+        kind: "fields",
+        title: "Create profile",
+        fields: [{ id: "profileName", label: "Profile name" }],
+      },
+    };
+    expect(actionDefinitionsTypeScript.createActionDefinition(fieldsDefinition)).toEqual(
+      createActionDefinitionRuntime(fieldsDefinition),
+    );
+
+    const invalidDefinitions = [
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "picker", options: [] } }, /non-empty options definition/i],
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "fields", fields: [] } }, /non-empty fields definition/i],
+      [{ id: "status-invalid", section: "status", kind: "read", label: "Invalid", argv: buildCommandArgv("doctor"), form: { kind: "wizard" } }, /unsupported action form kind/i],
+    ];
+
+    for (const [definition, errorPattern] of invalidDefinitions) {
+      expect(() => actionDefinitionsTypeScript.createActionDefinition(definition)).toThrow(errorPattern);
+      expect(() => createActionDefinitionRuntime(definition)).toThrow(errorPattern);
+    }
   });
 });
 

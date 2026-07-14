@@ -3,14 +3,31 @@ import { spawnSync } from "node:child_process";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 
+import * as navigationTypeScript from "../scripts/lib/tui/navigation.ts";
 import { createActionDefinition } from "../scripts/lib/tui/actions/definitions.mjs";
 import { buildCommandArgv } from "../scripts/lib/tui/command-manifest.mjs";
 import {
+  appendModelProfilesInlineCreateCharacter,
   activateHomeSelection,
+  backspaceModelProfilesInlineCreateCharacter,
+  closeModal,
   createNavigationState,
+  enterModelProfilesAssignments,
+  enterModelProfilesInlineCreate,
+  exitModelProfilesAssignments,
+  exitModelProfilesInlineCreate,
+  HOME_MENU_ROUTES,
   moveHomeSelection,
+  moveModelProfilesAssignmentSelection,
+  moveModelProfilesInlineCreateSelection,
+  moveModelProfilesSelection,
+  moveSectionActionSelection,
   navigateTo,
+  normalizeSectionActionSelection,
+  openModal,
+  stageModelProfilesAssignment,
   TUI_ROUTES,
+  validateModelProfilesInlineCreate,
 } from "../scripts/lib/tui/navigation.mjs";
 import { buildRouteBreadcrumb, createTuiApp, renderHomeScreen } from "../scripts/tui.mjs";
 
@@ -104,6 +121,96 @@ async function flushTui() {
 }
 
 describe("navigation state", () => {
+  it("keeps the TypeScript navigation export surface in parity with the runtime .mjs module", () => {
+    expect(Object.keys(navigationTypeScript).sort()).toEqual([
+      "HOME_MENU_ROUTES",
+      "TUI_ROUTES",
+      "activateHomeSelection",
+      "appendModelProfilesInlineCreateCharacter",
+      "backspaceModelProfilesInlineCreateCharacter",
+      "closeModal",
+      "createNavigationState",
+      "enterModelProfilesAssignments",
+      "enterModelProfilesInlineCreate",
+      "exitModelProfilesAssignments",
+      "exitModelProfilesInlineCreate",
+      "moveHomeSelection",
+      "moveModelProfilesAssignmentSelection",
+      "moveModelProfilesInlineCreateSelection",
+      "moveModelProfilesSelection",
+      "moveSectionActionSelection",
+      "navigateTo",
+      "normalizeSectionActionSelection",
+      "openModal",
+      "stageModelProfilesAssignment",
+      "validateModelProfilesInlineCreate",
+    ]);
+  });
+
+  it("keeps every exported navigation value and helper in parity with the runtime .mjs module", () => {
+    const runtimeState = createNavigationState("home", 1);
+    const typeScriptState = navigationTypeScript.createNavigationState("home", 1);
+    const inlineCreateState = {
+      ...typeScriptState.modelProfiles,
+      createProfileName: "  budget  ",
+      createProfileSelection: "cancel",
+      createProfileValidation: "Stale",
+    };
+    const assignmentState = navigationTypeScript.enterModelProfilesAssignments(typeScriptState.modelProfiles, "budget");
+
+    expect(navigationTypeScript.TUI_ROUTES).toEqual(TUI_ROUTES);
+    expect(navigationTypeScript.HOME_MENU_ROUTES).toEqual(HOME_MENU_ROUTES);
+    expect(typeScriptState).toEqual(runtimeState);
+    expect(navigationTypeScript.navigateTo(typeScriptState, "status")).toEqual(navigateTo(runtimeState, "status"));
+    expect(navigationTypeScript.moveModelProfilesSelection(typeScriptState.modelProfiles, 3, -1)).toEqual(
+      moveModelProfilesSelection(runtimeState.modelProfiles, 3, -1),
+    );
+    expect(navigationTypeScript.enterModelProfilesInlineCreate(typeScriptState.modelProfiles)).toEqual(
+      enterModelProfilesInlineCreate(runtimeState.modelProfiles),
+    );
+    expect(navigationTypeScript.exitModelProfilesInlineCreate(inlineCreateState, { focusedProfileIndex: 2 })).toEqual(
+      exitModelProfilesInlineCreate(inlineCreateState, { focusedProfileIndex: 2 }),
+    );
+    expect(navigationTypeScript.moveModelProfilesInlineCreateSelection(inlineCreateState, 1)).toEqual(
+      moveModelProfilesInlineCreateSelection(inlineCreateState, 1),
+    );
+    expect(navigationTypeScript.appendModelProfilesInlineCreateCharacter(inlineCreateState, "x")).toEqual(
+      appendModelProfilesInlineCreateCharacter(inlineCreateState, "x"),
+    );
+    expect(navigationTypeScript.backspaceModelProfilesInlineCreateCharacter(inlineCreateState)).toEqual(
+      backspaceModelProfilesInlineCreateCharacter(inlineCreateState),
+    );
+    expect(navigationTypeScript.validateModelProfilesInlineCreate(inlineCreateState)).toEqual(
+      validateModelProfilesInlineCreate(inlineCreateState),
+    );
+    expect(navigationTypeScript.enterModelProfilesAssignments(typeScriptState.modelProfiles, "budget")).toEqual(
+      enterModelProfilesAssignments(runtimeState.modelProfiles, "budget"),
+    );
+    expect(navigationTypeScript.exitModelProfilesAssignments(assignmentState)).toEqual(
+      exitModelProfilesAssignments(assignmentState),
+    );
+    expect(navigationTypeScript.moveModelProfilesAssignmentSelection(assignmentState, 3, -1)).toEqual(
+      moveModelProfilesAssignmentSelection(assignmentState, 3, -1),
+    );
+    expect(navigationTypeScript.stageModelProfilesAssignment(assignmentState, "afergon-ai", "openai/gpt-5.4")).toEqual(
+      stageModelProfilesAssignment(assignmentState, "afergon-ai", "openai/gpt-5.4"),
+    );
+    expect(navigationTypeScript.moveHomeSelection(typeScriptState, -1)).toEqual(moveHomeSelection(runtimeState, -1));
+    expect(navigationTypeScript.activateHomeSelection(typeScriptState)).toEqual(activateHomeSelection(runtimeState));
+    expect(navigationTypeScript.moveSectionActionSelection({ ...typeScriptState, sectionActionSelection: 1 }, 3, 1)).toEqual(
+      moveSectionActionSelection({ ...runtimeState, sectionActionSelection: 1 }, 3, 1),
+    );
+    expect(navigationTypeScript.normalizeSectionActionSelection({ ...typeScriptState, sectionActionSelection: 99 }, 3)).toEqual({
+      ...normalizeSectionActionSelection({ ...runtimeState, sectionActionSelection: 99 }, 3),
+    });
+    expect(navigationTypeScript.openModal(typeScriptState, { kind: "confirm", actionId: "status-update" })).toEqual(
+      openModal(runtimeState, { kind: "confirm", actionId: "status-update" }),
+    );
+    expect(navigationTypeScript.closeModal({ ...typeScriptState, modal: { kind: "confirm", actionId: "status-update" } })).toEqual(
+      closeModal({ ...runtimeState, modal: { kind: "confirm", actionId: "status-update" } }),
+    );
+  });
+
   it("defaults to the home route and exposes only the MVP route set", () => {
     expect(createNavigationState()).toEqual({
       route: "home",

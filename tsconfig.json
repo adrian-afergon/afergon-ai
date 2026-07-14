@@ -12,6 +12,11 @@
     "extensions/**/*.ts",
     "scripts/lib/branding/**/*.ts",
     "scripts/lib/tui/command-manifest.ts",
-    "scripts/lib/tui/navigation.ts"
+    "scripts/lib/tui/navigation.ts",
+    "scripts/lib/tui/actions/definitions.ts",
+    "scripts/lib/tui/actions/runner.ts",
+    "scripts/lib/tui/screens/configuration.ts",
+    "scripts/lib/tui/screens/model-profiles.ts",
+    "scripts/lib/tui/screens/status.ts"
   ]
 }

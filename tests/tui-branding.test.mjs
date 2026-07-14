@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
+import * as brandingLogoTypeScript from "../scripts/lib/branding/logo.ts";
 import {
   BRANDING_LOGO,
   canRenderBrandingLogo,
@@ -63,6 +66,15 @@ function renderStartupBanner(width) {
 }
 
 describe("branding logo contract", () => {
+  it("keeps the TypeScript branding module in parity with the runtime .mjs module", () => {
+    expect(brandingLogoTypeScript.BRANDING_LOGO).toEqual(BRANDING_LOGO);
+    expect(brandingLogoTypeScript.getBrandingLines()).toEqual(getBrandingLines());
+    expect(brandingLogoTypeScript.getBrandingLines("default")).toEqual(getBrandingLines("default"));
+    expect(brandingLogoTypeScript.getBrandingLines("ascii")).toEqual(getBrandingLines("ascii"));
+    expect(brandingLogoTypeScript.canRenderBrandingLogo(120)).toBe(canRenderBrandingLogo(120));
+    expect(brandingLogoTypeScript.canRenderBrandingLogo(60)).toBe(canRenderBrandingLogo(60));
+  });
+
   it("exposes the canonical AFERGON-AI artwork, tagline, and plain-text fallback copy", () => {
     expect(BRANDING_LOGO).toEqual({
       lines: [
@@ -92,6 +104,13 @@ describe("branding logo contract", () => {
 });
 
 describe("startup banner and TUI home branding", () => {
+  it("imports the runtime branding .mjs module instead of a non-emitted .js artifact", () => {
+    const startupBannerSource = readFileSync(new URL("../extensions/startup-banner.ts", import.meta.url), "utf8");
+
+    expect(startupBannerSource).toContain('../scripts/lib/branding/logo.mjs');
+    expect(startupBannerSource).not.toContain('../scripts/lib/branding/logo.js');
+  });
+
   it("reuses the shared branding source in the startup banner", () => {
     expect(STARTUP_BANNER_BRANDING).toBe(BRANDING_LOGO);
   });
