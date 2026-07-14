@@ -484,6 +484,28 @@ describe("createTuiApp", () => {
     expect(app.navigation.route).toBe("configuration");
   });
 
+  it("runs the global h fallback only after modal input declines it", async () => {
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({ terminal, exit: () => {} });
+
+    app.start();
+    await flushTui();
+    terminal.emitInput("s");
+    await flushTui();
+    app.navigation.modal = { kind: "output" };
+
+    terminal.emitInput("h");
+    await flushTui();
+
+    expect(app.navigation).toMatchObject({ route: "status", modal: { kind: "output" } });
+
+    app.navigation.modal = undefined;
+    terminal.emitInput("h");
+    await flushTui();
+
+    expect(app.navigation.route).toBe("home");
+  });
+
   it("ignores arrow and enter keys off Home so the TUI stays responsive", async () => {
     const terminal = new FakeTerminal();
     const exits = [];

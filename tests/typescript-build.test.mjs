@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -7,6 +7,13 @@ import { describe, expect, it } from "vitest";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
 describe("TypeScript build output", () => {
+  it("declares a package lifecycle build for the ignored dist runtime", () => {
+    const packageMetadata = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+
+    expect(packageMetadata.files).toContain("dist/");
+    expect(packageMetadata.scripts.prepack).toBe("pnpm run build");
+  });
+
   it("copies declaration bridges for runtime .mjs dependencies into dist", async () => {
     const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const result = spawnSync(pnpmCommand, ["run", "build"], {
@@ -43,7 +50,24 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchCoreRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.mjs");
     const copiedCliDispatchCoreDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.d.mts");
     const copiedCliDispatchWrapperPath = path.join(repoRoot, "dist", "scripts", "cli-dispatch.mjs");
+    const copiedPromptPath = path.join(repoRoot, "dist", "prompts", "afergon-ai.md");
+    const copiedAdapterPath = path.join(repoRoot, "dist", "adapters", "opencode", "opencode.json");
+    const copiedSkillPath = path.join(repoRoot, "dist", "skills", "implement", "SKILL.md");
+    const copiedRenderingBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.d.mts");
+    const copiedRenderingRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.mjs");
     const copiedModelProfilesAdapterBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.mts");
+    const copiedModelProfilesControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.d.mts");
+    const copiedModelProfilesControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.mjs");
+    const copiedModalControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.d.mts");
+    const copiedModalControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.mjs");
+    const copiedActionExecutionPolicyBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.d.mts");
+    const copiedActionExecutionPolicyRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.mjs");
+    const copiedHomeMenuControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.d.mts");
+    const copiedHomeMenuControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.mjs");
+    const copiedGlobalHomeFallbackControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.d.mts");
+    const copiedGlobalHomeFallbackControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.mjs");
+    const copiedSectionActionControllerBridgePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.d.mts");
+    const copiedSectionActionControllerRuntimePath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.mjs");
     const emittedModelProfilesAdapterDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.d.ts");
     const actionRunnerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "runner.js");
     const formsConfirmationOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "actions", "forms-confirmation.js");
@@ -60,6 +84,14 @@ describe("TypeScript build output", () => {
     const cliDispatchCoreOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "cli-dispatch-core.js");
     const configStatusAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "config-status-adapter.js");
     const modelProfilesAdapterOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-adapter.js");
+    const modelProfilesControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "model-profiles-controller.js");
+    const modalControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "modal-controller.js");
+    const actionExecutionPolicyOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "action-execution-policy.js");
+    const homeMenuControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "home-menu-controller.js");
+    const globalHomeFallbackControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "global-home-fallback-controller.js");
+    const sectionActionControllerOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "section-action-controller.js");
+    const renderingOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.js");
+    const emittedRenderingDeclarationPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "rendering.d.ts");
     const configurationScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "configuration.js");
     const modelProfilesScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "model-profiles.js");
     const statusScreenOutputPath = path.join(repoRoot, "dist", "scripts", "lib", "tui", "screens", "status.js");
@@ -124,6 +156,9 @@ describe("TypeScript build output", () => {
       forwardedArgs: [],
     });
     expect(existsSync(copiedCliDispatchWrapperPath)).toBe(true);
+    expect(existsSync(copiedPromptPath)).toBe(true);
+    expect(existsSync(copiedAdapterPath)).toBe(true);
+    expect(existsSync(copiedSkillPath)).toBe(true);
     const copiedCliDispatchWrapper = await import(`${pathToFileURL(copiedCliDispatchWrapperPath).href}?build-artifact`);
     expect(copiedCliDispatchWrapper.resolveDispatchPlan({ argv: ["--help"], isInteractiveTTY: false, isCI: true })).toEqual({
       kind: "help",
@@ -132,11 +167,19 @@ describe("TypeScript build output", () => {
     const copiedCliDispatchHelp = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "--help"], {
       cwd: repoRoot,
       encoding: "utf8",
-      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true", PATH: "" },
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
     });
     expect(copiedCliDispatchHelp.status).toBe(0);
     expect(copiedCliDispatchHelp.stdout).toBe(copiedCliDispatchWrapper.formatHelp());
     expect(copiedCliDispatchHelp.stderr).toBe("");
+    const builtBinHelp = spawnSync("bash", [path.join(repoRoot, "bin", "afergon-ai"), "--help"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
+    });
+    expect(builtBinHelp.status).toBe(0);
+    expect(builtBinHelp.stdout).toBe(copiedCliDispatchWrapper.formatHelp());
+    expect(builtBinHelp.stderr).toBe("");
     const copiedCliDispatchError = spawnSync(process.execPath, [copiedCliDispatchWrapperPath, "not-a-command"], {
       cwd: repoRoot,
       encoding: "utf8",
@@ -145,10 +188,92 @@ describe("TypeScript build output", () => {
     expect(copiedCliDispatchError.status).toBe(1);
     expect(copiedCliDispatchError.stdout).toBe("");
     expect(copiedCliDispatchError.stderr).toBe("Unknown command: not-a-command\nRun 'afergon-ai --help' for usage.\n");
+    expect(existsSync(copiedRenderingBridgePath)).toBe(true);
+    expect(readFileSync(copiedRenderingBridgePath, "utf8")).toContain("export function renderFocusLine");
+    expect(readFileSync(copiedRenderingBridgePath, "utf8")).not.toContain(".ts");
+    expect(existsSync(copiedRenderingRuntimePath)).toBe(true);
+    expect(readFileSync(copiedRenderingRuntimePath, "utf8")).toContain("export function renderFocusLine");
+    const emittedRenderingDeclaration = readFileSync(emittedRenderingDeclarationPath, "utf8");
+    rmSync(emittedRenderingDeclarationPath);
+    const externalConsumerDirectory = mkdtempSync(path.join(repoRoot, ".rendering-consumer-"));
+    const externalConsumerPath = path.join(externalConsumerDirectory, "consumer.mts");
+    try {
+      writeFileSync(
+        externalConsumerPath,
+        [
+          'import { renderFocusLine } from "../dist/scripts/lib/tui/rendering.mjs";',
+          'const focused: string = renderFocusLine("Status", true);',
+          'const unfocused: string = renderFocusLine("Status", false);',
+          'const unspecifiedFocus: string = renderFocusLine("Status", undefined);',
+          "void focused;",
+          "void unfocused;",
+          "void unspecifiedFocus;",
+          "",
+        ].join("\n"),
+      );
+      const externalConsumerTypecheck = spawnSync(
+        pnpmCommand,
+        [
+          "exec",
+          "tsc",
+          "--noEmit",
+          "--strict",
+          "--target",
+          "ES2022",
+          "--module",
+          "NodeNext",
+          "--moduleResolution",
+          "NodeNext",
+          externalConsumerPath,
+        ],
+        { cwd: repoRoot, encoding: "utf8", timeout: 120000 },
+      );
+      expect(externalConsumerTypecheck.status).toBe(0);
+      expect(externalConsumerTypecheck.stderr).toBe("");
+    } finally {
+      rmSync(externalConsumerDirectory, { recursive: true, force: true });
+      writeFileSync(emittedRenderingDeclarationPath, emittedRenderingDeclaration);
+    }
     expect(existsSync(copiedModelProfilesAdapterBridgePath)).toBe(true);
     expect(readFileSync(copiedModelProfilesAdapterBridgePath, "utf8")).toContain('export * from "./model-profiles-adapter.ts"');
     expect(existsSync(emittedModelProfilesAdapterDeclarationPath)).toBe(true);
     expect(readFileSync(emittedModelProfilesAdapterDeclarationPath, "utf8")).toContain('from "../model-profiles.mjs"');
+    expect(existsSync(copiedModelProfilesControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesControllerBridgePath, "utf8")).toContain('export * from "./model-profiles-controller.ts"');
+    expect(existsSync(copiedModelProfilesControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModelProfilesControllerRuntimePath, "utf8")).toContain("createModelProfilesInputController");
+    const copiedModelProfilesController = await import(`${pathToFileURL(copiedModelProfilesControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedModelProfilesController.createModelProfilesInputController).toBe("function");
+    expect(existsSync(copiedModalControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedModalControllerBridgePath, "utf8")).toContain('export * from "./modal-controller.ts"');
+    expect(existsSync(copiedModalControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedModalControllerRuntimePath, "utf8")).toContain("createModalInputController");
+    const copiedModalController = await import(`${pathToFileURL(copiedModalControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedModalController.createModalInputController).toBe("function");
+    expect(existsSync(copiedActionExecutionPolicyBridgePath)).toBe(true);
+    expect(readFileSync(copiedActionExecutionPolicyBridgePath, "utf8")).toContain('export * from "./action-execution-policy.ts"');
+    expect(existsSync(copiedActionExecutionPolicyRuntimePath)).toBe(true);
+    expect(readFileSync(copiedActionExecutionPolicyRuntimePath, "utf8")).toContain("createActionExecutionPolicy");
+    const copiedActionExecutionPolicy = await import(`${pathToFileURL(copiedActionExecutionPolicyRuntimePath).href}?build-artifact`);
+    expect(typeof copiedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(copiedHomeMenuControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedHomeMenuControllerBridgePath, "utf8")).toContain('export * from "./home-menu-controller.ts"');
+    expect(existsSync(copiedHomeMenuControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedHomeMenuControllerRuntimePath, "utf8")).toContain("createHomeMenuInputController");
+    const copiedHomeMenuController = await import(`${pathToFileURL(copiedHomeMenuControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedHomeMenuController.createHomeMenuInputController).toBe("function");
+    expect(existsSync(copiedGlobalHomeFallbackControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedGlobalHomeFallbackControllerBridgePath, "utf8")).toContain('export * from "./global-home-fallback-controller.ts"');
+    expect(existsSync(copiedGlobalHomeFallbackControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedGlobalHomeFallbackControllerRuntimePath, "utf8")).toContain("createGlobalHomeFallbackController");
+    const copiedGlobalHomeFallbackController = await import(`${pathToFileURL(copiedGlobalHomeFallbackControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedGlobalHomeFallbackController.createGlobalHomeFallbackController).toBe("function");
+    expect(existsSync(copiedSectionActionControllerBridgePath)).toBe(true);
+    expect(readFileSync(copiedSectionActionControllerBridgePath, "utf8")).toContain('export * from "./section-action-controller.ts"');
+    expect(existsSync(copiedSectionActionControllerRuntimePath)).toBe(true);
+    expect(readFileSync(copiedSectionActionControllerRuntimePath, "utf8")).toContain("createSectionActionInputController");
+    const copiedSectionActionController = await import(`${pathToFileURL(copiedSectionActionControllerRuntimePath).href}?build-artifact`);
+    expect(typeof copiedSectionActionController.createSectionActionInputController).toBe("function");
     expect(existsSync(actionRunnerOutputPath)).toBe(true);
     expect(readFileSync(actionRunnerOutputPath, "utf8")).toContain("export function runActionCommand");
     expect(existsSync(formsConfirmationOutputPath)).toBe(true);
@@ -193,6 +318,33 @@ describe("TypeScript build output", () => {
     expect(readFileSync(configStatusAdapterOutputPath, "utf8")).toContain("export function getConfigurationStatus");
     expect(existsSync(modelProfilesAdapterOutputPath)).toBe(true);
     expect(readFileSync(modelProfilesAdapterOutputPath, "utf8")).toContain("export function getModelProfilesScreenState");
+    expect(existsSync(modelProfilesControllerOutputPath)).toBe(true);
+    expect(readFileSync(modelProfilesControllerOutputPath, "utf8")).toContain('from "./model-profiles-controller.mjs"');
+    const emittedModelProfilesController = await import(`${pathToFileURL(modelProfilesControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedModelProfilesController.createModelProfilesInputController).toBe("function");
+    expect(existsSync(modalControllerOutputPath)).toBe(true);
+    expect(readFileSync(modalControllerOutputPath, "utf8")).toContain('from "./modal-controller.mjs"');
+    const emittedModalController = await import(`${pathToFileURL(modalControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedModalController.createModalInputController).toBe("function");
+    expect(existsSync(actionExecutionPolicyOutputPath)).toBe(true);
+    expect(readFileSync(actionExecutionPolicyOutputPath, "utf8")).toContain('from "./action-execution-policy.mjs"');
+    const emittedActionExecutionPolicy = await import(`${pathToFileURL(actionExecutionPolicyOutputPath).href}?build-artifact`);
+    expect(typeof emittedActionExecutionPolicy.createActionExecutionPolicy).toBe("function");
+    expect(existsSync(homeMenuControllerOutputPath)).toBe(true);
+    expect(readFileSync(homeMenuControllerOutputPath, "utf8")).toContain('from "./home-menu-controller.mjs"');
+    const emittedHomeMenuController = await import(`${pathToFileURL(homeMenuControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedHomeMenuController.createHomeMenuInputController).toBe("function");
+    expect(existsSync(globalHomeFallbackControllerOutputPath)).toBe(true);
+    expect(readFileSync(globalHomeFallbackControllerOutputPath, "utf8")).toContain('from "./global-home-fallback-controller.mjs"');
+    const emittedGlobalHomeFallbackController = await import(`${pathToFileURL(globalHomeFallbackControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedGlobalHomeFallbackController.createGlobalHomeFallbackController).toBe("function");
+    expect(existsSync(sectionActionControllerOutputPath)).toBe(true);
+    expect(readFileSync(sectionActionControllerOutputPath, "utf8")).toContain('from "./section-action-controller.mjs"');
+    const emittedSectionActionController = await import(`${pathToFileURL(sectionActionControllerOutputPath).href}?build-artifact`);
+    expect(typeof emittedSectionActionController.createSectionActionInputController).toBe("function");
+    expect(existsSync(renderingOutputPath)).toBe(true);
+    const emittedRendering = await import(`${pathToFileURL(renderingOutputPath).href}?build-artifact`);
+    expect(emittedRendering.renderFocusLine("Status", true)).toBe("> Status");
     expect(existsSync(configurationScreenOutputPath)).toBe(true);
     expect(readFileSync(configurationScreenOutputPath, "utf8")).toContain("export function renderConfigurationScreen");
     expect(existsSync(modelProfilesScreenOutputPath)).toBe(true);

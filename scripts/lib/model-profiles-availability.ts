@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { parseProviderModel, suggestCloseModelIds } from "./model-profiles-core.mjs";
+import { parseProviderModel, suggestCloseModelIds } from "./model-profiles-core.js";
 
 const DEFAULT_OPENCODE_MODELS_TIMEOUT_MS = 5000;
 

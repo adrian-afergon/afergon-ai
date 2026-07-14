@@ -18,7 +18,7 @@ import {
   saveConfig,
   SUPPORTED_AGENTS,
   validateModelAvailability,
-} from "./lib/model-profiles.mjs";
+} from "./lib/model-profiles.js";
 import {
   createRefreshResult,
   createRegistrationEnv,
@@ -29,11 +29,14 @@ import {
   isDirectExecution,
   parseSetCommandArguments,
   printHelp,
-} from "./lib/models-cli-core.mjs";
+} from "./lib/models-cli-core.js";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export function reportAdapterRefreshResult(result, { log = console.log, warn = console.warn } = {}) {
+export function reportAdapterRefreshResult(
+  result: ReturnType<typeof createRefreshResult>,
+  { log = console.log, warn = console.warn }: { log?: (message: string) => void; warn?: (message: string) => void } = {},
+) {
   if (!result) {
     return result;
   }
@@ -49,7 +52,7 @@ export function reportAdapterRefreshResult(result, { log = console.log, warn = c
 }
 
 
-function showCurrentConfig(profileNameInput) {
+function showCurrentConfig(profileNameInput?: string) {
   const { config, configPath, exists } = loadConfig();
   const activeProfileName = config.models.activeProfile;
   const selected = profileNameInput
@@ -94,7 +97,7 @@ function listProfiles() {
   }
 }
 
-export function reapplySupportedAdapters(env = process.env) {
+export function reapplySupportedAdapters(env: NodeJS.ProcessEnv = process.env) {
   const opencodeBaseDir = getOpenCodeBaseDir(env);
   const opencodeAgentsDir = path.join(opencodeBaseDir, "agents");
   const opencodeConfigPath = path.join(opencodeBaseDir, "opencode.json");
@@ -144,7 +147,7 @@ export function reapplySupportedAdapters(env = process.env) {
     timeout: refreshTimeout,
   });
 
-  if (result.error?.code === "ETIMEDOUT") {
+  if ((result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT") {
     return createRefreshResult({
       status: "degraded",
       stdout: result.stdout.trim(),
@@ -171,7 +174,7 @@ export function reapplySupportedAdapters(env = process.env) {
   });
 }
 
-function switchProfile(profileNameInput) {
+function switchProfile(profileNameInput: string) {
   const { config } = loadConfig();
   const { profileName } = getProfileOrThrow(config, profileNameInput);
 
@@ -182,7 +185,7 @@ function switchProfile(profileNameInput) {
   reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
-function setAgentModel(agentInput, modelInput, options = {}) {
+function setAgentModel(agentInput: string, modelInput: string, options: { allowUnknown?: boolean } = {}) {
   const agentName = normalizeAgentName(agentInput);
   const normalizedModel = normalizeStoredModel(modelInput);
   if (!normalizedModel) {
@@ -199,7 +202,7 @@ function setAgentModel(agentInput, modelInput, options = {}) {
     }
 
     if (validation.status === "unknown") {
-      const errorMessage = formatUnknownModelError(normalizedModel, validation.provider, validation.suggestions ?? []);
+      const errorMessage = formatUnknownModelError(normalizedModel, validation.provider!, validation.suggestions ?? []);
       if (!options.allowUnknown) {
         throw new Error(errorMessage);
       }
@@ -221,7 +224,7 @@ function setAgentModel(agentInput, modelInput, options = {}) {
   reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
-function createProfile(profileNameInput) {
+function createProfile(profileNameInput: string) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig();
 
@@ -251,7 +254,7 @@ function createProfile(profileNameInput) {
   }
 }
 
-function deleteProfile(profileNameInput) {
+function deleteProfile(profileNameInput: string) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig();
 
@@ -271,7 +274,7 @@ function deleteProfile(profileNameInput) {
   reportAdapterRefreshResult(reapplySupportedAdapters());
 }
 
-function main(argv) {
+function main(argv: readonly string[]) {
   const [command, ...rest] = argv;
   switch (command ?? "show") {
     case "show":

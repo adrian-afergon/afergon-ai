@@ -1,0 +1,39 @@
+name: Windows launcher
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  windows-launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - name: Verify Windows CMD argv contract
+        run: pnpm exec vitest run tests/windows-launcher-argv.test.ts --no-file-parallelism
+      - run: pnpm test
+      - name: Smoke the built Windows launcher
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $helpOutput = & .\bin\afergon-ai.cmd --help 2>&1
+          if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd --help exited with $LASTEXITCODE" }
+          if (($helpOutput -join "`n") -notmatch [regex]::Escape("Usage: afergon-ai")) { throw "afergon-ai.cmd --help did not print usage" }
+
+           $errorOutput = & .\bin\afergon-ai.cmd not-a-command 2>&1
+           if ($LASTEXITCODE -ne 1) { throw "afergon-ai.cmd unknown command exited with $LASTEXITCODE" }
+           if (($errorOutput -join "`n") -notmatch [regex]::Escape("Unknown command: not-a-command")) { throw "afergon-ai.cmd unknown command did not print the expected error" }
+
+           $env:PATH = "$PWD\bin;$env:PATH"
+           $doctorOutput = & .\bin\afergon-ai.cmd doctor 2>&1
+           if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd doctor exited with $LASTEXITCODE" }
+           if (($doctorOutput -join "`n") -notmatch [regex]::Escape("Verificación finalizada.")) { throw "afergon-ai.cmd doctor did not run the Windows verifier" }

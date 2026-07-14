@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import {
 	BRANDING_LOGO,
 	canRenderBrandingLogo,
-} from "../scripts/lib/branding/logo.mjs";
+} from "../scripts/lib/branding/logo.js";
 
 const execAsync = promisify(exec);
 

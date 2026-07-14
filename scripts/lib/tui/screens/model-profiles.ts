@@ -1,6 +1,7 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
-import { sanitizeTerminalOutput } from "../actions/forms.mjs";
+import { sanitizeTerminalOutput } from "../actions/forms.js";
+import { renderFocusLine } from "../rendering.js";
 
 interface BrowseStateInlineCreate {
   readonly value?: string;
@@ -70,22 +71,19 @@ function renderProfiles(
   }
 
   return profiles.flatMap((profile) => {
-    const marker = profile.isFocused && !(profile.isCreate && inlineCreate) ? ">" : " ";
     const label = profile.isCreate
       ? sanitizeText(profile.name)
       : `[${profile.isActive ? "X" : " "}] ${sanitizeText(profile.name)}`;
-    const line = `${marker} ${label}`;
+    const line = renderFocusLine(label, profile.isFocused && !(profile.isCreate && inlineCreate));
     const renderedLine = profile.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
 
     if (!profile.isCreate || !inlineCreate) {
       return [renderedLine];
     }
 
-    const inputMarker = inlineCreate.selection === "input" ? ">" : " ";
-    const cancelMarker = inlineCreate.selection === "cancel" ? ">" : " ";
     const inputValue = sanitizeText(inlineCreate.value) || "(empty)";
-    const inputLine = `${inputMarker} Profile name: ${inputValue}`;
-    const cancelLine = `${cancelMarker} Cancel`;
+    const inputLine = renderFocusLine(`Profile name: ${inputValue}`, inlineCreate.selection === "input");
+    const cancelLine = renderFocusLine("Cancel", inlineCreate.selection === "cancel");
 
     return [
       renderedLine,
@@ -108,7 +106,10 @@ function renderAssignmentEditor(
   styleSelected: ScreenStyleOptions["styleSelected"],
 ): string[] {
   return assignments.map((assignment) => {
-    const line = `${sanitizeText(assignment.agent)}${assignment.isFocused ? " [selected]" : ""}: configured=${sanitizeText(assignment.configured)}, effective=${sanitizeText(assignment.effective ?? "(runtime default)")}, source=${sanitizeText(assignment.source)}`;
+    const line = renderFocusLine(
+      `${sanitizeText(assignment.agent)}: configured=${sanitizeText(assignment.configured)}, effective=${sanitizeText(assignment.effective ?? "(runtime default)")}, source=${sanitizeText(assignment.source)}`,
+      assignment.isFocused,
+    );
     return assignment.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
   });
 }
