@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { assertCompilerBootstrapSucceeded, createCompilerBootstrapInvocation } from "../scripts/lib/typescript-build-bootstrap.js";
-import { runPnpm } from "./helpers/process.js";
+import { getTarCommand, runPnpm } from "./helpers/process.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const distScripts = path.join(repoRoot, "dist", "scripts");
@@ -169,9 +169,9 @@ describe("TypeScript build output", () => {
       const archive = readdirSync(archiveDirectory).find((entry) => entry.endsWith(".tgz"));
       expect(archive).toBeDefined();
       if (!archive) throw new Error("pnpm pack did not produce an archive");
-      const archiveContents = spawnSync("tar", ["-tzf", path.join(archiveDirectory, archive)], { encoding: "utf8" });
+      const archiveContents = spawnSync(getTarCommand(), ["-tzf", path.join(archiveDirectory, archive)], { encoding: "utf8" });
 
-      expect(archiveContents.status).toBe(0);
+      expect(archiveContents.status, archiveContents.stderr).toBe(0);
       expect(archiveContents.stdout).toContain("package/dist/scripts/tui.js");
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/tui.mjs");
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/lib/tui/modal-controller.mjs");

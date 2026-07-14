@@ -4,7 +4,7 @@ import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { DispatchRequest } from "../scripts/lib/cli-dispatch-core.js";
-import { runPnpm } from "./helpers/process.js";
+import { getTarCommand, runPnpm } from "./helpers/process.js";
 
 import {
   buildExecution,
@@ -389,9 +389,9 @@ describe("package build lifecycle", () => {
       const archives = fs.readdirSync(archiveDirectory).filter((entry) => entry.endsWith(".tgz"));
       expect(archives).toHaveLength(1);
       const archivePath = path.join(archiveDirectory, archives[0]);
-      const tarCommand = process.platform === "win32" ? "tar.exe" : "tar";
+      const tarCommand = getTarCommand();
       const archiveContents = spawnSync(tarCommand, ["-tzf", archivePath], { encoding: "utf8", timeout: 120000 });
-      expect(archiveContents.status).toBe(0);
+      expect(archiveContents.status, archiveContents.stderr).toBe(0);
       expect(archiveContents.stdout).toContain("package/dist/scripts/cli-dispatch.js");
       expect(archiveContents.stdout).toContain("package/dist/scripts/models.js");
       expect(archiveContents.stdout).toContain("package/dist/scripts/lib/cli-dispatch-core.js");
@@ -403,7 +403,7 @@ describe("package build lifecycle", () => {
         encoding: "utf8",
         timeout: 120000,
       });
-      expect(extractionResult.status).toBe(0);
+      expect(extractionResult.status, extractionResult.stderr).toBe(0);
 
       const extractedPackageRoot = path.join(extractionDirectory, "package");
       fs.rmSync(path.join(extractedPackageRoot, "scripts", "lib"), { recursive: true, force: true });
