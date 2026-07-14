@@ -16,6 +16,17 @@ process.exit(0);
   );
 }
 
+function describeProcessResult(result: ReturnType<typeof spawnSync>, probePath: string) {
+  return [
+    `status=${result.status ?? "null"}`,
+    `signal=${result.signal ?? "null"}`,
+    `error=${result.error?.message ?? "none"}`,
+    `stdout=${result.stdout ?? ""}`,
+    `stderr=${result.stderr ?? ""}`,
+    `probeExists=${fs.existsSync(probePath)}`,
+  ].join("\n");
+}
+
 describe("Windows CMD launcher argv contract", () => {
   it.runIf(process.platform === "win32")("forwards special arguments to node exactly once without expansion or injection", () => {
     const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-windows-argv-"));
@@ -52,7 +63,7 @@ describe("Windows CMD launcher argv contract", () => {
         },
       });
 
-      expect(result.status).toBe(0);
+      expect(result.status, describeProcessResult(result, probePath)).toBe(0);
       expect(result.stderr).toBe("");
       expect(JSON.parse(fs.readFileSync(probePath, "utf8"))).toEqual([
         path.join(fixtureDist, "cli-dispatch.js"),
