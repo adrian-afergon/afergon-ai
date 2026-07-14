@@ -1,0 +1,791 @@
+#!/usr/bin/env node
+
+import {
+  Key,
+  matchesKey,
+  ProcessTerminal,
+  truncateToWidth,
+  TUI,
+  visibleWidth,
+} from "@earendil-works/pi-tui";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.js";
+import { reapplySupportedAdapters } from "./models.js";
+import {
+  createOutputState,
+  getOutputLines,
+  sanitizeTerminalOutput,
+  validateFormInput,
+} from "./lib/tui/actions/forms.js";
+import { createModalInputController } from "./lib/tui/modal-controller.js";
+import { createActionExecutionPolicy } from "./lib/tui/action-execution-policy.js";
+import { createHomeMenuInputController } from "./lib/tui/home-menu-controller.js";
+import { createGlobalHomeFallbackController } from "./lib/tui/global-home-fallback-controller.js";
+import { createSectionActionInputController } from "./lib/tui/section-action-controller.js";
+import { runActionCommand } from "./lib/tui/actions/runner.js";
+import { getConfigurationStatus, getStatusScreenState } from "./lib/tui/config-status-adapter.js";
+import { getModelProfilesScreenState, saveAssignmentsForProfile } from "./lib/tui/model-profiles-adapter.js";
+import { createModelProfilesInputController } from "./lib/tui/model-profiles-controller.js";
+import { renderFocusLine } from "./lib/tui/rendering.js";
+import {
+  closeModal,
+  createNavigationState,
+  HOME_MENU_ROUTES,
+  navigateTo,
+  openModal,
+  stageModelProfilesAssignment,
+} from "./lib/tui/navigation.js";
+import { renderConfigurationScreen } from "./lib/tui/screens/configuration.js";
+import { renderModelProfilesScreen } from "./lib/tui/screens/model-profiles.js";
+import { renderStatusScreen } from "./lib/tui/screens/status.js";
+
+const APP_TITLE = "afergon-ai TUI";
+const EXIT_REASON = "user-exit";
+const CLI_DISPATCH_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "cli-dispatch.js");
+const TEAL_ANSI = "\u001b[38;5;6m";
+const LIGHT_GRAY_ANSI = "\u001b[38;5;250m";
+const ANSI_RESET = "\u001b[0m";
+const FRAME_CORNER_WIDTH = 1;
+const FRAME_SIDE_BORDERS = 2;
+const FRAME_LABEL_PADDING = 4;
+const FRAME_HEADER_GAP = 5;
+const FRAME_FOOTER_RULE_MIN_WIDTH = 1;
+const FRAME_MIN_WIDTH = 20;
+const FRAME_RULE_LABEL_DECORATION_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_MIN_WIDTH = 3;
+const FRAME_FOOTER_SEGMENT_INNER_PADDING = 2;
+
+const ROUTE_BREADCRUMBS = Object.freeze({
+  home: "Home",
+  configuration: "Configuration",
+  status: "Status",
+  "model-profiles": "Models",
+});
+
+function padLine(text, width) {
+  return truncateToWidth(text, Math.max(1, width), "");
+}
+
+function padVisibleLine(text, width) {
+  return `${text}${repeatToWidth(" ", Math.max(0, width - visibleWidth(text)))}`;
+}
+
+function centerVisibleLine(text, width) {
+  const safeText = truncateToWidth(text, Math.max(1, width), "");
+  const totalPadding = Math.max(0, width - visibleWidth(safeText));
+  const leftPadding = Math.floor(totalPadding / 2);
+  return `${repeatToWidth(" ", leftPadding)}${safeText}`;
+}
+
+function styleTeal(text) {
+  return `${TEAL_ANSI}${text}${ANSI_RESET}`;
+}
+
+function styleLightGray(text) {
+  return `${LIGHT_GRAY_ANSI}${text}${ANSI_RESET}`;
+}
+
+function repeatToWidth(character, width) {
+  return character.repeat(Math.max(0, width));
+}
+
+function renderShortcutHintLine() {
+  return `Press (${styleTeal("C")})onfiguracion | (${styleTeal("S")})tatus | (${styleTeal("M")})odels`;
+}
+
+function clipBreadcrumbForFrame(breadcrumb, width) {
+  const maxBreadcrumbWidth = Math.max(1, width - FRAME_LABEL_PADDING);
+  return truncateToWidth(sanitizeTerminalOutput(breadcrumb ?? ""), maxBreadcrumbWidth, "");
+}
+
+function clipFrameLabel(label, width) {
+  const maxLabelWidth = Math.max(1, width - FRAME_LABEL_PADDING);
+  return truncateToWidth(sanitizeTerminalOutput(label ?? ""), maxLabelWidth, "");
+}
+
+function clipFooterSegment(label, maxWidth) {
+  if (!label || maxWidth < FRAME_FOOTER_SEGMENT_MIN_WIDTH) {
+    return "";
+  }
+
+  const safeLabel = truncateToWidth(
+    sanitizeTerminalOutput(label),
+    Math.max(1, maxWidth - FRAME_FOOTER_SEGMENT_INNER_PADDING),
+    "",
+  );
+  return safeLabel ? ` ${safeLabel} ` : "";
+}
+
+function renderEmbeddedFrameRule(corner, label, width) {
+  if (!label) {
+    return `${corner}${repeatToWidth("─", width - FRAME_CORNER_WIDTH)}`;
+  }
+
+  const safeLabel = clipFrameLabel(label, width);
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLabel) - FRAME_RULE_LABEL_DECORATION_WIDTH);
+  return `${corner} ${safeLabel} ${repeatToWidth("─", ruleWidth)}`;
+}
+
+function renderEmbeddedFrameHeader(corner, leftLabel, rightLabel, width) {
+  if (!rightLabel?.label || !rightLabel?.value) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const safeLeftLabel = clipFrameLabel(leftLabel, width);
+  const safeRightLabel = sanitizeTerminalOutput(rightLabel.label);
+  const safeRightValue = sanitizeTerminalOutput(rightLabel.value);
+  const rightText = `${safeRightLabel}: ${safeRightValue}`;
+  const minimumWidth = visibleWidth(safeLeftLabel) + visibleWidth(rightText) + FRAME_HEADER_GAP;
+
+  if (minimumWidth > width) {
+    return renderEmbeddedFrameRule(corner, safeLeftLabel, width);
+  }
+
+  const rightRendered = `${safeRightLabel}: ${styleTeal(safeRightValue)}`;
+  const ruleWidth = Math.max(FRAME_FOOTER_RULE_MIN_WIDTH, width - visibleWidth(safeLeftLabel) - visibleWidth(rightText) - FRAME_HEADER_GAP);
+  return `${corner} ${safeLeftLabel} ${repeatToWidth("─", ruleWidth)} ${rightRendered}`;
+}
+
+function renderEmbeddedFrameFooter(corner, leftLabel, rightLabel, width) {
+  const footerWidth = Math.max(0, width - FRAME_CORNER_WIDTH);
+  const rightSegment = clipFooterSegment(rightLabel, footerWidth);
+
+  if (!rightSegment) {
+    return renderEmbeddedFrameRule(corner, leftLabel, width);
+  }
+
+  const remainingWidth = Math.max(0, footerWidth - visibleWidth(rightSegment));
+  const reservedRuleWidth = remainingWidth > 0 ? FRAME_FOOTER_RULE_MIN_WIDTH : 0;
+  const leftSegment = clipFooterSegment(leftLabel, Math.max(0, remainingWidth - reservedRuleWidth));
+  const ruleWidth = Math.max(0, footerWidth - visibleWidth(leftSegment) - visibleWidth(rightSegment));
+
+  return `${corner}${leftSegment}${repeatToWidth("─", ruleWidth)}${rightSegment}`;
+}
+
+export function buildRouteBreadcrumb(navigation) {
+  const baseBreadcrumb = ROUTE_BREADCRUMBS[navigation?.route] ?? ROUTE_BREADCRUMBS.home;
+
+  if (navigation?.route !== "model-profiles") {
+    return baseBreadcrumb;
+  }
+
+  if (navigation?.modelProfiles?.mode !== "assignments") {
+    return baseBreadcrumb;
+  }
+
+  const profileName = sanitizeTerminalOutput(navigation.modelProfiles?.targetProfileName ?? "");
+  return `${baseBreadcrumb}/${profileName || "New"}`;
+}
+
+function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel }: any = {}) {
+  const safeWidth = Math.max(FRAME_MIN_WIDTH, width);
+  const innerWidth = Math.max(1, safeWidth - FRAME_SIDE_BORDERS);
+  const framedLines = [renderEmbeddedFrameHeader("┌", clipBreadcrumbForFrame(breadcrumb, safeWidth), headerRightLabel, safeWidth)];
+
+  for (const line of [...contentLines, ...footerLines]) {
+    framedLines.push(`│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)}`);
+  }
+
+  framedLines.push(renderEmbeddedFrameFooter("└", footerLeftLabel, footerRightLabel, safeWidth));
+  return framedLines;
+}
+
+export function shouldExitTui(data) {
+  const printable = data.length === 1 ? data.toLowerCase() : undefined;
+
+  return printable === "q" || matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"));
+}
+
+export function renderHomeScreen(navigation, width) {
+  const homeItems = HOME_MENU_ROUTES.map((route, index) => ({
+    route,
+    label: route === "model-profiles" ? "Model Profiles" : route.charAt(0).toUpperCase() + route.slice(1),
+    selected: navigation.homeSelection === index,
+  }));
+
+  const useFallbackBranding = !canRenderBrandingLogo(width);
+  const brandingLines = useFallbackBranding
+    ? [BRANDING_LOGO.fallbackTitle, BRANDING_LOGO.fallbackCopy, "Plain-text branding mode keeps Home readable."]
+    : [...BRANDING_LOGO.lines, BRANDING_LOGO.tagline];
+  const centeredBrandingLines = brandingLines.map((line, index) => {
+    if (!line) {
+      return line;
+    }
+
+    if ((!useFallbackBranding && index <= BRANDING_LOGO.lines.length) || (useFallbackBranding && index <= 1)) {
+      return centerVisibleLine(line, Math.max(1, width - FRAME_SIDE_BORDERS));
+    }
+
+    return line;
+  });
+
+  const contentLines = [
+    ...centeredBrandingLines,
+    "",
+    "Sections available in this MVP slice:",
+    ...homeItems.map((item) => {
+      const line = renderFocusLine(item.label, item.selected);
+      return item.selected ? styleTeal(line) : line;
+    }),
+    "",
+    "Press Enter to open the selected section.",
+    renderShortcutHintLine(),
+  ];
+
+  const lines = renderFramedLines(contentLines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLeftLabel: "↑/↓ move",
+    footerRightLabel: "Press q or Esc to exit",
+  });
+
+  return lines.map((line, index) => {
+    const paddedLine = padLine(line, width);
+
+    if (!useFallbackBranding && index > 0 && index <= BRANDING_LOGO.lines.length + 1) {
+      return styleTeal(paddedLine);
+    }
+
+    if (useFallbackBranding && index > 0 && index <= 2) {
+      return styleTeal(paddedLine);
+    }
+
+    return paddedLine;
+  });
+}
+
+export function createHomeScreen({ navigation, onExit }) {
+  return {
+    render(width) {
+      return renderHomeScreen(navigation, width);
+    },
+    handleInput(data) {
+      if (shouldExitTui(data)) {
+        onExit({ code: 0, reason: EXIT_REASON });
+      }
+    },
+    invalidate() {},
+  };
+}
+
+function setRoute(navigation, route) {
+  Object.assign(navigation, navigateTo(navigation, route));
+}
+
+function showModal(navigation, modal) {
+  navigation.modal = openModal(navigation, modal).modal;
+}
+
+function hideModal(navigation) {
+  navigation.modal = closeModal(navigation).modal;
+}
+
+function updateModelProfilesState(navigation, nextState) {
+  navigation.modelProfiles = nextState;
+}
+
+function renderInteractiveActions(actions, navigation) {
+  if (actions.length === 0) {
+    return [];
+  }
+
+  return [
+    "",
+    "Interactive actions",
+    "",
+    ...actions.flatMap((action, index) => {
+      const selected = (navigation.sectionActionSelection ?? 0) === index;
+      const line = renderFocusLine(action.label, selected);
+      return [selected ? styleTeal(line) : line];
+    }),
+    "",
+    "Keyboard help",
+    "Use ↑/↓ to move the action selection.",
+    "Press Enter to run the selected action.",
+    "Press Esc to cancel confirmations, forms, or output panels.",
+  ];
+}
+
+function renderConfirmationModal(modal) {
+  const prompt = modal.confirmation?.prompt ?? modal.action.confirmLabel ?? "Confirm this action?";
+  const isSubmitCancel = modal.confirmation?.kind === "submit-cancel";
+  const activeChoice = modal.activeChoice === "cancel" ? "cancel" : "submit";
+  return [
+    "",
+    "Confirmation",
+    `Action: ${sanitizeTerminalOutput(modal.action.label)}`,
+    sanitizeTerminalOutput(prompt),
+    `CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent ?? "")}`,
+    `Argv: ${JSON.stringify((modal.action.argv ?? []).map((entry) => sanitizeTerminalOutput(entry)))}`,
+    ...(modal.confirmation?.kind === "typed-match"
+      ? [
+          `Expected text: ${sanitizeTerminalOutput(modal.confirmation.expectedText ?? "") || "(empty)"}`,
+          `Typed text: ${sanitizeTerminalOutput(modal.value ?? "") || "(empty)"}`,
+        ]
+      : []),
+    ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage)] : []),
+    ...(isSubmitCancel
+      ? [
+          "Choices:",
+          renderFocusLine("Submit / confirm", activeChoice === "submit"),
+          renderFocusLine("Cancel", activeChoice === "cancel"),
+          "Use ↑/↓ to choose Submit or Cancel.",
+          "Press Enter to choose.",
+        ]
+      : ["Press Enter to confirm."]),
+    "Press Esc to cancel.",
+  ];
+}
+
+function isModelProfilesDeleteConfirmation(modal) {
+  return modal?.kind === "confirm" && modal.action?.id === "models-delete-focused";
+}
+
+function renderFloatingConfirmationModal(lines, modal) {
+  const screenWidth = Math.max(FRAME_MIN_WIDTH, ...lines.map((line) => visibleWidth(line)));
+  const modalContent = renderConfirmationModal(modal);
+  const preferredWidth = Math.max(...modalContent.map((line) => visibleWidth(line))) + 4;
+  const boxWidth = Math.min(Math.max(FRAME_MIN_WIDTH, preferredWidth), Math.max(FRAME_MIN_WIDTH, screenWidth - 4));
+  const innerWidth = Math.max(1, boxWidth - 4);
+  const boxLines = [
+    `┌${repeatToWidth("─", boxWidth - 2)}┐`,
+    ...modalContent.map((line) => `│ ${padVisibleLine(padLine(line, innerWidth), innerWidth)} │`),
+    `└${repeatToWidth("─", boxWidth - 2)}┘`,
+  ];
+  const overlayStart = Math.max(1, Math.floor((lines.length - boxLines.length) / 2));
+  const leftPadding = repeatToWidth(" ", Math.max(0, Math.floor((screenWidth - boxWidth) / 2)));
+  const overlaidLines = [...lines];
+
+  for (let index = 0; index < boxLines.length; index += 1) {
+    overlaidLines[overlayStart + index] = padVisibleLine(`${leftPadding}${boxLines[index]}`, screenWidth);
+  }
+
+  return overlaidLines;
+}
+
+function renderPickerFormModal(modal) {
+  const cancelIndex = modal.action.form.options.length;
+
+  return [
+    "",
+    modal.action.form.title,
+    ...(modal.action.cliEquivalent ? [`CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent)}`] : []),
+    "",
+    ...modal.action.form.options.map((option, index) => {
+      const selected = modal.activeIndex === index;
+      return renderFocusLine(sanitizeTerminalOutput(option.label), selected);
+    }),
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
+    "",
+    ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
+    "Use ↑/↓ to move within the picker.",
+    "Press Enter to choose the selected option.",
+    "Press Esc to cancel.",
+  ];
+}
+
+function renderFieldsFormModal(modal) {
+  const submitIndex = modal.action.form.fields.length;
+  const cancelIndex = submitIndex + 1;
+
+  return [
+    "",
+    modal.action.form.title,
+    ...(modal.action.cliEquivalent ? [`CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent)}`] : []),
+    "",
+    ...modal.action.form.fields.map((field, index) => {
+      const isFocused = modal.activeIndex === index;
+      if (field.type === "toggle") {
+        return renderFocusLine(
+          `${sanitizeTerminalOutput(field.label)}: [${modal.values[field.id] ? "x" : " "}]`,
+          isFocused,
+        );
+      }
+      return renderFocusLine(
+        `${sanitizeTerminalOutput(field.label)}: ${sanitizeTerminalOutput(modal.values[field.id] || "(empty)")}`,
+        isFocused,
+      );
+    }),
+    renderFocusLine("Submit", modal.activeIndex === submitIndex),
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
+    "",
+    ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
+    "Use ↑/↓ to move within the form.",
+    "Use ←/→ or Space to change selectors and toggles.",
+    "Type to edit text fields, Enter to submit, Esc to cancel.",
+  ];
+}
+
+function renderCheckboxFormModal(modal) {
+  const options = modal.action.form.options;
+  const submitIndex = options.length;
+  const cancelIndex = submitIndex + 1;
+
+  return [
+    "",
+    modal.action.form.title,
+    ...(modal.action.cliEquivalent ? [`CLI equivalent: ${sanitizeTerminalOutput(modal.action.cliEquivalent)}`] : []),
+    "",
+    ...options.map((option, index) => {
+      const checked = modal.selectedIds.includes(option.id) ? "x" : " ";
+      return renderFocusLine(
+        `${sanitizeTerminalOutput(option.label)} [${checked}]`,
+        modal.activeIndex === index,
+      );
+    }),
+    renderFocusLine("Submit", modal.activeIndex === submitIndex),
+    renderFocusLine("Cancel", modal.activeIndex === cancelIndex),
+    "",
+    ...(modal.validationMessage ? [sanitizeTerminalOutput(modal.validationMessage), ""] : []),
+    "Use ↑/↓ to move within the form.",
+    "Use Space to toggle the selected checkbox.",
+    "Press Enter to submit or activate Cancel.",
+    "Press Esc to cancel.",
+  ];
+}
+
+function appendInteractionPanels(lines, navigation, outputState, interactiveActions) {
+  const augmentedLines = [...lines, ...renderInteractiveActions(interactiveActions, navigation)];
+
+  if (isModelProfilesDeleteConfirmation(navigation.modal)) {
+    return renderFloatingConfirmationModal(augmentedLines, navigation.modal);
+  }
+
+  if (navigation.modal?.kind === "confirm") {
+    augmentedLines.push(...renderConfirmationModal(navigation.modal));
+  }
+
+  if (navigation.modal?.kind === "form") {
+    if (navigation.modal.formKind === "picker") {
+      augmentedLines.push(...renderPickerFormModal(navigation.modal));
+    } else if (navigation.modal.formKind === "fields") {
+      augmentedLines.push(...renderFieldsFormModal(navigation.modal));
+    } else {
+      augmentedLines.push(...renderCheckboxFormModal(navigation.modal));
+    }
+  }
+
+  if (navigation.modal?.kind === "output" && outputState) {
+    augmentedLines.push("", ...getOutputLines(outputState));
+  }
+
+  return augmentedLines;
+}
+
+function renderFramedRouteScreen(lines, navigation, width, options = {}) {
+  return renderFramedLines(lines, width, {
+    breadcrumb: buildRouteBreadcrumb(navigation),
+    footerLeftLabel: "Press H to return home",
+    footerRightLabel: "Press q or Esc to exit",
+    ...options,
+  });
+}
+
+function buildModelProfilesHeaderLabel(routeState) {
+  const activeProfile = sanitizeTerminalOutput(routeState?.activeProfile ?? "(none)");
+  if ((routeState?.browse?.mode ?? "browse") !== "browse") {
+    return undefined;
+  }
+  return {
+    label: "Active profile",
+    value: activeProfile,
+  };
+}
+
+function renderPlaceholderScreen(route, width) {
+  return [
+    `${route} (coming later)`,
+    "",
+    "This screen is outside the current slice.",
+    "Press h to return Home.",
+    "Press q or Esc to exit.",
+  ].map((line) => padLine(line, width));
+}
+
+function finalizeSuccessfulModelProfilesDelete(navigation, routeState) {
+  const currentIndex = Number.isInteger(navigation.modelProfiles?.focusedProfileIndex)
+    ? navigation.modelProfiles.focusedProfileIndex
+    : 0;
+  const maxIndex = Math.max((routeState?.profiles?.length ?? 1) - 1, 0);
+
+  updateModelProfilesState(navigation, {
+    ...navigation.modelProfiles,
+    mode: "browse",
+    focusedProfileIndex: Math.min(Math.max(currentIndex, 0), maxIndex),
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+    stagedAssignments: {},
+    createProfileName: undefined,
+    createProfileSelection: "input",
+    createProfileValidation: undefined,
+  });
+}
+
+function createMainScreen({
+  navigation,
+  onExit,
+  onNavigate,
+  loadConfigurationStatus,
+  loadStatusScreenState,
+  loadModelProfilesScreenState,
+  getInteractiveActions,
+  executeAction,
+  saveModelProfileAssignments,
+  refreshActiveModelProfile,
+}) {
+  let outputState;
+
+  function getRouteState(route) {
+    if (route === "configuration") {
+      return loadConfigurationStatus();
+    }
+
+    if (route === "status") {
+      return loadStatusScreenState();
+    }
+
+    if (route === "model-profiles") {
+      return loadModelProfilesScreenState({ navigation });
+    }
+
+    return undefined;
+  }
+
+  function getRouteInteractiveActions(route) {
+    const routeState = getRouteState(route);
+    if (Array.isArray(routeState?.interactiveActions)) {
+      return routeState.interactiveActions;
+    }
+
+    return getInteractiveActions(route);
+  }
+
+  const actionExecutionPolicy = createActionExecutionPolicy({
+    executeAction,
+    createOutputState,
+    showModal: (modal) => showModal(navigation, modal),
+    hideModal: () => hideModal(navigation),
+    onNavigate,
+    getRouteState: () => getRouteState("model-profiles"),
+    setOutputState: (nextOutputState) => { outputState = nextOutputState; },
+    sanitizeOutput: sanitizeTerminalOutput as typeof String,
+    finalizeSuccessfulDelete: (routeState) => finalizeSuccessfulModelProfilesDelete(navigation, routeState),
+    finalizeSuccessfulProfileCreate: undefined,
+  });
+  const { resolveExecutableAction, runSelectedAction } = actionExecutionPolicy;
+
+  const modelProfilesController = createModelProfilesInputController({
+    navigation,
+    onNavigate,
+    getRouteState: () => getRouteState("model-profiles"),
+    executeAction,
+    saveModelProfileAssignments,
+    refreshActiveModelProfile,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+      escape: (data) => matchesKey(data, Key.escape),
+    },
+  });
+  const modalController = createModalInputController({
+    navigation,
+    getOutputState: () => modelProfilesController.getOutputState() ?? outputState,
+    clearOutputState: () => {
+      outputState = undefined;
+      modelProfilesController.clearOutputState();
+    },
+    onNavigate,
+    onFormSubmit: ({ modal, submitState }) => {
+      if (modal.action.id !== "model-profiles-stage-assignment") return false;
+      if (submitState.isCancel) {
+        hideModal(navigation);
+        return true;
+      }
+      if (!submitState.isSubmit) return false;
+      const validation: any = validateFormInput(modal);
+      if (!validation.ok) {
+        navigation.modal = {
+          ...modal,
+          activeIndex: validation.activeIndex ?? modal.activeIndex,
+          validationMessage: validation.message,
+        };
+        return true;
+      }
+      updateModelProfilesState(
+        navigation,
+        stageModelProfilesAssignment(navigation.modelProfiles, modal.action.agentName, validation.input.model),
+      );
+      hideModal(navigation);
+      return true;
+    },
+    runSelectedAction,
+    resolveExecutableAction,
+    showModal: (modal) => showModal(navigation, modal),
+    hideModal: () => hideModal(navigation),
+    shouldDismissOutput: shouldExitTui,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      left: (data) => matchesKey(data, Key.left),
+      right: (data) => matchesKey(data, Key.right),
+      enter: (data) => matchesKey(data, Key.enter),
+      escape: (data) => matchesKey(data, Key.escape),
+    },
+  });
+  const sectionActionController = createSectionActionInputController({
+    navigation,
+    getRouteInteractiveActions,
+    onNavigate,
+    showModal: (modal) => showModal(navigation, modal),
+    runSelectedAction,
+    resolveExecutableAction,
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+    },
+  });
+  const homeMenuController = createHomeMenuInputController({
+    navigation,
+    onNavigate,
+    setRoute: (route) => setRoute(navigation, route),
+    normalizeInput: (data) => (data.length === 1 ? data.toLowerCase() : undefined),
+    keyMatches: {
+      up: (data) => matchesKey(data, Key.up),
+      down: (data) => matchesKey(data, Key.down),
+      enter: (data) => matchesKey(data, Key.enter),
+    },
+  });
+  const globalHomeFallbackController = createGlobalHomeFallbackController({
+    navigation,
+    onNavigate,
+    setRoute: (route) => setRoute(navigation, route),
+    normalizeInput: (data) => (data.length === 1 ? data.toLowerCase() : undefined),
+  });
+
+  return {
+    render(width) {
+      const activeOutputState = modalController.getOutputState();
+      const interactiveActions = getRouteInteractiveActions(navigation.route);
+      sectionActionController.syncSelection(interactiveActions);
+
+      if (navigation.route === "configuration") {
+        return appendInteractionPanels(renderFramedRouteScreen(renderConfigurationScreen(getRouteState("configuration"), width), navigation, width), navigation, activeOutputState, interactiveActions);
+      }
+
+      if (navigation.route === "status") {
+        return appendInteractionPanels(renderFramedRouteScreen(renderStatusScreen(getRouteState("status"), width), navigation, width), navigation, activeOutputState, interactiveActions);
+      }
+
+      if (navigation.route === "model-profiles") {
+        const routeState = getRouteState("model-profiles");
+        return appendInteractionPanels(
+          renderFramedRouteScreen(
+            renderModelProfilesScreen(routeState, width, { styleSelected: styleTeal, styleMuted: styleLightGray }),
+            navigation,
+            width,
+            { headerRightLabel: buildModelProfilesHeaderLabel(routeState) },
+          ),
+          navigation,
+          activeOutputState,
+          interactiveActions,
+        );
+      }
+
+      if (navigation.route !== "home") {
+        return renderPlaceholderScreen(navigation.route, width);
+      }
+
+      return renderHomeScreen(navigation, width);
+    },
+    handleInput(data) {
+      if (modalController.handleInput(data)) return;
+
+      if (modelProfilesController.handleInput(data)) {
+        return;
+      }
+
+      if (shouldExitTui(data)) {
+        onExit({ code: 0, reason: EXIT_REASON });
+        return;
+      }
+
+      if (homeMenuController.handleInput(data)) return;
+
+      if (sectionActionController.handleInput(data)) {
+        return;
+      }
+
+      globalHomeFallbackController.handleInput(data);
+    },
+    invalidate() {},
+  };
+}
+
+export function createTuiApp({
+  terminal = new ProcessTerminal(),
+  exit = ({ code }: any) => process.exit(code),
+  loadConfigurationStatus = () => getConfigurationStatus(),
+  loadStatusScreenState = () => getStatusScreenState(),
+  loadModelProfilesScreenState = ({ navigation }: any = {}) => getModelProfilesScreenState({ navigation }),
+  interactiveActionsByRoute = {},
+  executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
+  saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
+  refreshActiveModelProfile = () => reapplySupportedAdapters(),
+}: any = {}): any {
+  const navigation: any = createNavigationState();
+  navigation.sectionActionSelection = 0;
+  navigation.modal = undefined;
+  const tui = new TUI(terminal);
+  let stopped = false;
+
+  const stop = ({ code = 0, reason = EXIT_REASON } = {}) => {
+    if (stopped) {
+      return;
+    }
+
+    stopped = true;
+    tui.stop();
+    exit({ code, reason });
+  };
+
+  const screen = createMainScreen({
+    navigation,
+    onExit: stop,
+    onNavigate: () => tui.requestRender(true),
+    loadConfigurationStatus,
+    loadStatusScreenState,
+    loadModelProfilesScreenState,
+    getInteractiveActions: (route) => interactiveActionsByRoute[route] ?? [],
+    executeAction,
+    saveModelProfileAssignments,
+    refreshActiveModelProfile,
+  });
+  tui.addChild(screen);
+  tui.setFocus(screen);
+
+  terminal.setTitle?.(APP_TITLE);
+
+  return {
+    navigation,
+    screen,
+    start() {
+      tui.start();
+      tui.requestRender(true);
+      return this;
+    },
+    stop,
+    terminal,
+    tui,
+  };
+}
+
+export function main() {
+  createTuiApp().start();
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

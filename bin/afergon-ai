@@ -18,5 +18,18 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
+RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.js"
 
-exec node "$PACKAGE_ROOT/scripts/cli-dispatch.mjs" "$@"
+if [ ! -f "$RUNTIME_ENTRYPOINT" ]; then
+  cat >&2 <<EOF
+afergon-ai has not been built yet.
+
+From the afergon-ai package root, run:
+  pnpm build
+
+Then run this command again.
+EOF
+  exit 1
+fi
+
+exec node "$RUNTIME_ENTRYPOINT" "$@"

@@ -1,14 +1,18 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import {
 	BRANDING_LOGO,
 	canRenderBrandingLogo,
-} from "../scripts/lib/branding/logo.mjs";
+} from "../scripts/lib/branding/logo.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+export function createGitCommandArgs(cwd: string, args: string[]): string[] {
+	return ["-C", cwd, ...args];
+}
 
 export const STARTUP_BANNER_BRANDING = BRANDING_LOGO;
 
@@ -87,14 +91,14 @@ export default function (pi: ExtensionAPI) {
 		// Async project info (best-effort, updates on next render tick)
 		let gitBranch = "…";
 		let gitStatus = "";
-		execAsync(`git -C "${ctx.cwd}" branch --show-current`)
+		execFileAsync("git", createGitCommandArgs(ctx.cwd, ["branch", "--show-current"]))
 			.then(({ stdout }) => {
 				gitBranch = stdout.trim() || "detached";
 			})
 			.catch(() => {
 				gitBranch = "not a git repo";
 			});
-		execAsync(`git -C "${ctx.cwd}" status --porcelain`)
+		execFileAsync("git", createGitCommandArgs(ctx.cwd, ["status", "--porcelain"]))
 			.then(({ stdout }) => {
 				const n = stdout.trim().split("\n").filter(Boolean).length;
 				gitStatus = n > 0 ? ` · ${n} change(s)` : " · clean";

@@ -37,13 +37,18 @@ It provides:
 
 ```bash
 pnpm add -g afergon-ai
+afergon-ai --help
 ```
+
+The published package already includes the generated `dist/` runtime. Package creation runs the build lifecycle before `dist/` is packed, so global consumers do not need TypeScript or a post-install build step.
 
 **From the repo (stable snapshot):**
 
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
+pnpm install
+pnpm build
 pnpm add -g .
 ```
 
@@ -54,10 +59,25 @@ pnpm add -g .
 ```bash
 git clone https://github.com/adrian-afergon/afergon-ai.git
 cd afergon-ai
+pnpm install
+pnpm build
 pnpm link --global
 ```
 
-`pnpm link --global` creates a global symlink to your local checkout, so changes are picked up immediately.
+`pnpm link --global` creates a global symlink to your local checkout. Build again with `pnpm build` after changing runtime files; the CLI intentionally runs the generated `dist/` runtime, not source `scripts/`.
+
+### Development build step
+
+When running from a source checkout or linked development mode, generate the runtime before the first CLI launch:
+
+```bash
+pnpm build
+afergon-ai --help
+```
+
+In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing. A failed build leaves the last successfully published `dist/` runtime intact, so fix the build error and rerun `pnpm build` rather than recovering generated files manually.
+
+The TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher, models, TUI, their library modules, and the build bootstrap are TypeScript sources; the runtime is emitted as JavaScript. The build command uses `tsx` to execute `scripts/build-typescript.ts`, while `pnpm typecheck` remains the separate static validation step. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
 
 ### Step 2 — Initialize a project
 
@@ -158,14 +178,14 @@ Accessibility and keyboard notes:
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
 - Status and failure cues use text markers such as `[ok]`, `[warn]`, and `[fail]`, not color alone.
 
-PR2 shell rollback boundary: revert `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` together if the minimal TUI shell regresses before later slices land.
+PR2 shell rollback boundary: revert `scripts/tui.ts` and `scripts/lib/tui/navigation.ts` together if the minimal TUI shell regresses before later slices land.
 
 Chained rollback notes:
 
-- PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.mjs` together.
-- PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.mjs` with its tests if command labels drift.
+- PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.ts` together.
+- PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.ts` with its tests if command labels drift.
 - PR4/PR5/PR6 screens: revert the matching adapter + screen + focused tests together (`configuration`, `status`, or `model-profiles`).
-- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.mjs`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
+- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.ts`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
 
 PR2 manual keyboard smoke checks:
 
@@ -177,6 +197,10 @@ printf '\033' | AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui
 Final verification checklist:
 
 ```bash
+pnpm typecheck  # expected: TypeScript validation completes before runtime tests
+pnpm build
+pnpm run health:runtime  # expected: every local dist runtime entry imports; no remote telemetry
+pnpm run doctor:runtime  # expected: shows locally recorded runtime health failures, if any
 pnpm test  # expected: all docs + TUI contract tests pass
 ./bin/afergon-ai --help  # expected: prints dispatcher help and exits 0
 ./bin/afergon-ai  # expected: prints help and exits 0 in non-TTY mode
@@ -187,6 +211,12 @@ AFERGON_AI_FORCE_TTY=1 ./bin/afergon-ai tui  # expected: forced-TTY smoke can vi
 ```
 
 Use the forced-TTY smoke run to confirm you can enter **Configuration**, **Status**, and **Model Profiles**, return with `h`, and exit with `q`.
+
+### Published-package recovery
+
+Before publishing, run `pnpm typecheck`, `pnpm build`, and `pnpm run health:runtime`. `pnpm typecheck` validates the runtime configuration, including the TUI entrypoint without `@ts-nocheck`; the health check imports each generated `dist/scripts/` entry locally and reports the missing or failing artifact. Failures are appended as local-only JSONL at `$XDG_STATE_HOME/afergon-ai/runtime-health.jsonl` (or `~/.local/state/afergon-ai/runtime-health.jsonl`); use `pnpm run doctor:runtime` to inspect the latest five. No network requests or telemetry calls are made.
+
+If a published release fails at startup, stop promoting that version and publish a fix-forward patch after those three checks pass. If users need immediate recovery, republish the last known-good package version and ask them to reinstall it with `pnpm add -g afergon-ai@<known-good-version>`. Do not edit `dist/` in a global installation: it is generated package content and will be replaced on reinstall.
 
 ### Local install troubleshooting (`pnpm add -g .` vs `pnpm link --global`)
 
