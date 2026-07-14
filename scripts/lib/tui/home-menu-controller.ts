@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { activateHomeSelection, moveHomeSelection } from "./navigation.js";
 
 /**

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createConfirmationState, createFormState } from "./actions/forms.js";
 import { moveSectionActionSelection, normalizeSectionActionSelection } from "./navigation.js";
 

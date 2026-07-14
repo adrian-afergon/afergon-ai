@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { hasDegradedRefreshGuidance } from "../model-profiles.js";
 import { resolveActionArgv } from "./actions/definitions.js";
 

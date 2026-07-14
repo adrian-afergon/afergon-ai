@@ -106,7 +106,7 @@ The MVP TUI surface is limited to Home, Configuration, Status, and Model Profile
 
 Home accessibility cues must stay text-first: arrow selection plus Enter, direct `c`/`s`/`m`/`h` shortcuts, explicit exit hints, and plain-text branding fallback when the banner is unsafe.
 
-When this workflow ships as chained slices, keep rollback notes aligned with the slice boundary. Docs/prompt-only rollback for the final polish slice is limited to `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.mjs`, and the matching OpenSpec evidence files.
+When this workflow ships as chained slices, keep rollback notes aligned with the slice boundary. Docs/prompt-only rollback for the final polish slice is limited to `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.ts`, and the matching OpenSpec evidence files.
 
 ## Canonical Macro-Phases
 
