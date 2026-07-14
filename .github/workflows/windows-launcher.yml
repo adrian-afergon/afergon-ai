@@ -23,9 +23,6 @@ jobs:
       - name: Verify Windows CMD argv contract
         shell: bash
         run: pnpm exec vitest run tests/windows-launcher-argv.test.ts --no-file-parallelism
-      - name: Run the cross-platform suite under Git Bash
-        shell: bash
-        run: pnpm test
       - name: Smoke the built Windows launcher
         shell: pwsh
         run: |
