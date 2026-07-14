@@ -47,7 +47,7 @@ describe("Windows CMD launcher argv contract", () => {
     // set so a later accidental %value% expansion is observable.
     fs.writeFileSync(
       callerPath,
-      `@echo off\r\nsetlocal EnableDelayedExpansion\r\nset "literalPercent=%%"\r\n"${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "percent!literalPercent!value!literalPercent!" "separator&value"\r\n`,
+      `@echo off\r\n"${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "%AFERGON_AI_LITERAL_PERCENT%" "separator&value"\r\n`,
     );
 
     try {
@@ -59,6 +59,7 @@ describe("Windows CMD launcher argv contract", () => {
           PATH: `${fixtureBin};${process.env.PATH ?? ""}`,
           NODE_OPTIONS: "--require=./argv-probe.cjs",
           AFERGON_AI_ARGV_PROBE: probePath,
+          AFERGON_AI_LITERAL_PERCENT: "percent%value%",
           value: "EXPANDED",
         },
       });
