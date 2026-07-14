@@ -57,7 +57,7 @@ describe("Windows CMD launcher argv contract", () => {
         env: {
           ...process.env,
           PATH: `${fixtureBin};${process.env.PATH ?? ""}`,
-          NODE_OPTIONS: `--require="${preloadPath}"`,
+          NODE_OPTIONS: "--require=./argv-probe.cjs",
           AFERGON_AI_ARGV_PROBE: probePath,
           value: "EXPANDED",
         },
