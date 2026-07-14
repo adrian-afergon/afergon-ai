@@ -4,16 +4,10 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { assertCompilerBootstrapSucceeded, createCompilerBootstrapInvocation } from "../scripts/lib/typescript-build-bootstrap.js";
+import { runPnpm } from "./helpers/process.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const distScripts = path.join(repoRoot, "dist", "scripts");
-function runPnpm(args: string[], options: Parameters<typeof spawnSync>[2] = {}) {
-  return spawnSync(
-    process.platform === "win32" ? "cmd.exe" : "pnpm",
-    process.platform === "win32" ? ["/d", "/v:off", "/s", "/c", `pnpm.cmd ${args.join(" ")}`] : args,
-    options,
-  );
-}
 
 function runBuild(environment: NodeJS.ProcessEnv = {}) {
   return runPnpm(["run", "build"], {

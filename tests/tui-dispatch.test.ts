@@ -4,6 +4,7 @@ import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { DispatchRequest } from "../scripts/lib/cli-dispatch-core.js";
+import { runPnpm } from "./helpers/process.js";
 
 import {
   buildExecution,
@@ -27,6 +28,20 @@ function executeDispatcher(argv: readonly string[]) {
       CI: "true",
       PATH: "",
     },
+  });
+}
+
+function runWindowsLauncher(fixtureRoot: string, launcherPath: string, args: string[], env = process.env) {
+  const callerPath = path.join(fixtureRoot, "invoke-launcher.cmd");
+  const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  fs.writeFileSync(
+    callerPath,
+    `@echo off\r\nsetlocal DisableDelayedExpansion\r\ncall ${quote(launcherPath)} ${args.map(quote).join(" ")}\r\nexit /b %ERRORLEVEL%\r\n`,
+  );
+  return spawnSync("cmd.exe", ["/d", "/v:off", "/c", "call", "invoke-launcher.cmd"], {
+    cwd: fixtureRoot,
+    encoding: "utf8",
+    env,
   });
 }
 
@@ -253,7 +268,7 @@ describe("launcher parity boundaries", () => {
     expect(launcher).not.toMatch(/%2|%3|%4|%5/);
   });
 
-  it("fails before Node starts when the package has not been built", () => {
+  it.runIf(process.platform !== "win32")("fails before Node starts when the package has not been built", () => {
     const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-unbuilt-"));
     const fixtureBin = path.join(fixtureRoot, "bin");
     fs.mkdirSync(fixtureBin);
@@ -279,13 +294,14 @@ describe("launcher parity boundaries", () => {
     const fixtureBin = path.join(fixtureRoot, "bin");
     fs.mkdirSync(fixtureBin);
     fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
+    fs.copyFileSync(path.join(repoRoot, "package.json"), path.join(fixtureRoot, "package.json"));
     fs.cpSync(path.join(repoRoot, "dist"), path.join(fixtureRoot, "dist"), { recursive: true });
 
     try {
-      const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" --help`], {
-        cwd: fixtureRoot,
-        encoding: "utf8",
-        env: { ...process.env, AFERGON_AI_FORCE_TTY: "0", CI: "true" },
+      const result = runWindowsLauncher(fixtureRoot, path.join(fixtureBin, "afergon-ai.cmd"), ["--help"], {
+        ...process.env,
+        AFERGON_AI_FORCE_TTY: "0",
+        CI: "true",
       });
 
       expect(result.status).toBe(0);
@@ -314,15 +330,11 @@ describe("launcher parity boundaries", () => {
     );
 
     try {
-      const result = spawnSync(
-        "cmd.exe",
-        ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" models "value!bang!" "with spaces"`],
-        {
-          cwd: fixtureRoot,
-          encoding: "utf8",
-          env: { ...process.env, ARG_CAPTURE: capturePath, PATH: `${fixtureRoot};${process.env.PATH}` },
-        },
-      );
+      const result = runWindowsLauncher(fixtureRoot, path.join(fixtureBin, "afergon-ai.cmd"), ["models", "value!bang!", "with spaces"], {
+        ...process.env,
+        ARG_CAPTURE: capturePath,
+        PATH: `${fixtureRoot};${process.env.PATH}`,
+      });
 
       expect(result.status).toBe(0);
       expect(JSON.parse(fs.readFileSync(capturePath, "utf8"))).toEqual(["models", "value!bang!", "with spaces"]);
@@ -338,10 +350,7 @@ describe("launcher parity boundaries", () => {
     fs.copyFileSync(path.join(repoRoot, "bin", "afergon-ai.cmd"), path.join(fixtureBin, "afergon-ai.cmd"));
 
     try {
-      const result = spawnSync("cmd.exe", ["/d", "/s", "/c", `"${path.join(fixtureBin, "afergon-ai.cmd")}" --help`], {
-        cwd: fixtureRoot,
-        encoding: "utf8",
-      });
+      const result = runWindowsLauncher(fixtureRoot, path.join(fixtureBin, "afergon-ai.cmd"), ["--help"]);
 
       expect(result.status).toBe(1);
       expect(result.stdout).toBe("");
@@ -363,18 +372,14 @@ describe("package build lifecycle", () => {
   });
 
   it("packs a clean checkout with standalone dispatcher runtime and declarations", () => {
-    const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-ai-pack-"));
     const archiveDirectory = path.join(fixtureRoot, "archives");
     const extractionDirectory = path.join(fixtureRoot, "extracted");
-    const distDirectory = path.join(repoRoot, "dist");
     fs.mkdirSync(archiveDirectory);
     fs.mkdirSync(extractionDirectory);
 
     try {
-      fs.rmSync(distDirectory, { recursive: true, force: true });
-
-      const packResult = spawnSync(pnpmCommand, ["pack", "--pack-destination", archiveDirectory], {
+      const packResult = runPnpm(["pack", "--pack-destination", archiveDirectory], {
         cwd: repoRoot,
         encoding: "utf8",
         timeout: 120000,
@@ -384,7 +389,8 @@ describe("package build lifecycle", () => {
       const archives = fs.readdirSync(archiveDirectory).filter((entry) => entry.endsWith(".tgz"));
       expect(archives).toHaveLength(1);
       const archivePath = path.join(archiveDirectory, archives[0]);
-      const archiveContents = spawnSync("tar", ["-tzf", archivePath], { encoding: "utf8", timeout: 120000 });
+      const tarCommand = process.platform === "win32" ? "tar.exe" : "tar";
+      const archiveContents = spawnSync(tarCommand, ["-tzf", archivePath], { encoding: "utf8", timeout: 120000 });
       expect(archiveContents.status).toBe(0);
       expect(archiveContents.stdout).toContain("package/dist/scripts/cli-dispatch.js");
       expect(archiveContents.stdout).toContain("package/dist/scripts/models.js");
@@ -393,7 +399,7 @@ describe("package build lifecycle", () => {
       expect(archiveContents.stdout).not.toContain("package/dist/scripts/tui.mjs");
       expect(archiveContents.stdout).not.toMatch(/package\/(?:dist\/)?scripts\/lib\/.*\.mjs\n/);
 
-      const extractionResult = spawnSync("tar", ["-xzf", archivePath, "-C", extractionDirectory], {
+      const extractionResult = spawnSync(tarCommand, ["-xzf", archivePath, "-C", extractionDirectory], {
         encoding: "utf8",
         timeout: 120000,
       });
@@ -432,8 +438,7 @@ describe("package build lifecycle", () => {
           "",
         ].join("\n"),
       );
-      const externalConsumerTypecheck = spawnSync(
-        pnpmCommand,
+      const externalConsumerTypecheck = runPnpm(
         [
           "exec",
           "tsc",

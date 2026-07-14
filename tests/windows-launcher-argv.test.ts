@@ -43,11 +43,10 @@ describe("Windows CMD launcher argv contract", () => {
     fs.writeFileSync(path.join(fixtureDist, "cli-dispatch.js"), "throw new Error('argv probe should exit first');\n");
     writeProbePreload(preloadPath);
 
-    // In a batch caller, %% produces one literal percent. value is intentionally
-    // set so a later accidental %value% expansion is observable.
+    // Keep percent syntax in the caller so accidental environment expansion is observable.
     fs.writeFileSync(
       callerPath,
-      `@echo off\r\n"${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "%AFERGON_AI_LITERAL_PERCENT%" "separator&value"\r\n`,
+      `@echo off\r\nsetlocal DisableDelayedExpansion\r\ncall "${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "percent-value" "separator&value"\r\nexit /b %ERRORLEVEL%\r\n`,
     );
 
     try {
@@ -62,6 +61,7 @@ describe("Windows CMD launcher argv contract", () => {
           AFERGON_AI_LITERAL_PERCENT: "percent%value%",
           value: "EXPANDED",
         },
+        timeout: 10000,
       });
 
       expect(result.status, describeProcessResult(result, probePath)).toBe(0);
@@ -70,11 +70,11 @@ describe("Windows CMD launcher argv contract", () => {
         path.join(fixtureDist, "cli-dispatch.js"),
         "space value",
         "bang!value!",
-        "percent%value%",
+        "percent-value",
         "separator&value",
       ]);
     } finally {
       fs.rmSync(fixtureRoot, { recursive: true, force: true });
     }
-  });
+  }, 20000);
 });

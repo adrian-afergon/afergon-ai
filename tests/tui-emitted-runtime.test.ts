@@ -2,6 +2,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
+import { runPnpm } from "./helpers/process.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const emittedTuiPath = path.join(repoRoot, "dist", "scripts", "tui.js");
@@ -47,8 +48,7 @@ async function emitText(terminal: FakeTerminal, text: string) {
 
 describe("emitted TUI runtime", () => {
   beforeAll(() => {
-    const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-    const result = spawnSync(pnpmCommand, ["run", "build"], { cwd: repoRoot, encoding: "utf8", timeout: 120000 });
+    const result = runPnpm(["run", "build"], { cwd: repoRoot, encoding: "utf8", timeout: 120000 });
     expect(result.status).toBe(0);
   }, 120000);
 

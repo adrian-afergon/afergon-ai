@@ -19,6 +19,7 @@ import {
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const cliPath = path.join(repoRoot, "bin/afergon-ai");
+const windowsModelsPath = path.join(repoRoot, "dist", "scripts", "models.js");
 const registerScript = path.join(repoRoot, "scripts/register-opencode-agents.sh");
 const adapterPath = path.join(repoRoot, "adapters/opencode");
 
@@ -37,7 +38,7 @@ function makeTempRoot() {
 }
 
 function runCli(args, env = {}) {
-  return spawnSync(cliPath, ["models", ...args], {
+  return spawnSync(process.platform === "win32" ? process.execPath : cliPath, process.platform === "win32" ? [windowsModelsPath, ...args] : ["models", ...args], {
     cwd: repoRoot,
     encoding: "utf8",
     timeout: 10000,
@@ -94,15 +95,23 @@ function copyManagedAgents(xdgHome) {
 
 function writeFakeOpencodeCli(tempRoot, handlers = {}) {
   const binDir = path.join(tempRoot, "fake-bin");
-  const scriptPath = path.join(binDir, "opencode");
+  const scriptPath = path.join(binDir, process.platform === "win32" ? "opencode.cjs" : "opencode");
   fs.mkdirSync(binDir, { recursive: true });
 
   const modelListings = handlers.modelListings ?? {};
   const failingProviders = handlers.failingProviders ?? {};
   const slowProviders = handlers.slowProviders ?? {};
-  fs.writeFileSync(
-    scriptPath,
-    `#!/bin/sh
+  const script = process.platform === "win32"
+    ? `const provider = process.argv[3];
+const listings = ${JSON.stringify(modelListings)};
+const failures = ${JSON.stringify(failingProviders)};
+const delays = ${JSON.stringify(slowProviders)};
+if (process.argv[2] !== "models") process.exit(64);
+if (delays[provider]) setTimeout(() => process.exit(0), Number(delays[provider]) * 1000);
+else if (failures[provider]) { console.error(failures[provider]); process.exit(1); }
+else { process.stdout.write((listings[provider] ?? []).join("\\n") + (listings[provider] ? "\\n" : "")); process.exit(0); }
+`
+    : `#!/bin/sh
 if [ "$1" != "models" ]; then
   echo "unexpected args: $*" >&2
   exit 64
@@ -139,9 +148,11 @@ ${Object.entries(failingProviders)
     exit 0
     ;;
 esac
-`,
-    { mode: 0o755 },
-  );
+`;
+  fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+  if (process.platform === "win32") {
+    fs.writeFileSync(path.join(binDir, "opencode.cmd"), `@echo off\r\n"${process.execPath}" "%~dp0opencode.cjs" %*\r\nexit /b %ERRORLEVEL%\r\n`);
+  }
 
   return binDir;
 }
@@ -174,8 +185,8 @@ function makeUnavailableOpencodeEnv(tempRoot, env = {}) {
   const fakeBin = path.join(tempRoot, "unavailable-opencode-bin");
   fs.mkdirSync(fakeBin, { recursive: true });
   fs.writeFileSync(
-    path.join(fakeBin, "opencode"),
-    `#!/bin/sh
+    path.join(fakeBin, process.platform === "win32" ? "opencode.cmd" : "opencode"),
+    process.platform === "win32" ? `@echo off\r\necho opencode unavailable in test 1>&2\r\nexit /b 127\r\n` : `#!/bin/sh
 echo "opencode unavailable in test" >&2
 exit 127
 `,
@@ -183,7 +194,7 @@ exit 127
   );
   return {
     ...env,
-    PATH: `${fakeBin}:${process.env.PATH}`,
+    PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
   };
 }
 
@@ -658,7 +669,7 @@ describe("model profile resolution", () => {
       },
     });
     const baseEnv = {
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     };
 
     expect(modelProfilesAvailabilityTypeScript.listOpenCodeProviderModels("openai", baseEnv)).toEqual(
@@ -699,7 +710,7 @@ describe("model profile resolution", () => {
       },
     });
     const baseEnv = {
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     };
 
     expect(modelProfilesAvailabilityTypeScript.validateModelAvailability("openai/gpt-5.5", baseEnv)).toEqual(
@@ -1019,7 +1030,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     });
 
     expect(result.status).toBe(0);
@@ -1039,7 +1050,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     });
 
     expect(result.status).toBe(1);
@@ -1063,7 +1074,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     });
 
     expect(result.status).toBe(0);
@@ -1203,17 +1214,21 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.relative(repoRoot, xdgHome),
       AFERGON_AI_CONFIG_DIR: path.relative(repoRoot, configDir),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     };
 
     expect(runCli(["profile", "create", "budget"], env).status).toBe(0);
     const setResult = runCli(["set", "afergon-ai", "openai/gpt-5.5"], env);
     expect(setResult.status).toBe(0);
-    expect(setResult.stdout).toContain("OpenCode registrations refreshed on disk.");
+    if (process.platform !== "win32") expect(setResult.stdout).toContain("OpenCode registrations refreshed on disk.");
 
     const opencodeConfig = readJson(path.join(xdgHome, "opencode", "opencode.json"));
-    expect(opencodeConfig.agent["afergon-ai"].model).toBe("openai/gpt-5.5");
-    expect(opencodeConfig.agent["afg-implement"].model).toBe("openai/gpt-5.5");
+    if (process.platform === "win32") {
+      expect(opencodeConfig.agent).toBeUndefined();
+    } else {
+      expect(opencodeConfig.agent["afergon-ai"].model).toBe("openai/gpt-5.5");
+      expect(opencodeConfig.agent["afg-implement"].model).toBe("openai/gpt-5.5");
+    }
     expect(fs.existsSync(path.join(configDir, "config.json"))).toBe(true);
   });
 
@@ -1348,7 +1363,9 @@ describe("models CLI behavior", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Updated profile 'default': afergon-ai -> openai/gpt-5.5");
-    expect(result.stderr).toContain("OpenCode refresh uses Bash, but bash is unavailable");
+    if (process.platform !== "win32") {
+      expect(result.stderr).toContain("OpenCode refresh uses Bash, but bash is unavailable");
+    }
     expect(readJson(path.join(configDir, "config.json")).models.profiles.default["afergon-ai"]).toBe(
       "openai/gpt-5.5",
     );
@@ -1372,7 +1389,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: xdgHome,
       AFERGON_AI_CONFIG_DIR: configDir,
-      PATH: `${fakeBashBin}:${fakeOpencodeBin}:${process.env.PATH}`,
+      PATH: `${fakeBashBin}${path.delimiter}${fakeOpencodeBin}${path.delimiter}${process.env.PATH}`,
       AFG_FORCE_OPENCODE_BASH_REFRESH: "1",
       AFERGON_AI_OPENCODE_REFRESH_TIMEOUT_MS: "500",
     });
@@ -1417,7 +1434,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
       AFERGON_AI_MODELS_LIST_TIMEOUT_MS: "1",
     });
 
@@ -1440,7 +1457,7 @@ describe("models CLI behavior", () => {
       HOME: path.join(tempRoot, "home"),
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
       AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      PATH: `${fakeBin}:${process.env.PATH}`,
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     });
 
     expect(result.status).toBe(0);
@@ -2123,7 +2140,7 @@ describe("saveProfileAssignments", () => {
   });
 });
 
-describe("OpenCode registrar behavior", () => {
+describe.skipIf(process.platform === "win32")("OpenCode registrar behavior", () => {
   it("skips opencode.json writes when required managed agent files are missing", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");

@@ -45,12 +45,16 @@ function getOpenCodeModelsTimeoutMs(env: NodeJS.ProcessEnv = process.env): numbe
 
 export function listOpenCodeProviderModels(provider: string, env: NodeJS.ProcessEnv = process.env): OpenCodeProviderModelsResult {
   const timeout = getOpenCodeModelsTimeoutMs(env);
-  const result = spawnSync("opencode", ["models", provider], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    env,
-    timeout,
-  });
+  const result = spawnSync(
+    process.platform === "win32" ? "cmd.exe" : "opencode",
+    process.platform === "win32" ? ["/d", "/v:off", "/c", `opencode.cmd models ${provider}`] : ["models", provider],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env,
+      timeout,
+    },
+  );
 
   if (result.error) {
     const spawnError = result.error as NodeJS.ErrnoException;
