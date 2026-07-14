@@ -1,5 +1,5 @@
-import { isManifestCommandArgv } from "../command-manifest.mjs";
-import { TUI_ROUTES } from "../navigation.mjs";
+import { isManifestCommandArgv } from "../command-manifest.js";
+import { TUI_ROUTES } from "../navigation.js";
 
 type ActionKind = "read" | "mutate";
 type ActionSection = "configuration" | "status" | "model-profiles";

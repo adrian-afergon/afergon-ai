@@ -6,12 +6,12 @@ import {
   normalizeStoredModel,
   type RefreshResult,
   type SupportedAgent,
-} from "./model-profiles-core.mjs";
-import { loadConfig, saveConfig, type AfergonModelConfig } from "./model-profiles-config.mjs";
+} from "./model-profiles-core.js";
+import { loadConfig, saveConfig, type AfergonModelConfig } from "./model-profiles-config.js";
 import {
   validateModelAvailability as defaultValidateModelAvailability,
   type ValidateModelAvailabilityResult,
-} from "./model-profiles-availability.mjs";
+} from "./model-profiles-availability.js";
 
 export interface SaveProfileAssignmentsResult {
   configPath: string;

@@ -1,7 +1,7 @@
 import { truncateToWidth } from "@earendil-works/pi-tui";
 
-import { sanitizeTerminalOutput } from "../actions/forms.mjs";
-import { renderFocusLine } from "../rendering.mjs";
+import { sanitizeTerminalOutput } from "../actions/forms.js";
+import { renderFocusLine } from "../rendering.js";
 
 interface BrowseStateInlineCreate {
   readonly value?: string;

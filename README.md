@@ -75,9 +75,9 @@ pnpm build
 afergon-ai --help
 ```
 
-In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing.
+In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing. A failed build leaves the last successfully published `dist/` runtime intact, so fix the build error and rerun `pnpm build` rather than recovering generated files manually.
 
-Phase 1 of the TypeScript transition executes the built `dist/scripts/` runtime. The `tui`, `models`, and dispatcher entrypoints remain intentional `.mjs` transition wrappers there, so this is not a JavaScript-only runtime yet. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
+Phase 2 of the TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher and models entrypoints are emitted JavaScript from TypeScript; the TUI remains an intentional `.mjs` transition wrapper until its coordinated cutover. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
 
 ### Step 2 — Initialize a project
 
@@ -178,14 +178,14 @@ Accessibility and keyboard notes:
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
 - Status and failure cues use text markers such as `[ok]`, `[warn]`, and `[fail]`, not color alone.
 
-PR2 shell rollback boundary: revert `scripts/tui.mjs` and `scripts/lib/tui/navigation.mjs` together if the minimal TUI shell regresses before later slices land.
+PR2 shell rollback boundary: revert `scripts/tui.ts` and `scripts/lib/tui/navigation.ts` together if the minimal TUI shell regresses before later slices land.
 
 Chained rollback notes:
 
-- PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.mjs` together.
+- PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.ts` together.
 - PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.mjs` with its tests if command labels drift.
 - PR4/PR5/PR6 screens: revert the matching adapter + screen + focused tests together (`configuration`, `status`, or `model-profiles`).
-- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.mjs`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
+- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.ts`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
 
 PR2 manual keyboard smoke checks:
 

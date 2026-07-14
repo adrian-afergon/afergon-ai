@@ -5,8 +5,8 @@ import {
   resolveAssignments,
   saveProfileAssignments,
   SUPPORTED_AGENTS,
-} from "../model-profiles.mjs";
-import { buildCommandArgv } from "./command-manifest.mjs";
+} from "../model-profiles.js";
+import { buildCommandArgv } from "./command-manifest.js";
 
 export const NEW_PROFILE_ROW_LABEL = "* New Profile";
 

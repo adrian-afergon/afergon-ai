@@ -18,7 +18,7 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PACKAGE_ROOT="$(dirname "$SCRIPT_DIR")"
-RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.mjs"
+RUNTIME_ENTRYPOINT="$PACKAGE_ROOT/dist/scripts/cli-dispatch.js"
 
 if [ ! -f "$RUNTIME_ENTRYPOINT" ]; then
   cat >&2 <<EOF

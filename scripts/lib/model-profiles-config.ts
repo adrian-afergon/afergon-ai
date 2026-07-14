@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizeAgentName, normalizeStoredModel, type SupportedAgent } from "./model-profiles-core.mjs";
+import { normalizeAgentName, normalizeStoredModel, type SupportedAgent } from "./model-profiles-core.js";
 
 export interface ModelProfileConfig {
   activeProfile: string | null;

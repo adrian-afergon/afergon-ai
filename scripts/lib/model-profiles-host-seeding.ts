@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { SUPPORTED_AGENTS, normalizeStoredModel, type SupportedAgent } from "./model-profiles-core.mjs";
-import { getOpenCodeBaseDir } from "./model-profiles-config.mjs";
+import { SUPPORTED_AGENTS, normalizeStoredModel, type SupportedAgent } from "./model-profiles-core.js";
+import { getOpenCodeBaseDir } from "./model-profiles-config.js";
 
 function asPlainObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};

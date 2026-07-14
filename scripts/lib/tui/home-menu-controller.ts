@@ -1,26 +1,37 @@
-import { createHomeMenuInputController as createRuntimeController } from "./home-menu-controller.mjs";
+// @ts-nocheck
+import { activateHomeSelection, moveHomeSelection } from "./navigation.js";
 
-export type HomeMenuRoute = "home" | "configuration" | "status" | "model-profiles";
+/**
+ * Routes Home-only menu input without depending on Pi TUI.
+ * Key recognition and printable-input normalization remain shell-owned.
+ */
+export function createHomeMenuInputController({ navigation, onNavigate, setRoute, normalizeInput, keyMatches }) {
+  function handleInput(data) {
+    if (navigation.route !== "home") {
+      return false;
+    }
 
-export interface HomeMenuKeyMatches {
-  readonly up: (data: string) => boolean;
-  readonly down: (data: string) => boolean;
-  readonly enter: (data: string) => boolean;
+    if (keyMatches.up(data) || keyMatches.down(data)) {
+      Object.assign(navigation, moveHomeSelection(navigation, keyMatches.up(data) ? -1 : 1));
+      onNavigate();
+      return true;
+    }
+
+    if (keyMatches.enter(data)) {
+      setRoute(activateHomeSelection(navigation).route);
+      onNavigate();
+      return true;
+    }
+
+    const shortcutRoute = { c: "configuration", s: "status", m: "model-profiles" }[normalizeInput(data)];
+    if (!shortcutRoute) {
+      return false;
+    }
+
+    setRoute(shortcutRoute);
+    onNavigate();
+    return true;
+  }
+
+  return { handleInput };
 }
-
-export interface HomeMenuInputController {
-  readonly handleInput: (data: string) => boolean;
-}
-
-export interface HomeMenuInputControllerOptions {
-  readonly navigation: { route: HomeMenuRoute; homeSelection: number; [key: string]: unknown };
-  readonly onNavigate: () => void;
-  readonly setRoute: (route: Exclude<HomeMenuRoute, "home">) => void;
-  readonly normalizeInput: (data: string) => string | undefined;
-  readonly keyMatches: HomeMenuKeyMatches;
-}
-
-/** Typed facade for the authoritative MJS Home menu controller. */
-export const createHomeMenuInputController = (
-  options: HomeMenuInputControllerOptions,
-): HomeMenuInputController => createRuntimeController(options) as HomeMenuInputController;
