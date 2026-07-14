@@ -47,11 +47,11 @@ describe("Windows CMD launcher argv contract", () => {
     // set so a later accidental %value% expansion is observable.
     fs.writeFileSync(
       callerPath,
-      `@echo off\r\n"${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "percent%%value%%" "separator&value"\r\n`,
+      `@echo off\r\ncall "${path.join(fixtureBin, "afergon-ai.cmd")}" "space value" "bang!value!" "percent%%value%%" "separator&value"\r\n`,
     );
 
     try {
-      const result = spawnSync("cmd.exe", ["/d", "/v:off", "/s", "/c", `"${callerPath}"`], {
+      const result = spawnSync("cmd.exe", ["/d", "/v:off", "/c", "call invoke-launcher.cmd"], {
         cwd: fixtureRoot,
         encoding: "utf8",
         env: {
