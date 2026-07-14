@@ -43,4 +43,4 @@ jobs:
            $env:PATH = "$PWD\bin;$env:PATH"
            $doctorOutput = & .\bin\afergon-ai.cmd doctor 2>&1
            if ($LASTEXITCODE -ne 0) { throw "afergon-ai.cmd doctor exited with $LASTEXITCODE" }
-           if (($doctorOutput -join "`n") -notmatch [regex]::Escape("Verificación finalizada.")) { throw "afergon-ai.cmd doctor did not run the Windows verifier" }
+           if (($doctorOutput -join "`n") -notmatch [regex]::Escape("Scripts requeridos presentes.")) { throw "afergon-ai.cmd doctor did not run the Windows verifier" }
