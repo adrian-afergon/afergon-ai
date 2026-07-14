@@ -5,7 +5,13 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node"]
   },
-  "include": ["extensions/**/*.ts"]
+  "include": [
+    "extensions/**/*.ts",
+    "scripts/lib/branding/**/*.ts",
+    "scripts/lib/tui/command-manifest.ts",
+    "scripts/lib/tui/navigation.ts"
+  ]
 }

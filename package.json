@@ -33,6 +33,8 @@
     "agent-harness"
   ],
   "scripts": {
+    "build": "node ./scripts/build-typescript.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.75.3",
     "@types/node": "^25.9.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.8"
   },
   "files": [
