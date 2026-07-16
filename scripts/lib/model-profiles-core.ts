@@ -9,6 +9,14 @@ export const SUPPORTED_AGENTS = [
   "afg-design",
 ] as const;
 
+export const SUPPORTED_MODEL_TOOLS = ["pi", "claude", "opencode"] as const;
+
+export const MODEL_PROFILE_TOOL_LABELS: Readonly<Record<SupportedModelTool, string>> = Object.freeze({
+  pi: "Pi",
+  claude: "Claude Code",
+  opencode: "OpenCode",
+});
+
 const AGENT_ALIASES = new Map<string, SupportedAgent>([
   ["afergon-ai", "afergon-ai"],
   ["orchestrator", "afergon-ai"],
@@ -51,6 +59,7 @@ const DEGRADED_REFRESH_GUIDANCE_PATTERNS = [
 ];
 
 export type SupportedAgent = (typeof SUPPORTED_AGENTS)[number];
+export type SupportedModelTool = (typeof SUPPORTED_MODEL_TOOLS)[number];
 
 export interface ParsedProviderModel {
   readonly provider: string;
@@ -195,6 +204,23 @@ export function normalizeAgentName(input: unknown): SupportedAgent {
   }
 
   return normalized;
+}
+
+export function normalizeModelProfileTool(input: unknown): SupportedModelTool {
+  if (typeof input !== "string" || !input.trim()) {
+    throw new Error(`Unsupported model-profile tool ''. Supported tools: ${SUPPORTED_MODEL_TOOLS.join(", ")}`);
+  }
+
+  const normalized = input.trim().toLowerCase();
+  if (!SUPPORTED_MODEL_TOOLS.includes(normalized as SupportedModelTool)) {
+    throw new Error(`Unsupported model-profile tool '${input}'. Supported tools: ${SUPPORTED_MODEL_TOOLS.join(", ")}`);
+  }
+
+  return normalized as SupportedModelTool;
+}
+
+export function getModelProfileToolLabel(tool: SupportedModelTool): string {
+  return MODEL_PROFILE_TOOL_LABELS[tool];
 }
 
 export function normalizeProfileName(input: unknown): string {

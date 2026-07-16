@@ -6,15 +6,18 @@ import {
   normalizeStoredModel,
   type RefreshResult,
   type SupportedAgent,
+  type SupportedModelTool,
 } from "./model-profiles-core.js";
-import { loadConfig, saveConfig, type AfergonModelConfig } from "./model-profiles-config.js";
+import { getToolProfileStore, loadConfig, saveConfig, type AfergonModelConfig } from "./model-profiles-config.js";
 import {
   validateModelAvailability as defaultValidateModelAvailability,
+  validateModelForTool,
   type ValidateModelAvailabilityResult,
 } from "./model-profiles-availability.js";
 
 export interface SaveProfileAssignmentsResult {
   configPath: string;
+  tool: SupportedModelTool;
   profileName: string;
   assignments: Partial<Record<SupportedAgent, string>>;
   refreshResult?: RefreshResult;
@@ -22,6 +25,7 @@ export interface SaveProfileAssignmentsResult {
 
 export interface SaveProfileAssignmentsOptions {
   env?: NodeJS.ProcessEnv;
+  tool?: SupportedModelTool;
   refreshActiveProfile?: (() => unknown) | undefined;
   validateModelAvailability?: ((modelId: string, env?: NodeJS.ProcessEnv) => ValidateModelAvailabilityResult) | undefined;
 }
@@ -53,8 +57,12 @@ function toRefreshResultInput(value: unknown): RefreshResultInput | null | undef
   return typeof value === "object" ? (value as RefreshResultInput) : undefined;
 }
 
-function getProfileOrThrow(config: AfergonModelConfig, profileName: string): Partial<Record<SupportedAgent, string>> {
-  const profile = config.models.profiles[profileName];
+function getProfileOrThrow(
+  config: AfergonModelConfig,
+  tool: SupportedModelTool,
+  profileName: string,
+): Partial<Record<SupportedAgent, string>> {
+  const profile = getToolProfileStore(config, tool).profiles[profileName];
   if (!profile) {
     throw new Error(`Unknown profile '${profileName}'.`);
   }
@@ -65,11 +73,17 @@ function getProfileOrThrow(config: AfergonModelConfig, profileName: string): Par
 export function saveProfileAssignments(
   profileNameInput: string,
   assignments: Record<string, string>,
-  { env = process.env, refreshActiveProfile, validateModelAvailability = defaultValidateModelAvailability }: SaveProfileAssignmentsOptions = {},
+  {
+    env = process.env,
+    tool = "opencode",
+    refreshActiveProfile,
+    validateModelAvailability = defaultValidateModelAvailability,
+  }: SaveProfileAssignmentsOptions = {},
 ): SaveProfileAssignmentsResult | Promise<SaveProfileAssignmentsResult> {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig(env);
-  const profile = getProfileOrThrow(config, profileName);
+  const store = getToolProfileStore(config, tool);
+  const profile = getProfileOrThrow(config, tool, profileName);
   const nextAssignments = cloneAssignments(profile);
 
   for (const [agentInput, modelInput] of Object.entries(asPlainObject(assignments))) {
@@ -80,7 +94,9 @@ export function saveProfileAssignments(
     }
 
     if (normalizedModel !== "inherit") {
-      const validation = validateModelAvailability(normalizedModel, env);
+      const validation = tool === "opencode"
+        ? validateModelAvailability(normalizedModel, env)
+        : validateModelForTool(tool, normalizedModel, env);
       if (validation.status === "malformed") {
         throw new Error(validation.message);
       }
@@ -92,17 +108,18 @@ export function saveProfileAssignments(
     nextAssignments[agentName] = normalizedModel;
   }
 
-  config.models.profiles[profileName] = nextAssignments;
+  store.profiles[profileName] = nextAssignments;
   const configPath = saveConfig(config, env);
 
   const finalizeSave = (refreshResult?: unknown): SaveProfileAssignmentsResult => ({
     configPath,
+    tool,
     profileName,
     assignments: nextAssignments,
     refreshResult: normalizeRefreshResult(toRefreshResultInput(refreshResult)),
   });
 
-  if (config.models.activeProfile !== profileName) {
+  if (store.activeProfile !== profileName) {
     return finalizeSave();
   }
 

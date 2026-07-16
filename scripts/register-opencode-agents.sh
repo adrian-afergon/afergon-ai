@@ -228,10 +228,28 @@ def load_active_model_profile():
 
     models = data.get("models")
     if not isinstance(models, dict):
+        print("  OpenCode: warning: afergon-ai model config has no models object; preserving existing managed model assignments.")
         return {}, False
 
-    active_profile = models.get("activeProfile")
-    profiles = models.get("profiles")
+    version = data.get("version", 1)
+    if version == 2:
+        tools = models.get("tools")
+        if not isinstance(tools, dict):
+            print("  OpenCode: warning: afergon-ai model config has no tool stores; preserving existing managed model assignments.")
+            return {}, False
+        opencode_store = tools.get("opencode")
+        if not isinstance(opencode_store, dict):
+            return {}, False
+        active_profile = opencode_store.get("activeProfile")
+        profiles = opencode_store.get("profiles")
+    elif version == 1:
+        # v1 profiles were OpenCode-only and remain readable until their next mutation writes v2.
+        active_profile = models.get("activeProfile")
+        profiles = models.get("profiles")
+    else:
+        print(f"  OpenCode: warning: afergon-ai model config version {version!r} is unsupported; preserving existing managed model assignments.")
+        return {}, False
+
     if not isinstance(active_profile, str) or not isinstance(profiles, dict):
         return {}, False
 

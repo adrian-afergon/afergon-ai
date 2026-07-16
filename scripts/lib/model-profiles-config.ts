@@ -1,16 +1,24 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizeAgentName, normalizeStoredModel, type SupportedAgent } from "./model-profiles-core.js";
+import {
+  SUPPORTED_MODEL_TOOLS,
+  normalizeAgentName,
+  normalizeStoredModel,
+  type SupportedAgent,
+  type SupportedModelTool,
+} from "./model-profiles-core.js";
 
-export interface ModelProfileConfig {
+export interface ModelProfileStore {
   activeProfile: string | null;
   profiles: Record<string, Partial<Record<SupportedAgent, string>>>;
 }
 
 export interface AfergonModelConfig {
   version: number;
-  models: ModelProfileConfig;
+  models: {
+    tools: Record<SupportedModelTool, ModelProfileStore>;
+  };
 }
 
 function asPlainObject(value: unknown): Record<string, unknown> {
@@ -40,12 +48,82 @@ export function getConfigPath(env: NodeJS.ProcessEnv = process.env): string {
 
 export function createDefaultConfig(): AfergonModelConfig {
   return {
-    version: 1,
+    version: 2,
     models: {
-      activeProfile: null,
-      profiles: {},
+      tools: createToolStores(),
     },
   };
+}
+
+function createProfileMap(): Record<string, Partial<Record<SupportedAgent, string>>> {
+  return Object.create(null) as Record<string, Partial<Record<SupportedAgent, string>>>;
+}
+
+function createToolStore(): ModelProfileStore {
+  return {
+    activeProfile: null,
+    profiles: createProfileMap(),
+  };
+}
+
+function createToolStores(): Record<SupportedModelTool, ModelProfileStore> {
+  return {
+    pi: createToolStore(),
+    claude: createToolStore(),
+    opencode: createToolStore(),
+  };
+}
+
+function normalizeProfileStore(
+  rawStore: unknown,
+  configPath: string,
+  pathLabel: string,
+): ModelProfileStore {
+  if (!isPlainObject(rawStore)) {
+    throw new Error(
+      `Could not read afergon-ai model config at ${configPath}: ${pathLabel} must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+    );
+  }
+
+  if (Object.hasOwn(rawStore, "activeProfile") && rawStore.activeProfile !== null && typeof rawStore.activeProfile !== "string") {
+    throw new Error(
+      `Could not read afergon-ai model config at ${configPath}: ${pathLabel}.activeProfile must be a string or null. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+    );
+  }
+  if (Object.hasOwn(rawStore, "profiles") && !isPlainObject(rawStore.profiles)) {
+    throw new Error(
+      `Could not read afergon-ai model config at ${configPath}: ${pathLabel}.profiles must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+    );
+  }
+
+  const normalizedStore = createToolStore();
+  normalizedStore.activeProfile = typeof rawStore.activeProfile === "string" ? rawStore.activeProfile : null;
+  for (const [profileName, assignments] of Object.entries(asPlainObject(rawStore.profiles))) {
+    if (!isPlainObject(assignments)) {
+      throw new Error(
+        `Could not read afergon-ai model config at ${configPath}: profile '${profileName}' in ${pathLabel} must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+      );
+    }
+    const normalizedAssignments: Partial<Record<SupportedAgent, string>> = {};
+    for (const [agentName, value] of Object.entries(asPlainObject(assignments))) {
+      try {
+        const canonicalAgent = normalizeAgentName(agentName);
+        const normalizedModel = normalizeStoredModel(value);
+        if (normalizedModel) {
+          normalizedAssignments[canonicalAgent] = normalizedModel;
+        }
+      } catch {
+        // Ignore unsupported agents so future/foreign config does not break the CLI.
+      }
+    }
+    normalizedStore.profiles[profileName] = normalizedAssignments;
+  }
+
+  if (normalizedStore.activeProfile && !Object.hasOwn(normalizedStore.profiles, normalizedStore.activeProfile)) {
+    normalizedStore.activeProfile = null;
+  }
+
+  return normalizedStore;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): {
@@ -83,45 +161,29 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): {
   }
 
   const models = asPlainObject(root.models);
-  if (Object.hasOwn(models, "activeProfile") && models.activeProfile !== null && typeof models.activeProfile !== "string") {
+  const version = root.version === undefined ? 1 : root.version;
+  if (typeof version !== "number" || !Number.isInteger(version) || version < 1 || version > 2) {
     throw new Error(
-      `Could not read afergon-ai model config at ${configPath}: models.activeProfile must be a string or null. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
-    );
-  }
-  if (Object.hasOwn(models, "profiles") && !isPlainObject(models.profiles)) {
-    throw new Error(
-      `Could not read afergon-ai model config at ${configPath}: models.profiles must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+      `Could not read afergon-ai model config at ${configPath}: unsupported config version '${String(version)}'. Upgrade afergon-ai or restore a supported config version.`,
     );
   }
 
-  const profiles = asPlainObject(models.profiles);
-
-  config.version = typeof root.version === "number" ? root.version : 1;
-  config.models.activeProfile = typeof models.activeProfile === "string" ? models.activeProfile : null;
-
-  for (const [profileName, assignments] of Object.entries(profiles)) {
-    if (!isPlainObject(assignments)) {
-      throw new Error(
-        `Could not read afergon-ai model config at ${configPath}: profile '${profileName}' must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
-      );
-    }
-    const normalizedAssignments: Partial<Record<SupportedAgent, string>> = {};
-    for (const [agentName, value] of Object.entries(asPlainObject(assignments))) {
-      try {
-        const canonicalAgent = normalizeAgentName(agentName);
-        const normalizedModel = normalizeStoredModel(value);
-        if (normalizedModel) {
-          normalizedAssignments[canonicalAgent] = normalizedModel;
-        }
-      } catch {
-        // Ignore unsupported agents so future/foreign config does not break the CLI.
-      }
-    }
-    config.models.profiles[profileName] = normalizedAssignments;
+  if (version === 1) {
+    // Version 1 was implemented only by the OpenCode adapter, so it has one unambiguous destination.
+    config.models.tools.opencode = normalizeProfileStore(models, configPath, "models");
+    return { config, configPath, exists: true };
   }
 
-  if (config.models.activeProfile && !config.models.profiles[config.models.activeProfile]) {
-    config.models.activeProfile = null;
+  if (Object.hasOwn(models, "tools") && !isPlainObject(models.tools)) {
+    throw new Error(
+      `Could not read afergon-ai model config at ${configPath}: models.tools must be an object. Repair the file or move it aside to let afergon-ai recreate a clean config.`,
+    );
+  }
+  const tools = asPlainObject(models.tools);
+  for (const tool of SUPPORTED_MODEL_TOOLS) {
+    if (Object.hasOwn(tools, tool)) {
+      config.models.tools[tool] = normalizeProfileStore(tools[tool], configPath, `models.tools.${tool}`);
+    }
   }
 
   return { config, configPath, exists: true };
@@ -173,23 +235,43 @@ export function saveConfig(config: AfergonModelConfig, env: NodeJS.ProcessEnv = 
   return configPath;
 }
 
-export function getActiveProfile(config: AfergonModelConfig): Partial<Record<SupportedAgent, string>> | null {
-  const activeProfileName = config.models.activeProfile;
+export function getToolProfileStore(config: AfergonModelConfig, tool: SupportedModelTool): ModelProfileStore {
+  const models = config.models as unknown as Record<string, unknown>;
+  const tools = models.tools;
+  if (isPlainObject(tools) && isPlainObject(tools[tool])) {
+    return tools[tool] as unknown as ModelProfileStore;
+  }
+
+  // Public helpers still accept in-memory v1 objects so external callers can migrate data through the next save.
+  if (tool === "opencode" && isPlainObject(models) && isPlainObject(models.profiles)) {
+    return models as unknown as ModelProfileStore;
+  }
+
+  throw new Error(`Model-profile store '${tool}' is unavailable.`);
+}
+
+export function getActiveProfile(
+  config: AfergonModelConfig,
+  tool: SupportedModelTool = "opencode",
+): Partial<Record<SupportedAgent, string>> | null {
+  const store = getToolProfileStore(config, tool);
+  const activeProfileName = store.activeProfile;
   if (!activeProfileName) {
     return null;
   }
 
-  return config.models.profiles[activeProfileName] ?? null;
+  return store.profiles[activeProfileName] ?? null;
 }
 
-export function ensureActiveProfile(config: AfergonModelConfig): string {
-  if (config.models.activeProfile && config.models.profiles[config.models.activeProfile]) {
-    return config.models.activeProfile;
+export function ensureActiveProfile(config: AfergonModelConfig, tool: SupportedModelTool = "opencode"): string {
+  const store = getToolProfileStore(config, tool);
+  if (store.activeProfile && Object.hasOwn(store.profiles, store.activeProfile)) {
+    return store.activeProfile;
   }
 
   const defaultProfileName = "default";
-  config.models.profiles[defaultProfileName] ??= {};
-  config.models.activeProfile = defaultProfileName;
+  store.profiles[defaultProfileName] ??= {};
+  store.activeProfile = defaultProfileName;
   return defaultProfileName;
 }
 

@@ -1,8 +1,11 @@
 import {
   SUPPORTED_AGENTS,
+  SUPPORTED_MODEL_TOOLS,
   cloneAssignments,
+  getModelProfileToolLabel,
   hasDegradedRefreshGuidance,
   normalizeAgentName,
+  normalizeModelProfileTool,
   normalizeProfileName,
   normalizeRefreshResult,
   normalizeStoredModel,
@@ -14,6 +17,7 @@ import {
   createDefaultConfig,
   ensureActiveProfile,
   getActiveProfile,
+  getToolProfileStore,
   getConfigDir,
   getConfigPath,
   getOpenCodeBaseDir,
@@ -21,21 +25,32 @@ import {
   saveConfig,
 } from "./model-profiles-config.js";
 import { readOpenCodeAgentModels } from "./model-profiles-host-seeding.js";
-import { listOpenCodeProviderModels, validateModelAvailability } from "./model-profiles-availability.js";
+import { listOpenCodeProviderModels, validateModelAvailability, validateModelForTool } from "./model-profiles-availability.js";
 import { saveProfileAssignments } from "./model-profiles-save.js";
+import {
+  getInstalledModelProfileTools,
+  getModelProfileProjectionDetail,
+  isModelProfileToolInstalled,
+} from "./model-profiles-tools.js";
 
 export {
   SUPPORTED_AGENTS,
+  SUPPORTED_MODEL_TOOLS,
   cloneAssignments,
   createDefaultConfig,
   ensureActiveProfile,
   getActiveProfile,
+  getInstalledModelProfileTools,
+  getModelProfileProjectionDetail,
+  getModelProfileToolLabel,
+  getToolProfileStore,
   getConfigDir,
   getConfigPath,
   getOpenCodeBaseDir,
   hasDegradedRefreshGuidance,
   loadConfig,
   normalizeAgentName,
+  normalizeModelProfileTool,
   normalizeProfileName,
   normalizeRefreshResult,
   normalizeStoredModel,
@@ -47,4 +62,6 @@ export {
   saveProfileAssignments,
   suggestCloseModelIds,
   validateModelAvailability,
+  validateModelForTool,
+  isModelProfileToolInstalled,
 };

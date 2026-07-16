@@ -8,16 +8,19 @@ import {
   cloneAssignments,
   ensureActiveProfile,
   getActiveProfile,
+  getModelProfileToolLabel,
   getOpenCodeBaseDir,
+  getToolProfileStore,
   loadConfig,
   normalizeAgentName,
+  normalizeModelProfileTool,
   normalizeProfileName,
   normalizeStoredModel,
   readOpenCodeAgentModels,
   resolveAssignments,
   saveConfig,
   SUPPORTED_AGENTS,
-  validateModelAvailability,
+  validateModelForTool,
 } from "./lib/model-profiles.js";
 import {
   createRefreshResult,
@@ -27,6 +30,7 @@ import {
   getOpenCodeRefreshTimeoutMs,
   getProfileOrThrow,
   isDirectExecution,
+  parseModelsToolArguments,
   parseSetCommandArguments,
   printHelp,
 } from "./lib/models-cli-core.js";
@@ -52,18 +56,20 @@ export function reportAdapterRefreshResult(
 }
 
 
-function showCurrentConfig(profileNameInput?: string) {
+function showCurrentConfig(tool, profileNameInput?: string) {
   const { config, configPath, exists } = loadConfig();
-  const activeProfileName = config.models.activeProfile;
+  const store = getToolProfileStore(config, tool);
+  const activeProfileName = store.activeProfile;
   const selected = profileNameInput
-    ? getProfileOrThrow(config, profileNameInput)
+    ? getProfileOrThrow(store, profileNameInput)
     : {
         profileName: activeProfileName,
-        profile: getActiveProfile(config) ?? {},
+        profile: getActiveProfile(config, tool) ?? {},
       };
   const resolved = resolveAssignments(selected.profile);
 
   console.log(`Config path: ${configPath}`);
+  console.log(`Tool: ${getModelProfileToolLabel(tool)}`);
   console.log(`Active profile: ${activeProfileName ?? "(none)"}`);
   if (profileNameInput) {
     console.log(`Shown profile: ${selected.profileName}`);
@@ -80,12 +86,14 @@ function showCurrentConfig(profileNameInput?: string) {
   }
 }
 
-function listProfiles() {
+function listProfiles(tool) {
   const { config, configPath } = loadConfig();
-  const activeProfileName = config.models.activeProfile;
-  const profileNames = Object.keys(config.models.profiles).sort();
+  const store = getToolProfileStore(config, tool);
+  const activeProfileName = store.activeProfile;
+  const profileNames = Object.keys(store.profiles).sort();
 
   console.log(`Config path: ${configPath}`);
+  console.log(`Tool: ${getModelProfileToolLabel(tool)}`);
   if (profileNames.length === 0) {
     console.log("No model profiles defined.");
     return;
@@ -174,18 +182,31 @@ export function reapplySupportedAdapters(env: NodeJS.ProcessEnv = process.env) {
   });
 }
 
-function switchProfile(profileNameInput: string) {
-  const { config } = loadConfig();
-  const { profileName } = getProfileOrThrow(config, profileNameInput);
+export function reapplyModelTool(toolInput, env: NodeJS.ProcessEnv = process.env) {
+  const tool = normalizeModelProfileTool(toolInput);
+  if (tool === "opencode") {
+    return reapplySupportedAdapters(env);
+  }
 
-  config.models.activeProfile = profileName;
+  return createRefreshResult({
+    status: "clean",
+    stdout: `Saved ${getModelProfileToolLabel(tool)} profile. Host projection is not available yet.`,
+  });
+}
+
+function switchProfile(tool, profileNameInput: string) {
+  const { config } = loadConfig();
+  const store = getToolProfileStore(config, tool);
+  const { profileName } = getProfileOrThrow(store, profileNameInput);
+
+  store.activeProfile = profileName;
   const configPath = saveConfig(config);
   console.log(`Switched active profile to '${profileName}'.`);
   console.log(`Config path: ${configPath}`);
-  reportAdapterRefreshResult(reapplySupportedAdapters());
+  reportAdapterRefreshResult(reapplyModelTool(tool));
 }
 
-function setAgentModel(agentInput: string, modelInput: string, options: { allowUnknown?: boolean } = {}) {
+function setAgentModel(tool, agentInput: string, modelInput: string, options: { allowUnknown?: boolean } = {}) {
   const agentName = normalizeAgentName(agentInput);
   const normalizedModel = normalizeStoredModel(modelInput);
   if (!normalizedModel) {
@@ -193,7 +214,7 @@ function setAgentModel(agentInput: string, modelInput: string, options: { allowU
   }
 
   if (normalizedModel !== "inherit") {
-    const validation = validateModelAvailability(normalizedModel);
+    const validation = validateModelForTool(tool, normalizedModel);
     if (validation.status === "malformed") {
       if (!options.allowUnknown) {
         throw new Error(validation.message);
@@ -215,29 +236,33 @@ function setAgentModel(agentInput: string, modelInput: string, options: { allowU
   }
 
   const { config } = loadConfig();
-  const activeProfileName = ensureActiveProfile(config);
-  config.models.profiles[activeProfileName][agentName] = normalizedModel;
+  const store = getToolProfileStore(config, tool);
+  const activeProfileName = ensureActiveProfile(config, tool);
+  store.profiles[activeProfileName][agentName] = normalizedModel;
   const configPath = saveConfig(config);
 
   console.log(`Updated profile '${activeProfileName}': ${agentName} -> ${normalizedModel}`);
   console.log(`Config path: ${configPath}`);
-  reportAdapterRefreshResult(reapplySupportedAdapters());
+  reportAdapterRefreshResult(reapplyModelTool(tool));
 }
 
-function createProfile(profileNameInput: string) {
+function createProfile(tool, profileNameInput: string) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig();
+  const store = getToolProfileStore(config, tool);
 
-  if (config.models.profiles[profileName]) {
+  if (Object.hasOwn(store.profiles, profileName)) {
     throw new Error(`Profile '${profileName}' already exists.`);
   }
 
-  const activeProfile = getActiveProfile(config);
-  const snapshot = activeProfile ? cloneAssignments(activeProfile) : readOpenCodeAgentModels();
+  const activeProfile = getActiveProfile(config, tool);
+  const snapshot = activeProfile
+    ? cloneAssignments(activeProfile)
+    : (tool === "opencode" ? readOpenCodeAgentModels() : {});
 
-  config.models.profiles[profileName] = snapshot;
-  if (!config.models.activeProfile) {
-    config.models.activeProfile = profileName;
+  store.profiles[profileName] = snapshot;
+  if (!store.activeProfile) {
+    store.activeProfile = profileName;
   }
 
   const configPath = saveConfig(config);
@@ -246,72 +271,79 @@ function createProfile(profileNameInput: string) {
   console.log(
     activeProfile
       ? "Seeded from the current afergon-ai profile assignments."
-      : "Seeded from current managed host assignments when available.",
+      : tool === "opencode"
+        ? "Seeded from current managed host assignments when available."
+        : "Started with no assignments.",
   );
 
-  if (config.models.activeProfile === profileName) {
-    reportAdapterRefreshResult(reapplySupportedAdapters());
+  if (store.activeProfile === profileName) {
+    reportAdapterRefreshResult(reapplyModelTool(tool));
   }
 }
 
-function deleteProfile(profileNameInput: string) {
+function deleteProfile(tool, profileNameInput: string) {
   const profileName = normalizeProfileName(profileNameInput);
   const { config } = loadConfig();
+  const store = getToolProfileStore(config, tool);
 
-  if (!config.models.profiles[profileName]) {
+  if (!Object.hasOwn(store.profiles, profileName)) {
     throw new Error(`Profile '${profileName}' does not exist.`);
   }
 
-  delete config.models.profiles[profileName];
-  if (config.models.activeProfile === profileName) {
-    const remaining = Object.keys(config.models.profiles).sort();
-    config.models.activeProfile = remaining[0] ?? null;
+  const wasActive = store.activeProfile === profileName;
+  delete store.profiles[profileName];
+  if (wasActive) {
+    const remaining = Object.keys(store.profiles).sort();
+    store.activeProfile = remaining[0] ?? null;
   }
 
   const configPath = saveConfig(config);
   console.log(`Deleted profile '${profileName}'.`);
   console.log(`Config path: ${configPath}`);
-  reportAdapterRefreshResult(reapplySupportedAdapters());
+  if (wasActive) {
+    reportAdapterRefreshResult(reapplyModelTool(tool));
+  }
 }
 
 function main(argv: readonly string[]) {
-  const [command, ...rest] = argv;
+  const { tool, args } = parseModelsToolArguments(argv);
+  const [command, ...rest] = args;
   switch (command ?? "show") {
     case "show":
       if (rest.length > 1) {
-        throw new Error("Usage: afergon-ai models show [profile]");
+        throw new Error("Usage: afergon-ai models [--tool <pi|claude|opencode>] show [profile]");
       }
-      showCurrentConfig(rest[0]);
+      showCurrentConfig(tool, rest[0]);
       return;
     case "list":
-      listProfiles();
+      listProfiles(tool);
       return;
     case "switch":
       if (rest.length !== 1) {
-        throw new Error("Usage: afergon-ai models switch <profile>");
+        throw new Error("Usage: afergon-ai models [--tool <pi|claude|opencode>] switch <profile>");
       }
-      switchProfile(rest[0]);
+      switchProfile(tool, rest[0]);
       return;
     case "set":
       {
         const parsed = parseSetCommandArguments(rest);
-        setAgentModel(parsed.agent, parsed.model, { allowUnknown: parsed.allowUnknown });
+        setAgentModel(tool, parsed.agent, parsed.model, { allowUnknown: parsed.allowUnknown });
       }
       return;
     case "profile":
       if (rest[0] === "show" && rest.length === 2) {
-        showCurrentConfig(rest[1]);
+        showCurrentConfig(tool, rest[1]);
         return;
       }
       if (rest[0] === "create" && rest.length === 2) {
-        createProfile(rest[1]);
+        createProfile(tool, rest[1]);
         return;
       }
       if (rest[0] === "delete" && rest.length === 2) {
-        deleteProfile(rest[1]);
+        deleteProfile(tool, rest[1]);
         return;
       }
-      throw new Error("Usage: afergon-ai models profile <show|create|delete> <name>");
+      throw new Error("Usage: afergon-ai models [--tool <pi|claude|opencode>] profile <show|create|delete> <name>");
     case "--help":
     case "-h":
       printHelp();

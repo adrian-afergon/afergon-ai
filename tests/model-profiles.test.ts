@@ -86,7 +86,19 @@ function runModelsScript(args, env = {}) {
 }
 
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const config = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (config?.version === 2 && config.models?.tools?.opencode) {
+    // Existing OpenCode-focused assertions can read the migrated store while dedicated tests assert raw v2 persistence.
+    Object.defineProperties(config.models, {
+      activeProfile: { configurable: true, get: () => config.models.tools.opencode.activeProfile },
+      profiles: { configurable: true, get: () => config.models.tools.opencode.profiles },
+    });
+  }
+  return config;
+}
+
+function getToolStore(config, tool = "opencode") {
+  return config.models.tools?.[tool] ?? config.models;
 }
 
 function captureWarnings(run) {
@@ -330,17 +342,24 @@ describe("model profile resolution", () => {
     const modelProfilesRuntime = await import("../dist/scripts/lib/model-profiles.js");
     const expectedExports = [
       "SUPPORTED_AGENTS",
+      "SUPPORTED_MODEL_TOOLS",
       "cloneAssignments",
       "createDefaultConfig",
       "ensureActiveProfile",
       "getActiveProfile",
       "getConfigDir",
       "getConfigPath",
+      "getInstalledModelProfileTools",
+      "getModelProfileProjectionDetail",
+      "getModelProfileToolLabel",
       "getOpenCodeBaseDir",
+      "getToolProfileStore",
       "hasDegradedRefreshGuidance",
+      "isModelProfileToolInstalled",
       "listOpenCodeProviderModels",
       "loadConfig",
       "normalizeAgentName",
+      "normalizeModelProfileTool",
       "normalizeProfileName",
       "normalizeRefreshResult",
       "normalizeStoredModel",
@@ -351,6 +370,7 @@ describe("model profile resolution", () => {
       "saveProfileAssignments",
       "suggestCloseModelIds",
       "validateModelAvailability",
+      "validateModelForTool",
     ];
 
     expect(Object.keys(modelProfilesTypeScript).sort()).toEqual(expectedExports);
@@ -375,6 +395,7 @@ describe("model profile resolution", () => {
       "getConfigDir",
       "getConfigPath",
       "getOpenCodeBaseDir",
+      "getToolProfileStore",
       "loadConfig",
       "saveConfig",
     ];
@@ -481,7 +502,7 @@ describe("model profile resolution", () => {
 
     const savedTypeScriptPath = modelProfilesConfigTypeScript.saveConfig(
       {
-        version: 7,
+        version: 1,
         models: {
           activeProfile: "budget",
           profiles: {
@@ -497,7 +518,7 @@ describe("model profile resolution", () => {
     );
     const savedRuntimePath = modelProfilesConfigRuntime.saveConfig(
       {
-        version: 7,
+        version: 1,
         models: {
           activeProfile: "budget",
           profiles: {
@@ -523,17 +544,23 @@ describe("model profile resolution", () => {
     expect(typeScriptLoaded.exists).toBe(runtimeLoaded.exists);
     expect(typeScriptLoaded).toEqual({
       config: {
-        version: 7,
-        models: {
-          activeProfile: "budget",
-          profiles: {
-            budget: {
-              "afergon-ai": "openai/gpt-5.5",
-              "afg-review": "inherit",
+          version: 2,
+          models: {
+            tools: {
+              pi: { activeProfile: null, profiles: {} },
+              claude: { activeProfile: null, profiles: {} },
+              opencode: {
+                activeProfile: "budget",
+                profiles: {
+                  budget: {
+                    "afergon-ai": "openai/gpt-5.5",
+                    "afg-review": "inherit",
+                  },
+                },
+              },
             },
           },
         },
-      },
       configPath: path.join(typeScriptEnv.AFERGON_AI_CONFIG_DIR, "config.json"),
       exists: true,
     });
@@ -562,10 +589,14 @@ describe("model profile resolution", () => {
     const modelProfilesCoreTypeScript = await import("../scripts/lib/model-profiles-core.js");
     const modelProfilesCoreRuntime = await import("../dist/scripts/lib/model-profiles-core.js");
     const expectedExports = [
+      "MODEL_PROFILE_TOOL_LABELS",
       "SUPPORTED_AGENTS",
+      "SUPPORTED_MODEL_TOOLS",
       "cloneAssignments",
+      "getModelProfileToolLabel",
       "hasDegradedRefreshGuidance",
       "normalizeAgentName",
+      "normalizeModelProfileTool",
       "normalizeProfileName",
       "normalizeRefreshResult",
       "normalizeStoredModel",
@@ -670,6 +701,7 @@ describe("model profile resolution", () => {
     const expectedExports = [
       "listOpenCodeProviderModels",
       "validateModelAvailability",
+      "validateModelForTool",
     ];
 
     expect(Object.keys(modelProfilesAvailabilityTypeScript).sort()).toEqual(expectedExports);
@@ -990,6 +1022,7 @@ describe("models CLI behavior", () => {
       "getOpenCodeRefreshTimeoutMs",
       "getProfileOrThrow",
       "isDirectExecution",
+      "parseModelsToolArguments",
       "parseSetCommandArguments",
       "printHelp",
     ];
@@ -1119,6 +1152,48 @@ describe("models CLI behavior", () => {
     expect(savedConfig.models.activeProfile).toBe("fallback");
     expect(savedConfig.models.profiles.budget).toBeUndefined();
     expect(savedConfig.models.profiles.fallback["afergon-ai"]).toBe("openai/gpt-5.5");
+  });
+
+  it("migrates legacy profiles only to OpenCode and keeps tool profiles isolated", async () => {
+    const tempRoot = makeTempRoot();
+    const configDir = path.join(tempRoot, "config");
+    const env = makeUnavailableOpencodeEnv(tempRoot, {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      AFERGON_AI_CONFIG_DIR: configDir,
+    });
+    const legacyConfig = {
+      version: 1,
+      models: {
+        activeProfile: "budget",
+        profiles: {
+          budget: { "afergon-ai": "openai/gpt-5.5" },
+        },
+      },
+    };
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), `${JSON.stringify(legacyConfig)}\n`);
+
+    const { loadConfig } = await import("../dist/scripts/lib/model-profiles.js");
+    const loaded = loadConfig(env);
+    expect(loaded.config.version).toBe(2);
+    expect(loaded.config.models.tools.opencode.activeProfile).toBe("budget");
+    expect(loaded.config.models.tools.pi.profiles).toEqual({});
+    expect(loaded.config.models.tools.claude.profiles).toEqual({});
+    expect(JSON.parse(fs.readFileSync(path.join(configDir, "config.json"), "utf8"))).toEqual(legacyConfig);
+
+    expect(runCli(["--tool", "pi", "profile", "create", "budget"], env).status).toBe(0);
+    expect(runCli(["set", "--tool", "pi", "afg-review", "custom-pi-model"], env).status).toBe(0);
+    expect(runCli(["--tool", "claude", "profile", "create", "budget"], env).status).toBe(0);
+
+    const saved = JSON.parse(fs.readFileSync(path.join(configDir, "config.json"), "utf8"));
+    expect(saved.version).toBe(2);
+    expect(saved.models.tools.opencode.profiles.budget).toEqual({ "afergon-ai": "openai/gpt-5.5" });
+    expect(saved.models.tools.pi.profiles.budget).toEqual({ "afg-review": "custom-pi-model" });
+    expect(saved.models.tools.claude.profiles.budget).toEqual({});
+    expect(saved.models.tools.opencode.activeProfile).toBe("budget");
+    expect(saved.models.tools.pi.activeProfile).toBe("budget");
+    expect(saved.models.tools.claude.activeProfile).toBe("budget");
   });
 
   it("shows resolved assignments for a named profile without switching the active profile", () => {
@@ -1304,7 +1379,7 @@ describe("models CLI behavior", () => {
     const warned = [];
     const tempRoot = makeTempRoot();
 
-    expect(Object.keys(modelsWrapper).sort()).toEqual(["reapplySupportedAdapters", "reportAdapterRefreshResult"]);
+    expect(Object.keys(modelsWrapper).sort()).toEqual(["reapplyModelTool", "reapplySupportedAdapters", "reportAdapterRefreshResult"]);
     expect(modelsWrapper.reportAdapterRefreshResult()).toBeUndefined();
     expect(modelsWrapper.reportAdapterRefreshResult(refreshResult, {
       log: (message) => logged.push(message),
@@ -1320,6 +1395,12 @@ describe("models CLI behavior", () => {
       stdout: "Saved config. No managed OpenCode install detected, so only afergon-ai config was updated.",
       stderr: "",
       degraded: true,
+    });
+    expect(modelsWrapper.reapplyModelTool("pi")).toEqual({
+      status: "clean",
+      stdout: "Saved Pi profile. Host projection is not available yet.",
+      stderr: "",
+      degraded: false,
     });
   });
 

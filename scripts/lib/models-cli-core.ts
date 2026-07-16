@@ -2,14 +2,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getConfigDir } from "./model-profiles-config.js";
-import { normalizeProfileName, normalizeRefreshResult, SUPPORTED_AGENTS, type RefreshResult } from "./model-profiles-core.js";
+import {
+  normalizeModelProfileTool,
+  normalizeProfileName,
+  normalizeRefreshResult,
+  SUPPORTED_AGENTS,
+  type RefreshResult,
+  type SupportedModelTool,
+} from "./model-profiles-core.js";
 
 const DEFAULT_OPENCODE_REFRESH_TIMEOUT_MS = 10000;
 
-type ProfileConfig = {
-  models: {
-    profiles: Record<string, Record<string, unknown>>;
-  };
+type ProfileStore = {
+  profiles: Record<string, Record<string, unknown>>;
+};
+
+type LegacyProfileConfig = {
+  models: ProfileStore;
 };
 
 export function isDirectExecution(argv: readonly string[] = process.argv, moduleUrl = import.meta.url): boolean {
@@ -52,16 +61,40 @@ export function formatEffective(entry: { effective?: string | null }): string {
   return entry.effective ?? "(runtime default)";
 }
 
-export function getProfileOrThrow(config: ProfileConfig, profileNameInput: unknown): { profileName: string; profile: Record<string, unknown> } {
+export function getProfileOrThrow(storeOrConfig: ProfileStore | LegacyProfileConfig, profileNameInput: unknown): { profileName: string; profile: Record<string, unknown> } {
+  const store = "models" in storeOrConfig ? storeOrConfig.models : storeOrConfig;
   const profileName = normalizeProfileName(profileNameInput);
-  const profile = config.models.profiles[profileName];
+  const profile = store.profiles[profileName];
   if (!profile) {
-    const available = Object.keys(config.models.profiles).sort();
+    const available = Object.keys(store.profiles).sort();
     const suffix = available.length > 0 ? ` Available profiles: ${available.join(", ")}` : " No profiles exist yet.";
     throw new Error(`Unknown profile '${profileName}'.${suffix}`);
   }
 
   return { profileName, profile };
+}
+
+export function parseModelsToolArguments(args: readonly string[]): { tool: SupportedModelTool; args: string[] } {
+  let tool: SupportedModelTool = "opencode";
+  let foundTool = false;
+  const remaining: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument !== "--tool") {
+      remaining.push(argument!);
+      continue;
+    }
+
+    if (foundTool || index + 1 >= args.length) {
+      throw new Error("Usage: afergon-ai models [--tool <pi|claude|opencode>] <command>");
+    }
+    tool = normalizeModelProfileTool(args[index + 1]);
+    foundTool = true;
+    index += 1;
+  }
+
+  return { tool, args: remaining };
 }
 
 export function parseSetCommandArguments(args: readonly string[]): { allowUnknown: boolean; agent: string; model: string } {
@@ -88,14 +121,11 @@ export function printHelp(log: (line: string) => void = console.log): void {
   log("");
   log("Usage:");
   log("  afergon-ai models");
-  log("  afergon-ai models show");
-  log("  afergon-ai models show <profile>");
-  log("  afergon-ai models list");
-  log("  afergon-ai models switch <profile>");
-  log("  afergon-ai models set [--allow-unknown] <agent> <model|inherit>");
-  log("  afergon-ai models profile show <name>");
-  log("  afergon-ai models profile create <name>");
-  log("  afergon-ai models profile delete <name>");
+  log("  afergon-ai models [--tool <pi|claude|opencode>] show [profile]");
+  log("  afergon-ai models [--tool <pi|claude|opencode>] list");
+  log("  afergon-ai models [--tool <pi|claude|opencode>] switch <profile>");
+  log("  afergon-ai models [--tool <pi|claude|opencode>] set [--allow-unknown] <agent> <model|inherit>");
+  log("  afergon-ai models [--tool <pi|claude|opencode>] profile <show|create|delete> <name>");
   log("");
   log(`Supported agents: ${SUPPORTED_AGENTS.join(", ")}`);
   log("Aliases: orchestrator, main, debate, breakdown, specify, plannify, implement, review, design");
@@ -103,9 +133,10 @@ export function printHelp(log: (line: string) => void = console.log): void {
   log("Notes:");
   log("  - Missing agent assignments inherit from afergon-ai.");
   log("  - 'inherit' means defer to afergon-ai; if that is also unset, runtime defaults are preserved.");
-  log("  - Concrete model strings should use provider/model format, for example 'openai/gpt-5.5'.");
-  log("  - Concrete models are validated with 'opencode models <provider>' when available.");
-  log("  - Use '--allow-unknown' to save an unlisted or custom concrete model after reviewing the warning.");
-  log("  - Changes update afergon-ai-owned config and refresh compatible host config on disk when supported.");
+  log("  - Omit --tool to preserve the existing OpenCode default.");
+  log("  - OpenCode model strings use provider/model format and are validated with 'opencode models <provider>' when available.");
+  log("  - Pi and Claude Code accept non-empty manual model strings until their model registries are available.");
+  log("  - Use '--allow-unknown' to save an unlisted or custom OpenCode model after reviewing the warning.");
+  log("  - Changes refresh compatible host config on disk when supported; Pi and Claude Code profiles are stored only for now.");
   log("  - Live hot-swap is not guaranteed for already-running sessions.");
 }

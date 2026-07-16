@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { parseProviderModel, suggestCloseModelIds } from "./model-profiles-core.js";
+import { normalizeStoredModel, parseProviderModel, suggestCloseModelIds, type SupportedModelTool } from "./model-profiles-core.js";
 
 const DEFAULT_OPENCODE_MODELS_TIMEOUT_MS = 5000;
 
@@ -131,4 +131,23 @@ export function validateModelAvailability(modelId: string, env: NodeJS.ProcessEn
     suggestions: suggestCloseModelIds(parsed.modelId, availableModels.models),
     provider: parsed.provider,
   };
+}
+
+export function validateModelForTool(
+  tool: SupportedModelTool,
+  modelId: string,
+  env: NodeJS.ProcessEnv = process.env,
+): ValidateModelAvailabilityResult {
+  if (tool === "opencode") {
+    return validateModelAvailability(modelId, env);
+  }
+
+  if (!normalizeStoredModel(modelId)) {
+    return {
+      status: "malformed",
+      message: "Model is required.",
+    };
+  }
+
+  return { status: "known" };
 }
