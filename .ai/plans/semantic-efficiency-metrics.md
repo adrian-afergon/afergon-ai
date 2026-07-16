@@ -50,7 +50,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Add tests for CSV order and escaping, plus JSON gap preservation.
   - Verify export does not mutate records or enable metrics implicitly.
 
-- [ ] **6. Integrate CLI and documentation**
+- [x] **6. Integrate CLI and documentation**
   - Add `metrics enable` and `metrics status` routing.
   - Add `metrics import <event-file>` routing.
   - Add `metrics report` filters and grouping arguments.
