@@ -18,6 +18,7 @@
     "scripts/lib/model-profiles-save.ts",
     "scripts/lib/model-profiles.ts",
     "scripts/lib/models-cli-core.ts",
+    "scripts/lib/usage-metrics/**/*.ts",
     "scripts/lib/cli-dispatch-core.ts",
     "scripts/cli-dispatch.ts",
     "scripts/build-typescript.ts",
