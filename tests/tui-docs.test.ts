@@ -27,9 +27,9 @@ describe("TUI docs contract", () => {
     expect(README).toContain("Use ↑/↓ to move the Home selection, Enter to open it, and `c`/`s`/`m`/`h` as direct shortcuts.");
     expect(README).toContain("Focused rows use a fixed-width `>` cursor plus teal emphasis when the terminal supports color; unfocused rows reserve the same cursor column so labels stay aligned.");
     expect(README).toContain("Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.");
-    expect(README).toContain("In Model Profiles browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort.");
+    expect(README).toContain("In Model Profiles, choose an installed tool first.");
     expect(README).toContain("Clean successful Enter-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.");
-    expect(README).toContain("In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual `provider/model` entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.");
+    expect(README).toContain("In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual model entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.");
     expect(README).toContain("A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.");
     expect(README).toContain("Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.");
     expect(README).toContain("If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.");

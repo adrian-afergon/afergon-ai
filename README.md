@@ -117,16 +117,18 @@ afergon-ai models set afergon-ai openai/gpt-5.5
 afergon-ai models set --allow-unknown afergon-ai local/custom-model
 afergon-ai models set afg-review inherit
 afergon-ai models profile create fallback
+afergon-ai models --tool pi profile create budget
+afergon-ai models --tool claude set afergon-ai claude-sonnet
 ```
 
-Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`.
+Model profiles are stored per tool (`Pi`, `Claude Code`, and `OpenCode`) in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`. Each tool has independent saved profiles and an independent active profile, while retaining the same afergon-ai agent roles. Existing global profiles migrate to the OpenCode scope the next time a profile mutation is saved.
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
-Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
+Use `afergon-ai models` or `afergon-ai models show` to inspect the active OpenCode profile, and `--tool <pi|claude|opencode>` to manage a specific tool. Omitting `--tool` remains an OpenCode-compatible default. Use `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
-Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
+OpenCode concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, OpenCode `models set` validates concrete IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom OpenCode model. Pi and Claude Code accept non-empty manually entered model strings until their tool-specific model registries are available.
 
-When OpenCode is already installed through afergon-ai, `models switch` and `models set` refresh the managed OpenCode agent registrations on disk. Existing sessions may still need a new compatible run; live hot-swap is not guaranteed.
+When OpenCode is already installed through afergon-ai, OpenCode `models switch` and `models set` refresh the managed OpenCode agent registrations on disk. Pi and Claude Code profiles are stored independently but are not projected to those hosts yet. Existing sessions may still need a new compatible run; live hot-swap is not guaranteed.
 
 ### Step 5 — Choose the launch mode
 
@@ -153,7 +155,7 @@ The MVP TUI currently exposes these sections:
 
 - **Configuration** — current install/config state plus stable CLI actions for `init`, `doctor`, `update`, and `models`
 - **Status** — readiness summary and actionable repair guidance using the same stable CLI actions
-- **Model Profiles** — active profile, saved profiles, resolved assignments, and the stable `afergon-ai models` surface
+- **Model Profiles** — choose an installed tool first, then manage its active profile, saved profiles, and resolved assignments through the stable `afergon-ai models` surface
 
 CLI-equivalent visibility rules:
 
@@ -166,9 +168,9 @@ Accessibility and keyboard notes:
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
 - Focused rows use a fixed-width `>` cursor plus teal emphasis when the terminal supports color; unfocused rows reserve the same cursor column so labels stay aligned.
 - Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.
-- In Model Profiles browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort.
+- In Model Profiles, choose an installed tool first. In its browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort. `Esc` returns from profiles to the tool selector.
 - Clean successful Enter-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.
-- In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual `provider/model` entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.
+- In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual model entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.
 - A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.
 - Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
 - `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
