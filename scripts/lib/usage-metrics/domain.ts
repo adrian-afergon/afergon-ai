@@ -14,7 +14,7 @@ export class MetricsError extends Error {
 
   public constructor(
     public readonly field: string,
-    public readonly code: "invalid" | "missing" | "unsupported",
+    public readonly code: "invalid" | "missing" | "unsupported" | "disabled",
     message: string,
   ) {
     super(`${field}: ${message}`);

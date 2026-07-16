@@ -1,4 +1,4 @@
-import type { EfficiencyRecord, EnrichmentResult, MetricsStatus, ReportQuery, ReportRow } from "./domain.js";
+import type { EfficiencyRecord, EnrichmentResult, MetricsStatus } from "./domain.js";
 
 export interface EventParser {
   parse(input: unknown): EfficiencyRecord;
@@ -7,7 +7,7 @@ export interface EventParser {
 export interface RecordStore {
   transaction<T>(work: () => T): T;
   insert(records: readonly EfficiencyRecord[]): void;
-  query(query: ReportQuery): readonly ReportRow[];
+  all(): readonly EfficiencyRecord[];
   clear(): void;
 }
 

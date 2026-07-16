@@ -20,7 +20,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Add RED tests for each invalid category and every missing required field.
   - Verify invalid events produce local diagnostics and never reach persistence.
 
-- [ ] **3. Implement local SQLite persistence**
+- [x] **3. Implement local SQLite persistence**
   - Run a minimal compatibility spike and select the smallest SQLite driver compatible with the TypeScript runtime and build.
   - Resolve a metrics-owned local data path using the repository configuration convention.
   - Create a SQLite schema for enablement state, normalized records, query dimensions, and migration metadata.
