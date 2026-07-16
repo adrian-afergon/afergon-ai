@@ -41,7 +41,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Define a replaceable enrichment port; provider absence, failure, or ambiguity must not block reports.
   - Add RED tests for filters, groupings, rework, review cycles, gaps, and absent enrichment.
 
-- [ ] **5. Implement local exports**
+- [x] **5. Implement local exports**
   - Serialize already queried data without duplicating domain or report rules.
   - Export JSON with stable IDs, dimensions, unavailable values, gaps, and optional enrichment.
   - Export CSV with a fixed header, stable order, and explicit unavailable values.
