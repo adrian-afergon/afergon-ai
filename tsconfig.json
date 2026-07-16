@@ -21,6 +21,7 @@
     "scripts/lib/usage-metrics/**/*.ts",
     "scripts/lib/cli-dispatch-core.ts",
     "scripts/cli-dispatch.ts",
+    "scripts/metrics.ts",
     "scripts/build-typescript.ts",
     "scripts/check-dist-runtime.ts",
     "scripts/models.ts",
