@@ -60,7 +60,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Document opt-in behavior, local path, privacy, SQLite storage, export, clear, and enrichment limitations.
   - Add CLI smoke tests for arguments, exit codes, and unauthorized persistence.
 
-- [ ] **7. Verify each delivery slice**
+- [x] **7. Verify each delivery slice**
   - Apply RED, GREEN, triangulation, and minimal refactoring for every functional change.
   - Run focused tests after domain, storage, report/export, and CLI slices.
   - Run typecheck and build after each relevant integration.
