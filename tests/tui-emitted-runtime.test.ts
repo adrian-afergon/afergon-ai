@@ -83,7 +83,7 @@ describe("emitted TUI runtime", () => {
       terminal,
       exit: () => {},
       loadModelProfilesScreenState: ({ navigation }: { navigation?: any } = {}) => {
-        const mode = navigation?.modelProfiles?.mode ?? "browse";
+        const mode = navigation?.modelProfiles?.mode === "assignments" ? "assignments" : "browse";
         const focusedAgentIndex = navigation?.modelProfiles?.focusedAgentIndex ?? 0;
         const stagedAssignments = navigation?.modelProfiles?.stagedAssignments ?? {};
         const assignment = {
@@ -99,10 +99,15 @@ describe("emitted TUI runtime", () => {
           summary: { state: "ok", detail: "1 profile(s) available." },
           activeProfile: "budget",
           configPath: "/tmp/config.json",
+          tools: [],
+          selectedTool: "opencode",
+          toolLabel: "OpenCode",
+          projectionDetail: "The active profile is projected to managed OpenCode agents on disk.",
           profiles: [{ name: "budget", isActive: true, isCreate: false, isFocused: true }],
           assignments: [assignment],
           browse: {
             mode,
+            selectedTool: "opencode",
             targetProfileName: navigation?.modelProfiles?.targetProfileName,
             focusedAgentIndex,
             stagedAssignments,

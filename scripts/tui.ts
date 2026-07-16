@@ -12,7 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BRANDING_LOGO, canRenderBrandingLogo } from "./lib/branding/logo.js";
-import { reapplySupportedAdapters } from "./models.js";
+import { reapplyModelTool } from "./models.js";
+import { getModelProfileToolLabel } from "./lib/model-profiles.js";
 import {
   createOutputState,
   getOutputLines,
@@ -171,12 +172,14 @@ export function buildRouteBreadcrumb(navigation) {
     return baseBreadcrumb;
   }
 
-  if (navigation?.modelProfiles?.mode !== "assignments") {
-    return baseBreadcrumb;
-  }
+  const tool = navigation?.modelProfiles?.selectedToolId;
+  if (!tool || navigation?.modelProfiles?.mode === "tools") return baseBreadcrumb;
+
+  const toolBreadcrumb = `${baseBreadcrumb}/${getModelProfileToolLabel(tool)}`;
+  if (navigation?.modelProfiles?.mode !== "assignments") return toolBreadcrumb;
 
   const profileName = sanitizeTerminalOutput(navigation.modelProfiles?.targetProfileName ?? "");
-  return `${baseBreadcrumb}/${profileName || "New"}`;
+  return `${toolBreadcrumb}/${profileName || "New"}`;
 }
 
 function renderFramedLines(contentLines, width, { breadcrumb, footerLeftLabel, footerLines = [], footerRightLabel, headerRightLabel }: any = {}) {
@@ -488,7 +491,7 @@ function buildModelProfilesHeaderLabel(routeState) {
     return undefined;
   }
   return {
-    label: "Active profile",
+    label: `Active ${sanitizeTerminalOutput(routeState?.toolLabel ?? "OpenCode")} profile`,
     value: activeProfile,
   };
 }
@@ -732,8 +735,8 @@ export function createTuiApp({
   loadModelProfilesScreenState = ({ navigation }: any = {}) => getModelProfilesScreenState({ navigation }),
   interactiveActionsByRoute = {},
   executeAction = ({ action }) => runActionCommand({ command: process.execPath, argv: [CLI_DISPATCH_PATH, ...action.argv] }),
-  saveModelProfileAssignments = ({ profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { refreshActiveProfile }),
-  refreshActiveModelProfile = () => reapplySupportedAdapters(),
+  saveModelProfileAssignments = ({ tool, profileName, assignments, refreshActiveProfile }) => saveAssignmentsForProfile(profileName, assignments, { tool, refreshActiveProfile }),
+  refreshActiveModelProfile = ({ tool = "opencode" } = {}) => reapplyModelTool(tool),
 }: any = {}): any {
   const navigation: any = createNavigationState();
   navigation.sectionActionSelection = 0;

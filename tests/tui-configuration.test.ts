@@ -187,7 +187,7 @@ describe("getConfigurationStatus", () => {
     });
 
     expect(status.items).toEqual([
-      expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
+      expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("OpenCode=default") }),
       expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
       expect.objectContaining({ id: "claude", state: "ok", detail: expect.stringContaining("CLAUDE.md") }),
       expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("opencode.json") }),

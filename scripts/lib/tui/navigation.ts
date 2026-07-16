@@ -1,13 +1,17 @@
+import type { SupportedModelTool } from "../model-profiles-core.js";
+
 export const TUI_ROUTES = Object.freeze(["home", "configuration", "status", "model-profiles"] as const);
 export const HOME_MENU_ROUTES = Object.freeze(["configuration", "status", "model-profiles"] as const);
 
 export type TuiRoute = (typeof TUI_ROUTES)[number];
 export type HomeMenuRoute = (typeof HOME_MENU_ROUTES)[number];
-export type ModelProfilesMode = "browse" | "assignments";
+export type ModelProfilesMode = "tools" | "browse" | "assignments";
 export type InlineCreateSelection = "input" | "cancel";
 
 export interface ModelProfilesState {
   readonly mode: ModelProfilesMode;
+  readonly focusedToolIndex: number;
+  readonly selectedToolId: SupportedModelTool | undefined;
   readonly focusedProfileIndex: number;
   readonly focusedAgentIndex: number;
   readonly targetProfileName: string | undefined;
@@ -32,11 +36,73 @@ interface ExitInlineCreateOptions {
 
 function createModelProfilesState(): ModelProfilesState {
   return {
-    mode: "browse",
+    mode: "tools",
+    focusedToolIndex: 0,
+    selectedToolId: undefined,
     focusedProfileIndex: 0,
     focusedAgentIndex: 0,
     targetProfileName: undefined,
     stagedAssignments: {},
+  };
+}
+
+export function moveModelProfilesToolSelection(
+  state: Partial<ModelProfilesState> | undefined,
+  toolCount: number,
+  direction: number,
+): ModelProfilesState {
+  const safeCount = Number.isInteger(toolCount) && toolCount > 0 ? toolCount : 1;
+  const current = Number.isInteger(state?.focusedToolIndex) ? state!.focusedToolIndex! : 0;
+
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "tools",
+    focusedToolIndex: (current + direction + safeCount) % safeCount,
+    selectedToolId: undefined,
+    focusedProfileIndex: 0,
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+    stagedAssignments: {},
+    createProfileName: undefined,
+    createProfileSelection: undefined,
+    createProfileValidation: undefined,
+  };
+}
+
+export function enterModelProfilesTool(
+  state: Partial<ModelProfilesState> | undefined,
+  tool: SupportedModelTool,
+): ModelProfilesState {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "browse",
+    selectedToolId: tool,
+    focusedProfileIndex: 0,
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+    stagedAssignments: {},
+    createProfileName: undefined,
+    createProfileSelection: undefined,
+    createProfileValidation: undefined,
+  };
+}
+
+export function exitModelProfilesToTools(state: Partial<ModelProfilesState> | undefined): ModelProfilesState {
+  return {
+    ...createModelProfilesState(),
+    ...state,
+    mode: "tools",
+    selectedToolId: undefined,
+    focusedToolIndex: 0,
+    focusedProfileIndex: 0,
+    focusedAgentIndex: 0,
+    targetProfileName: undefined,
+    stagedAssignments: {},
+    createProfileName: undefined,
+    createProfileSelection: undefined,
+    createProfileValidation: undefined,
   };
 }
 

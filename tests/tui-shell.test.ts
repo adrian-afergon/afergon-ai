@@ -134,12 +134,15 @@ describe("navigation state", () => {
       "createNavigationState",
       "enterModelProfilesAssignments",
       "enterModelProfilesInlineCreate",
+      "enterModelProfilesTool",
       "exitModelProfilesAssignments",
       "exitModelProfilesInlineCreate",
+      "exitModelProfilesToTools",
       "moveHomeSelection",
       "moveModelProfilesAssignmentSelection",
       "moveModelProfilesInlineCreateSelection",
       "moveModelProfilesSelection",
+      "moveModelProfilesToolSelection",
       "moveSectionActionSelection",
       "navigateTo",
       "normalizeSectionActionSelection",
@@ -218,7 +221,9 @@ describe("navigation state", () => {
       route: "home",
       homeSelection: 0,
       modelProfiles: {
-        mode: "browse",
+        mode: "tools",
+        focusedToolIndex: 0,
+        selectedToolId: undefined,
         focusedProfileIndex: 0,
         focusedAgentIndex: 0,
         targetProfileName: undefined,
@@ -258,12 +263,13 @@ describe("navigation state", () => {
       ...navigateTo(createNavigationState(), "model-profiles"),
       modelProfiles: {
         mode: "assignments",
+        selectedToolId: "opencode",
         focusedProfileIndex: 0,
         focusedAgentIndex: 0,
         targetProfileName: "budget",
         stagedAssignments: {},
       },
-    })).toBe("Models/budget");
+    })).toBe("Models/OpenCode/budget");
   });
 
   it("sanitizes dynamic breadcrumb text before it is rendered", () => {
@@ -271,6 +277,7 @@ describe("navigation state", () => {
       ...navigateTo(createNavigationState(), "model-profiles"),
       modelProfiles: {
         mode: "assignments",
+        selectedToolId: "opencode",
         focusedProfileIndex: 0,
         focusedAgentIndex: 0,
         targetProfileName: "budget\u001b]2;owned\u0007\u001b[31mred",
@@ -278,7 +285,7 @@ describe("navigation state", () => {
       },
     });
 
-    expect(breadcrumb).toBe("Models/budgetred");
+    expect(breadcrumb).toBe("Models/OpenCode/budgetred");
     expect(breadcrumb).not.toContain("\u001b");
   });
 
@@ -288,6 +295,7 @@ describe("navigation state", () => {
     app.navigation.route = "model-profiles";
     app.navigation.modelProfiles = {
       mode: "assignments",
+      selectedToolId: "opencode",
       focusedProfileIndex: 0,
       focusedAgentIndex: 0,
       targetProfileName: "profile-1234567890\u001b[31m-dangerously-long-name-for-the-frame",
@@ -298,7 +306,7 @@ describe("navigation state", () => {
 
     expect(renderedLines[0]).toHaveLength(32);
     expect(visibleWidth(renderedLines[0])).toBe(32);
-    expect(renderedLines[0]).toBe("┌ Models/profile-1234567890-da ─");
+    expect(renderedLines[0]).toContain("Models/OpenCode/");
     expect(renderedLines[0]).not.toContain("\u001b");
   });
 
@@ -308,6 +316,7 @@ describe("navigation state", () => {
     app.navigation.route = "model-profiles";
     app.navigation.modelProfiles = {
       mode: "assignments",
+      selectedToolId: "opencode",
       focusedProfileIndex: 0,
       focusedAgentIndex: 0,
       targetProfileName: "超長名稱超長名稱超長名稱",
@@ -317,7 +326,7 @@ describe("navigation state", () => {
     const renderedLines = app.screen.render(32).map(stripAnsi);
 
     expect(visibleWidth(renderedLines[0])).toBeLessThanOrEqual(32);
-    expect(renderedLines[0]).toContain("Models/");
+    expect(renderedLines[0]).toContain("Models/OpenCode/");
     expect(renderedLines[0]).not.toContain("\u001b");
   });
 
@@ -327,6 +336,7 @@ describe("navigation state", () => {
     app.navigation.route = "model-profiles";
     app.navigation.modelProfiles = {
       mode: "assignments",
+      selectedToolId: "opencode",
       focusedProfileIndex: 0,
       focusedAgentIndex: 0,
       targetProfileName: "budget",
@@ -335,7 +345,7 @@ describe("navigation state", () => {
 
     const renderedLines = app.screen.render(32).map(stripAnsi);
 
-    expect(renderedLines[0]).toBe("┌ Models/budget ────────────────");
+    expect(renderedLines[0]).toContain("Models/OpenCode/budget");
   });
 
   it("renders the Models frame header with a right-aligned active-profile label", () => {
@@ -345,8 +355,8 @@ describe("navigation state", () => {
     const renderedLines = app.screen.render(80).map(stripAnsi);
 
     expect(renderedLines[0]).toContain("┌ Models ");
-    expect(renderedLines[0]).toContain("Active profile: default");
-    expect(renderedLines[0]).toMatch(/Active profile: default\s*$/);
+    expect(renderedLines[0]).toContain("Active OpenCode profile: default");
+    expect(renderedLines[0]).toMatch(/Active OpenCode profile: default\s*$/);
     expect(renderedLines.join("\n")).not.toContain("Summary [ok]: 1 profile available");
   });
 

@@ -1,11 +1,16 @@
 import {
   getActiveProfile,
   getConfigPath,
+  getInstalledModelProfileTools,
+  getModelProfileProjectionDetail,
+  getModelProfileToolLabel,
+  getToolProfileStore,
   loadConfig,
   resolveAssignments,
   saveProfileAssignments,
   SUPPORTED_AGENTS,
 } from "../model-profiles.js";
+import type { SupportedModelTool } from "../model-profiles-core.js";
 import { buildCommandArgv } from "./command-manifest.js";
 
 export const NEW_PROFILE_ROW_LABEL = "* New Profile";
@@ -29,10 +34,19 @@ interface FocusedProfileRow {
 
 interface BrowseState {
   readonly focusedProfile?: FocusedProfileRow;
+  readonly selectedTool?: SupportedModelTool;
+}
+
+interface ToolRow {
+  readonly id: SupportedModelTool;
+  readonly label: string;
+  readonly isFocused: boolean;
 }
 
 interface ModelProfilesNavigationState {
-  readonly mode?: "browse" | "assignments";
+  readonly mode?: "tools" | "browse" | "assignments";
+  readonly focusedToolIndex?: number;
+  readonly selectedToolId?: SupportedModelTool;
   readonly focusedProfileIndex?: number;
   readonly focusedAgentIndex?: number;
   readonly targetProfileName?: string;
@@ -63,10 +77,15 @@ interface ModelProfilesScreenState {
     readonly detail: string;
   };
   readonly activeProfile: string;
+  readonly tools: readonly ToolRow[];
+  readonly selectedTool?: SupportedModelTool;
+  readonly toolLabel?: string;
+  readonly projectionDetail?: string;
   readonly profiles: readonly BrowseProfileRow[];
   readonly assignments: readonly AssignmentRow[];
   readonly browse?: {
     readonly mode: "browse" | "assignments";
+    readonly selectedTool: SupportedModelTool;
     readonly targetProfileName: string | undefined;
     readonly focusedAgentIndex: number;
     readonly stagedAssignments: Record<string, string>;
@@ -85,24 +104,29 @@ function formatModelConfigFailure(error: unknown): string {
   return `Model config could not be read. Repair the file or move it aside, then rerun 'afergon-ai models show'. Details: ${reason}`;
 }
 
-function summarizeProfiles(profileNames: readonly string[], activeProfile: string | null, exists: boolean): ModelProfilesScreenState["summary"] {
+function summarizeProfiles(
+  profileNames: readonly string[],
+  activeProfile: string | null,
+  exists: boolean,
+  toolLabel: string,
+): ModelProfilesScreenState["summary"] {
   if (!exists) {
     return {
       state: "warn",
-      detail: "No afergon-ai model config exists yet. Use the CLI to create your first profile.",
+      detail: `No afergon-ai model config exists yet. Create your first ${toolLabel} profile.`,
     };
   }
 
   if (profileNames.length === 0) {
     return {
       state: "warn",
-      detail: "No named profiles are available yet. Use the CLI to create a profile before switching models.",
+      detail: `No ${toolLabel} profiles are available yet. Create a profile before switching models.`,
     };
   }
 
   return {
     state: "ok",
-    detail: `${profileNames.length} profile(s) available. Active profile: ${activeProfile ?? "(none)"}.`,
+    detail: `${profileNames.length} ${toolLabel} profile(s) available. Active profile: ${activeProfile ?? "(none)"}.`,
   };
 }
 
@@ -158,14 +182,16 @@ export function getModelProfilesBrowseIntent(
         readonly label: string;
         readonly argv: readonly string[];
         readonly cliEquivalent: string;
-        readonly confirmLabel: "Delete the selected profile permanently?";
+        readonly confirmLabel: string;
         readonly confirmation: {
           readonly kind: "submit-cancel";
-          readonly prompt: "The selected profile will be deleted permanently and cannot be recovered.";
+          readonly prompt: string;
         };
       };
     } {
   const focusedProfile = state?.browse?.focusedProfile;
+  const tool = state?.browse?.selectedTool ?? "opencode";
+  const toolLabel = getModelProfileToolLabel(tool);
   if (!focusedProfile) {
     return { kind: "none" };
   }
@@ -181,9 +207,9 @@ export function getModelProfilesBrowseIntent(
         id: "models-switch-focused",
         section: "model-profiles",
         kind: "mutate",
-        label: `Switch active profile to ${focusedProfile.name}`,
-        argv: buildCommandArgv("models", ["switch", focusedProfile.name]),
-        cliEquivalent: `afergon-ai models switch ${focusedProfile.name}`,
+        label: `Switch active ${toolLabel} profile to ${focusedProfile.name}`,
+        argv: buildCommandArgv("models", ["--tool", tool, "switch", focusedProfile.name]),
+        cliEquivalent: `afergon-ai models --tool ${tool} switch ${focusedProfile.name}`,
       },
     };
   }
@@ -195,13 +221,13 @@ export function getModelProfilesBrowseIntent(
         id: "models-delete-focused",
         section: "model-profiles",
         kind: "mutate",
-        label: `Delete profile ${focusedProfile.name}`,
-        argv: buildCommandArgv("models", ["profile", "delete", focusedProfile.name]),
-        cliEquivalent: `afergon-ai models profile delete ${focusedProfile.name}`,
-        confirmLabel: "Delete the selected profile permanently?",
+        label: `Delete ${toolLabel} profile ${focusedProfile.name}`,
+        argv: buildCommandArgv("models", ["--tool", tool, "profile", "delete", focusedProfile.name]),
+        cliEquivalent: `afergon-ai models --tool ${tool} profile delete ${focusedProfile.name}`,
+        confirmLabel: `Delete the selected ${toolLabel} profile permanently?`,
         confirmation: {
           kind: "submit-cancel",
-          prompt: "The selected profile will be deleted permanently and cannot be recovered.",
+          prompt: `The selected ${toolLabel} profile will be deleted permanently and cannot be recovered.`,
         },
       },
     };
@@ -245,17 +271,55 @@ export function getModelProfilesScreenState(
         detail: formatModelConfigFailure(error),
       },
       activeProfile: "(unavailable)",
+      tools: [],
       profiles: [],
       assignments: [],
       interactiveActions: [],
     };
   }
 
-  const activeProfileName = config.models.activeProfile;
-  const activeProfile = getActiveProfile(config) ?? {};
-  const profileNames = Object.keys(config.models.profiles).sort();
+  const installedTools = getInstalledModelProfileTools({ cwd, env });
   const modelProfilesState = navigation?.modelProfiles ?? {};
-  const mode = modelProfilesState.mode ?? "browse";
+  const hasNavigation = navigation?.modelProfiles !== undefined;
+  const mode = modelProfilesState.mode ?? (hasNavigation ? "tools" : "browse");
+  const selectedTool = modelProfilesState.selectedToolId;
+  const tools = installedTools.map((tool, index) => ({
+    id: tool,
+    label: getModelProfileToolLabel(tool),
+    isFocused: index === (modelProfilesState.focusedToolIndex ?? 0),
+  }));
+
+  if (hasNavigation && (mode === "tools" || !selectedTool || !installedTools.includes(selectedTool))) {
+    const missingSelectedTool = mode !== "tools" && selectedTool && !installedTools.includes(selectedTool);
+    return {
+      cwd,
+      configPath,
+      title: "Model Profiles",
+      summary: installedTools.length === 0
+        ? {
+            state: "warn",
+            detail: "No installed tools are available for model profiles. Run 'afergon-ai init' to install Pi, Claude Code, or OpenCode.",
+          }
+        : {
+            state: missingSelectedTool ? "warn" : "ok",
+            detail: missingSelectedTool
+              ? `${getModelProfileToolLabel(selectedTool)} is no longer installed. Choose an installed tool.`
+              : "Choose an installed tool before managing its profiles.",
+          },
+      activeProfile: "(none)",
+      tools,
+      profiles: [],
+      assignments: [],
+      interactiveActions: [],
+    };
+  }
+
+  const tool = selectedTool ?? "opencode";
+  const browseMode = mode === "assignments" ? "assignments" : "browse";
+  const store = getToolProfileStore(config, tool);
+  const activeProfileName = store.activeProfile;
+  const activeProfile = getActiveProfile(config, tool) ?? {};
+  const profileNames = Object.keys(store.profiles).sort();
   const focusedProfileIndex = navigation?.modelProfiles?.focusedProfileIndex ?? 0;
   const focusedAgentIndex = navigation?.modelProfiles?.focusedAgentIndex ?? 0;
   const targetProfileName = modelProfilesState.targetProfileName;
@@ -269,27 +333,32 @@ export function getModelProfilesScreenState(
     : undefined;
   const profiles = getBrowseProfileRows(profileNames, activeProfileName, focusedProfileIndex);
   const focusedProfile = getFocusedProfileRow(profiles, focusedProfileIndex);
-  const baseAssignments = mode === "assignments"
-    ? (targetProfileName ? config.models.profiles[targetProfileName] ?? {} : {})
-    : (focusedProfile.isCreate ? {} : (config.models.profiles[focusedProfile.name] ?? activeProfile));
+  const baseAssignments = browseMode === "assignments"
+    ? (targetProfileName ? store.profiles[targetProfileName] ?? {} : {})
+    : (focusedProfile.isCreate ? {} : (store.profiles[focusedProfile.name] ?? activeProfile));
   const focusedAssignments = resolveAssignments({
     ...baseAssignments,
     ...stagedAssignments,
   }).map((assignment, index) => ({
     ...assignment,
-    isFocused: mode === "assignments" && index === focusedAgentIndex,
+    isFocused: browseMode === "assignments" && index === focusedAgentIndex,
   }));
 
   return {
     cwd,
     configPath,
     title: "Model Profiles",
-    summary: summarizeProfiles(profileNames, activeProfileName, exists),
+    summary: summarizeProfiles(profileNames, activeProfileName, exists, getModelProfileToolLabel(tool)),
     activeProfile: activeProfileName ?? "(none)",
+    tools,
+    selectedTool: tool,
+    toolLabel: getModelProfileToolLabel(tool),
+    projectionDetail: getModelProfileProjectionDetail(tool),
     profiles,
-    assignments: mode === "browse" && focusedProfile.isCreate ? [] : focusedAssignments,
+    assignments: browseMode === "browse" && focusedProfile.isCreate ? [] : focusedAssignments,
     browse: {
-      mode,
+      mode: browseMode,
+      selectedTool: tool,
       targetProfileName,
       focusedAgentIndex,
       stagedAssignments,

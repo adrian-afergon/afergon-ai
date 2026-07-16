@@ -31,6 +31,11 @@ function createRouteState(navigation) {
 
 function createHarness() {
   const navigation = createNavigationState("model-profiles");
+  navigation.modelProfiles = {
+    ...navigation.modelProfiles,
+    mode: "browse",
+    selectedToolId: "opencode",
+  };
   const onNavigate = vi.fn();
   const executeAction = vi.fn(async () => ({ ok: true, stdout: "", stderr: "" }));
   const saveModelProfileAssignments = vi.fn(() => ({ profileName: "budget", refreshResult: { degraded: false } }));

@@ -3,7 +3,13 @@ import path from "node:path";
 
 import { createActionDefinition, type ActionDefinition } from "./actions/definitions.js";
 import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
-import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
+import {
+  SUPPORTED_MODEL_TOOLS,
+  getModelProfileToolLabel,
+  getOpenCodeBaseDir,
+  isModelProfileToolInstalled,
+  loadConfig,
+} from "../model-profiles.js";
 
 type SupportedInitId = "pi" | "claude" | "opencode" | "all";
 type ManifestActionId = CommandManifestEntry["id"];
@@ -90,7 +96,9 @@ function getModelConfigItem(env: NodeJS.ProcessEnv): StatusItem {
       id: "model-config",
       label: "Model config",
       state: "ok",
-      detail: `Config file exists at ${configPath}; active profile: ${config.models.activeProfile ?? "(none)"}.`,
+      detail: `Config file exists at ${configPath}; active profiles: ${SUPPORTED_MODEL_TOOLS.map(
+        (tool) => `${getModelProfileToolLabel(tool)}=${config.models.tools[tool].activeProfile ?? "(none)"}`,
+      ).join(", ")}.`,
     };
   } catch (error) {
     return {
@@ -127,9 +135,8 @@ function getProjectInstallItem({ id, label, filePath, presentDetail, missingDeta
 function getOpenCodeItem(env: NodeJS.ProcessEnv): StatusItem {
   const baseDir = getOpenCodeBaseDir(env);
   const configPath = path.join(baseDir, "opencode.json");
-  const agentPath = path.join(baseDir, "agents", "afergon-ai.md");
 
-  if (fs.existsSync(configPath) && fs.existsSync(agentPath)) {
+  if (isModelProfileToolInstalled("opencode", { env })) {
     return {
       id: "opencode",
       label: "OpenCode",

@@ -33,15 +33,29 @@ function writeJson(filePath, value) {
 }
 
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const config = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (config?.version === 2 && config.models?.tools?.opencode) {
+    Object.defineProperties(config.models, {
+      activeProfile: { configurable: true, get: () => config.models.tools.opencode.activeProfile },
+      profiles: { configurable: true, get: () => config.models.tools.opencode.profiles },
+    });
+  }
+  return config;
 }
 
 function createIsolatedModelsEnv(tempRoot) {
-  return {
+  const env = {
     HOME: path.join(tempRoot, "home"),
     XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
     AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
   };
+  const opencodeDir = path.join(env.XDG_CONFIG_HOME, "opencode");
+  fs.mkdirSync(path.join(opencodeDir, "agents"), { recursive: true });
+  writeJson(path.join(opencodeDir, "opencode.json"), {});
+  for (const agent of SUPPORTED_AGENTS) {
+    fs.writeFileSync(path.join(opencodeDir, "agents", `${agent}.md`), "managed");
+  }
+  return env;
 }
 
 function writeModelConfig(env, value) {
@@ -61,14 +75,17 @@ function createModelsActionExecutor(env) {
           version: 1,
           models: { activeProfile: null, profiles: {} },
         };
-    const [, command, ...rest] = action.argv;
+    const [, ...argv] = action.argv;
+    const tool = argv[0] === "--tool" ? argv[1] : "opencode";
+    const [command, ...rest] = argv[0] === "--tool" ? argv.slice(2) : argv;
+    const store = config.models.tools?.[tool] ?? config.models;
 
     if (command === "list") {
-      const profiles = Object.keys(config.models.profiles).sort();
+      const profiles = Object.keys(store.profiles).sort();
       return {
         ok: true,
         exitCode: 0,
-        stdout: profiles.map((name) => `${name === config.models.activeProfile ? "*" : " "} ${name}`).join("\n"),
+        stdout: profiles.map((name) => `${name === store.activeProfile ? "*" : " "} ${name}`).join("\n"),
         stderr: "",
         timedOut: false,
       };
@@ -78,7 +95,7 @@ function createModelsActionExecutor(env) {
       return {
         ok: true,
         exitCode: 0,
-        stdout: `Active profile: ${config.models.activeProfile ?? "(none)"}`,
+        stdout: `Active profile: ${store.activeProfile ?? "(none)"}`,
         stderr: "",
         timedOut: false,
       };
@@ -95,7 +112,7 @@ function createModelsActionExecutor(env) {
     }
 
     if (command === "switch") {
-      config.models.activeProfile = rest[0];
+      store.activeProfile = rest[0];
       writeModelConfig(env, config);
       return {
         ok: true,
@@ -109,8 +126,8 @@ function createModelsActionExecutor(env) {
     if (command === "set") {
       const positional = rest.filter((entry) => entry !== "--allow-unknown");
       const [agentName, modelName] = positional;
-      const activeProfile = config.models.activeProfile;
-      config.models.profiles[activeProfile][agentName] = modelName;
+      const activeProfile = store.activeProfile;
+      store.profiles[activeProfile][agentName] = modelName;
       writeModelConfig(env, config);
       return {
         ok: true,
@@ -122,7 +139,7 @@ function createModelsActionExecutor(env) {
     }
 
     if (command === "profile" && rest[0] === "create") {
-      config.models.profiles[rest[1]] = {};
+      store.profiles[rest[1]] = {};
       writeModelConfig(env, config);
       return {
         ok: true,
@@ -134,7 +151,7 @@ function createModelsActionExecutor(env) {
     }
 
     if (command === "profile" && rest[0] === "delete") {
-      delete config.models.profiles[rest[1]];
+      delete store.profiles[rest[1]];
       writeModelConfig(env, config);
       return {
         ok: true,
@@ -208,12 +225,22 @@ async function flushTui() {
 async function emitInput(terminal, data) {
   terminal.emitInput(data);
   await flushTui();
+  // Existing browse-flow tests start from Home; enter the explicit OpenCode picker before exercising the old interactions.
+  if (data === "m" && terminal.output.includes("Installed tools")) {
+    terminal.emitInput("\r");
+    await flushTui();
+  }
 }
 
 async function emitText(terminal, text) {
   for (const character of text) {
     await emitInput(terminal, character);
   }
+}
+
+async function enterOpenCodeProfiles(terminal) {
+  await emitInput(terminal, "m");
+  await emitInput(terminal, "\r");
 }
 
 async function submitFocusedModelEntry(terminal, modelText) {
@@ -228,6 +255,10 @@ function buildBrowseRouteState({ navigation, activeProfile = "budget", focusedPr
     summary: { state: "ok", detail: summaryDetail },
     activeProfile,
     configPath: "/tmp/config.json",
+    tools: [],
+    selectedTool: "opencode",
+    toolLabel: "OpenCode",
+    projectionDetail: "The active profile is projected to managed OpenCode agents on disk.",
     profiles: [
       { name: "budget", isActive: activeProfile === "budget", isCreate: false, isFocused: focusedProfileName === "budget" },
       { name: "fallback", isActive: activeProfile === "fallback", isCreate: false, isFocused: focusedProfileName === "fallback" },
@@ -235,7 +266,8 @@ function buildBrowseRouteState({ navigation, activeProfile = "budget", focusedPr
     ],
     assignments: [],
     browse: {
-      mode: navigation?.modelProfiles?.mode ?? "browse",
+      mode: navigation?.modelProfiles?.mode === "assignments" ? "assignments" : "browse",
+      selectedTool: "opencode",
       focusedProfileName,
       focusedProfile: {
         name: focusedProfileName,
@@ -329,7 +361,7 @@ describe("getModelProfilesScreenState", () => {
     expect(state.summary).toEqual(
       expect.objectContaining({
         state: "ok",
-        detail: expect.stringContaining("2 profile(s) available"),
+        detail: expect.stringContaining("2 OpenCode profile(s) available"),
       }),
     );
     expect(state.activeProfile).toBe("budget");
@@ -844,6 +876,40 @@ describe("renderModelProfilesScreen", () => {
 });
 
 describe("createTuiApp model-profiles route", () => {
+  it("lists installed tools before opening a tool-scoped profile browser", async () => {
+    const tempRoot = makeTempRoot();
+    const env = createIsolatedModelsEnv(tempRoot);
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "Pi");
+    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "Claude");
+    const terminal = new FakeTerminal();
+    const app = createTuiApp({
+      terminal,
+      exit: () => {},
+      loadModelProfilesScreenState: ({ navigation }) => getModelProfilesScreenState({ cwd: tempRoot, env, navigation }),
+    });
+
+    app.start();
+    await flushTui();
+    terminal.emitInput("m");
+    await flushTui();
+
+    expect(app.navigation.modelProfiles?.mode).toBe("tools");
+    expect(terminal.output).toContain("Installed tools");
+    expect(terminal.output).toContain("> Pi");
+    expect(terminal.output).toContain("  Claude Code");
+    expect(terminal.output).toContain("  OpenCode");
+
+    terminal.output = "";
+    terminal.emitInput("\u001b[B");
+    terminal.emitInput("\r");
+    await flushTui();
+
+    expect(app.navigation.modelProfiles).toMatchObject({ mode: "browse", selectedToolId: "claude" });
+    expect(terminal.output).toContain("Models/Claude Code");
+    expect(terminal.output).toContain("Claude Code profiles are stored in afergon-ai only");
+  });
+
   it("navigates from Home to Model Profiles and back with discoverable keyboard shortcuts", async () => {
     const terminal = new FakeTerminal();
     const app = createTuiApp({
@@ -875,7 +941,7 @@ describe("createTuiApp model-profiles route", () => {
     expect(terminal.output).toContain("Model Profiles");
     expect(terminal.output).toContain("Profile list");
     expect(terminal.output).toContain("> [X] budget");
-    expect(stripAnsi(terminal.output)).toContain("Active profile: budget");
+    expect(stripAnsi(terminal.output)).toContain("Active OpenCode profile: budget");
     expect(stripAnsi(terminal.output)).not.toContain("Summary [ok]: 1 profile(s) available.");
 
     terminal.output = "";
@@ -918,6 +984,8 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     terminal.emitInput("m");
     await flushTui();
+    terminal.emitInput("\r");
+    await flushTui();
 
     terminal.emitInput("\u001b[B");
     await flushTui();
@@ -958,6 +1026,8 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     terminal.emitInput("m");
     await flushTui();
+    terminal.emitInput("\r");
+    await flushTui();
 
     terminal.emitInput("\u001b[B");
     await flushTui();
@@ -991,11 +1061,11 @@ describe("createTuiApp model-profiles route", () => {
     terminal.output = "";
     terminal.emitInput("\u001b[3~");
     await flushTui();
-    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("The selected OpenCode profile will be deleted permanently and cannot be recovered.");
     expect(terminal.output).toContain("> Submit / confirm");
     expect(terminal.output).toContain("  Cancel");
     expect(terminal.output).not.toContain("Expected text: budget");
-    expect(terminal.output).toContain("afergon-ai models profile delete budget");
+    expect(terminal.output).toContain("afergon-ai models --tool opencode profile delete budget");
 
     terminal.emitInput("\u001b");
     await flushTui();
@@ -1153,6 +1223,8 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
     terminal.emitInput("m");
     await flushTui();
+    terminal.emitInput("\r");
+    await flushTui();
 
     terminal.output = "";
     terminal.emitInput("u");
@@ -1308,10 +1380,15 @@ describe("createTuiApp model-profiles route", () => {
         summary: { state: "warn", detail: "No named profiles are available yet." },
         activeProfile: navigation?.modelProfiles?.targetProfileName ?? "(none)",
         configPath: "/tmp/config.json",
+        tools: [],
+        selectedTool: "opencode",
+        toolLabel: "OpenCode",
+        projectionDetail: "The active profile is projected to managed OpenCode agents on disk.",
         profiles: [{ name: "* New Profile", isActive: false, isCreate: true, isFocused: true }],
         assignments: [],
         browse: {
-          mode: navigation?.modelProfiles?.mode ?? "browse",
+          mode: navigation?.modelProfiles?.mode === "assignments" ? "assignments" : "browse",
+          selectedTool: "opencode",
           targetProfileName: navigation?.modelProfiles?.targetProfileName,
           inlineCreate: navigation?.modelProfiles?.createProfileName !== undefined
             ? {
@@ -1363,10 +1440,15 @@ describe("createTuiApp model-profiles route", () => {
         summary: { state: "warn", detail: "No named profiles are available yet." },
         activeProfile: navigation?.modelProfiles?.targetProfileName ?? "(none)",
         configPath: "/tmp/config.json",
+        tools: [],
+        selectedTool: "opencode",
+        toolLabel: "OpenCode",
+        projectionDetail: "The active profile is projected to managed OpenCode agents on disk.",
         profiles: [{ name: "* New Profile", isActive: false, isCreate: true, isFocused: true }],
         assignments: [],
         browse: {
-          mode: navigation?.modelProfiles?.mode ?? "browse",
+          mode: navigation?.modelProfiles?.mode === "assignments" ? "assignments" : "browse",
+          selectedTool: "opencode",
           targetProfileName: navigation?.modelProfiles?.targetProfileName,
           inlineCreate: navigation?.modelProfiles?.createProfileName !== undefined
             ? {
@@ -1540,7 +1622,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitText(terminal, "nope");
 
     expect(app.navigation.modal?.kind).toBe("confirm");
-    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("The selected OpenCode profile will be deleted permanently and cannot be recovered.");
     expect(terminal.output).not.toContain("Typed text");
     expect(terminal.output).not.toContain("nope");
     expect(executeAction).not.toHaveBeenCalled();
@@ -1579,7 +1661,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "D");
 
     expect(app.navigation.modal?.kind).toBe("confirm");
-    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("The selected OpenCode profile will be deleted permanently and cannot be recovered.");
     expect(terminal.output).toContain("> Submit / confirm");
     expect(terminal.output).toContain("  Cancel");
     expect(terminal.output).not.toContain("Expected text: budget");
@@ -1594,7 +1676,7 @@ describe("createTuiApp model-profiles route", () => {
     await emitInput(terminal, "d");
 
     expect(app.navigation.modal?.kind).toBe("confirm");
-    expect(terminal.output).toContain("The selected profile will be deleted permanently and cannot be recovered.");
+    expect(terminal.output).toContain("The selected OpenCode profile will be deleted permanently and cannot be recovered.");
     expect(terminal.output).not.toContain("Expected text: fallback");
     expect(executeAction).not.toHaveBeenCalled();
 
@@ -1683,7 +1765,7 @@ describe("createTuiApp model-profiles route", () => {
 
     terminal.output = "";
     await emitInput(terminal, "\u001b[3~");
-    expect(terminal.output).toContain("afergon-ai models profile delete budget");
+    expect(terminal.output).toContain("afergon-ai models --tool opencode profile delete budget");
 
     terminal.output = "";
     await emitInput(terminal, "\r");
@@ -1695,8 +1777,8 @@ describe("createTuiApp model-profiles route", () => {
     expect(app.navigation.modelProfiles?.focusedProfileIndex).toBe(0);
     expect(terminal.output).not.toContain("Output [ok]");
     expect(terminal.output).not.toContain("Deleted profile 'budget'.");
-    expect(terminal.output).toContain("Active profile: ");
-    expect(stripAnsi(terminal.output)).toContain("Active profile: (none)");
+    expect(terminal.output).toContain("Active OpenCode profile: ");
+    expect(stripAnsi(terminal.output)).toContain("Active OpenCode profile: (none)");
     expect(terminal.output).toContain("> [ ] fallback");
     expect(terminal.output).toContain("  * New Profile");
     expect(stripAnsi(terminal.output)).not.toContain("budget");

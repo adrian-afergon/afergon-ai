@@ -32,6 +32,11 @@ interface BrowseState {
   readonly placeholderAssignments?: readonly string[];
 }
 
+interface ToolRow {
+  readonly label?: string;
+  readonly isFocused?: boolean;
+}
+
 interface ModelProfilesScreenState {
   readonly title?: string;
   readonly configPath?: string;
@@ -41,6 +46,9 @@ interface ModelProfilesScreenState {
   };
   readonly profiles: readonly BrowseStateProfileRow[];
   readonly assignments: readonly BrowseStateAssignment[];
+  readonly tools?: readonly ToolRow[];
+  readonly toolLabel?: string;
+  readonly projectionDetail?: string;
   readonly browse?: BrowseState;
 }
 
@@ -94,6 +102,17 @@ function renderProfiles(
   });
 }
 
+function renderTools(tools: readonly ToolRow[], styleSelected: ScreenStyleOptions["styleSelected"]): string[] {
+  if (tools.length === 0) {
+    return ["- No installed tools are available."];
+  }
+
+  return tools.map((tool) => {
+    const line = renderFocusLine(sanitizeText(tool.label), tool.isFocused);
+    return tool.isFocused && typeof styleSelected === "function" ? styleSelected(line) : line;
+  });
+}
+
 function renderAssignments(assignments: readonly BrowseStateAssignment[]): string[] {
   return assignments.map(
     (assignment) =>
@@ -127,6 +146,22 @@ export function renderModelProfilesScreen(
   width: number,
   { styleSelected, styleMuted }: ScreenStyleOptions = {},
 ): string[] {
+  if (!state.browse && state.tools) {
+    return [
+      sanitizeText(state.title ?? "Model Profiles"),
+      "",
+      ...(state.summary?.state === "fail" ? [`Summary [fail]: ${sanitizeText(state.summary.detail)}`] : [sanitizeText(state.summary?.detail)]),
+      "",
+      "Installed tools",
+      "",
+      ...renderTools(state.tools ?? [], styleSelected),
+      "",
+      "Keyboard help",
+      "Use ↑/↓ to move the tool selection.",
+      "Press Enter to manage profiles for the focused tool.",
+    ].map((line) => padLine(line, width));
+  }
+
   const isBrowseMode = (state.browse?.mode ?? "browse") === "browse";
   const inlineCreate = isBrowseMode ? state.browse?.inlineCreate : undefined;
   const showNewProfilePlaceholders = isBrowseMode && state.browse?.isCreateSelected && state.assignments.length === 0;
@@ -144,6 +179,8 @@ export function renderModelProfilesScreen(
     "",
     ...(state.summary?.state === "fail" ? [`Summary [fail]: ${sanitizeText(state.summary.detail)}`] : []),
     `Config path: ${sanitizeText(state.configPath)}`,
+    `Tool: ${sanitizeText(state.toolLabel ?? "OpenCode")}`,
+    sanitizeText(state.projectionDetail),
     "",
     "Profile list",
     "",
@@ -161,7 +198,7 @@ export function renderModelProfilesScreen(
       ? [
           "Use ↑/↓ to move the profile selection.",
           inlineCreate ? "Type a profile name, Enter to create, or select Cancel." : "Press Enter to switch or start the focused profile flow.",
-          "Press Delete or D to confirm deletion, U to edit, and N to create.",
+          "Press Delete or D to confirm deletion, U to edit, Esc to return to tools, and N to create.",
         ]
       : ["Use ↑/↓ to move agents, Enter to stage a model, S to save, Esc to cancel."]),
   ];

@@ -6,11 +6,14 @@ import {
   backspaceModelProfilesInlineCreateCharacter,
   enterModelProfilesAssignments,
   enterModelProfilesInlineCreate,
+  enterModelProfilesTool,
   exitModelProfilesAssignments,
   exitModelProfilesInlineCreate,
+  exitModelProfilesToTools,
   moveModelProfilesAssignmentSelection,
   moveModelProfilesInlineCreateSelection,
   moveModelProfilesSelection,
+  moveModelProfilesToolSelection,
   openModal,
   closeModal,
   validateModelProfilesInlineCreate,
@@ -19,15 +22,15 @@ import { buildCommandArgv } from "./command-manifest.js";
 
 const DELETE_ESCAPE_SEQUENCE = "\u001b[3~";
 
-function createProfileCreateAction() {
+function createProfileCreateAction(tool) {
   return {
     id: "model-profiles-create-profile",
     section: "model-profiles",
     kind: "mutate",
-    label: "Create a profile",
-    cliEquivalent: "afergon-ai models profile create <name>",
+    label: `Create a ${tool} profile`,
+    cliEquivalent: `afergon-ai models --tool ${tool} profile create <name>`,
     confirmLabel: "Create this profile now?",
-    buildArgv: ({ profileName }) => buildCommandArgv("models", ["profile", "create", profileName]),
+    buildArgv: ({ profileName }) => buildCommandArgv("models", ["--tool", tool, "profile", "create", profileName]),
   } as const;
 }
 
@@ -135,10 +138,12 @@ export function createModelProfilesInputController({
 
   function saveFocusedProfileAssignments() {
     try {
+      const tool = navigation.modelProfiles?.selectedToolId ?? "opencode";
       const result = saveModelProfileAssignments({
+        tool,
         profileName: navigation.modelProfiles?.targetProfileName,
         assignments: navigation.modelProfiles?.stagedAssignments ?? {},
-        refreshActiveProfile: refreshActiveModelProfile,
+        refreshActiveProfile: () => refreshActiveModelProfile({ tool }),
       });
       if (result && typeof result.then === "function") {
         result.then(finalizeAssignmentSave).catch(showAssignmentSaveError);
@@ -158,7 +163,8 @@ export function createModelProfilesInputController({
       return;
     }
     const profileName = validatedState.createProfileName;
-    void runSelectedAction({ ...resolveExecutableAction(createProfileCreateAction(), { profileName }), targetProfileName: profileName });
+    const tool = validatedState.selectedToolId ?? "opencode";
+    void runSelectedAction({ ...resolveExecutableAction(createProfileCreateAction(tool), { profileName }), targetProfileName: profileName });
   }
 
   function handleInput(data) {
@@ -168,6 +174,26 @@ export function createModelProfilesInputController({
     const routeState = getRouteState();
     const mode = routeState?.browse?.mode ?? navigation.modelProfiles?.mode;
     const printable = data.length === 1 ? data.toLowerCase() : undefined;
+
+    if (mode === "tools") {
+      if (keyMatches.up(data) || keyMatches.down(data)) {
+        updateModelProfilesState(
+          navigation,
+          moveModelProfilesToolSelection(navigation.modelProfiles, routeState?.tools?.length ?? 1, keyMatches.up(data) ? -1 : 1),
+        );
+        onNavigate();
+        return true;
+      }
+      if (keyMatches.enter(data)) {
+        const focusedTool = routeState?.tools?.[navigation.modelProfiles?.focusedToolIndex ?? 0];
+        if (focusedTool?.id) {
+          updateModelProfilesState(navigation, enterModelProfilesTool(navigation.modelProfiles, focusedTool.id));
+          onNavigate();
+        }
+        return true;
+      }
+      return false;
+    }
 
     if (mode === "assignments") {
       if (keyMatches.escape(data)) {
@@ -200,7 +226,9 @@ export function createModelProfilesInputController({
     }
     const isInlineCreate = routeState?.browse?.inlineCreate !== undefined;
     if (isInlineCreate) {
-      if (keyMatches.up(data) || keyMatches.down(data)) {
+      if (keyMatches.escape(data)) {
+        updateModelProfilesState(navigation, exitModelProfilesInlineCreate(navigation.modelProfiles));
+      } else if (keyMatches.up(data) || keyMatches.down(data)) {
         updateModelProfilesState(navigation, moveModelProfilesInlineCreateSelection(navigation.modelProfiles, keyMatches.up(data) ? -1 : 1));
       } else if (data === "\u007f") {
         updateModelProfilesState(navigation, backspaceModelProfilesInlineCreateCharacter(navigation.modelProfiles));
@@ -223,6 +251,11 @@ export function createModelProfilesInputController({
 
     if (keyMatches.up(data) || keyMatches.down(data)) {
       updateModelProfilesState(navigation, moveModelProfilesSelection(navigation.modelProfiles, routeState?.profiles?.length ?? 1, keyMatches.up(data) ? -1 : 1));
+      onNavigate();
+      return true;
+    }
+    if (keyMatches.escape(data)) {
+      updateModelProfilesState(navigation, exitModelProfilesToTools(navigation.modelProfiles));
       onNavigate();
       return true;
     }
