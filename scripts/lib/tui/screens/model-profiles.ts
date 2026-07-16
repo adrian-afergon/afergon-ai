@@ -104,7 +104,7 @@ function renderProfiles(
 
 function renderTools(tools: readonly ToolRow[], styleSelected: ScreenStyleOptions["styleSelected"]): string[] {
   if (tools.length === 0) {
-    return ["- No installed tools are available."];
+    return ["- No user-scoped tool configuration was detected."];
   }
 
   return tools.map((tool) => {
@@ -152,7 +152,7 @@ export function renderModelProfilesScreen(
       "",
       ...(state.summary?.state === "fail" ? [`Summary [fail]: ${sanitizeText(state.summary.detail)}`] : [sanitizeText(state.summary?.detail)]),
       "",
-      "Installed tools",
+      "Detected tools",
       "",
       ...renderTools(state.tools ?? [], styleSelected),
       "",

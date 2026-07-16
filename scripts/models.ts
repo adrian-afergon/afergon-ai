@@ -107,6 +107,12 @@ function listProfiles(tool) {
 
 export function reapplySupportedAdapters(env: NodeJS.ProcessEnv = process.env) {
   const opencodeBaseDir = getOpenCodeBaseDir(env);
+  if (!opencodeBaseDir) {
+    return createRefreshResult({
+      status: "degraded",
+      stdout: "Saved config. OpenCode user config directory could not be resolved, so host projection was skipped.",
+    });
+  }
   const opencodeAgentsDir = path.join(opencodeBaseDir, "agents");
   const opencodeConfigPath = path.join(opencodeBaseDir, "opencode.json");
   const requiredAgentFiles = SUPPORTED_AGENTS.map((agentName) => path.join(opencodeAgentsDir, `${agentName}.md`));

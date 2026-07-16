@@ -140,6 +140,10 @@ describe("getConfigurationStatus", () => {
       XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
     };
 
+    fs.mkdirSync(path.join(env.HOME, ".pi", "agent"), { recursive: true });
+    fs.mkdirSync(path.join(env.HOME, ".claude"), { recursive: true });
+    fs.mkdirSync(path.join(env.XDG_CONFIG_HOME, "opencode"), { recursive: true });
+
     const status = getConfigurationStatus({ cwd: tempRoot, env });
 
     expect(status.items).toEqual([

@@ -298,13 +298,13 @@ export function getModelProfilesScreenState(
       summary: installedTools.length === 0
         ? {
             state: "warn",
-            detail: "No installed tools are available for model profiles. Run 'afergon-ai init' to install Pi, Claude Code, or OpenCode.",
+            detail: "No user-scoped tool configuration was detected. Install Pi, Claude Code, or OpenCode, then reopen Model Profiles.",
           }
         : {
             state: missingSelectedTool ? "warn" : "ok",
             detail: missingSelectedTool
-              ? `${getModelProfileToolLabel(selectedTool)} is no longer installed. Choose an installed tool.`
-              : "Choose an installed tool before managing its profiles.",
+              ? `${getModelProfileToolLabel(selectedTool)} is no longer detected in user scope. Choose a detected tool.`
+              : "Choose a detected tool before managing its profiles.",
           },
       activeProfile: "(none)",
       tools,

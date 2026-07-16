@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import {
@@ -275,11 +276,30 @@ export function ensureActiveProfile(config: AfergonModelConfig, tool: SupportedM
   return defaultProfileName;
 }
 
-export function getOpenCodeBaseDir(env: NodeJS.ProcessEnv = process.env): string {
-  const xdgConfigHome = env.XDG_CONFIG_HOME;
-  const home = env.HOME;
-  const fallbackHome = home ? path.resolve(home) : process.cwd();
-  const baseDir = xdgConfigHome ? path.resolve(xdgConfigHome) : path.join(fallbackHome, ".config");
+function getUserHomeDir(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const configuredHome = process.platform === "win32"
+    ? env.USERPROFILE || env.HOME || (env.HOMEDRIVE && env.HOMEPATH ? path.join(env.HOMEDRIVE, env.HOMEPATH) : undefined)
+    : env.HOME || env.USERPROFILE;
 
-  return path.join(baseDir, "opencode");
+  if (configuredHome?.trim()) {
+    return path.resolve(configuredHome);
+  }
+
+  try {
+    return path.resolve(os.homedir());
+  } catch {
+    return undefined;
+  }
+}
+
+export function getOpenCodeBaseDir(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const xdgConfigHome = env.XDG_CONFIG_HOME?.trim();
+  const home = getUserHomeDir(env);
+  const baseDir = xdgConfigHome
+    ? path.resolve(xdgConfigHome)
+    : home
+      ? path.join(home, ".config")
+      : undefined;
+
+  return baseDir ? path.join(baseDir, "opencode") : undefined;
 }

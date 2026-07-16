@@ -7,7 +7,6 @@ import {
   SUPPORTED_MODEL_TOOLS,
   getModelProfileToolLabel,
   getOpenCodeBaseDir,
-  isModelProfileToolInstalled,
   loadConfig,
 } from "../model-profiles.js";
 
@@ -134,9 +133,10 @@ function getProjectInstallItem({ id, label, filePath, presentDetail, missingDeta
 
 function getOpenCodeItem(env: NodeJS.ProcessEnv): StatusItem {
   const baseDir = getOpenCodeBaseDir(env);
-  const configPath = path.join(baseDir, "opencode.json");
+  const configPath = baseDir ? path.join(baseDir, "opencode.json") : undefined;
+  const agentPath = baseDir ? path.join(baseDir, "agents", "afergon-ai.md") : undefined;
 
-  if (isModelProfileToolInstalled("opencode", { env })) {
+  if (configPath && agentPath && fs.existsSync(configPath) && fs.existsSync(agentPath)) {
     return {
       id: "opencode",
       label: "OpenCode",
@@ -149,7 +149,9 @@ function getOpenCodeItem(env: NodeJS.ProcessEnv): StatusItem {
     id: "opencode",
     label: "OpenCode",
     state: "warn",
-    detail: `Managed install not detected under ${baseDir}.`,
+    detail: baseDir
+      ? `Managed install not detected under ${baseDir}.`
+      : "Managed install not detected because the OpenCode user config directory could not be resolved.",
   };
 }
 

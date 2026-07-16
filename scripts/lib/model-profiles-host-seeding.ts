@@ -15,7 +15,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 export function readOpenCodeAgentModels(
   env: NodeJS.ProcessEnv = process.env,
 ): Partial<Record<SupportedAgent, string>> {
-  const opencodeConfigPath = path.join(getOpenCodeBaseDir(env), "opencode.json");
+  const opencodeBaseDir = getOpenCodeBaseDir(env);
+  if (!opencodeBaseDir) {
+    return {};
+  }
+
+  const opencodeConfigPath = path.join(opencodeBaseDir, "opencode.json");
   if (!fs.existsSync(opencodeConfigPath)) {
     return {};
   }

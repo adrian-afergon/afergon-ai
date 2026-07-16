@@ -385,6 +385,60 @@ describe("model profile resolution", () => {
     expect(modelProfilesTypeScript.SUPPORTED_AGENTS).toEqual(modelProfilesRuntime.SUPPORTED_AGENTS);
   });
 
+  it("detects tools from user-scoped configuration and ignores project markers", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.js");
+    const modelProfilesRuntime = await import("../dist/scripts/lib/model-profiles.js");
+    const tempRoot = makeTempRoot();
+    const projectDir = path.join(tempRoot, "project");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+    };
+
+    fs.mkdirSync(path.join(projectDir, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(projectDir, ".pi", "APPEND_SYSTEM.md"), "Pi");
+    fs.writeFileSync(path.join(projectDir, "CLAUDE.md"), "Claude");
+    fs.writeFileSync(path.join(projectDir, "opencode.json"), "{}\n");
+
+    expect(modelProfilesTypeScript.getInstalledModelProfileTools({ cwd: projectDir, env })).toEqual([]);
+    expect(modelProfilesRuntime.getInstalledModelProfileTools({ cwd: projectDir, env })).toEqual([]);
+
+    fs.mkdirSync(path.join(env.HOME, ".pi", "agent"), { recursive: true });
+    fs.mkdirSync(path.join(env.HOME, ".claude"), { recursive: true });
+    fs.mkdirSync(path.join(env.XDG_CONFIG_HOME, "opencode"), { recursive: true });
+
+    expect(modelProfilesTypeScript.getInstalledModelProfileTools({ cwd: projectDir, env })).toEqual(["pi", "claude", "opencode"]);
+    expect(modelProfilesRuntime.getInstalledModelProfileTools({ cwd: projectDir, env })).toEqual(["pi", "claude", "opencode"]);
+  });
+
+  it("honors user-scope tool configuration overrides", async () => {
+    const modelProfilesTypeScript = await import("../scripts/lib/model-profiles.js");
+    const modelProfilesRuntime = await import("../dist/scripts/lib/model-profiles.js");
+    const tempRoot = makeTempRoot();
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: path.join(tempRoot, "xdg"),
+      PI_CODING_AGENT_DIR: path.join(tempRoot, "pi-config"),
+      CLAUDE_CONFIG_DIR: path.join(tempRoot, "claude-config"),
+      OPENCODE_CONFIG_DIR: path.join(tempRoot, "opencode-config"),
+    };
+
+    fs.mkdirSync(env.PI_CODING_AGENT_DIR, { recursive: true });
+    fs.mkdirSync(env.CLAUDE_CONFIG_DIR, { recursive: true });
+    fs.mkdirSync(env.OPENCODE_CONFIG_DIR, { recursive: true });
+
+    expect(modelProfilesTypeScript.getInstalledModelProfileTools({ env })).toEqual(["pi", "claude", "opencode"]);
+    expect(modelProfilesRuntime.getInstalledModelProfileTools({ env })).toEqual(["pi", "claude", "opencode"]);
+
+    fs.rmSync(env.OPENCODE_CONFIG_DIR, { recursive: true, force: true });
+    const configFile = path.join(tempRoot, "opencode.json");
+    fs.writeFileSync(configFile, "{}");
+    const fileOverrideEnv = { ...env, OPENCODE_CONFIG: configFile };
+
+    expect(modelProfilesTypeScript.isModelProfileToolInstalled("opencode", { env: fileOverrideEnv })).toBe(true);
+    expect(modelProfilesRuntime.isModelProfileToolInstalled("opencode", { env: fileOverrideEnv })).toBe(true);
+  });
+
   it("exports only the intended public model profile config helpers", async () => {
     const modelProfilesConfigTypeScript = await import("../scripts/lib/model-profiles-config.js");
     const modelProfilesConfigRuntime = await import("../dist/scripts/lib/model-profiles-config.js");

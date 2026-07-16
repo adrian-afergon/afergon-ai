@@ -155,7 +155,7 @@ The MVP TUI currently exposes these sections:
 
 - **Configuration** — current install/config state plus stable CLI actions for `init`, `doctor`, `update`, and `models`
 - **Status** — readiness summary and actionable repair guidance using the same stable CLI actions
-- **Model Profiles** — choose an installed tool first, then manage its active profile, saved profiles, and resolved assignments through the stable `afergon-ai models` surface
+- **Model Profiles** — choose a detected user-scoped tool first, then manage its active profile, saved profiles, and resolved assignments through the stable `afergon-ai models` surface
 
 CLI-equivalent visibility rules:
 
@@ -168,7 +168,7 @@ Accessibility and keyboard notes:
 - Inside Configuration and Status, use ↑/↓ to move the action list, Enter to run the selected action, and `Esc` to cancel confirmations, forms, or output panels.
 - Focused rows use a fixed-width `>` cursor plus teal emphasis when the terminal supports color; unfocused rows reserve the same cursor column so labels stay aligned.
 - Action lists keep labels quiet: command metadata stays out of the picker rows and only appears in confirmations or output panels.
-- In Model Profiles, choose an installed tool first. In its browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort. `Esc` returns from profiles to the tool selector.
+- In Model Profiles, choose a detected user-scoped tool first. In its browse mode, ↑/↓ move only the profile list, Enter switches the focused existing profile inline with no success output panel, Delete or `D` opens a floating submit/cancel delete alert over the Models frame, `U` edits the focused profile, and `N` or `* New Profile` starts inline create-name entry in the profile list with Enter to create or Cancel to abort. `Esc` returns from profiles to the tool selector.
 - Clean successful Enter-driven profile switches stay in the profile list without opening an output panel, while failures and degraded refresh guidance still surface bounded output.
 - In Model Profiles assignment mode, ↑/↓ move agents, Enter opens manual model entry for the focused agent, `S` saves staged edits to the target profile, and `Esc` cancels without saving.
 - A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.

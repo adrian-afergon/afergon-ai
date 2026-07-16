@@ -226,7 +226,7 @@ async function emitInput(terminal, data) {
   terminal.emitInput(data);
   await flushTui();
   // Existing browse-flow tests start from Home; enter the explicit OpenCode picker before exercising the old interactions.
-  if (data === "m" && terminal.output.includes("Installed tools")) {
+  if (data === "m" && terminal.output.includes("Detected tools")) {
     terminal.emitInput("\r");
     await flushTui();
   }
@@ -876,12 +876,11 @@ describe("renderModelProfilesScreen", () => {
 });
 
 describe("createTuiApp model-profiles route", () => {
-  it("lists installed tools before opening a tool-scoped profile browser", async () => {
+  it("lists detected tools before opening a tool-scoped profile browser", async () => {
     const tempRoot = makeTempRoot();
     const env = createIsolatedModelsEnv(tempRoot);
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "Pi");
-    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "Claude");
+    fs.mkdirSync(path.join(env.HOME, ".pi", "agent"), { recursive: true });
+    fs.mkdirSync(path.join(env.HOME, ".claude"), { recursive: true });
     const terminal = new FakeTerminal();
     const app = createTuiApp({
       terminal,
@@ -895,7 +894,7 @@ describe("createTuiApp model-profiles route", () => {
     await flushTui();
 
     expect(app.navigation.modelProfiles?.mode).toBe("tools");
-    expect(terminal.output).toContain("Installed tools");
+    expect(terminal.output).toContain("Detected tools");
     expect(terminal.output).toContain("> Pi");
     expect(terminal.output).toContain("  Claude Code");
     expect(terminal.output).toContain("  OpenCode");
