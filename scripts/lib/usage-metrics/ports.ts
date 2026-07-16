@@ -4,10 +4,13 @@ export interface EventParser {
   parse(input: unknown): EfficiencyRecord;
 }
 
-export interface RecordStore {
+export interface RecordQuery {
+  all(): readonly EfficiencyRecord[];
+}
+
+export interface RecordStore extends RecordQuery {
   transaction<T>(work: () => T): T;
   insert(records: readonly EfficiencyRecord[]): void;
-  all(): readonly EfficiencyRecord[];
   clear(): void;
 }
 

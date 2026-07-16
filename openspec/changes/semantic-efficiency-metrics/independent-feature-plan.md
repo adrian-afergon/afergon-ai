@@ -31,7 +31,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Implement confirmed clear that removes only metrics-owned data.
   - Add temporary-directory tests for isolation, atomicity, disabled behavior, and preservation of unrelated data.
 
-- [ ] **4. Implement use cases and reports**
+- [x] **4. Implement use cases and reports**
   - Define repository, query, export, and optional enrichment ports.
   - Implement import as validate, normalize, check enablement, then persist.
   - Support filters by task, phase, agent, subagent, model, profile, outcome, and review cycle.
