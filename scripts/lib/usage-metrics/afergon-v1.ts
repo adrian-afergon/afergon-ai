@@ -1,15 +1,20 @@
 import {
-  EfficiencyRecord,
+  AFERGON_AI_EVENT_SOURCE,
+  AFERGON_AI_EVENT_VERSION,
+  EFFICIENCY_OUTCOMES,
+  type EfficiencyRecord,
   type EfficiencyOutcome,
   MetricsError,
+  SemanticEventV1,
   type SemanticEventV1Input,
   UNAVAILABLE,
+  WORKFLOW_PHASES,
   type WorkflowPhase,
 } from "./domain.js";
 import type { EventParser } from "./ports.js";
 
-const PHASES = new Set<WorkflowPhase>(["debate", "breakdown", "specify", "plannify", "design", "implement", "review", "fix", "re-review"]);
-const OUTCOMES = new Set<EfficiencyOutcome>(["useful", "rework", "failed", "coordination", "accepted", "rejected", "unknown"]);
+const PHASES = new Set<WorkflowPhase>(WORKFLOW_PHASES);
+const OUTCOMES = new Set<EfficiencyOutcome>(EFFICIENCY_OUTCOMES);
 const ISO_UTC_TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$/;
 
 function isValidIsoUtcTimestamp(value: string): boolean {
@@ -55,14 +60,23 @@ function optionalString(input: Record<string, unknown>, field: string): string |
   return value.trim();
 }
 
+function optionalNonNegativeInteger(input: Record<string, unknown>, field: string): number | typeof UNAVAILABLE {
+  const value = input[field];
+  if (value === undefined) return UNAVAILABLE;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new MetricsError(field, "invalid", "must be a non-negative integer when supplied");
+  }
+  return value;
+}
+
 export class V1EventParser implements EventParser {
   public parse(input: unknown): EfficiencyRecord {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       throw new MetricsError("event", "invalid", "must be an object");
     }
     const event = input as Record<string, unknown>;
-    if (event.source !== "afergon-ai") throw new MetricsError("source", "unsupported", "must be afergon-ai");
-    if (event.version !== 1) throw new MetricsError("version", "unsupported", "must be 1");
+    if (event.source !== AFERGON_AI_EVENT_SOURCE) throw new MetricsError("source", "unsupported", "must be afergon-ai");
+    if (event.version !== AFERGON_AI_EVENT_VERSION) throw new MetricsError("version", "unsupported", "must be 1");
 
     const occurredAt = requiredString(event, "occurredAt");
     if (!isValidIsoUtcTimestamp(occurredAt)) throw new MetricsError("occurredAt", "invalid", "must be a valid ISO UTC timestamp");
@@ -76,12 +90,31 @@ export class V1EventParser implements EventParser {
     if (reviewCycle !== UNAVAILABLE && (typeof reviewCycle !== "number" || !Number.isInteger(reviewCycle) || reviewCycle < 0)) {
       throw new MetricsError("reviewCycle", "invalid", "must be a non-negative integer when supplied");
     }
+    const task = optionalString(event, "task");
+    const subagent = optionalString(event, "subagent");
+    const model = optionalString(event, "model");
+    const modelProfile = optionalString(event, "modelProfile");
+    const correlationId = optionalString(event, "correlationId");
+    const retryCount = optionalNonNegativeInteger(event, "retryCount");
+    const reworkOfEventId = optionalString(event, "reworkOfEventId");
 
-    return new EfficiencyRecord({
-      id: requiredString(event, "eventId"), occurredAt, workflowRunId: requiredString(event, "workflowRunId"), phase,
-      agent: requiredString(event, "agent"), outcome, task: optionalString(event, "task"),
-      subagent: optionalString(event, "subagent"), model: optionalString(event, "model"),
-      modelProfile: optionalString(event, "modelProfile"), reviewCycle, correlationId: optionalString(event, "correlationId"),
-    });
+    return new SemanticEventV1({
+      source: AFERGON_AI_EVENT_SOURCE,
+      version: AFERGON_AI_EVENT_VERSION,
+      eventId: requiredString(event, "eventId"),
+      occurredAt,
+      workflowRunId: requiredString(event, "workflowRunId"),
+      phase,
+      agent: requiredString(event, "agent"),
+      outcome,
+      task: task === UNAVAILABLE ? undefined : task,
+      subagent: subagent === UNAVAILABLE ? undefined : subagent,
+      model: model === UNAVAILABLE ? undefined : model,
+      modelProfile: modelProfile === UNAVAILABLE ? undefined : modelProfile,
+      reviewCycle: reviewCycle === UNAVAILABLE ? undefined : reviewCycle,
+      correlationId: correlationId === UNAVAILABLE ? undefined : correlationId,
+      retryCount: retryCount === UNAVAILABLE ? undefined : retryCount,
+      reworkOfEventId: reworkOfEventId === UNAVAILABLE ? undefined : reworkOfEventId,
+    }).normalize();
   }
 }

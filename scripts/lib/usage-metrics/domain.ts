@@ -1,18 +1,13 @@
 export const UNAVAILABLE = "unavailable" as const;
+export const AFERGON_AI_EVENT_SOURCE = "afergon-ai" as const;
+export const AFERGON_AI_EVENT_VERSION = 1 as const;
 
 export type Unavailable = typeof UNAVAILABLE;
 export type Attribution = string | Unavailable;
-export type WorkflowPhase =
-  | "debate"
-  | "breakdown"
-  | "specify"
-  | "plannify"
-  | "design"
-  | "implement"
-  | "review"
-  | "fix"
-  | "re-review";
-export type EfficiencyOutcome = "useful" | "rework" | "failed" | "coordination" | "accepted" | "rejected" | "unknown";
+export const WORKFLOW_PHASES = ["debate", "breakdown", "specify", "plannify", "design", "implement", "review", "fix", "re-review"] as const;
+export type WorkflowPhase = typeof WORKFLOW_PHASES[number];
+export const EFFICIENCY_OUTCOMES = ["useful", "rework", "failed", "coordination", "accepted", "rejected", "unknown"] as const;
+export type EfficiencyOutcome = typeof EFFICIENCY_OUTCOMES[number];
 
 export class MetricsError extends Error {
   public readonly name = "MetricsError";
@@ -27,8 +22,8 @@ export class MetricsError extends Error {
 }
 
 export interface SemanticEventV1Input {
-  readonly source: "afergon-ai";
-  readonly version: 1;
+  readonly source: typeof AFERGON_AI_EVENT_SOURCE;
+  readonly version: typeof AFERGON_AI_EVENT_VERSION;
   readonly eventId: string;
   readonly occurredAt: string;
   readonly workflowRunId: string;
@@ -41,10 +36,31 @@ export interface SemanticEventV1Input {
   readonly modelProfile?: string;
   readonly reviewCycle?: number;
   readonly correlationId?: string;
+  readonly retryCount?: number;
+  readonly reworkOfEventId?: string;
 }
 
 export class SemanticEventV1 {
   public constructor(public readonly value: SemanticEventV1Input) {}
+
+  public normalize(): EfficiencyRecord {
+    return new EfficiencyRecord({
+      id: this.value.eventId,
+      occurredAt: this.value.occurredAt,
+      workflowRunId: this.value.workflowRunId,
+      phase: this.value.phase,
+      agent: this.value.agent,
+      outcome: this.value.outcome,
+      task: this.value.task ?? UNAVAILABLE,
+      subagent: this.value.subagent ?? UNAVAILABLE,
+      model: this.value.model ?? UNAVAILABLE,
+      modelProfile: this.value.modelProfile ?? UNAVAILABLE,
+      reviewCycle: this.value.reviewCycle ?? UNAVAILABLE,
+      correlationId: this.value.correlationId ?? UNAVAILABLE,
+      retryCount: this.value.retryCount ?? UNAVAILABLE,
+      reworkOfEventId: this.value.reworkOfEventId ?? UNAVAILABLE,
+    });
+  }
 }
 
 export interface EfficiencyRecordFields {
@@ -60,6 +76,8 @@ export interface EfficiencyRecordFields {
   readonly modelProfile: Attribution;
   readonly reviewCycle: number | Unavailable;
   readonly correlationId: Attribution;
+  readonly retryCount: number | Unavailable;
+  readonly reworkOfEventId: Attribution;
 }
 
 export class EfficiencyRecord implements EfficiencyRecordFields {
@@ -77,6 +95,8 @@ export class EfficiencyRecord implements EfficiencyRecordFields {
   public get modelProfile() { return this.fields.modelProfile; }
   public get reviewCycle() { return this.fields.reviewCycle; }
   public get correlationId() { return this.fields.correlationId; }
+  public get retryCount() { return this.fields.retryCount; }
+  public get reworkOfEventId() { return this.fields.reworkOfEventId; }
 }
 
 export type ReportDimension = "task" | "phase" | "agent" | "subagent" | "model" | "modelProfile" | "outcome" | "reviewCycle";

@@ -9,7 +9,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Make the smallest GREEN implementation change without altering domain, port, or adapter responsibilities.
   - Run focused tests, typecheck, and build before proceeding.
 
-- [ ] **2. Complete the AFERGON-AI v1 domain contract**
+- [x] **2. Complete the AFERGON-AI v1 domain contract**
   - Define a single v1 input contract and normalized internal representation.
   - Centralize closed phase, outcome, and schema-version vocabularies so TypeScript types and runtime validation cannot drift.
   - Define domain classes for validated events, normalization results, and typed local diagnostics.

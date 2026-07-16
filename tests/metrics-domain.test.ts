@@ -45,16 +45,37 @@ describe("AFERGON-AI v1 event parser", () => {
     expect(() => new V1EventParser().parse(event)).toThrow(`${field}:`);
   });
 
+  it.each(["eventId", "occurredAt", "workflowRunId", "phase", "agent", "outcome"] as const)(
+    "rejects a missing required %s field",
+    (field) => {
+      expect(() => new V1EventParser().parse({ ...validEvent, [field]: "" })).toThrow(`${field}:`);
+    },
+  );
+
+  it.each([
+    ["invalid phase", { ...validEvent, phase: "not-a-phase" }, "phase"],
+    ["invalid outcome", { ...validEvent, outcome: "not-an-outcome" }, "outcome"],
+    ["negative review cycle", { ...validEvent, reviewCycle: -1 }, "reviewCycle"],
+    ["fractional review cycle", { ...validEvent, reviewCycle: 1.5 }, "reviewCycle"],
+    ["negative retry count", { ...validEvent, retryCount: -1 }, "retryCount"],
+    ["fractional retry count", { ...validEvent, retryCount: 1.5 }, "retryCount"],
+    ["empty rework event", { ...validEvent, reworkOfEventId: "" }, "reworkOfEventId"],
+  ])("rejects %s with a typed diagnostic", (_label, event, field) => {
+    expect(() => new V1EventParser().parse(event)).toThrow(`${field}:`);
+  });
+
   it("keeps supplied optional attribution verbatim", () => {
     const record = new V1EventParser().parse({
       ...validEvent,
       task: "issue-18",
       subagent: "afg-review",
       model: "openai/gpt-5.6",
-      modelProfile: "quality",
-      reviewCycle: 2,
-      correlationId: "session-789",
-    });
+       modelProfile: "quality",
+       reviewCycle: 2,
+       correlationId: "session-789",
+       retryCount: 1,
+       reworkOfEventId: "event-122",
+     });
 
     expect(record).toMatchObject({
       task: "issue-18",
@@ -63,6 +84,8 @@ describe("AFERGON-AI v1 event parser", () => {
       modelProfile: "quality",
       reviewCycle: 2,
       correlationId: "session-789",
+      retryCount: 1,
+      reworkOfEventId: "event-122",
     });
   });
 });
