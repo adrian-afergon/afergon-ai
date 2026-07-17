@@ -197,6 +197,28 @@ function readFrontmatterPermissions(agentName) {
   return permission;
 }
 
+function wildcardPatternToRegExp(pattern) {
+  const escapedPattern = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^${escapedPattern.replaceAll("*", ".*").replaceAll("?", ".")}$`);
+}
+
+function evaluateWritePermission(rules, targetPath) {
+  if (rules === null || typeof rules !== "object" || Array.isArray(rules)) {
+    throw new TypeError("write permission rules must be a plain object");
+  }
+  const normalizedTarget = targetPath.replaceAll("\\", "/");
+  let permission = "ask";
+  for (const [pattern, effect] of Object.entries(rules)) {
+    if (!new Set(["allow", "deny", "ask"]).has(effect)) {
+      throw new TypeError(`write permission rule "${pattern}" has unsupported effect: ${String(effect)}`);
+    }
+    if (wildcardPatternToRegExp(pattern).test(normalizedTarget)) {
+      permission = effect;
+    }
+  }
+  return permission;
+}
+
 function writeFakeOpencodeCli(tempRoot, handlers = {}) {
   const binDir = path.join(tempRoot, "fake-bin");
   const scriptPath = path.join(binDir, process.platform === "win32" ? "opencode.cjs" : "opencode");
@@ -2277,23 +2299,91 @@ describe.skipIf(process.platform === "win32")("OpenCode registrar behavior", () 
     }
   });
 
-  it("skips opencode.json writes when required managed agent files are missing", () => {
-    const tempRoot = makeTempRoot();
-    const xdgHome = path.join(tempRoot, "xdg");
-    const opencodeDir = path.join(xdgHome, "opencode");
-    const agentsDir = copyManagedAgents(xdgHome);
-    const missingAgentFile = "afg-review.md";
-    fs.rmSync(path.join(agentsDir, missingAgentFile));
-    const existingConfig = '{\n  "$schema": "https://opencode.ai/config.json",\n  "agent": {\n    "sentinel": { "prompt": "keep exactly" }\n  }\n}\n';
-    const opencodeConfigPath = path.join(opencodeDir, "opencode.json");
-    fs.writeFileSync(opencodeConfigPath, existingConfig);
-
-    const result = runRegistrar(tempRoot, xdgHome);
+  it("allows the persisted bounded debate-summary write target", () => {
+    const { config, result } = runIsolatedRegistrar();
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`missing managed agent file(s): ${missingAgentFile}`);
-    expect(fs.readFileSync(opencodeConfigPath, "utf8")).toBe(existingConfig);
+    expect(
+      evaluateWritePermission(
+        config.agent["afg-debate"].permission.write,
+        "openspec/debate/debate-summary-agent-permissions.md",
+      ),
+      "afg-debate persisted write permission for bounded debate summary",
+    ).toBe("allow");
   });
+
+  it("denies a nonmatching write target through the persisted debate policy", () => {
+    const { config, result } = runIsolatedRegistrar();
+
+    expect(result.status).toBe(0);
+    expect(
+      evaluateWritePermission(
+        config.agent["afg-debate"].permission.write,
+        "openspec/debate/notes.md",
+      ),
+      "afg-debate persisted write permission for nonmatching path",
+    ).toBe("deny");
+  });
+
+  it("normalizes Windows separators before evaluating persisted write rules", () => {
+    const { config, result } = runIsolatedRegistrar();
+
+    expect(result.status).toBe(0);
+    expect(
+      evaluateWritePermission(
+        config.agent["afg-debate"].permission.write,
+        "openspec\\debate\\debate-summary-agent-permissions.md",
+      ),
+      "afg-debate normalized persisted write path",
+    ).toBe("allow");
+  });
+
+  it("falls back to ask when no bounded write rule matches", () => {
+    expect(
+      evaluateWritePermission({ "openspec/debate/*": "deny" }, "docs/notes.md"),
+      "unmatched write permission fallback",
+    ).toBe("ask");
+  });
+
+  it("anchors wildcards and applies the last matching write rule", () => {
+    expect(evaluateWritePermission({ "*": "deny", "draft?.md": "allow" }, "draft1.md")).toBe("allow");
+    expect(evaluateWritePermission({ "notes.md": "allow" }, "prefix-notes.md")).toBe("ask");
+    expect(
+      evaluateWritePermission({ "*": "deny", "*.md": "allow", "notes.md": "deny" }, "notes.md"),
+    ).toBe("deny");
+  });
+
+  it("rejects unsupported write-rule shapes and effects", () => {
+    expect(() => evaluateWritePermission(["deny"], "notes.md")).toThrow(
+      "write permission rules must be a plain object",
+    );
+    expect(() => evaluateWritePermission({ "*": "sometimes" }, "notes.md")).toThrow(
+      'write permission rule "*" has unsupported effect: sometimes',
+    );
+  });
+
+  it.each(["afg-debate.md", "afergon-ai.md"])(
+    "skips opencode.json writes when required managed agent file %s is missing",
+    (missingAgentFile) => {
+      const tempRoot = makeTempRoot();
+      const xdgHome = path.join(tempRoot, "xdg");
+      const opencodeDir = path.join(xdgHome, "opencode");
+      const agentsDir = copyManagedAgents(xdgHome);
+      fs.rmSync(path.join(agentsDir, missingAgentFile));
+      const existingConfig = Buffer.from(
+        '{\n  "$schema": "https://opencode.ai/config.json",\n  "agent": {\n    "sentinel": { "prompt": "keep exactly — café" }\n  }\n}\n',
+        "utf8",
+      );
+      const opencodeConfigPath = path.join(opencodeDir, "opencode.json");
+      fs.writeFileSync(opencodeConfigPath, existingConfig);
+
+      const result = runRegistrar(tempRoot, xdgHome);
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain(`missing managed agent file(s): ${missingAgentFile}`);
+      expect(fs.readFileSync(opencodeConfigPath)).toEqual(existingConfig);
+    },
+  );
 
   it("preserves existing model assignments when afergon-ai model config is malformed", () => {
     const tempRoot = makeTempRoot();
