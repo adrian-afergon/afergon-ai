@@ -17,6 +17,57 @@ import { SqliteMetricsStore } from "./lib/usage-metrics/sqlite.js";
 import { ImportMetricsUseCase } from "./lib/usage-metrics/use-cases.js";
 
 const USAGE = "Usage: afergon-ai metrics <enable|status|import|report|export|clear>";
+const METRICS_HELP = [
+  "AFERGON-AI semantic metrics (local and opt-in)",
+  "",
+  USAGE,
+  "",
+  "Commands:",
+  "  enable                         Enable local SQLite metrics storage",
+  "  status                         Show whether metrics are enabled",
+  "  import <event-file>            Import one event or a JSON event array",
+  "  report [options]               Print grouped and filtered metrics",
+  "  export [options]               Write a local JSON or CSV export",
+  "  clear --confirm                Remove metrics-owned local data",
+  "",
+  "Use 'afergon-ai metrics <command> --help' for command-specific options.",
+].join("\n") + "\n";
+const COMMAND_HELP: Readonly<Record<string, string>> = {
+  enable: [
+    "Usage: afergon-ai metrics enable",
+    "",
+    "Enable metrics and create the metrics-owned local SQLite store.",
+  ].join("\n") + "\n",
+  status: [
+    "Usage: afergon-ai metrics status",
+    "",
+    "Report enablement status without creating local metrics files.",
+  ].join("\n") + "\n",
+  import: [
+    "Usage: afergon-ai metrics import <event-file>",
+    "",
+    "Import one AFERGON-AI v1 event or a JSON array atomically.",
+  ].join("\n") + "\n",
+  report: [
+    "Usage: afergon-ai metrics report [options]",
+    "",
+    "Options:",
+    "  --group-by <dimension>         Group by task, phase, agent, subagent, model, modelProfile, outcome, or reviewCycle",
+    "  --filter dimension=value       Filter by a supported report dimension",
+    "",
+    "Cost is optional context; unavailable attribution and enrichment remain visible.",
+  ].join("\n") + "\n",
+  export: [
+    "Usage: afergon-ai metrics export --format json|csv --output <path>",
+    "",
+    "Write stable local JSON or CSV records to the selected filesystem path.",
+  ].join("\n") + "\n",
+  clear: [
+    "Usage: afergon-ai metrics clear --confirm",
+    "",
+    "Remove metrics-owned SQLite and state files while preserving unrelated configuration.",
+  ].join("\n") + "\n",
+};
 
 export interface MetricsExecutionOptions {
   readonly cwd?: string;
@@ -37,21 +88,29 @@ export function executeMetrics(argv: readonly string[], options: MetricsExecutio
     const parser = new V1EventParser();
     const [subcommand = "", ...args] = argv;
 
+    if (subcommand === "--help" || subcommand === "-h") return success(METRICS_HELP);
+
     switch (subcommand) {
       case "enable":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.enable);
         requireNoArguments(subcommand, args);
         store.enable();
         return success("Metrics enabled.\n");
       case "status":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.status);
         requireNoArguments(subcommand, args);
         return success(`${JSON.stringify(store.status())}\n`);
       case "import":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.import);
         return importEvents(args, cwd, parser, store);
       case "report":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.report);
         return reportMetrics(args, store);
       case "export":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.export);
         return exportMetrics(args, cwd, store);
       case "clear":
+        if (isHelpRequest(args)) return success(COMMAND_HELP.clear);
         return clearMetrics(args, store);
       default:
         throw new Error(`${subcommand ? `Unknown metrics subcommand: ${subcommand}` : USAGE}\n${USAGE}`);
@@ -122,6 +181,10 @@ function addFilter(filters: Partial<Record<ReportDimension, ReportFilterValue>>,
 
 function requireNoArguments(command: string, args: readonly string[]): void {
   if (args.length > 0) throw new Error(`Usage: afergon-ai metrics ${command}`);
+}
+
+function isHelpRequest(args: readonly string[]): boolean {
+  return args.length === 1 && (args[0] === "--help" || args[0] === "-h");
 }
 
 function success(stdout: string): MetricsCommandResult {

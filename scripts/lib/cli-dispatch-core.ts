@@ -26,6 +26,7 @@ export function formatHelp(): string {
     "  afergon-ai update",
     "  afergon-ai models [show [profile]|list|switch|set|profile]",
     "  afergon-ai metrics <enable|status|import|report|export|clear>",
+    "  afergon-ai metrics --help",
     "",
     "Commands:",
     "  tui      Open the interactive afergon-ai TUI (TTY only)",
