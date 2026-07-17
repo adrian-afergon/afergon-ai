@@ -1,28 +1,28 @@
-# Agent Permissions — Task Breakdown
+# Agent Permissions — Atomic Task Plan
 
 ## Project Overview
 
 - **Project**: afergon-ai
 - **Description**: A development harness that coordinates controlled software delivery across Pi, Claude Code, and OpenCode.
-- **Technical Direction**: Keep OpenCode agent frontmatter and the registrar-generated `opencode.json` entries aligned, with automated coverage of the generated permission policy.
-- **Constraints**: This breakdown does not modify source or configuration. The future implementation is limited to the two named agent permission definitions, their registrar representation, and relevant tests; it must be completed in an isolated worktree and address issue #67.
+- **Technical Direction**: Repair the effective permissions for `afg-debate` and `afergon-ai` as one atomic change spanning agent frontmatter, registrar MANIFEST parity, and registrar-output coverage.
+- **Constraints**: Planning does not modify production source or PR #70. Future implementation remains limited to the two named agent definitions, their registrar representation, and relevant tests, and will reuse PR #70 later.
 
 ## Dependency Tree
 
 ```text
-01 Add registrar permission-policy contract coverage
-└── 02 Synchronize managed agent permission policies
+01 Repair effective managed agent permissions
 ```
 
 ## Ordered Tasks
 
-1. **001-add-registrar-permission-policy-contract-coverage** — Add executable registrar-output coverage for the approved `afg-debate` and `afergon-ai` policies. **Breadth**: medium.
-2. **002-synchronize-managed-agent-permission-policies** — Align the two agent declarations and registrar manifest with the approved permission matrix. **Breadth**: medium.
+1. **`openspec/tasks/001-repair-effective-agent-permissions.md`** — Align both managed-agent declarations and registrar MANIFEST policies, then prove the persisted `opencode.json` policies with focused automated coverage. **Breadth**: broad, intentionally atomic because the three coupled representations jointly define the effective repair.
+
+Canonical chain: `openspec/tasks/PROJECT-TASKS.md` → `openspec/tasks/001-repair-effective-agent-permissions.md` → `openspec/specs/agent-permissions/spec-01-effective-agent-permission-repair.md` → `openspec/plans/agent-permissions/PLAN.md` → `openspec/results/agent-permissions/RESULT.md`.
 
 ## Validation Status
 
-- [x] Each task has one dominant intent and observable acceptance criteria.
-- [x] The tasks cover source declarations, registrar parity, and registrar-output testing from the debate summary.
-- [x] Dependencies are bidirectional and acyclic.
-- [x] Breadth hints are assigned and justified.
-- [x] No unresolved decisions from the debate summary block specification.
+- [x] The task has non-empty intent, in-scope work, acceptance criteria, and `Dependencies.Requires`.
+- [x] The atomic task covers agent frontmatters, registrar MANIFEST parity, and registrar-output testing.
+- [x] No task dependency blocks implementation or specification.
+- [x] No unresolved decision blocks specification.
+- [x] Consolidation into one spec was explicitly approved.
