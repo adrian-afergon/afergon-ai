@@ -32,7 +32,8 @@ Repaired both named agent declarations and registrar MANIFEST projections, added
 ## Commits Created
 
 - `43a1c5e` `fix(opencode): repair managed agent permissions`
-- Evidence artifact commit is created after this file is written and is reported inline.
+- `a6b7f92` `docs(openspec): record agent permission repair`
+- Final evidence correction commit is created after this file is updated and is reported inline.
 
 ## Files Changed
 
@@ -82,11 +83,13 @@ Lowest-sufficient TPP transformations were literal `constant -> constant+` chang
 
 ## Blockers or Deviations
 
-- None. Pre-existing OpenSpec task deletions/reorganization remained unstaged and were not included in the atomic implementation commit.
+- The atomic implementation commit is 189 changed lines, below the threshold. The cumulative PR diff is 595 changed lines because it also contains the pre-existing planning commit and required persisted plan/result/task artifacts. This is reported as a non-blocking review-size deviation; no implementation scope was added.
+- Pre-existing OpenSpec task deletions/reorganization remained unstaged and were not included in the atomic implementation commit.
 
 ## Notes
 
 - Implementation commit diff: 159 additions, 30 deletions (189 changed lines), below the 400-line threshold.
+- Final PR diff against `origin/main`: 565 additions, 30 deletions (595 changed lines).
 - No generated `dist/`, lockfile, installer, prompt body, model profile, or unrelated agent policy was changed.
 - PR URL: https://github.com/adrian-afergon/afergon-ai/pull/70
 
