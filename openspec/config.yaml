@@ -1,0 +1,7 @@
+# afergon-ai project configuration
+
+project:
+  name: afergon-ai
+
+memory:
+  system: engram
