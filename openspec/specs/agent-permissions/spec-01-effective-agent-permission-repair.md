@@ -1,7 +1,7 @@
 # Spec: Effective Managed Agent Permission Repair and Review Remediation
 
 - **Source Task**: `openspec/tasks/001-repair-effective-agent-permissions.md`
-- **State**: ready
+- **State**: completed
 
 ## Scope
 

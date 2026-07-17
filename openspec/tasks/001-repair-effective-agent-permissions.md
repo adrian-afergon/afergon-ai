@@ -2,7 +2,7 @@
 
 - **Task Number**: 001
 - **Slug**: repair-effective-agent-permissions
-- **Status**: ready
+- **Status**: completed
 - **Spec Breadth Hint**: broad
 - **Spec Breadth Rationale**: Agent frontmatter, registrar MANIFEST parity, registrar-output coverage, direct write-path evaluation, canonical artifact reconciliation, and PR delivery metadata are coupled parts of one reviewable repair. Splitting them would leave the effective policy or its canonical delivery evidence incomplete.
 
@@ -40,14 +40,14 @@ OpenCode agent frontmatter is copied into the managed agents directory, while `s
 
 ## Acceptance Criteria
 
-- [ ] `afg-debate` frontmatter, registrar MANIFEST, and persisted policy allow `read`; deny `bash`, `edit`, `glob`, `grep`, and `webfetch`; deny other writes by default; and allow writes only matching `openspec/debate/debate-summary*.md`.
-- [ ] `afergon-ai` frontmatter, registrar MANIFEST, and persisted policy allow `bash`, `edit`, `glob`, `grep`, `read`, and `write`, and deny `webfetch`.
-- [ ] The focused contract detects any added, removed, or changed permission in either named declaration, MANIFEST policy, or persisted permission object.
-- [ ] Direct write-path evaluation proves `openspec/debate/debate-summary-agent-permissions.md` is allowed and `openspec/debate/notes.md` is denied for `afg-debate`.
-- [ ] Separate omission tests remove `afg-debate.md` and `afergon-ai.md`; each reports the exact missing file and leaves the existing `opencode.json` byte-for-byte unchanged.
-- [ ] Policies and non-permission metadata for all unrelated agents remain unchanged.
-- [ ] PR #70 contains one reconciled active canonical task/spec/plan/result set, all source references resolve, the executable plan includes every review remediation, and RESULT records every implementation and correction commit delivered by the PR.
-- [ ] PR #70 has the exact title `fix(opencode): repair managed agent permissions`, contains `Closes #71` and nonclosing `Refs #67`, does not contain a closing keyword for #67, and has exactly one type label: `type:bug`.
+- [x] `afg-debate` frontmatter, registrar MANIFEST, and persisted policy allow `read`; deny `bash`, `edit`, `glob`, `grep`, and `webfetch`; deny other writes by default; and allow writes only matching `openspec/debate/debate-summary*.md`.
+- [x] `afergon-ai` frontmatter, registrar MANIFEST, and persisted policy allow `bash`, `edit`, `glob`, `grep`, `read`, and `write`, and deny `webfetch`.
+- [x] The focused contract detects any added, removed, or changed permission in either named declaration, MANIFEST policy, or persisted permission object.
+- [x] Direct write-path evaluation proves `openspec/debate/debate-summary-agent-permissions.md` is allowed and `openspec/debate/notes.md` is denied for `afg-debate`.
+- [x] Separate omission tests remove `afg-debate.md` and `afergon-ai.md`; each reports the exact missing file and leaves the existing `opencode.json` byte-for-byte unchanged.
+- [x] Policies and non-permission metadata for all unrelated agents remain unchanged.
+- [x] PR #70 contains one reconciled active canonical task/spec/plan/result set, all source references resolve, the executable plan includes every review remediation, and RESULT records every implementation and correction commit delivered by the PR.
+- [x] PR #70 has the exact title `fix(opencode): repair managed agent permissions`, contains `Closes #71` and nonclosing `Refs #67`, does not contain a closing keyword for #67, and has exactly one type label: `type:bug`.
 
 ## Open Decisions
 
