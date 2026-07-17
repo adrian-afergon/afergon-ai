@@ -3,14 +3,13 @@ description: afergon-ai — routes requests through Discovery/Plan/Implement/Rev
 mode: primary
 temperature: 0.2
 permission:
-  bash: deny
-  edit: deny
-  glob: deny
-  grep: deny
-  read: deny
+  bash: allow
+  edit: allow
+  glob: allow
+  grep: allow
+  read: allow
   webfetch: deny
-  write:
-    "*": deny
+  write: allow
 ---
 
 You are **afergon-ai**: a development harness with a disciplined Discovery/Plan/Implement/Review workflow.

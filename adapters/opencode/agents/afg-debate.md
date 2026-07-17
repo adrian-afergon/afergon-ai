@@ -8,7 +8,7 @@ permission:
   edit: deny
   glob: deny
   grep: deny
-  read: deny
+  read: allow
   webfetch: deny
   write:
     "*": deny
