@@ -23,6 +23,30 @@ const windowsModelsPath = path.join(repoRoot, "dist", "scripts", "models.js");
 const registerScript = path.join(repoRoot, "scripts/register-opencode-agents.sh");
 const adapterPath = path.join(repoRoot, "adapters/opencode");
 
+const APPROVED_AGENT_PERMISSIONS = {
+  "afergon-ai": {
+    bash: "allow",
+    edit: "allow",
+    glob: "allow",
+    grep: "allow",
+    read: "allow",
+    webfetch: "deny",
+    write: "allow",
+  },
+  "afg-debate": {
+    bash: "deny",
+    edit: "deny",
+    glob: "deny",
+    grep: "deny",
+    read: "allow",
+    webfetch: "deny",
+    write: {
+      "*": "deny",
+      "openspec/debate/debate-summary*.md": "allow",
+    },
+  },
+};
+
 const tempRoots = [];
 
 afterEach(() => {
@@ -91,6 +115,86 @@ function copyManagedAgents(xdgHome) {
     );
   }
   return agentsDir;
+}
+
+function runRegistrar(tempRoot, xdgHome, env = {}) {
+  return spawnSync("bash", [registerScript, adapterPath], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 10000,
+    env: {
+      ...process.env,
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+      AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
+      AFG_OPENCODE_REGISTER_NONINTERACTIVE: "1",
+      ...env,
+    },
+  });
+}
+
+function runIsolatedRegistrar() {
+  const tempRoot = makeTempRoot();
+  const xdgHome = path.join(tempRoot, "xdg");
+  const opencodeDir = path.join(xdgHome, "opencode");
+  fs.mkdirSync(opencodeDir, { recursive: true });
+  copyManagedAgents(xdgHome);
+  fs.writeFileSync(path.join(opencodeDir, "opencode.json"), '{"$schema":"https://opencode.ai/config.json"}\n');
+
+  const result = runRegistrar(tempRoot, xdgHome);
+
+  return {
+    config: readJson(path.join(opencodeDir, "opencode.json")),
+    result,
+  };
+}
+
+function readFrontmatterPermissions(agentName) {
+  const agentPath = path.join(adapterPath, "agents", `${agentName}.md`);
+  const lines = fs.readFileSync(agentPath, "utf8").split(/\r?\n/);
+  const frontmatterEnd = lines.indexOf("---", 1);
+  const permissionStart = lines.slice(1, frontmatterEnd).indexOf("permission:") + 1;
+  if (frontmatterEnd < 0 || permissionStart === 0) {
+    throw new Error(`${agentName} frontmatter permission block is missing`);
+  }
+
+  const permission = {};
+  for (let index = permissionStart + 1; index < frontmatterEnd;) {
+    const line = lines[index];
+    const scalar = line.match(/^  ([a-z][a-z0-9_]*): (allow|deny)$/);
+    const nestedWrite = line === "  write:";
+    if (!scalar && !nestedWrite) {
+      throw new Error(`${agentName} frontmatter permission has unsupported shape: ${line}`);
+    }
+
+    const key = nestedWrite ? "write" : scalar[1];
+    if (Object.hasOwn(permission, key)) {
+      throw new Error(`${agentName} frontmatter permission has duplicate key: ${key}`);
+    }
+    if (!nestedWrite) {
+      permission[key] = scalar[2];
+      index += 1;
+      continue;
+    }
+
+    const write = {};
+    index += 1;
+    while (index < frontmatterEnd && lines[index].startsWith("    ")) {
+      const nested = lines[index].match(/^    ("[^"]+"|[^:]+): (allow|deny)$/);
+      if (!nested) {
+        throw new Error(`${agentName} frontmatter write permission has unsupported shape: ${lines[index]}`);
+      }
+      const writeKey = nested[1].replace(/^"|"$/g, "");
+      if (Object.hasOwn(write, writeKey)) {
+        throw new Error(`${agentName} frontmatter write permission has duplicate key: ${writeKey}`);
+      }
+      write[writeKey] = nested[2];
+      index += 1;
+    }
+    permission.write = write;
+  }
+
+  return permission;
 }
 
 function writeFakeOpencodeCli(tempRoot, handlers = {}) {
@@ -2141,28 +2245,54 @@ describe("saveProfileAssignments", () => {
 });
 
 describe.skipIf(process.platform === "win32")("OpenCode registrar behavior", () => {
+  it("persists the approved complete afergon-ai permission policy", () => {
+    const { config, result } = runIsolatedRegistrar();
+
+    expect(result.status).toBe(0);
+    expect(config.agent["afergon-ai"].permission, "afergon-ai persisted permission").toEqual(
+      APPROVED_AGENT_PERMISSIONS["afergon-ai"],
+    );
+  });
+
+  it("persists the approved complete afg-debate permission policy", () => {
+    const { config, result } = runIsolatedRegistrar();
+
+    expect(result.status).toBe(0);
+    expect(config.agent["afg-debate"].permission, "afg-debate persisted permission").toEqual(
+      APPROVED_AGENT_PERMISSIONS["afg-debate"],
+    );
+  });
+
+  it("keeps named agent frontmatter and persisted permissions aligned with the approved policies", () => {
+    const { config, result } = runIsolatedRegistrar();
+
+    expect(result.status).toBe(0);
+    for (const agentName of ["afg-debate", "afergon-ai"]) {
+      expect(readFrontmatterPermissions(agentName), `${agentName} frontmatter permission`).toEqual(
+        APPROVED_AGENT_PERMISSIONS[agentName],
+      );
+      expect(config.agent[agentName].permission, `${agentName} persisted permission`).toEqual(
+        readFrontmatterPermissions(agentName),
+      );
+    }
+  });
+
   it("skips opencode.json writes when required managed agent files are missing", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
     const opencodeDir = path.join(xdgHome, "opencode");
-    fs.mkdirSync(path.join(opencodeDir, "agents"), { recursive: true });
-    fs.writeFileSync(path.join(opencodeDir, "opencode.json"), '{"$schema":"https://opencode.ai/config.json"}\n');
+    const agentsDir = copyManagedAgents(xdgHome);
+    const missingAgentFile = "afg-review.md";
+    fs.rmSync(path.join(agentsDir, missingAgentFile));
+    const existingConfig = '{\n  "$schema": "https://opencode.ai/config.json",\n  "agent": {\n    "sentinel": { "prompt": "keep exactly" }\n  }\n}\n';
+    const opencodeConfigPath = path.join(opencodeDir, "opencode.json");
+    fs.writeFileSync(opencodeConfigPath, existingConfig);
 
-    const result = spawnSync("bash", [registerScript, adapterPath], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      timeout: 10000,
-      env: {
-        ...process.env,
-        HOME: path.join(tempRoot, "home"),
-        XDG_CONFIG_HOME: xdgHome,
-        AFERGON_AI_CONFIG_DIR: path.join(tempRoot, "config"),
-      },
-    });
+    const result = runRegistrar(tempRoot, xdgHome);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("missing managed agent file(s)");
-    expect(readJson(path.join(opencodeDir, "opencode.json")).agent).toBeUndefined();
+    expect(result.stdout).toContain(`missing managed agent file(s): ${missingAgentFile}`);
+    expect(fs.readFileSync(opencodeConfigPath, "utf8")).toBe(existingConfig);
   });
 
   it("preserves existing model assignments when afergon-ai model config is malformed", () => {
