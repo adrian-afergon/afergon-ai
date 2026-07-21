@@ -52,14 +52,14 @@ if ($opencode) {
   if (-not (Test-Path -LiteralPath $ocCommandsDir -PathType Container)) { Fail "No existe el directorio de comandos: $ocCommandsDir" }
 
   $missing = 0
-  foreach ($name in @("orchestrator", "debate", "breakdown", "specify", "plannify", "implement", "review", "design")) {
+  foreach ($name in @("afergon-ai", "afg-debate", "afg-breakdown", "afg-specify", "afg-plannify", "afg-implement", "afg-review", "afg-design")) {
     $file = Join-Path $ocAgentsDir "$name.md"
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
       Write-Warn "Agente faltante o no legible: $file"
       $missing += 1
     }
   }
-  foreach ($name in @("debate", "breakdown", "specify", "plannify", "implement", "review", "design")) {
+  foreach ($name in @("afg-debate", "afg-breakdown", "afg-specify", "afg-plannify", "afg-implement", "afg-review", "afg-design")) {
     $file = Join-Path $ocCommandsDir "$name.md"
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
       Write-Warn "Comando faltante o no legible: $file"

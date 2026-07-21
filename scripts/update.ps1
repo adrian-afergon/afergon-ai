@@ -70,24 +70,26 @@ if (Test-Path $CLAUDE_SKILLS) {
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
-$OC_AGENTS_DIR   = Join-Path $HOME '.config\opencode\agents'
-$OC_COMMANDS_DIR = Join-Path $HOME '.config\opencode\commands'
-$ADAPTER_PATH    = Join-Path $PACKAGE_ROOT 'adapters\opencode'
-$OC_MARKER       = Join-Path $OC_AGENTS_DIR 'orchestrator.md'
+$OC_BASE_DIR      = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'opencode' } else { Join-Path $HOME '.config\opencode' }
+$OC_AGENTS_DIR    = Join-Path $OC_BASE_DIR 'agents'
+$OC_COMMANDS_DIR  = Join-Path $OC_BASE_DIR 'commands'
+$ADAPTER_PATH     = Join-Path $PACKAGE_ROOT 'adapters\opencode'
+$OC_MARKER        = Join-Path $OC_AGENTS_DIR 'afergon-ai.md'
+$OC_LEGACY_MARKER = Join-Path $OC_AGENTS_DIR 'orchestrator.md'
 
-if (Test-Path $OC_MARKER) {
+if ((Test-Path $OC_MARKER) -or (Test-Path $OC_LEGACY_MARKER)) {
     Get-ChildItem (Join-Path $ADAPTER_PATH 'agents') -Filter '*.md' | ForEach-Object {
         Copy-Item $_.FullName (Join-Path $OC_AGENTS_DIR $_.Name) -Force
     }
-    Write-Host "OK  OpenCode: updated ~/.config/opencode/agents/"
+    Write-Host "OK  OpenCode: updated $OC_BASE_DIR\agents\"
 
     Get-ChildItem (Join-Path $ADAPTER_PATH 'commands') -Filter '*.md' | ForEach-Object {
         Copy-Item $_.FullName (Join-Path $OC_COMMANDS_DIR $_.Name) -Force
     }
-    Write-Host "OK  OpenCode: updated ~/.config/opencode/commands/"
+    Write-Host "OK  OpenCode: updated $OC_BASE_DIR\commands\"
     $UPDATED++
 } else {
-    Write-Host "    OpenCode: not installed globally (skipped)"
+    Write-Host "    OpenCode: afergon-ai agents are not installed in $OC_BASE_DIR (skipped)"
     $SKIPPED++
 }
 

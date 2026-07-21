@@ -182,8 +182,9 @@ if ($SETUP_OPENCODE) {
     Write-Host "OpenCode setup"
     Write-Host "--------------"
     $ADAPTER_PATH    = Join-Path $PACKAGE_ROOT 'adapters\opencode'
-    $OC_AGENTS_DIR   = Join-Path $HOME '.config\opencode\agents'
-    $OC_COMMANDS_DIR = Join-Path $HOME '.config\opencode\commands'
+    $OC_BASE_DIR     = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'opencode' } else { Join-Path $HOME '.config\opencode' }
+    $OC_AGENTS_DIR   = Join-Path $OC_BASE_DIR 'agents'
+    $OC_COMMANDS_DIR = Join-Path $OC_BASE_DIR 'commands'
 
     New-Item -ItemType Directory -Force -Path $OC_AGENTS_DIR   | Out-Null
     New-Item -ItemType Directory -Force -Path $OC_COMMANDS_DIR | Out-Null
@@ -224,7 +225,7 @@ Write-Host "afergon-ai initialized"
 Write-Host ""
 if ($SETUP_PI)       { Write-Host "  Pi        -> .pi\APPEND_SYSTEM.md (active on next Pi session)" }
 if ($SETUP_CLAUDE)   { Write-Host "  Claude    -> CLAUDE.md + .claude\skills\" }
-if ($SETUP_OPENCODE) { Write-Host "  OpenCode  -> ~/.config/opencode/agents/ + commands/" }
+if ($SETUP_OPENCODE) { Write-Host "  OpenCode  -> $OC_BASE_DIR\agents\ + commands/" }
 Write-Host ""
 Write-Host "Available skills (all tools):"
 Write-Host "  debate * breakdown * specify * plannify * implement * design * review * detect-skills"
