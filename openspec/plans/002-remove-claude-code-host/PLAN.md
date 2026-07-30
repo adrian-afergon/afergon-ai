@@ -141,8 +141,8 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ### Commit Unit 3: Delete Claude adapter and update README
 
-- [ ] **Step 3.1**: Delete `adapters/claude/` directory entirely (contains only `CLAUDE.md`)
-- [ ] **Step 3.2**: Edit `README.md`:
+- [x] **Step 3.1**: Delete `adapters/claude/` directory entirely (contains only `CLAUDE.md`)
+- [x] **Step 3.2**: Edit `README.md`:
   - Line 18: Change "It works with **Pi**, **Claude Code**, and **OpenCode**." to "It works with **Pi** and **OpenCode**."
   - Lines 90–91: Remove "Claude Code" from tool selection list; update to "Pi, OpenCode, or all"
   - Lines 95–99: Remove `afergon-ai init --claude` flag example
@@ -154,8 +154,8 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
   - Line 390: Remove "Claude Code" from autoskills install path list
   - Line 417: Remove "Claude Code" from autoskills compatibility list
   - Line 432: Remove "in Claude Code requires Engram MCP" from memory table
-- [ ] **Step 3.3**: Run `pnpm build && pnpm test` to verify no test references the deleted adapter path
-- [ ] **Step 3.4**: Run `pnpm run health:runtime` to verify dist runtime entries import cleanly
+- [x] **Step 3.3**: Run `pnpm build && pnpm test` to verify no test references the deleted adapter path
+- [x] **Step 3.4**: Run `pnpm run health:runtime` to verify dist runtime entries import cleanly
 
 ### Commit Unit 4: Final verification
 

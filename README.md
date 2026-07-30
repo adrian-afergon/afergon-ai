@@ -15,7 +15,7 @@
 
 ## What is afergon-ai?
 
-afergon-ai is a development harness that turns your coding agent into a **controlled delivery orchestrator**. It works with **Pi**, **Claude Code**, and **OpenCode**.
+afergon-ai is a development harness that turns your coding agent into a **controlled delivery orchestrator**. It works with **Pi** and **OpenCode**.
 
 It provides:
 
@@ -87,13 +87,12 @@ Run from the root of any project:
 afergon-ai init
 ```
 
-Select which tools to configure (Pi, Claude Code, OpenCode, or all) and which memory system to use. The command creates `openspec/config.yaml` and sets up each tool.
+Select which tools to configure (Pi, OpenCode, or all) and which memory system to use. The command creates `openspec/config.yaml` and sets up each tool.
 
 **Flags (skips interactive selection):**
 
 ```bash
 afergon-ai init --pi
-afergon-ai init --claude
 afergon-ai init --opencode
 afergon-ai init --all
 ```
@@ -172,7 +171,7 @@ Accessibility and keyboard notes:
 - A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.
 - Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
 - `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
-- `init` opens checkbox choices for Pi, Claude Code, OpenCode, or all before showing a confirmation with the exact argv that will run.
+- `init` opens checkbox choices for Pi, OpenCode, or all before showing a confirmation with the exact argv that will run.
 - `update` always asks for confirmation before it executes.
 - Home and section screens include explicit text help for returning Home and exiting with `q` or `Esc`.
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
@@ -271,10 +270,6 @@ pi install /path/to/afergon-ai
 pi install npm:afergon-ai
 ```
 
-### Claude Code
-
-`init --claude` writes `CLAUDE.md` to the project root and copies skills to `.claude/skills/`. Claude Code reads both automatically.
-
 ### OpenCode
 
 `init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config, and install/update asks before overwriting conflicting files.
@@ -362,7 +357,7 @@ ambiguous / risky / large     → full workflow from Discovery
 
 ## Skills
 
-Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In Claude Code, load the skill file. In OpenCode, use the corresponding `/afg-*` command.
+Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In OpenCode, use the corresponding `/afg-*` command.
 
 ```text
 Pi skill: /skill:debate        OpenCode: /afg-debate
@@ -375,7 +370,7 @@ Pi skill: /skill:review        OpenCode: /afg-review
 Pi skill: /skill:detect-skills
 ```
 
-Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with Pi, Claude Code, Cursor, and OpenCode.
+Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with Pi, Cursor, and OpenCode.
 
 ---
 
@@ -387,7 +382,7 @@ afergon-ai can auto-detect and install skills matched to your project's tech sta
 
 1. `autoskills` scans the project (package.json, file extensions, frameworks detected)
 2. Matches technologies to a curated skill registry (React, TypeScript, Go, Bash, etc.)
-3. Installs matching skills to `.agents/skills/` — a path Pi, Claude Code, and OpenCode all discover automatically
+3. Installs matching skills to `.agents/skills/` — a path Pi and OpenCode both discover automatically
 4. Updates `.atl/skill-registry.md` so the orchestrator can inject them into pipeline subagents
 
 ### When to use it
@@ -414,7 +409,7 @@ npx autoskills             # interactive install
 npx autoskills -y          # skip confirmation
 ```
 
-Skills installed by `autoskills` follow the [Agent Skills](https://agentskills.io) standard and are immediately available in Pi, Claude Code, Cursor, and OpenCode once installed.
+Skills installed by `autoskills` follow the [Agent Skills](https://agentskills.io) standard and are immediately available in Pi, Cursor, and OpenCode once installed.
 
 ---
 
@@ -429,7 +424,7 @@ memory:
 
 | System      | Behavior                                                                                                                                                        |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `engram`    | Pi-native persistent memory. Requires Engram installed; in Claude Code requires Engram MCP. Searches context at session start, saves after each pipeline stage. |
+| `engram`    | Pi-native persistent memory. Requires Engram installed. Searches context at session start, saves after each pipeline stage. |
 | `obsidian`  | Appends structured entries to a configured vault folder.                                                                                                        |
 | `memory-md` | Appends to `openspec/MEMORY.md`. Simple and tool-agnostic.                                                                                                      |
 | `none`      | No memory operations.                                                                                                                                           |
