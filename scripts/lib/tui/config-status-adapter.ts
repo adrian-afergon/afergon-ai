@@ -5,7 +5,7 @@ import { createActionDefinition, type ActionDefinition } from "./actions/definit
 import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
 import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
 
-type SupportedInitId = "pi" | "claude" | "opencode" | "all";
+type SupportedInitId = "pi" | "opencode" | "all";
 type ManifestActionId = CommandManifestEntry["id"];
 type StatusState = "ok" | "warn" | "fail";
 
@@ -153,7 +153,7 @@ function createActions(actionIds: readonly ManifestActionId[]): readonly StatusA
 export function buildInitCommandArgv({ selectedIds = [] }: { selectedIds?: readonly string[] } = {}): ManifestCommandArgv {
   const normalizedIds: SupportedInitId[] = Array.isArray(selectedIds)
     ? selectedIds.filter(
-        (id): id is SupportedInitId => id === "pi" || id === "claude" || id === "opencode" || id === "all",
+        (id): id is SupportedInitId => id === "pi" || id === "opencode" || id === "all",
       )
     : [];
 
@@ -193,7 +193,6 @@ function createInteractiveActions(section: "configuration" | "status"): readonly
         title: "Choose what to initialize",
         options: [
           { id: "pi", label: "Pi" },
-          { id: "claude", label: "Claude" },
           { id: "opencode", label: "OpenCode" },
           { id: "all", label: "All" },
         ],
@@ -224,7 +223,6 @@ function addGuidance(item: StatusItem): StatusItem {
       }
       return item;
     case "pi":
-    case "claude":
       if (item.state === "warn") {
         return {
           ...item,
@@ -253,13 +251,6 @@ function getBaseStatusItems({ cwd, env }: { cwd: string; env: NodeJS.ProcessEnv 
       label: "Pi",
       filePath: path.join(cwd, ".pi", "APPEND_SYSTEM.md"),
       presentDetail: "Installed in this project via APPEND_SYSTEM.md",
-      missingDetail: "Not installed in this project.",
-    }),
-    getProjectInstallItem({
-      id: "claude",
-      label: "Claude Code",
-      filePath: path.join(cwd, "CLAUDE.md"),
-      presentDetail: "Installed in this project via CLAUDE.md",
       missingDetail: "Not installed in this project.",
     }),
     getOpenCodeItem(env),

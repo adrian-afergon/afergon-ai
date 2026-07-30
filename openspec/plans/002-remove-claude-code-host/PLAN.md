@@ -112,32 +112,32 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ### Commit Unit 2: Remove Claude from CLI help and TUI surfaces
 
-- [ ] **Step 2.1**: Edit `scripts/lib/cli-dispatch-core.ts`:
+- [x] **Step 2.1**: Edit `scripts/lib/cli-dispatch-core.ts`:
   - Change help text line 24 from `"  afergon-ai init [--pi] [--claude] [--opencode] [--all]"` to `"  afergon-ai init [--pi] [--opencode] [--all]"`
-- [ ] **Step 2.2**: Edit `scripts/lib/tui/config-status-adapter.ts`:
+- [x] **Step 2.2**: Edit `scripts/lib/tui/config-status-adapter.ts`:
   - Change `SupportedInitId` type from `"pi" | "claude" | "opencode" | "all"` to `"pi" | "opencode" | "all"`
   - Remove `id === "claude"` from the filter predicate in `buildInitCommandArgv` (line 156)
   - Remove `{ id: "claude", label: "Claude" }` from init form options (line 196)
   - Remove `case "claude":` from `addGuidance` switch (line 227)
   - Remove the Claude `getProjectInstallItem` call from `getBaseStatusItems` (lines 258–264)
-- [ ] **Step 2.3**: Update `tests/tui-configuration.test.ts`:
+- [x] **Step 2.3**: Update `tests/tui-configuration.test.ts`:
   - Remove Claude from `selectedIds` in `buildArgv` tests (lines 114, 128–131)
   - Remove Claude status item assertions (lines 148, 170, 192, 285)
   - Remove Claude from init form checkbox assertions (lines 563, 585)
   - Update remaining assertions to expect only Pi, OpenCode, and model-config items
-- [ ] **Step 2.4**: Update `tests/tui-status.test.ts`:
+- [x] **Step 2.4**: Update `tests/tui-status.test.ts`:
   - Remove Claude from `selectedIds` in `buildArgv` tests (line 119)
   - Remove Claude status item from test fixtures (lines 156, 302, 321–324, 345, 373–376, 506)
   - Remove `CLAUDE.md` file creation in test setup (line 190)
   - Remove Claude-specific assertions (lines 216, 223, 355, 393–394)
   - Update readiness summary assertions to reflect reduced item count
-- [ ] **Step 2.5**: Update `tests/tui-shell.test.ts`:
+- [x] **Step 2.5**: Update `tests/tui-shell.test.ts`:
   - Remove Claude from test fixture items (line 54)
   - Remove Claude from init form options (line 580)
-- [ ] **Step 2.6**: Update `tests/tui-dispatch.test.ts`:
+- [x] **Step 2.6**: Update `tests/tui-dispatch.test.ts`:
   - Update or replace the test that dispatches `init --claude` (lines 160–165) to use a remaining flag like `--pi` or `--opencode`
-- [ ] **Step 2.7**: Run `pnpm typecheck` to verify TypeScript changes compile
-- [ ] **Step 2.8**: Run `pnpm build && pnpm test` to verify all tests pass
+- [x] **Step 2.7**: Run `pnpm typecheck` to verify TypeScript changes compile
+- [x] **Step 2.8**: Run `pnpm build && pnpm test` to verify all tests pass
 
 ### Commit Unit 3: Delete Claude adapter and update README
 

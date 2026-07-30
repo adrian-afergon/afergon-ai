@@ -116,7 +116,7 @@ function normalizeInteractiveActions(actions) {
     form: action.form,
     buildArgvNoArg: captureBuildArgvBehavior(action, false),
     buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
-    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["claude", "pi"] }),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["opencode", "pi"] }),
   }));
 }
 
@@ -151,19 +151,45 @@ describe("getStatusScreenState", () => {
         detail: expect.stringContaining("afergon-ai models show"),
       }),
     );
-    expect(status.items).toContainEqual(
-      expect.objectContaining({
-        id: "claude",
-        state: "warn",
-        detail: expect.stringContaining("afergon-ai init"),
-      }),
-    );
     expect(status.actions).toEqual([
       expect.objectContaining({ id: "doctor", label: "afergon-ai doctor", argv: ["doctor"] }),
       expect.objectContaining({ id: "init", label: "afergon-ai init", argv: ["init"] }),
       expect.objectContaining({ id: "update", label: "afergon-ai update", argv: ["update"] }),
       expect.objectContaining({ id: "models", label: "afergon-ai models", argv: ["models"] }),
     ]);
+  });
+
+  it("does not treat an existing CLAUDE.md as a managed host surface", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    writeJson(path.join(xdgHome, "afergon-ai", "config.json"), {
+      version: 1,
+      models: {
+        activeProfile: "default",
+        profiles: {
+          default: {
+            "afergon-ai": "openai/gpt-5.4",
+          },
+        },
+      },
+    });
+    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "# Legacy Claude file\n");
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "# Append system\n");
+    fs.mkdirSync(path.join(xdgHome, "opencode", "agents"), { recursive: true });
+    fs.writeFileSync(path.join(xdgHome, "opencode", "opencode.json"), "{}\n");
+    fs.writeFileSync(path.join(xdgHome, "opencode", "agents", "afergon-ai.md"), "# afergon-ai\n");
+
+    const status = getStatusScreenState({ cwd: tempRoot, env });
+
+    expect(status.items).not.toContainEqual(expect.objectContaining({ id: "claude" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "pi", state: "ok" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "opencode", state: "ok" }));
   });
 
   it("reports an ok readiness summary when all status surfaces are installed in isolated temp fixtures", () => {
@@ -187,7 +213,6 @@ describe("getStatusScreenState", () => {
     });
     fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
     fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "# Append system\n");
-    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "# Claude\n");
     writeJson(path.join(xdgHome, "opencode", "opencode.json"), {
       agent: {
         "afergon-ai": {
@@ -213,14 +238,12 @@ describe("getStatusScreenState", () => {
       expect.arrayContaining([
         expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
         expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
-        expect.objectContaining({ id: "claude", state: "ok", detail: expect.stringContaining("CLAUDE.md") }),
         expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("Managed install detected") }),
       ]),
     );
     expect(output).toContain("Readiness [ok]: Ready for guided workflows.");
     expect(output).toContain("Model config [ok]:");
     expect(output).toContain("Pi [ok]:");
-    expect(output).toContain("Claude Code [ok]:");
     expect(output).toContain("OpenCode [ok]:");
   });
 
@@ -299,7 +322,7 @@ describe("renderStatusScreen", () => {
     const state = {
       title: "Status",
       summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
-      items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Run afergon-ai init to install project files." }],
+        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Run afergon-ai init to install project files." }],
       actions: [
         { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
       ],
@@ -318,10 +341,10 @@ describe("renderStatusScreen", () => {
       },
       items: [
         {
-          id: "claude",
-          label: "Claude\u009b31m Code\u009b0m",
+          id: "pi",
+          label: "Pi\u009b31m\u009b0m",
           state: "fail",
-          detail: "Repair \u001b]2;owned\u0007/tmp/CLAUDE.md and retry.",
+          detail: "Repair \u001b]2;owned\u0007/tmp/.pi/APPEND_SYSTEM.md and retry.",
         },
       ],
       actions: [
@@ -342,7 +365,7 @@ describe("renderStatusScreen", () => {
       {
         title: "Status",
         summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
-        items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Run afergon-ai init to install project files." }],
+      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Run afergon-ai init to install project files." }],
         actions: [
           { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
         ],
@@ -352,7 +375,7 @@ describe("renderStatusScreen", () => {
 
     expect(lines.join("\n")).toContain("Status");
     expect(lines.join("\n")).toContain("Readiness [warn]: Run afergon-ai init to finish setup.");
-    expect(lines.join("\n")).toContain("Claude Code [warn]: Run afergon-ai init to install project files.");
+    expect(lines.join("\n")).toContain("Pi [warn]: Run afergon-ai init to install project files.");
     expect(lines.join("\n")).toContain("afergon-ai doctor");
     expect(lines.join("\n")).toContain("Keyboard help");
     expect(lines.join("\n")).toContain("State labels use [ok], [warn], and [fail] text markers.");
@@ -366,14 +389,14 @@ describe("renderStatusScreen", () => {
         summary: {
           label: "Read\u001b[32miness\u001b[0m",
           state: "warn",
-          detail: "Inspect /repo/\u009d2;owned\u0007CLAUDE.md\u0085Run afergon-ai doctor.",
+          detail: "Inspect /repo/\u009d2;owned\u0007.pi/APPEND_SYSTEM.md\u0085Run afergon-ai doctor.",
         },
         items: [
           {
-            id: "claude",
-            label: "Claude\u009b31m Code\u009b0m",
+            id: "pi",
+            label: "Pi\u009b31m\u009b0m",
             state: "fail",
-            detail: "Repair \u001b]2;owned\u0007/tmp/CLAUDE.md and retry.",
+            detail: "Repair \u001b]2;owned\u0007/tmp/.pi/APPEND_SYSTEM.md and retry.",
           },
         ],
         actions: [
@@ -390,8 +413,8 @@ describe("renderStatusScreen", () => {
 
     const output = lines.join("\n");
 
-    expect(output).toContain("Readiness [warn]: Inspect /repo/CLAUDE.md?Run afergon-ai doctor.");
-    expect(output).toContain("Claude Code [fail]: Repair /tmp/CLAUDE.md and retry.");
+    expect(output).toContain("Readiness [warn]: Inspect /repo/.pi/APPEND_SYSTEM.md?Run afergon-ai doctor.");
+    expect(output).toContain("Pi [fail]: Repair /tmp/.pi/APPEND_SYSTEM.md and retry.");
     expect(output).toContain("- afergon-ai doctor: Verify current installation");
     expect(output).toContain("[warn]");
     expect(output).toContain("[fail]");
@@ -503,7 +526,7 @@ describe("createTuiApp status route", () => {
       loadStatusScreenState: () => ({
         title: "Status",
         summary: { label: "Readiness", state: "warn", detail: "Setup is incomplete." },
-        items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Not installed." }],
+        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
         actions: [{ id: "update", label: "afergon-ai update", argv: ["update"], description: "Refresh installed files." }],
         interactiveActions: [
           createActionDefinition({

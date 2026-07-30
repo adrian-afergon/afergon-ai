@@ -157,12 +157,12 @@ describe("dispatcher execution metadata", () => {
   it("preserves the caller cwd for explicit init commands", () => {
     expect(
       buildExecution(
-        { kind: "command", command: "init", forwardedArgs: ["--claude"] },
+        { kind: "command", command: "init", forwardedArgs: ["--pi"] },
         { packageRoot: repoRoot, cwd: "/tmp/caller-project", platform: "linux" },
       ),
     ).toEqual({
       command: "bash",
-      args: [path.join(repoRoot, "scripts/init-project.sh"), "--claude"],
+      args: [path.join(repoRoot, "scripts/init-project.sh"), "--pi"],
       cwd: "/tmp/caller-project",
     });
   });
