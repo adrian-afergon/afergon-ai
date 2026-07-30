@@ -45,6 +45,10 @@ function runPowerShell(scriptName: string, cwd: string, env: NodeJS.ProcessEnv, 
 }
 
 describe("POSIX init --claude rejection", () => {
+  it("does not advertise the retired host in the shipped launcher", () => {
+    expect(fs.readFileSync(path.join(repoRoot, "bin", "afergon-ai"), "utf8")).not.toContain("--claude");
+  });
+
   it("exits non-zero and prints a retirement message", () => {
     const tempRoot = makeTempRoot();
     const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);

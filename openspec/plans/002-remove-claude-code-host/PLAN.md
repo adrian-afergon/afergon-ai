@@ -162,7 +162,7 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 - [x] **Step 4.1**: Run full verification suite (see Verification section below)
 - [x] **Step 4.2**: Manual smoke test: `./bin/afergon-ai --help` shows no `--claude` in init usage
 - [x] **Step 4.3**: Manual smoke test: `./bin/afergon-ai init --claude` exits non-zero with retirement message
-- [x] **Step 4.4**: Confirm no residual Claude references in production source (excluding model identifiers, historical OpenSpec records, and user-owned files)
+- [x] **Step 4.4**: Confirm no residual Claude references in production source and shipped launchers (excluding model identifiers, historical OpenSpec records, and user-owned files)
 
 ### Review Remediation
 
@@ -231,7 +231,7 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 - [x] **Additional Evidence**:
   - `./bin/afergon-ai --help` prints help without `--claude` in init usage and exits 0
   - `./bin/afergon-ai init --claude` exits non-zero with retirement message
-  - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"` returns no active Claude host references (model identifiers and test fixtures excluded)
+  - `grep -r "claude" bin/ scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"` returns no active Claude host references (model identifiers and test fixtures excluded)
 - [x] **Windows CI**: `pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism` — PowerShell rejection and update-preservation scenarios execute on `windows-latest` (run `30504923196`)
 - [x] **Rule Compliance**:
   - POSIX and PowerShell parity verified: both scripts reject `--claude` equivalently
