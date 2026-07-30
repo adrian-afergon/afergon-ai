@@ -66,25 +66,6 @@ else
 	SKIPPED=$((SKIPPED + 1))
 fi
 
-# ── Claude Code ───────────────────────────────────────────────────────────────
-
-CLAUDE_MD="$TARGET_DIR/CLAUDE.md"
-if [ -f "$CLAUDE_MD" ]; then
-	cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
-	echo "✔ Claude: updated CLAUDE.md"
-	UPDATED=$((UPDATED + 1))
-else
-	echo "  Claude: not installed in this project (skipped)"
-	SKIPPED=$((SKIPPED + 1))
-fi
-
-CLAUDE_SKILLS="$TARGET_DIR/.claude/skills"
-if [ -d "$CLAUDE_SKILLS" ]; then
-	cp -r "$PACKAGE_ROOT/skills/"* "$CLAUDE_SKILLS/"
-	echo "✔ Claude: updated .claude/skills/"
-	UPDATED=$((UPDATED + 1))
-fi
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"

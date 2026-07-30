@@ -1,0 +1,25 @@
+# Task: Remove Claude Code host configuration
+
+- **Intent**: Remove Claude Code as an active afergon-ai configuration target while preserving the Pi package/runtime, the standalone TUI, and OpenCode configuration.
+- **In Scope**:
+  - Remove Claude Code from POSIX and PowerShell `init` choices, flags, summaries, and generated file paths.
+  - Reject the retired `--claude` init flag explicitly on both script surfaces instead of falling through to interactive setup.
+  - Keep `--pi`, `--opencode`, and `--all`, with `--all` meaning Pi plus OpenCode.
+  - Stop `update` from reading or writing `CLAUDE.md` and `.claude/skills/`, while preserving Pi and OpenCode update behavior.
+  - Remove Claude from the CLI help, TUI configuration/status state, TUI init checkbox form, and active README guidance.
+  - Delete the Claude adapter artifact and update focused tests for the remaining host surface.
+- **Out of Scope**:
+  - Removing Pi, `@earendil-works/pi-tui`, or the standalone TUI.
+  - Removing OpenCode registration, update, or Windows parity.
+  - Deleting pre-existing `CLAUDE.md` or `.claude/` files from a user's project.
+  - Rewriting historical OpenSpec records or changing model identifiers such as `anthropic/claude-opus`.
+- **Acceptance Criteria**:
+  - POSIX and PowerShell init expose only Pi, OpenCode, and all; `--claude` exits non-zero with an actionable retirement message.
+  - `--all` configures Pi and OpenCode without creating Claude files or directories.
+  - POSIX and PowerShell update no longer reference or mutate Claude files and retain Pi/OpenCode behavior.
+  - CLI help, TUI status items, and TUI init choices contain no active Claude host entry.
+  - Focused tests prove the retired flag, remaining init argv, TUI state, and Windows script parity.
+  - Typecheck, build, runtime health, and the complete test suite pass.
+- **Dependencies.Requires**: Phase 0 Windows OpenCode CI commit `56023dc` on the parent branch.
+- **Spec Breadth Hint**: medium
+- **Open Decisions**: None

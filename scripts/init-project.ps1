@@ -1,6 +1,6 @@
 # afergon-ai/scripts/init-project.ps1
 # Initialize afergon-ai in any project.
-# Prefer using the CLI: afergon-ai init [--pi] [--claude] [--opencode] [--all]
+# Prefer using the CLI: afergon-ai init [--pi] [--opencode] [--all]
 
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Flags)
 
@@ -12,15 +12,20 @@ $TARGET_DIR   = (Get-Location).Path
 $PROJECT_NAME = Split-Path -Leaf $TARGET_DIR
 
 $SETUP_PI       = $false
-$SETUP_CLAUDE   = $false
 $SETUP_OPENCODE = $false
+
+foreach ($flag in $Flags) {
+    if ($flag -eq '--claude') {
+        Write-Error "Error: --claude is retired. Supported hosts: --pi, --opencode, --all."
+        exit 1
+    }
+}
 
 foreach ($flag in $Flags) {
     switch ($flag) {
         '--pi'       { $SETUP_PI = $true }
-        '--claude'   { $SETUP_CLAUDE = $true }
         '--opencode' { $SETUP_OPENCODE = $true }
-        '--all'      { $SETUP_PI = $true; $SETUP_CLAUDE = $true; $SETUP_OPENCODE = $true }
+        '--all'      { $SETUP_PI = $true; $SETUP_OPENCODE = $true }
     }
 }
 
@@ -58,21 +63,19 @@ Write-Host ""
 
 # ── Interactive tool selection ────────────────────────────────────────────────
 
-if (-not $SETUP_PI -and -not $SETUP_CLAUDE -and -not $SETUP_OPENCODE) {
+if (-not $SETUP_PI -and -not $SETUP_OPENCODE) {
     Write-Host "Which AI tools do you want to configure? (space-separated numbers)"
     Write-Host ""
     Write-Host "  1) Pi"
-    Write-Host "  2) Claude Code"
-    Write-Host "  3) OpenCode"
-    Write-Host "  4) All"
+    Write-Host "  2) OpenCode"
+    Write-Host "  3) All"
     Write-Host ""
     $input = Read-Host "Select"
     foreach ($t in $input -split '\s+') {
         switch ($t) {
             '1' { $SETUP_PI = $true }
-            '2' { $SETUP_CLAUDE = $true }
-            '3' { $SETUP_OPENCODE = $true }
-            '4' { $SETUP_PI = $true; $SETUP_CLAUDE = $true; $SETUP_OPENCODE = $true }
+            '2' { $SETUP_OPENCODE = $true }
+            '3' { $SETUP_PI = $true; $SETUP_OPENCODE = $true }
         }
     }
 }
@@ -150,31 +153,6 @@ if ($SETUP_PI) {
     }
 }
 
-# ── Claude Code ───────────────────────────────────────────────────────────────
-
-if ($SETUP_CLAUDE) {
-    Write-Host ""
-    Write-Host "Claude Code setup"
-    Write-Host "-----------------"
-    $CLAUDE_MD = Join-Path $TARGET_DIR 'CLAUDE.md'
-
-    if (Confirm-Overwrite $CLAUDE_MD) {
-        Copy-Item (Join-Path $PACKAGE_ROOT 'adapters\claude\CLAUDE.md') $CLAUDE_MD -Force
-        Write-Host "OK  Created $CLAUDE_MD"
-    }
-
-    $CLAUDE_SKILLS = Join-Path $TARGET_DIR '.claude\skills'
-    New-Item -ItemType Directory -Force -Path $CLAUDE_SKILLS | Out-Null
-    $skillsSrc = Join-Path $PACKAGE_ROOT 'skills'
-    Get-ChildItem $skillsSrc -Directory | ForEach-Object {
-        $dest = Join-Path $CLAUDE_SKILLS $_.Name
-        if (-not (Test-Path $dest)) {
-            Copy-Item $_.FullName $dest -Recurse
-        }
-    }
-    Write-Host "OK  Skills copied to .claude\skills\"
-}
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 if ($SETUP_OPENCODE) {
@@ -224,7 +202,6 @@ Write-Host "======================================"
 Write-Host "afergon-ai initialized"
 Write-Host ""
 if ($SETUP_PI)       { Write-Host "  Pi        -> .pi\APPEND_SYSTEM.md (active on next Pi session)" }
-if ($SETUP_CLAUDE)   { Write-Host "  Claude    -> CLAUDE.md + .claude\skills\" }
 if ($SETUP_OPENCODE) { Write-Host "  OpenCode  -> $OC_BASE_DIR\agents\ + commands/" }
 Write-Host ""
 Write-Host "Available skills (all tools):"

@@ -47,27 +47,6 @@ if (Test-Path $APPEND_SYSTEM) {
     $SKIPPED++
 }
 
-# ── Claude Code ───────────────────────────────────────────────────────────────
-
-$CLAUDE_MD = Join-Path $TARGET_DIR 'CLAUDE.md'
-if (Test-Path $CLAUDE_MD) {
-    Copy-Item (Join-Path $PACKAGE_ROOT 'adapters\claude\CLAUDE.md') $CLAUDE_MD -Force
-    Write-Host "OK  Claude: updated CLAUDE.md"
-    $UPDATED++
-} else {
-    Write-Host "    Claude: not installed in this project (skipped)"
-    $SKIPPED++
-}
-
-$CLAUDE_SKILLS = Join-Path $TARGET_DIR '.claude\skills'
-if (Test-Path $CLAUDE_SKILLS) {
-    Get-ChildItem (Join-Path $PACKAGE_ROOT 'skills') -Directory | ForEach-Object {
-        Copy-Item $_.FullName (Join-Path $CLAUDE_SKILLS $_.Name) -Recurse -Force
-    }
-    Write-Host "OK  Claude: updated .claude\skills\"
-    $UPDATED++
-}
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 $OC_BASE_DIR      = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'opencode' } else { Join-Path $HOME '.config\opencode' }
