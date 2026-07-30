@@ -53,6 +53,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `9019575` test(windows): fix Claude retirement fixtures
 - `0a5d21c` docs(opencode): record Windows retirement evidence
 - `5266c71` docs(result): reconcile final retirement evidence
+- `0558712` fix(opencode): remove stale Claude launcher guidance
 
 ## Files Changed
 
@@ -97,8 +98,8 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
     - `./bin/afergon-ai init --claude`: passed (exit 1 with retirement message)
     - `grep -r "claude" bin/ scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"`: passed after removing the stale launcher usage line (only `--claude` rejection messages remain)
     - Focused remediation tests for update preservation, combined flags, and package contents: passed locally
-    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in runs `30504923196` and `30505053803`
-    - Windows CI full job: passed in run `30505053803`; general test workflow passed in `30505053804`
+    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in runs `30504923196`, `30505053803`, and `30505439604`
+    - Windows CI full job: passed in run `30505439604`; general test workflow passed in `30505439635`
 
 ## Blockers or Deviations
 
@@ -110,6 +111,7 @@ None
 - GitHub Actions reports a non-blocking Node.js 20 deprecation annotation for existing `actions/checkout@v4` and `actions/setup-node@v4` usage.
 - `.idea/` and `opencode.json` were preserved and never staged, as required.
 - Historical OpenSpec records and model identifiers such as `anthropic/claude-opus` were intentionally left untouched.
+- The final RESULT-only commit cannot list its own SHA; the final review must inspect the complete range through `HEAD` in addition to this inventory.
 
 ## Next Step
 
