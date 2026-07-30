@@ -75,6 +75,11 @@ describe("active documentation contract", () => {
     expect(README).toContain("`init` configures OpenCode by default");
   });
 
+  it("documents update as refreshing only managed OpenCode files", () => {
+    expect(README).toContain("Re-applies the latest managed OpenCode agents and commands");
+    expect(README).not.toContain("Re-applies the latest OpenCode agents, commands, and project configuration");
+  });
+
   it("does not claim Pi discovery or configuration in detect-skills guidance", () => {
     expect(DETECT_SKILLS).not.toContain("Pi discovers");
     expect(DETECT_SKILLS).not.toContain("compatible with Pi");
@@ -91,6 +96,7 @@ describe("active documentation contract", () => {
     expect(exploration).toContain("extensions/startup-banner.ts");
 
     const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
-    expect(packageJson.peerDependencies).toHaveProperty("@earendil-works/pi-tui");
+    expect(packageJson.dependencies).toHaveProperty("@earendil-works/pi-tui");
+    expect(packageJson.peerDependencies ?? {}).not.toHaveProperty("@earendil-works/pi-tui");
   });
 });

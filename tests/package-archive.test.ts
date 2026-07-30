@@ -10,6 +10,7 @@ const packageJson = JSON.parse(
 ) as {
   description?: string;
   keywords?: string[];
+  dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   files?: string[];
@@ -42,6 +43,19 @@ function runPackDryRun(): string[] {
   return lines.slice(start + 1, end).map((line) => line.trim()).filter(Boolean);
 }
 
+const PROHIBITED_ARCHIVE_PREFIXES = ["extensions/", "prompts/", ".pi/", "dist/extensions/", "dist/prompts/"];
+
+function identifyProhibitedArchiveEntries(entries: readonly string[]): string[] {
+  return entries.filter((entry) =>
+    PROHIBITED_ARCHIVE_PREFIXES.some((prefix) => entry.startsWith(prefix)),
+  );
+}
+
+function expectNoProhibitedArchiveEntries(entries: readonly string[]): void {
+  const prohibited = identifyProhibitedArchiveEntries(entries);
+  expect(prohibited, `prohibited archive entries found: ${prohibited.join(", ")}`).toEqual([]);
+}
+
 describe("Pi host package distribution removal", () => {
   it("package metadata does not advertise Pi as a host", () => {
     expect(packageJson).not.toHaveProperty("pi");
@@ -59,8 +73,11 @@ describe("Pi host package distribution removal", () => {
     expect(packageJson.files ?? []).not.toContain("prompts/");
   });
 
-  it("retains the standalone TUI peer dependency", () => {
-    expect(packageJson.peerDependencies ?? {}).toHaveProperty(
+  it("retains the standalone TUI as a direct runtime dependency", () => {
+    expect(packageJson.dependencies ?? {}).toHaveProperty(
+      "@earendil-works/pi-tui",
+    );
+    expect(packageJson.peerDependencies ?? {}).not.toHaveProperty(
       "@earendil-works/pi-tui",
     );
   });
@@ -81,11 +98,25 @@ describe("Pi host package distribution removal", () => {
     expect(entries.some((entry) => entry.startsWith("bin/"))).toBe(true);
     expect(entries.some((entry) => entry.startsWith("scripts/"))).toBe(true);
 
-    expect(entries.some((entry) => entry.startsWith("extensions/"))).toBe(false);
-    expect(entries.some((entry) => entry.startsWith("prompts/"))).toBe(false);
-    expect(entries.some((entry) => entry.startsWith(".pi/"))).toBe(false);
+    expectNoProhibitedArchiveEntries(entries);
     expect(entrySet.has("dist/prompts/afergon-ai.md")).toBe(false);
     expect(entrySet.has("dist/extensions/startup-banner.js")).toBe(false);
+  });
+
+  it("rejects and identifies a prohibited archive entry", () => {
+    const syntheticEntries = [
+      "adapters/opencode/opencode.json",
+      "extensions/startup-banner.js",
+      "skills/implement/SKILL.md",
+      ".pi/APPEND_SYSTEM.md",
+    ];
+
+    const prohibited = identifyProhibitedArchiveEntries(syntheticEntries);
+    expect(prohibited).toContain("extensions/startup-banner.js");
+    expect(prohibited).toContain(".pi/APPEND_SYSTEM.md");
+
+    expect(() => expectNoProhibitedArchiveEntries(syntheticEntries)).toThrow(/extensions\/startup-banner\.js/);
+    expect(() => expectNoProhibitedArchiveEntries(syntheticEntries)).toThrow(/\.pi\/APPEND_SYSTEM\.md/);
   });
 
   it("preserves historical OpenSpec records and model identifiers containing pi or claude", () => {

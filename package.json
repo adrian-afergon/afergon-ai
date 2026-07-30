@@ -27,7 +27,7 @@
     "test": "pnpm build && vitest run --no-file-parallelism",
     "test:watch": "vitest"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@earendil-works/pi-tui": "*"
   },
   "devDependencies": {
