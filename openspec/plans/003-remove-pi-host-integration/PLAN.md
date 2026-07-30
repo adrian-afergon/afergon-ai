@@ -279,14 +279,14 @@ createActionDefinition({
   "@earendil-works/pi-tui": "*"
 }
 // After:
-"peerDependencies": {
+"dependencies": {
   "@earendil-works/pi-tui": "*"
 }
 ```
 
 ## Acceptance Criteria
 
-- [x] The package has no Pi manifest (`"pi"` key), Pi extension (`extensions/`), Pi prompt (`prompts/`), Pi coding-agent dependency, or Pi host package identity; `@earendil-works/pi-tui` remains a peerDependency.
+- [x] The package has no Pi manifest (`"pi"` key), Pi extension (`extensions/`), Pi prompt (`prompts/`), Pi coding-agent dependency, or Pi host package identity; `@earendil-works/pi-tui` remains a direct runtime dependency.
 - [x] The generated package (dist/) contains the standalone TUI runtime, OpenCode adapters, and skills, but no `extensions/`, `prompts/`, or repository Pi host state.
 - [x] POSIX and PowerShell `init` configure OpenCode by default and via `--opencode`; `--pi`, `--all`, and `--claude` reject before side effects with non-zero exit.
 - [x] POSIX and PowerShell `update` operate only on OpenCode and preserve existing user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
@@ -318,7 +318,7 @@ createActionDefinition({
 ## Dependencies
 
 - Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6` — already the base of the current branch `chore/opencode-only-02-remove-pi-host`
-- `@earendil-works/pi-tui` retained as the standalone TUI runtime dependency — no version change required
+- `@earendil-works/pi-tui` retained as the standalone TUI direct runtime dependency — no version change required
 - `python3` required by `register-opencode-agents.sh` for OpenCode agent registration — pre-existing, no change
 
 ## Risks and Watchouts
@@ -330,6 +330,15 @@ createActionDefinition({
 - **init-project.sh references prompts/afergon-ai.md**: The Pi setup section uses `awk` to extract content from `prompts/afergon-ai.md`. Since both the setup section and the file are removed in different commit units, Commit 1 must not break the build — the init script still works because the Pi setup section is guarded by `$SETUP_PI` which is only set by `--pi`/`--all` flags. However, Commit 2 removes both the flags and the section, so the ordering is safe.
 - **Memory system prompt text**: The Engram memory description in init scripts says "Pi-native persistent memory". This should be updated to remove the Pi reference, but the memory system itself is host-agnostic. Updated in Commit 2.
 - **`.gitignore` comment**: Line 1 says `"# Local Pi runtime state"` for `.atl/`. This is a comment-only reference and is not in scope, but could be updated for clarity in a follow-up.
+
+## Post-Implementation Review Fixes
+
+- [x] Move `@earendil-works/pi-tui` from `peerDependencies` to `dependencies` and update package archive/docs contract tests.
+- [x] Add `tests/init-retire-pi.test.ts` to the Windows CI workflow and add PowerShell combined retired-flag coverage.
+- [x] Expand no-side-effect assertions to cover `HOME` and `XDG_CONFIG_HOME` paths for retired POSIX and PowerShell flags.
+- [x] Correct README `update` description to match implemented behavior (managed OpenCode agents and commands only).
+- [x] Add archive validation helper that rejects and identifies prohibited entries; add Configuration TUI coverage for a user-owned `.pi/` with no managed OpenCode install.
+- [x] Clear trailing blank-line warnings in the four task-003 spec Markdown files.
 
 ## Completion Condition
 
