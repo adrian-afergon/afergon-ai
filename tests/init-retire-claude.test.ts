@@ -51,13 +51,15 @@ describe("POSIX init --claude rejection", () => {
 
   it("exits non-zero and prints a retirement message", () => {
     const tempRoot = makeTempRoot();
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);
+    const home = path.join(tempRoot, "home");
+    const result = runBash("init-project.sh", tempRoot, { HOME: home }, ["--claude"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--claude is retired");
     expect(result.stderr).toContain("--opencode");
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, ".claude"))).toBe(false);
+    expect(fs.existsSync(home)).toBe(false);
   });
 
   it("does not create Claude artifacts with --claude", () => {
@@ -109,12 +111,15 @@ describe("POSIX init --claude rejection", () => {
 
   it("rejects --claude in any position", () => {
     const tempRoot = makeTempRoot();
+    const home = path.join(tempRoot, "home");
     const xdgHome = path.join(tempRoot, "xdg");
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--claude"]);
+    const result = runBash("init-project.sh", tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--claude"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--claude is retired");
     expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(false);
+    expect(fs.existsSync(home)).toBe(false);
+    expect(fs.existsSync(xdgHome)).toBe(false);
   });
 
   it("packs OpenCode adapter surfaces without a Claude adapter", () => {
@@ -130,7 +135,8 @@ describe("POSIX init --claude rejection", () => {
 describe("PowerShell init --claude rejection", () => {
   it.runIf(process.platform === "win32")("exits non-zero and prints a retirement message", () => {
     const tempRoot = makeTempRoot();
-    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);
+    const home = path.join(tempRoot, "home");
+    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: home }, ["--claude"]);
 
     expect(result.status).not.toBe(0);
     const output = result.stderr + result.stdout;
@@ -138,6 +144,7 @@ describe("PowerShell init --claude rejection", () => {
     expect(output).toContain("--opencode");
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, ".claude"))).toBe(false);
+    expect(fs.existsSync(home)).toBe(false);
   });
 
 });
