@@ -14,12 +14,8 @@ const validEvent = {
   outcome: "useful",
 };
 
-function directReportQueryConstructionMustRemainUnavailable(): ReportQuery {
-  // @ts-expect-error ReportQuery construction is restricted to its validating factory.
-  return new ReportQuery();
-}
-
-void directReportQueryConstructionMustRemainUnavailable;
+// @ts-expect-error ReportQuery construction is restricted to its validating factory.
+if (false) new ReportQuery();
 
 describe("AFERGON-AI v1 event parser", () => {
   it("normalizes a valid event and preserves unavailable optional attribution", () => {
@@ -99,10 +95,7 @@ describe("AFERGON-AI v1 event parser", () => {
 
 describe("report query value object", () => {
   it("creates a query with a supported grouping and filter", () => {
-    expect(ReportQuery.create("modelProfile", { outcome: "useful" })).toMatchObject({
-      groupBy: "modelProfile",
-      filters: { outcome: "useful" },
-    });
+    expect(ReportQuery.create("modelProfile", { outcome: "useful" })).toMatchObject({ groupBy: "modelProfile", filters: { outcome: "useful" } });
   });
 
   it("creates the default outcome query without filters", () => {
@@ -110,41 +103,16 @@ describe("report query value object", () => {
   });
 
   it("preserves the unsupported-grouping diagnostic", () => {
-    expect(() => ReportQuery.create("unsupported" as never)).toThrow(expect.objectContaining({
-      field: "groupBy",
-      code: "invalid",
-      message: "groupBy: is not a supported report dimension",
-    }));
+    expect(() => ReportQuery.create("unsupported" as never)).toThrow(expect.objectContaining({ field: "groupBy", code: "invalid", message: "groupBy: is not a supported report dimension" }));
   });
 
   it("preserves the unsupported-filter diagnostic", () => {
-    expect(() => ReportQuery.create("outcome", { unsupported: "value" } as never)).toThrow(expect.objectContaining({
-      field: "filter",
-      code: "invalid",
-      message: "filter: unsupported is not a supported report dimension",
-    }));
+    expect(() => ReportQuery.create("outcome", { unsupported: "value" } as never)).toThrow(expect.objectContaining({ field: "filter", code: "invalid", message: "filter: unsupported is not a supported report dimension" }));
   });
 
-  it.each([
-    ["attributionGaps", "Present"],
-    ["attributionGaps", "unavailable"],
-    ["attributionGaps", ""],
-    ["attributionGaps", 1],
-    ["attributionGaps", true],
-    ["attributionGaps", null],
-    ["attributionGaps", undefined],
-    ["enrichmentGaps", "Present"],
-    ["enrichmentGaps", "unavailable"],
-    ["enrichmentGaps", ""],
-    ["enrichmentGaps", 1],
-    ["enrichmentGaps", true],
-    ["enrichmentGaps", null],
-    ["enrichmentGaps", undefined],
-  ])("rejects %s filter value %j outside the exact vocabulary", (dimension, value) => {
-    expect(() => ReportQuery.create("outcome", { [dimension]: value } as never)).toThrow(expect.objectContaining({
-      field: `filter.${dimension}`,
-      code: "invalid",
-      message: `filter.${dimension}: must be present or absent`,
-    }));
+  it.each(["attributionGaps", "enrichmentGaps"])("rejects values outside the exact %s vocabulary", (dimension) => {
+    for (const value of ["Present", "unavailable", "", 1, true, null, undefined]) {
+      expect(() => ReportQuery.create("outcome", { [dimension]: value } as never)).toThrow(expect.objectContaining({ field: `filter.${dimension}`, code: "invalid", message: `filter.${dimension}: must be present or absent` }));
+    }
   });
 });
