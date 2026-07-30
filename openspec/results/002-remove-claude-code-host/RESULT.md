@@ -54,6 +54,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `0a5d21c` docs(opencode): record Windows retirement evidence
 - `5266c71` docs(result): reconcile final retirement evidence
 - `0558712` fix(opencode): remove stale Claude launcher guidance
+- `fa69fdd` docs(result): record final launcher verification
 
 ## Files Changed
 
@@ -98,8 +99,8 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
     - `./bin/afergon-ai init --claude`: passed (exit 1 with retirement message)
     - `grep -r "claude" bin/ scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"`: passed after removing the stale launcher usage line (only `--claude` rejection messages remain)
     - Focused remediation tests for update preservation, combined flags, and package contents: passed locally
-    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in runs `30504923196`, `30505053803`, and `30505439604`
-    - Windows CI full job: passed in run `30505439604`; general test workflow passed in `30505439635`
+    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in runs `30504923196`, `30505439604`, and `30505557150`
+    - Windows CI full job: passed in run `30505557150`; general test workflow passed in `30505557157`
 
 ## Blockers or Deviations
 
