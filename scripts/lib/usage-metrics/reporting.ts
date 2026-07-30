@@ -3,6 +3,8 @@ import {
   type EfficiencyOutcome,
   type EfficiencyRecord,
   type EfficiencyReport,
+  type EnrichmentResult,
+  type GapState,
   type ReportDimension,
   ReportQuery,
   type ReportRow,
@@ -26,6 +28,12 @@ type MutableReportRow = {
   enrichmentGaps: number;
 };
 
+type EvaluatedRecord = {
+  readonly record: EfficiencyRecord;
+  readonly attributionGap: boolean;
+  readonly enrichment: EnrichmentResult;
+};
+
 const ATTRIBUTION_FIELDS = ["task", "subagent", "model", "modelProfile", "correlationId"] as const;
 
 export class EfficiencyReportService {
@@ -35,24 +43,26 @@ export class EfficiencyReportService {
   ) {}
 
   public generate(query: ReportQuery = ReportQuery.create()): EfficiencyReport {
-    const selected = this.records.all().filter((record) => this.matches(record, query));
+    const selected = this.records.all()
+      .map((record) => this.evaluate(record))
+      .filter((evaluated) => this.matches(evaluated, query));
     const rows = new Map<string, MutableReportRow>();
     let attributionGaps = 0;
     let enrichmentGaps = 0;
     let estimatedCost = 0;
     let hasEstimatedCost = false;
 
-    for (const record of selected) {
-      const key = String(this.valueFor(record, query.groupBy));
+    for (const evaluated of selected) {
+      const { record, attributionGap, enrichment } = evaluated;
+      const key = String(this.valueFor(evaluated, query.groupBy));
       const row = rows.get(key) ?? this.createRow(key);
       row.count += 1;
       this.incrementOutcome(row, record.outcome);
       if (this.isRework(record)) row.reworkCount += 1;
-      if (this.hasAttributionGap(record)) {
+      if (attributionGap) {
         row.attributionGaps += 1;
         attributionGaps += 1;
       }
-      const enrichment = this.getEnrichment(record);
       if (!enrichment.available) {
         row.enrichmentGaps += 1;
         enrichmentGaps += 1;
@@ -82,12 +92,27 @@ export class EfficiencyReportService {
     };
   }
 
-  private matches(record: EfficiencyRecord, query: ReportQuery): boolean {
-    return Object.entries(query.filters).every(([dimension, expected]) => this.valueFor(record, dimension as ReportDimension) === expected);
+  private matches(evaluated: EvaluatedRecord, query: ReportQuery): boolean {
+    return Object.entries(query.filters).every(([dimension, expected]) => this.valueFor(evaluated, dimension as ReportDimension) === expected);
   }
 
-  private valueFor(record: EfficiencyRecord, dimension: ReportDimension): string | number | Unavailable {
+  private evaluate(record: EfficiencyRecord): EvaluatedRecord {
+    return {
+      record,
+      attributionGap: this.hasAttributionGap(record),
+      enrichment: this.getEnrichment(record),
+    };
+  }
+
+  private valueFor(evaluated: EvaluatedRecord, dimension: ReportDimension): string | number | Unavailable {
+    if (dimension === "attributionGaps") return this.gapState(evaluated.attributionGap);
+    if (dimension === "enrichmentGaps") return this.gapState(!evaluated.enrichment.available);
+    const { record } = evaluated;
     return record[dimension];
+  }
+
+  private gapState(hasGap: boolean): GapState {
+    return hasGap ? "present" : "absent";
   }
 
   private createRow(dimension: string): MutableReportRow {

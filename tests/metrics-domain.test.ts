@@ -124,4 +124,27 @@ describe("report query value object", () => {
       message: "filter: unsupported is not a supported report dimension",
     }));
   });
+
+  it.each([
+    ["attributionGaps", "Present"],
+    ["attributionGaps", "unavailable"],
+    ["attributionGaps", ""],
+    ["attributionGaps", 1],
+    ["attributionGaps", true],
+    ["attributionGaps", null],
+    ["attributionGaps", undefined],
+    ["enrichmentGaps", "Present"],
+    ["enrichmentGaps", "unavailable"],
+    ["enrichmentGaps", ""],
+    ["enrichmentGaps", 1],
+    ["enrichmentGaps", true],
+    ["enrichmentGaps", null],
+    ["enrichmentGaps", undefined],
+  ])("rejects %s filter value %j outside the exact vocabulary", (dimension, value) => {
+    expect(() => ReportQuery.create("outcome", { [dimension]: value } as never)).toThrow(expect.objectContaining({
+      field: `filter.${dimension}`,
+      code: "invalid",
+      message: `filter.${dimension}: must be present or absent`,
+    }));
+  });
 });
