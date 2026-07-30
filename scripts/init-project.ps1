@@ -2,7 +2,15 @@
 # Initialize afergon-ai in any project.
 # Prefer using the CLI: afergon-ai init [--opencode]
 
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Flags)
+param(
+    # Declare host switches explicitly so --pi is not abbreviated to PowerShell's
+    # common -PipelineVariable parameter before the retirement check runs.
+    [switch]$Pi,
+    [switch]$All,
+    [switch]$Claude,
+    [switch]$Opencode,
+    [Parameter(ValueFromRemainingArguments = $true)][string[]]$Flags
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -12,6 +20,19 @@ $TARGET_DIR   = (Get-Location).Path
 $PROJECT_NAME = Split-Path -Leaf $TARGET_DIR
 
 $SETUP_OPENCODE = $false
+
+if ($Pi) {
+    Write-Error "Error: --pi is retired. Supported host: --opencode."
+    exit 1
+}
+if ($All) {
+    Write-Error "Error: --all is retired. Supported host: --opencode."
+    exit 1
+}
+if ($Claude) {
+    Write-Error "Error: --claude is retired. Supported host: --opencode."
+    exit 1
+}
 
 foreach ($flag in $Flags) {
     if ($flag -eq '--pi') {
@@ -26,6 +47,10 @@ foreach ($flag in $Flags) {
         Write-Error "Error: --claude is retired. Supported host: --opencode."
         exit 1
     }
+}
+
+if ($Opencode) {
+    $SETUP_OPENCODE = $true
 }
 
 foreach ($flag in $Flags) {
