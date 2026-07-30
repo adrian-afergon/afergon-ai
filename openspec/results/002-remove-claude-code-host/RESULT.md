@@ -49,6 +49,8 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `cc948d7` docs(readme): delete Claude adapter and remove active README guidance
 - `eb650e9` docs(plan): mark all 002-remove-claude-code-host steps and criteria complete
 - `2ef1851` docs(result): add implementation result for 002-remove-claude-code-host
+- `ed0295b` test(opencode): close Claude retirement review gaps
+- `9019575` test(windows): fix Claude retirement fixtures
 
 ## Files Changed
 
@@ -75,7 +77,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 
 - Step-level checks:
   - POSIX `init --claude` rejection test: passed
-  - PowerShell `init --claude` rejection test: outstanding locally (skipped on non-win32; wired into Windows CI)
+  - PowerShell `init --claude` rejection test: passed in Windows CI
   - `init --all` no-Claude-artifacts test: passed
   - TUI configuration tests (no Claude item): passed
   - TUI status tests (no Claude item): passed
@@ -93,19 +95,20 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
     - `./bin/afergon-ai init --claude`: passed (exit 1 with retirement message)
     - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"`: passed (only `--claude` rejection messages remain)
     - Focused remediation tests for update preservation, combined flags, and package contents: passed locally
-    - Windows CI execution of `tests/init-retire-claude.test.ts`: outstanding
+    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in run `30504923196`
+    - Windows CI full job: passed in run `30504923196`
 
 ## Blockers or Deviations
 
-- Windows CI has not yet executed the PowerShell rejection/update-preservation scenarios because this macOS worktree has not been pushed for the new workflow step.
+None
 
 ## Notes
 
-- The PowerShell rejection test runs only on win32; the script changes mirror POSIX behavior exactly.
-- The focused remediation tests pass locally; the PowerShell cases remain platform-skipped until Windows CI runs them.
+- The PowerShell rejection and update-preservation tests pass in Windows CI; they remain platform-skipped when the suite runs on macOS.
+- GitHub Actions reports a non-blocking Node.js 20 deprecation annotation for existing `actions/checkout@v4` and `actions/setup-node@v4` usage.
 - `.idea/` and `opencode.json` were preserved and never staged, as required.
 - Historical OpenSpec records and model identifiers such as `anthropic/claude-opus` were intentionally left untouched.
 
 ## Next Step
 
-Push the branch when authorized, confirm the new Windows CI step passes, then hand off to `afergon-review` for the final review.
+Hand off to `afergon-review` for the final review of the complete committed change set.

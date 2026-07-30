@@ -166,10 +166,10 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ### Review Remediation
 
-- [ ] **Step 5.1**: Execute `tests/init-retire-claude.test.ts` in the Windows CI workflow so the PowerShell rejection and update-preservation scenarios run on Windows.
+- [x] **Step 5.1**: Execute `tests/init-retire-claude.test.ts` in the Windows CI workflow so the PowerShell rejection and update-preservation scenarios run on Windows.
 - [x] **Step 5.2**: Add focused regression coverage for update preservation/refresh, combined remaining init flags with existing Claude files, and packaged adapter contents.
-- [ ] **Step 5.3**: Re-run the complete verification suite after the remediation changes and record the Windows CI result.
-- [ ] **Step 5.4**: Reconcile `RESULT.md` commit and file inventories with the final implementation change set.
+- [x] **Step 5.3**: Re-run the complete verification suite after the remediation changes and record the Windows CI result.
+- [x] **Step 5.4**: Reconcile `RESULT.md` commit and file inventories with the final implementation change set.
 
 ## Interfaces and Technical Contracts
 
@@ -232,7 +232,7 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
   - `./bin/afergon-ai --help` prints help without `--claude` in init usage and exits 0
   - `./bin/afergon-ai init --claude` exits non-zero with retirement message
   - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"` returns no active Claude host references (model identifiers and test fixtures excluded)
-- [ ] **Windows CI**: `pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism` — PowerShell rejection and update-preservation scenarios execute on `windows-latest`
+- [x] **Windows CI**: `pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism` — PowerShell rejection and update-preservation scenarios execute on `windows-latest` (run `30504923196`)
 - [x] **Rule Compliance**:
   - POSIX and PowerShell parity verified: both scripts reject `--claude` equivalently
   - No user-owned `CLAUDE.md` or `.claude/` files are modified or deleted
