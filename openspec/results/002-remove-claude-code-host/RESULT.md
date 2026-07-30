@@ -51,6 +51,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `2ef1851` docs(result): add implementation result for 002-remove-claude-code-host
 - `ed0295b` test(opencode): close Claude retirement review gaps
 - `9019575` test(windows): fix Claude retirement fixtures
+- `0a5d21c` docs(opencode): record Windows retirement evidence
 
 ## Files Changed
 
@@ -95,8 +96,8 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
     - `./bin/afergon-ai init --claude`: passed (exit 1 with retirement message)
     - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"`: passed (only `--claude` rejection messages remain)
     - Focused remediation tests for update preservation, combined flags, and package contents: passed locally
-    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in run `30504923196`
-    - Windows CI full job: passed in run `30504923196`
+    - Windows CI execution of `tests/init-retire-claude.test.ts`: passed in runs `30504923196` and `30505053803`
+    - Windows CI full job: passed in run `30505053803`; general test workflow passed in `30505053804`
 
 ## Blockers or Deviations
 
