@@ -9,7 +9,7 @@ completed-with-notes
 
 ## Execution Summary
 
-Executed all four commit units of the ready-with-assumptions plan in the isolated phase2 worktree. Removed Pi host package distribution, rewrote POSIX/PowerShell installers to be OpenCode-only, simplified the TUI Configuration/Status surface to a direct OpenCode init action, and updated active README/detect-skills guidance. All verification commands pass; the package archive contains no Pi-only artifacts; retired flags reject before side effects.
+Executed all four commit units of the ready-with-assumptions plan in the isolated phase2 worktree, then addressed the post-implementation review findings. Removed Pi host package distribution, rewrote POSIX/PowerShell installers to be OpenCode-only, simplified the TUI Configuration/Status surface to a direct OpenCode init action, and updated active README/detect-skills guidance. Moved `@earendil-works/pi-tui` to `dependencies`, added Windows CI coverage for the Pi retirement suite, expanded no-side-effect assertions, corrected README `update` scope, added archive rejection and TUI coverage helpers, and cleaned spec-file whitespace. All verification commands pass; the package archive contains no Pi-only artifacts; retired flags reject before side effects.
 
 ## Completed Steps
 
@@ -52,10 +52,17 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - 4.4 GREEN: Update `tests/tui-docs.test.ts`
 - 4.5 VERIFY: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
 - 4.6 COMMIT: `docs: update active guidance for OpenCode-only host support`
+- Review fix: Move `@earendil-works/pi-tui` to `dependencies` and update package archive/docs contract tests
+- Review fix: Add `tests/init-retire-pi.test.ts` to Windows CI and add PowerShell combined retired-flag coverage
+- Review fix: Expand retired-flag no-side-effect assertions to `HOME` and `XDG_CONFIG_HOME`
+- Review fix: Correct README `update` description to managed OpenCode agents and commands
+- Review fix: Add archive rejection helper and Configuration TUI coverage for user-owned `.pi/`
+- Review fix: Clear trailing blank-line whitespace warnings in the four task-003 spec files
 
 ## Updated Plan Artifacts
 
 - `openspec/plans/003-remove-pi-host-integration/PLAN.md`
+- `openspec/results/003-remove-pi-host-integration/RESULT.md`
 
 ## Commits Created
 
@@ -65,15 +72,25 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - `59ff72b` feat(tui): remove Pi from Configuration/Status, direct OpenCode init
 - `d3604be` docs: update active guidance for OpenCode-only host support
 - `72db322` docs(plan): mark all Pi-removal execution units complete
+- `bc51eb7` docs(result): record Pi host removal implementation result
+- `1f98d8e` fix(package): move pi-tui to dependencies and update archive/docs contracts
+- `3c9b5f9` ci: run Pi retirement tests on Windows and cover combined flags
+- `1adaa86` test(installer): assert retired flags leave HOME and XDG untouched
+- `3ef224e` docs(readme): correct update scope to managed OpenCode agents and commands
+- `107ba52` test(tui): cover Configuration with user-owned .pi and no managed OpenCode
+- `f8c4557` style(specs): remove trailing blank lines in task-003 spec files
+- `0d2ec56` docs(plan): record post-implementation review fixes
 
 ## Files Changed
 
 - `.pi/APPEND_SYSTEM.md` (deleted)
 - `.pi/settings.json` (deleted)
+- `.github/workflows/windows-launcher.yml`
 - `README.md`
 - `bin/afergon-ai`
 - `extensions/startup-banner.ts` (deleted)
 - `openspec/plans/003-remove-pi-host-integration/PLAN.md`
+- `openspec/results/003-remove-pi-host-integration/RESULT.md`
 - `openspec/specs/003-remove-pi-host-integration/spec-01-package-distribution.md`
 - `openspec/specs/003-remove-pi-host-integration/spec-02-opencode-only-installers.md`
 - `openspec/specs/003-remove-pi-host-integration/spec-03-tui-opencode-host-surface.md`
@@ -91,8 +108,8 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - `scripts/update.sh`
 - `skills/detect-skills/SKILL.md`
 - `tests/init-retire-claude.test.ts`
-- `tests/init-retire-pi.test.ts` (new)
-- `tests/package-archive.test.ts` (new)
+- `tests/init-retire-pi.test.ts`
+- `tests/package-archive.test.ts`
 - `tests/startup-banner.test.ts` (deleted)
 - `tests/tui-actions.test.ts`
 - `tests/tui-branding.test.ts`
@@ -108,16 +125,18 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
   - Unit 2 `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`: passed
   - Unit 3 `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`: passed
   - Unit 4 `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`: passed
+  - Review-fix focused tests: `tests/package-archive.test.ts`, `tests/init-retire-pi.test.ts`, `tests/init-retire-claude.test.ts`, `tests/tui-configuration.test.ts`, `tests/tui-docs.test.ts`: passed
 - Final checks:
-  - Tests: passed (`pnpm test` → 22 passed / 3 skipped test files, 335 passed / 15 skipped tests)
+  - Tests: passed (`pnpm test` → 22 passed / 3 skipped test files, 338 passed / 17 skipped tests)
   - Build: passed (`pnpm build`)
   - Additional Evidence:
     - `pnpm run health:runtime`: passed
     - `pnpm typecheck`: passed
-    - Package archive check: passed (`pnpm pack --dry-run` contains no `extensions/`, `prompts/`, or `.pi/` entries; `tests/package-archive.test.ts` enforces this)
+    - `git diff --check`: passed (no whitespace warnings in unstaged changes)
+    - Package archive check: passed (`pnpm pack --dry-run` contains no `extensions/`, `prompts/`, or `.pi/` entries; `tests/package-archive.test.ts` enforces this and includes a synthetic rejection test)
     - POSIX init retirement: passed (`bash scripts/init-project.sh --pi` exits 1 with `Error: --pi is retired. Supported host: --opencode.`)
     - POSIX init default: passed (`bash scripts/init-project.sh` in a temp dir creates `opencode.json`, `openspec/config.yaml`, and managed OpenCode agents; no `.pi/` directory is created)
-    - PowerShell init retirement: covered by gated tests in `tests/init-retire-pi.test.ts` (platform-specific, skipped on non-Windows)
+    - PowerShell init retirement: covered by gated tests in `tests/init-retire-pi.test.ts` and now executed in `.github/workflows/windows-launcher.yml` (platform-specific, skipped on non-Windows)
 
 ## Blockers or Deviations
 
@@ -125,9 +144,10 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 
 ## Notes
 
-- `@earendil-works/pi-tui` remains declared in `peerDependencies` as specified by the plan. The task text describes it as a "direct runtime dependency" but the plan's acceptance criteria explicitly keep it as a peerDependency; implementation followed the plan.
+- `@earendil-works/pi-tui` is now declared in `dependencies` as a direct runtime dependency, satisfying both the task/spec requirement and the package archive/docs contract tests.
 - The pre-existing `verify-install.sh` legacy agent-name mismatch noted in the plan's risks was not touched because it is out of scope.
 - Historical OpenSpec records and model identifiers containing `pi`/`claude` were preserved, verified by `tests/package-archive.test.ts` and `tests/tui-docs.test.ts`.
+- `pnpm-lock.yaml` had no unrelated churn: the only dependency change was the relocation of `@earendil-works/pi-tui` from `peerDependencies` to `dependencies`.
 
 ## Next Step
 
