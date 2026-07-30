@@ -44,10 +44,22 @@ function runPowerShell(scriptName: string, cwd: string, env: NodeJS.ProcessEnv, 
   );
 }
 
-function assertNoHostArtifacts(tempRoot: string): void {
+function assertNoProjectArtifacts(tempRoot: string): void {
   expect(fs.existsSync(path.join(tempRoot, ".pi"))).toBe(false);
   expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(false);
   expect(fs.existsSync(path.join(tempRoot, "openspec"))).toBe(false);
+}
+
+function assertNoSideEffects(tempRoot: string, env: { HOME?: string; XDG_CONFIG_HOME?: string }): void {
+  assertNoProjectArtifacts(tempRoot);
+
+  if (env.HOME) {
+    expect(fs.existsSync(env.HOME)).toBe(false);
+  }
+
+  if (env.XDG_CONFIG_HOME) {
+    expect(fs.existsSync(env.XDG_CONFIG_HOME)).toBe(false);
+  }
 }
 
 function assertOpenCodeArtifacts(tempRoot: string, xdgHome: string): void {
@@ -59,42 +71,46 @@ function assertOpenCodeArtifacts(tempRoot: string, xdgHome: string): void {
 describe("POSIX init Pi retirement", () => {
   it("rejects --pi with a retirement error and creates no files", () => {
     const tempRoot = makeTempRoot();
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--pi"]);
+    const home = path.join(tempRoot, "home");
+    const result = runBash("init-project.sh", tempRoot, { HOME: home }, ["--pi"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--pi is retired");
     expect(result.stderr).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
   });
 
   it("rejects --all with a retirement error and creates no files", () => {
     const tempRoot = makeTempRoot();
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--all"]);
+    const home = path.join(tempRoot, "home");
+    const result = runBash("init-project.sh", tempRoot, { HOME: home }, ["--all"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--all is retired");
     expect(result.stderr).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
   });
 
   it("rejects --claude with an updated retirement error", () => {
     const tempRoot = makeTempRoot();
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);
+    const home = path.join(tempRoot, "home");
+    const result = runBash("init-project.sh", tempRoot, { HOME: home }, ["--claude"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--claude is retired");
     expect(result.stderr).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
   });
 
   it("rejects --opencode --pi before side effects", () => {
     const tempRoot = makeTempRoot();
+    const home = path.join(tempRoot, "home");
     const xdgHome = path.join(tempRoot, "xdg");
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--pi"], "4");
+    const result = runBash("init-project.sh", tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--pi"], "4");
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--pi is retired");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome });
   });
 
   it("configures OpenCode with no flags", () => {
@@ -125,18 +141,19 @@ describe("POSIX init Pi retirement", () => {
 
     for (const { args, expected } of cases) {
       const tempRoot = makeTempRoot();
+      const home = path.join(tempRoot, "home");
       const xdgHome = path.join(tempRoot, "xdg");
       const result = runBash(
         "init-project.sh",
         tempRoot,
-        { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome },
+        { HOME: home, XDG_CONFIG_HOME: xdgHome },
         args,
         "4",
       );
 
       expect(result.status, result.stderr).not.toBe(0);
       expect(result.stderr).toContain(expected);
-      assertNoHostArtifacts(tempRoot);
+      assertNoSideEffects(tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome });
     }
   });
 
@@ -187,35 +204,76 @@ describe("POSIX init Pi retirement", () => {
 describe("PowerShell init Pi retirement", () => {
   it.runIf(process.platform === "win32")("rejects --pi with a retirement error and creates no files", () => {
     const tempRoot = makeTempRoot();
-    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--pi"]);
+    const home = path.join(tempRoot, "home");
+    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: home }, ["--pi"]);
 
     expect(result.status).not.toBe(0);
     const output = result.stderr + result.stdout;
     expect(output).toContain("--pi is retired");
     expect(output).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
   });
 
   it.runIf(process.platform === "win32")("rejects --all with a retirement error and creates no files", () => {
     const tempRoot = makeTempRoot();
-    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--all"]);
+    const home = path.join(tempRoot, "home");
+    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: home }, ["--all"]);
 
     expect(result.status).not.toBe(0);
     const output = result.stderr + result.stdout;
     expect(output).toContain("--all is retired");
     expect(output).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
   });
 
   it.runIf(process.platform === "win32")("rejects --claude with an updated retirement error", () => {
     const tempRoot = makeTempRoot();
-    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);
+    const home = path.join(tempRoot, "home");
+    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: home }, ["--claude"]);
 
     expect(result.status).not.toBe(0);
     const output = result.stderr + result.stdout;
     expect(output).toContain("--claude is retired");
     expect(output).toContain("--opencode");
-    assertNoHostArtifacts(tempRoot);
+    assertNoSideEffects(tempRoot, { HOME: home });
+  });
+
+  it.runIf(process.platform === "win32")("rejects --opencode --pi before side effects", () => {
+    const tempRoot = makeTempRoot();
+    const home = path.join(tempRoot, "home");
+    const xdgHome = path.join(tempRoot, "xdg");
+    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--pi"], "4");
+
+    expect(result.status).not.toBe(0);
+    const output = result.stderr + result.stdout;
+    expect(output).toContain("--pi is retired");
+    assertNoSideEffects(tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome });
+  });
+
+  it.runIf(process.platform === "win32")("rejects combined retired flags in any position before side effects", () => {
+    const cases = [
+      { args: ["--pi", "--opencode"], expected: "--pi is retired" },
+      { args: ["--opencode", "--all"], expected: "--all is retired" },
+      { args: ["--pi", "--all", "--claude"], expected: "--pi is retired" },
+    ];
+
+    for (const { args, expected } of cases) {
+      const tempRoot = makeTempRoot();
+      const home = path.join(tempRoot, "home");
+      const xdgHome = path.join(tempRoot, "xdg");
+      const result = runPowerShell(
+        "init-project.ps1",
+        tempRoot,
+        { HOME: home, XDG_CONFIG_HOME: xdgHome },
+        args,
+        "4",
+      );
+
+      expect(result.status, result.stderr + result.stdout).not.toBe(0);
+      const output = result.stderr + result.stdout;
+      expect(output).toContain(expected);
+      assertNoSideEffects(tempRoot, { HOME: home, XDG_CONFIG_HOME: xdgHome });
+    }
   });
 
   it.runIf(process.platform === "win32")("configures OpenCode with no flags", () => {
