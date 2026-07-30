@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # afergon-ai/scripts/update.sh
 #
-# Re-copy afergon-ai components to all detected tool installations.
+# Re-copy afergon-ai managed OpenCode components.
 # Run this after pulling updates from the afergon-ai repo.
 #
 # Usage:
@@ -113,5 +113,5 @@ fi
 echo ""
 echo "Done. Updated: $UPDATED component(s), skipped: $SKIPPED."
 if [ "$SKIPPED" -gt 0 ]; then
-	echo "Run 'afergon-ai init' to install skipped tools."
+	echo "Run 'afergon-ai init' to install skipped OpenCode files."
 fi

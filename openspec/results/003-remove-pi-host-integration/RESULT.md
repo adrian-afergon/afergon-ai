@@ -81,6 +81,7 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - `f8c4557` style(specs): remove trailing blank lines in task-003 spec files
 - `0d2ec56` docs(plan): record post-implementation review fixes
 - `6d6848d` docs(result): update with post-implementation review fixes and verification
+- `33f5733` fix(review): reconcile Pi removal artifacts
 
 ## Files Changed
 
@@ -133,6 +134,7 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
   - Additional Evidence:
     - `pnpm run health:runtime`: passed
     - `pnpm typecheck`: passed
+    - Final post-cleanup verification at `33f5733`: `pnpm typecheck && pnpm test && pnpm run health:runtime` passed (338 passed / 17 skipped tests)
     - `git diff --check 968aab6..HEAD`: passed (no whitespace warnings in the complete task diff)
     - Package archive check: passed (`pnpm pack --dry-run` contains no `extensions/`, `prompts/`, or `.pi/` entries; `tests/package-archive.test.ts` enforces this and includes a synthetic rejection test)
     - POSIX init retirement: passed (`bash scripts/init-project.sh --pi` exits 1 with `Error: --pi is retired. Supported host: --opencode.`)

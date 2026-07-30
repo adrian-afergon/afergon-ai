@@ -30,7 +30,7 @@ export function formatHelp(): string {
     "  tui      Open the interactive afergon-ai TUI (TTY only)",
     "  init     Initialize afergon-ai in the current project",
     "  doctor   Verify install; use --opencode for agents/commands checks",
-    "  update   Re-apply latest afergon-ai files to all installed tools",
+    "  update   Re-apply latest managed OpenCode agents and commands",
     "  models   Manage afergon-ai model profiles and refresh compatible host config",
     "",
   ].join("\n");

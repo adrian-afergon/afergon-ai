@@ -1,5 +1,5 @@
 # afergon-ai/scripts/update.ps1
-# Re-copy afergon-ai components to all detected tool installations.
+# Re-copy afergon-ai managed OpenCode components.
 # Run this after pulling updates from the afergon-ai repo.
 #
 # Usage: afergon-ai update
@@ -50,5 +50,5 @@ if ((Test-Path $OC_MARKER) -or (Test-Path $OC_LEGACY_MARKER)) {
 Write-Host ""
 Write-Host "Done. Updated: $UPDATED component(s), skipped: $SKIPPED."
 if ($SKIPPED -gt 0) {
-    Write-Host "Run 'afergon-ai init' to install skipped tools."
+    Write-Host "Run 'afergon-ai init' to install skipped OpenCode files."
 }

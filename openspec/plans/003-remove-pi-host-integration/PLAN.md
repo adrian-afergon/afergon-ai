@@ -168,7 +168,7 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - Assert no Pi repair guidance appears in status detail
   - Assert user-owned `.pi/` directory does not produce a managed Pi status item
 - [x] **3.3 GREEN**: Edit `scripts/lib/tui/config-status-adapter.ts`:
-  - Remove `SupportedInitId` type's `"pi"` and `"all"` members (keep only `"opencode"`)
+  - Remove the obsolete `SupportedInitId` type now that host selection is gone
   - Update `buildInitCommandArgv()`: remove `"pi"` and `"all"` from the filter; when `selectedIds` is empty or contains only `"opencode"`, return `buildCommandArgv("init")` (no flags needed since OpenCode is the default)
   - Remove the Pi status item from `getBaseStatusItems()` (remove the `getProjectInstallItem()` call for Pi)
   - Remove the `"pi"` case from `addGuidance()`
@@ -225,15 +225,9 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
 
 ## Interfaces and Technical Contracts
 
-### `SupportedInitId` type change (config-status-adapter.ts)
+### Init host-selection removal (config-status-adapter.ts)
 
-```typescript
-// Before:
-type SupportedInitId = "pi" | "opencode" | "all";
-
-// After:
-type SupportedInitId = "opencode";
-```
+The obsolete `SupportedInitId` declaration is removed because the TUI no longer exposes host selection. `buildInitCommandArgv` retains its existing input shape for callers but always returns the default OpenCode init command.
 
 ### `buildInitCommandArgv` signature change
 
