@@ -5,7 +5,7 @@ import { createActionDefinition, type ActionDefinition } from "./actions/definit
 import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
 import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
 
-type SupportedInitId = "pi" | "opencode" | "all";
+type SupportedInitId = "opencode";
 type ManifestActionId = CommandManifestEntry["id"];
 type StatusState = "ok" | "warn" | "fail";
 
@@ -151,17 +151,9 @@ function createActions(actionIds: readonly ManifestActionId[]): readonly StatusA
 }
 
 export function buildInitCommandArgv({ selectedIds = [] }: { selectedIds?: readonly string[] } = {}): ManifestCommandArgv {
-  const normalizedIds: SupportedInitId[] = Array.isArray(selectedIds)
-    ? selectedIds.filter(
-        (id): id is SupportedInitId => id === "pi" || id === "opencode" || id === "all",
-      )
-    : [];
-
-  if (normalizedIds.includes("all")) {
-    return buildCommandArgv("init", ["--all"]);
-  }
-
-  return buildCommandArgv("init", normalizedIds.map((id) => `--${id}`));
+  // OpenCode is the only supported host; the CLI default is `init` with no flags.
+  void selectedIds;
+  return buildCommandArgv("init");
 }
 
 function createInteractiveActions(section: "configuration" | "status"): readonly ActionDefinition[] {
@@ -181,23 +173,8 @@ function createInteractiveActions(section: "configuration" | "status"): readonly
       kind: "mutate",
       label: "Initialize project files",
       cliEquivalent: "afergon-ai init",
-      buildArgv: (input) => {
-        if (input === undefined) {
-          throw new TypeError("Cannot destructure property 'selectedIds' of 'undefined' as it is undefined.");
-        }
-        const { selectedIds } = input as { selectedIds?: readonly string[] };
-        return buildInitCommandArgv({ selectedIds });
-      },
-      form: {
-        kind: "checkboxes",
-        title: "Choose what to initialize",
-        options: [
-          { id: "pi", label: "Pi" },
-          { id: "opencode", label: "OpenCode" },
-          { id: "all", label: "All" },
-        ],
-      },
-      confirmLabel: "Initialize the selected surfaces?",
+      argv: buildCommandArgv("init"),
+      confirmLabel: "Initialize OpenCode project files?",
       refreshTarget: section,
     }),
     createActionDefinition({
@@ -222,14 +199,6 @@ function addGuidance(item: StatusItem): StatusItem {
         };
       }
       return item;
-    case "pi":
-      if (item.state === "warn") {
-        return {
-          ...item,
-          detail: `${item.detail} Run 'afergon-ai init' to install project files.`,
-        };
-      }
-      return item;
     case "opencode":
       if (item.state === "warn") {
         return {
@@ -246,13 +215,6 @@ function addGuidance(item: StatusItem): StatusItem {
 function getBaseStatusItems({ cwd, env }: { cwd: string; env: NodeJS.ProcessEnv }): readonly StatusItem[] {
   return [
     getModelConfigItem(env),
-    getProjectInstallItem({
-      id: "pi",
-      label: "Pi",
-      filePath: path.join(cwd, ".pi", "APPEND_SYSTEM.md"),
-      presentDetail: "Installed in this project via APPEND_SYSTEM.md",
-      missingDetail: "Not installed in this project.",
-    }),
     getOpenCodeItem(env),
   ];
 }

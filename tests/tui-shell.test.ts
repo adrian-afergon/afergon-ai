@@ -44,14 +44,14 @@ function createRouteRenderApp() {
     exit: () => {},
     loadConfigurationStatus: () => ({
       title: "Configuration",
-      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+      items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." }],
       actions: [],
       interactiveActions: [],
     }),
     loadStatusScreenState: () => ({
       title: "Status",
       summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init." },
-      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+      items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." }],
       actions: [],
       interactiveActions: [],
     }),
@@ -516,7 +516,7 @@ describe("createTuiApp", () => {
       exit: (payload) => exits.push(payload),
       loadConfigurationStatus: () => ({
         title: "Configuration",
-        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+        items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." }],
         actions: [],
         interactiveActions: [],
       }),
@@ -562,7 +562,7 @@ describe("createTuiApp", () => {
       exit: () => {},
       loadConfigurationStatus: () => ({
         title: "Configuration",
-        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+        items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." }],
         actions: [{ id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." }],
         interactiveActions: [
           createActionDefinition({
@@ -571,14 +571,13 @@ describe("createTuiApp", () => {
             kind: "mutate",
             label: "Initialize project files",
             cliEquivalent: "afergon-ai init",
-            buildArgv: ({ selectedIds }) => buildCommandArgv("init", selectedIds.includes("all") ? ["--all"] : selectedIds.map((id) => `--${id}`)),
+            buildArgv: ({ selectedIds }) => buildCommandArgv("init", selectedIds.map((id) => `--${id}`)),
             form: {
               kind: "checkboxes",
               title: "Choose what to initialize",
               options: [
-                { id: "pi", label: "Pi" },
-                { id: "opencode", label: "OpenCode" },
-                { id: "all", label: "All" },
+                { id: "one", label: "One" },
+                { id: "two", label: "Two" },
               ],
             },
           }),
