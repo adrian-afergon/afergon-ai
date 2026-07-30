@@ -39,4 +39,3 @@ Feature: Active guidance supports OpenCode without advertising Pi host integrati
 ## Technical Dependencies
 
 - Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6`
-

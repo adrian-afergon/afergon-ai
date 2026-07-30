@@ -46,4 +46,3 @@ Feature: OpenCode-oriented package distribution without Pi host integration
 ## Technical Dependencies
 
 - Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6`
-
