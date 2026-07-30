@@ -101,7 +101,7 @@ afergon-ai init --opencode
 afergon-ai update
 ```
 
-Re-applies the latest OpenCode agents, commands, and project configuration. It preserves user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
+Re-applies the latest managed OpenCode agents and commands. It preserves user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
 
 ### Step 4 — Manage model profiles
 
