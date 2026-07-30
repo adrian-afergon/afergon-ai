@@ -159,10 +159,10 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ### Commit Unit 4: Final verification
 
-- [ ] **Step 4.1**: Run full verification suite (see Verification section below)
-- [ ] **Step 4.2**: Manual smoke test: `./bin/afergon-ai --help` shows no `--claude` in init usage
-- [ ] **Step 4.3**: Manual smoke test: `./bin/afergon-ai init --claude` exits non-zero with retirement message
-- [ ] **Step 4.4**: Confirm no residual Claude references in production source (excluding model identifiers, historical OpenSpec records, and user-owned files)
+- [x] **Step 4.1**: Run full verification suite (see Verification section below)
+- [x] **Step 4.2**: Manual smoke test: `./bin/afergon-ai --help` shows no `--claude` in init usage
+- [x] **Step 4.3**: Manual smoke test: `./bin/afergon-ai init --claude` exits non-zero with retirement message
+- [x] **Step 4.4**: Confirm no residual Claude references in production source (excluding model identifiers, historical OpenSpec records, and user-owned files)
 
 ## Interfaces and Technical Contracts
 
@@ -190,26 +190,26 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ## Acceptance Criteria
 
-- [ ] POSIX and PowerShell `init` expose only Pi, OpenCode, and all as configurable hosts
-- [ ] `--claude` exits non-zero with an actionable retirement message on both POSIX and PowerShell script surfaces
-- [ ] `--all` configures Pi and OpenCode without creating `CLAUDE.md` or `.claude/skills/` artifacts
-- [ ] `--pi`, `--opencode`, and `--all` retain their respective Pi/OpenCode initialization behavior
-- [ ] POSIX and PowerShell `update` no longer reference or mutate `CLAUDE.md` or `.claude/skills/` and retain Pi/OpenCode behavior
-- [ ] CLI help text contains no `--claude` flag in init usage
-- [ ] TUI Configuration and Status items contain no Claude host entry
-- [ ] TUI init checkbox form contains no Claude option
-- [ ] TUI remains usable for Configuration and Status actions with remaining hosts
-- [ ] No Claude Code adapter artifact is present in the package source
-- [ ] Active README guidance contains no Claude Code as a supported configuration host
-- [ ] Focused tests prove retired flag rejection, remaining init argvs, TUI state, and Windows script parity
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm build` succeeds
-- [ ] `pnpm run health:runtime` passes
-- [ ] `pnpm test` (complete test suite) passes
+- [x] POSIX and PowerShell `init` expose only Pi, OpenCode, and all as configurable hosts
+- [x] `--claude` exits non-zero with an actionable retirement message on both POSIX and PowerShell script surfaces
+- [x] `--all` configures Pi and OpenCode without creating `CLAUDE.md` or `.claude/skills/` artifacts
+- [x] `--pi`, `--opencode`, and `--all` retain their respective Pi/OpenCode initialization behavior
+- [x] POSIX and PowerShell `update` no longer reference or mutate `CLAUDE.md` or `.claude/skills/` and retain Pi/OpenCode behavior
+- [x] CLI help text contains no `--claude` flag in init usage
+- [x] TUI Configuration and Status items contain no Claude host entry
+- [x] TUI init checkbox form contains no Claude option
+- [x] TUI remains usable for Configuration and Status actions with remaining hosts
+- [x] No Claude Code adapter artifact is present in the package source
+- [x] Active README guidance contains no Claude Code as a supported configuration host
+- [x] Focused tests prove retired flag rejection, remaining init argvs, TUI state, and Windows script parity
+- [x] `pnpm typecheck` passes
+- [x] `pnpm build` succeeds
+- [x] `pnpm run health:runtime` passes
+- [x] `pnpm test` (complete test suite) passes
 
 ## Verification
 
-- [ ] **Tests**: `pnpm test` — all existing and new tests pass, including:
+- [x] **Tests**: `pnpm test` — all existing and new tests pass, including:
   - New: POSIX `init --claude` exits non-zero with retirement message
   - New: PowerShell `init --claude` exits non-zero with retirement message (runIf win32)
   - New: `init --all` does not create Claude artifacts
@@ -218,14 +218,14 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
   - Updated: TUI dispatch tests use remaining flags
   - Existing: Windows OpenCode scripts tests continue to pass
   - Existing: Model profiles tests continue to pass (model identifiers like `anthropic/claude-opus` are preserved)
-- [ ] **Build**: `pnpm build` — TypeScript compilation succeeds, `dist/` is generated cleanly
-- [ ] **Typecheck**: `pnpm typecheck` — TypeScript validation completes without errors
-- [ ] **Runtime health**: `pnpm run health:runtime` — every local dist runtime entry imports; no remote telemetry
-- [ ] **Additional Evidence**:
+- [x] **Build**: `pnpm build` — TypeScript compilation succeeds, `dist/` is generated cleanly
+- [x] **Typecheck**: `pnpm typecheck` — TypeScript validation completes without errors
+- [x] **Runtime health**: `pnpm run health:runtime` — every local dist runtime entry imports; no remote telemetry
+- [x] **Additional Evidence**:
   - `./bin/afergon-ai --help` prints help without `--claude` in init usage and exits 0
   - `./bin/afergon-ai init --claude` exits non-zero with retirement message
   - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"` returns no active Claude host references (model identifiers and test fixtures excluded)
-- [ ] **Rule Compliance**:
+- [x] **Rule Compliance**:
   - POSIX and PowerShell parity verified: both scripts reject `--claude` equivalently
   - No user-owned `CLAUDE.md` or `.claude/` files are modified or deleted
   - Historical OpenSpec records are untouched
