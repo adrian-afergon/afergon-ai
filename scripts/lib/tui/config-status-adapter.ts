@@ -5,7 +5,6 @@ import { createActionDefinition, type ActionDefinition } from "./actions/definit
 import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
 import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
 
-type SupportedInitId = "opencode";
 type ManifestActionId = CommandManifestEntry["id"];
 type StatusState = "ok" | "warn" | "fail";
 
@@ -102,28 +101,6 @@ function getModelConfigItem(env: NodeJS.ProcessEnv): StatusItem {
   }
 }
 
-function getProjectInstallItem({ id, label, filePath, presentDetail, missingDetail }: {
-  readonly id: string;
-  readonly label: string;
-  readonly filePath: string;
-  readonly presentDetail: string;
-  readonly missingDetail: string;
-}): StatusItem {
-  return fs.existsSync(filePath)
-    ? {
-        id,
-        label,
-        state: "ok",
-        detail: `${presentDetail} (${filePath})`,
-      }
-    : {
-        id,
-        label,
-        state: "warn",
-        detail: missingDetail,
-      };
-}
-
 function getOpenCodeItem(env: NodeJS.ProcessEnv): StatusItem {
   const baseDir = getOpenCodeBaseDir(env);
   const configPath = path.join(baseDir, "opencode.json");
@@ -212,7 +189,7 @@ function addGuidance(item: StatusItem): StatusItem {
   }
 }
 
-function getBaseStatusItems({ cwd, env }: { cwd: string; env: NodeJS.ProcessEnv }): readonly StatusItem[] {
+function getBaseStatusItems({ env }: { env: NodeJS.ProcessEnv }): readonly StatusItem[] {
   return [
     getModelConfigItem(env),
     getOpenCodeItem(env),
@@ -245,8 +222,8 @@ function summarizeItems(items: readonly StatusItem[]): StatusSummary {
   };
 }
 
-export function getConfigurationStatus({ cwd = process.cwd(), env = process.env }: GetStateOptions = {}): ConfigurationStatus {
-  const items = getBaseStatusItems({ cwd, env });
+export function getConfigurationStatus({ env = process.env }: GetStateOptions = {}): ConfigurationStatus {
+  const items = getBaseStatusItems({ env });
 
   return {
     title: "Configuration",
@@ -256,8 +233,8 @@ export function getConfigurationStatus({ cwd = process.cwd(), env = process.env 
   };
 }
 
-export function getStatusScreenState({ cwd = process.cwd(), env = process.env }: GetStateOptions = {}): StatusScreenState {
-  const items = getBaseStatusItems({ cwd, env }).map((item) => addGuidance(item));
+export function getStatusScreenState({ env = process.env }: GetStateOptions = {}): StatusScreenState {
+  const items = getBaseStatusItems({ env }).map((item) => addGuidance(item));
 
   return {
     title: "Status",

@@ -25,7 +25,7 @@ Remove Pi as an afergon-ai configuration host and package host while preserving 
 - TUI config-status-adapter: remove Pi status item, remove Pi from init checkbox form, replace host-selection init action with direct `afergon-ai init` execution.
 - Active README and detect-skills guidance updates.
 - New and updated tests: package archive validation, init/update retirement (POSIX+PowerShell), TUI configuration/status without Pi, documentation contract.
-- Preservation of: `@earendil-works/pi-tui` peerDependency, standalone TUI, OpenCode adapters, skills as package content, model identifiers, historical OpenSpec records, user-owned project files.
+- Preservation of: `@earendil-works/pi-tui` direct runtime dependency, standalone TUI, OpenCode adapters, skills as package content, model identifiers, historical OpenSpec records, user-owned project files.
 
 **Excluded:**
 - Removing `@earendil-works/pi-tui` or rewriting the TUI onto another library.
@@ -79,7 +79,7 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - `package.json` description does not contain `"Pi-native"`
   - `package.json` has no `@earendil-works/pi-coding-agent` in peerDependencies or devDependencies
   - `package.json` `files` array does not include `"extensions/"` or `"prompts/"`
-  - `package.json` retains `@earendil-works/pi-tui` in peerDependencies
+  - `package.json` retains `@earendil-works/pi-tui` in dependencies
   - No `extensions/` directory exists at repo root
   - No `prompts/` directory exists at repo root
   - No `.pi/` directory exists at repo root

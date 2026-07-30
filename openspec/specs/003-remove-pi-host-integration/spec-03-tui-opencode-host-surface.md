@@ -45,5 +45,5 @@ Feature: Standalone TUI exposes only OpenCode host management
 
 ## Technical Dependencies
 
-- Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6`- `@earendil-works/pi-tui` retained as the standalone TUI runtime dependency
-
+- Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6`
+- `@earendil-works/pi-tui` retained as the standalone TUI runtime dependency

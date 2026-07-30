@@ -80,6 +80,7 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - `107ba52` test(tui): cover Configuration with user-owned .pi and no managed OpenCode
 - `f8c4557` style(specs): remove trailing blank lines in task-003 spec files
 - `0d2ec56` docs(plan): record post-implementation review fixes
+- `6d6848d` docs(result): update with post-implementation review fixes and verification
 
 ## Files Changed
 
@@ -132,7 +133,7 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
   - Additional Evidence:
     - `pnpm run health:runtime`: passed
     - `pnpm typecheck`: passed
-    - `git diff --check`: passed (no whitespace warnings in unstaged changes)
+    - `git diff --check 968aab6..HEAD`: passed (no whitespace warnings in the complete task diff)
     - Package archive check: passed (`pnpm pack --dry-run` contains no `extensions/`, `prompts/`, or `.pi/` entries; `tests/package-archive.test.ts` enforces this and includes a synthetic rejection test)
     - POSIX init retirement: passed (`bash scripts/init-project.sh --pi` exits 1 with `Error: --pi is retired. Supported host: --opencode.`)
     - POSIX init default: passed (`bash scripts/init-project.sh` in a temp dir creates `opencode.json`, `openspec/config.yaml`, and managed OpenCode agents; no `.pi/` directory is created)
@@ -147,7 +148,7 @@ Executed all four commit units of the ready-with-assumptions plan in the isolate
 - `@earendil-works/pi-tui` is now declared in `dependencies` as a direct runtime dependency, satisfying both the task/spec requirement and the package archive/docs contract tests.
 - The pre-existing `verify-install.sh` legacy agent-name mismatch noted in the plan's risks was not touched because it is out of scope.
 - Historical OpenSpec records and model identifiers containing `pi`/`claude` were preserved, verified by `tests/package-archive.test.ts` and `tests/tui-docs.test.ts`.
-- `pnpm-lock.yaml` had no unrelated churn: the only dependency change was the relocation of `@earendil-works/pi-tui` from `peerDependencies` to `dependencies`.
+- `pnpm-lock.yaml` changes remove `@earendil-works/pi-coding-agent` and its transitive packages, and record `@earendil-works/pi-tui` as the direct runtime dependency; no unrelated package changes were introduced.
 
 ## Next Step
 
