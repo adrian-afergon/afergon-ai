@@ -73,7 +73,7 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
 
 ### Commit Unit 1: Remove Pi host package distribution (Spec 01)
 
-- [ ] **1.1 RED**: Add package archive validation test that asserts:
+- [x] **1.1 RED**: Add package archive validation test that asserts:
   - `package.json` has no `"pi"` key
   - `package.json` keywords do not include `"pi-package"`, `"pi"`, or `"pi-coding-agent"`
   - `package.json` description does not contain `"Pi-native"`
@@ -84,35 +84,35 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - No `prompts/` directory exists at repo root
   - No `.pi/` directory exists at repo root
   - Test file: `tests/package-archive.test.ts`
-- [ ] **1.2 GREEN**: Edit `package.json`:
+- [x] **1.2 GREEN**: Edit `package.json`:
   - Remove the `"pi"` key (lines 8-18)
   - Remove `"pi-package"`, `"pi"`, `"pi-coding-agent"` from keywords
   - Update description from `"afergon-ai: a Pi-native development harness..."` to `"afergon-ai: a development harness with a disciplined debate-to-implementation pipeline, Gherkin-first specs, TDD enforcement, and Stitch design integration."`
   - Remove `@earendil-works/pi-coding-agent` from peerDependencies (keep `@earendil-works/pi-tui`)
   - Remove `@earendil-works/pi-coding-agent` from devDependencies
   - Remove `"extensions/"` and `"prompts/"` from `files` array
-- [ ] **1.3 GREEN**: Delete `extensions/startup-banner.ts` and the `extensions/` directory
-- [ ] **1.4 GREEN**: Delete `prompts/afergon-ai.md` and the `prompts/` directory
-- [ ] **1.5 GREEN**: Delete `.pi/APPEND_SYSTEM.md`, `.pi/settings.json`, and the `.pi/` directory
-- [ ] **1.6 GREEN**: Edit `scripts/build-typescript.ts`:
+- [x] **1.3 GREEN**: Delete `extensions/startup-banner.ts` and the `extensions/` directory
+- [x] **1.4 GREEN**: Delete `prompts/afergon-ai.md` and the `prompts/` directory
+- [x] **1.5 GREEN**: Delete `.pi/APPEND_SYSTEM.md`, `.pi/settings.json`, and the `.pi/` directory
+- [x] **1.6 GREEN**: Edit `scripts/build-typescript.ts`:
   - Remove `"prompts"` from `runtimeDirsToCopy` (line 10: `["adapters", "prompts", "skills"]` → `["adapters", "skills"]`)
-- [ ] **1.7 GREEN**: Remove `tests/startup-banner.test.ts` (tests the deleted Pi extension)
-- [ ] **1.8 GREEN**: Update `tests/tui-docs.test.ts`:
+- [x] **1.7 GREEN**: Remove `tests/startup-banner.test.ts` (tests the deleted Pi extension)
+- [x] **1.8 GREEN**: Update `tests/tui-docs.test.ts`:
   - Remove the `PROMPT` variable and the `"documents the dispatcher contract in the Pi prompt"` test case (lines 8, 61-69) since `prompts/afergon-ai.md` no longer exists
   - Retain all README assertions and historical OpenSpec assertions
-- [ ] **1.9 GREEN**: Update `tests/init-retire-claude.test.ts`:
+- [x] **1.9 GREEN**: Update `tests/init-retire-claude.test.ts`:
   - Remove assertions that check for `--pi` and `--all` in the `--claude` retirement error message (these flags are also retired now)
   - Update the `"does not create Claude artifacts with --all"` test: `--all` is now retired, so this test must be rewritten or removed
   - Remove/update tests that assert `.pi/APPEND_SYSTEM.md` creation (Pi init is retired)
-- [ ] **1.10 TRIANGULATE**: Add edge-case test assertions:
+- [x] **1.10 TRIANGULATE**: Add edge-case test assertions:
   - Packed archive (via `pnpm pack --dry-run` or equivalent) contains `dist/`, `adapters/`, `skills/`, `bin/`, `scripts/` but not `extensions/`, `prompts/`, or `.pi/`
   - Model identifiers and historical OpenSpec records containing "pi" or "claude" remain unchanged
-- [ ] **1.11 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
-- [ ] **1.12 COMMIT**: `feat(package)!: remove Pi host package distribution`
+- [x] **1.11 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
+- [x] **1.12 COMMIT**: `feat(package)!: remove Pi host package distribution`
 
 ### Commit Unit 2: OpenCode-only installers (Spec 02)
 
-- [ ] **2.1 RED**: Add/extend tests in `tests/init-retire-pi.test.ts` (new file) for POSIX init:
+- [x] **2.1 RED**: Add/extend tests in `tests/init-retire-pi.test.ts` (new file) for POSIX init:
   - `init --pi` exits non-zero with retirement error, no side effects
   - `init --all` exits non-zero with retirement error, no side effects
   - `init --claude` exits non-zero with retirement error (already retired, verify message updated)
@@ -120,8 +120,8 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - `init` (no flags) configures OpenCode without host-selection prompt
   - `init --opencode` configures OpenCode
   - `update` refreshes only OpenCode, preserves user-owned `.pi/`, `CLAUDE.md`, `.claude/`
-- [ ] **2.2 RED**: Add equivalent PowerShell tests (gated with `it.runIf(process.platform === "win32")`)
-- [ ] **2.3 GREEN**: Rewrite `scripts/init-project.sh`:
+- [x] **2.2 RED**: Add equivalent PowerShell tests (gated with `it.runIf(process.platform === "win32")`)
+- [x] **2.3 GREEN**: Rewrite `scripts/init-project.sh`:
   - Add `--pi` and `--all` to the retired-flag rejection loop (alongside existing `--claude`)
   - Update retirement error messages: `--pi` → `"Error: --pi is retired. Supported host: --opencode."`, `--all` → `"Error: --all is retired. Supported host: --opencode."`, `--claude` → `"Error: --claude is retired. Supported host: --opencode."`
   - Remove the interactive host-selection prompt (lines 83-102); when no flags are provided, default to OpenCode initialization
@@ -131,77 +131,77 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - Update the memory system prompt text: remove "Pi-native" from Engram description
   - Update the done summary: remove Pi line
   - Update the script header comment: remove `--pi` and `--all` from usage
-- [ ] **2.4 GREEN**: Rewrite `scripts/init-project.ps1`:
+- [x] **2.4 GREEN**: Rewrite `scripts/init-project.ps1`:
   - Mirror all POSIX changes: add `--pi` and `--all` to retired-flag rejection
   - Remove interactive host-selection prompt
   - Remove Pi setup section
   - Default to OpenCode when no flags provided
   - Update memory system prompt text and done summary
-- [ ] **2.5 GREEN**: Rewrite `scripts/update.sh`:
+- [x] **2.5 GREEN**: Rewrite `scripts/update.sh`:
   - Remove the entire Pi update section (lines 57-67: reads `.pi/APPEND_SYSTEM.md` and overwrites from `prompts/afergon-ai.md`)
   - Remove Pi-related output messages
   - Keep OpenCode update logic intact
-- [ ] **2.6 GREEN**: Rewrite `scripts/update.ps1`:
+- [x] **2.6 GREEN**: Rewrite `scripts/update.ps1`:
   - Remove the entire Pi update section (lines 37-48)
   - Remove Pi-related output messages
   - Keep OpenCode update logic intact
-- [ ] **2.7 GREEN**: Update `scripts/lib/cli-dispatch-core.ts`:
+- [x] **2.7 GREEN**: Update `scripts/lib/cli-dispatch-core.ts`:
   - Update `formatHelp()` to remove `[--pi]` and `[--all]` from init usage line
   - Change to: `"  afergon-ai init [--opencode]"`
-- [ ] **2.8 GREEN**: Update `bin/afergon-ai`:
+- [x] **2.8 GREEN**: Update `bin/afergon-ai`:
   - Update header comment: remove `[--pi]` and `[--all]` from usage
-- [ ] **2.9 TRIANGULATE**: Add adversarial test cases:
+- [x] **2.9 TRIANGULATE**: Add adversarial test cases:
   - Combined flags in any position: `--pi --opencode`, `--opencode --all`, `--pi --all --claude`
   - Verify no project files (`.pi/`, `opencode.json`, `openspec/`) are created when a retired flag is used
   - Verify user-owned `.pi/`, `CLAUDE.md`, `.claude/` files survive `update`
-- [ ] **2.10 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
-- [ ] **2.11 COMMIT**: `feat(installer)!: make init and update OpenCode-only, retire --pi and --all`
+- [x] **2.10 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
+- [x] **2.11 COMMIT**: `feat(installer)!: make init and update OpenCode-only, retire --pi and --all`
 
 ### Commit Unit 3: TUI OpenCode-only host surface (Spec 03)
 
-- [ ] **3.1 RED**: Update `tests/tui-configuration.test.ts`:
+- [x] **3.1 RED**: Update `tests/tui-configuration.test.ts`:
   - Assert `getConfigurationStatus()` items do NOT include a Pi status item (id: "pi")
   - Assert the init interactive action does NOT have a checkbox form with Pi/All options
   - Assert the init action directly invokes `afergon-ai init` without host-selection
-- [ ] **3.2 RED**: Update `tests/tui-status.test.ts`:
+- [x] **3.2 RED**: Update `tests/tui-status.test.ts`:
   - Assert `getStatusScreenState()` items do NOT include a Pi status item
   - Assert no Pi repair guidance appears in status detail
   - Assert user-owned `.pi/` directory does not produce a managed Pi status item
-- [ ] **3.3 GREEN**: Edit `scripts/lib/tui/config-status-adapter.ts`:
+- [x] **3.3 GREEN**: Edit `scripts/lib/tui/config-status-adapter.ts`:
   - Remove `SupportedInitId` type's `"pi"` and `"all"` members (keep only `"opencode"`)
   - Update `buildInitCommandArgv()`: remove `"pi"` and `"all"` from the filter; when `selectedIds` is empty or contains only `"opencode"`, return `buildCommandArgv("init")` (no flags needed since OpenCode is the default)
   - Remove the Pi status item from `getBaseStatusItems()` (remove the `getProjectInstallItem()` call for Pi)
   - Remove the `"pi"` case from `addGuidance()`
   - Update `createInteractiveActions()`: replace the checkbox form init action with a direct init action (no form, static argv `buildCommandArgv("init")`)
   - Remove the `"all"` option from any remaining form definitions
-- [ ] **3.4 GREEN**: Verify non-interactive TUI rejection remains intact:
+- [x] **3.4 GREEN**: Verify non-interactive TUI rejection remains intact:
   - The existing `cli-dispatch-core.ts` already rejects `tui` in non-TTY mode — no changes needed
   - Verify existing test `tui-shell.test.ts` or `tui-dispatch.test.ts` covers this
-- [ ] **3.5 TRIANGULATE**: Add edge-case test:
+- [x] **3.5 TRIANGULATE**: Add edge-case test:
   - Project with user-owned `.pi/` directory and no managed OpenCode install: Configuration and Status report only OpenCode state and model config, no Pi items
   - Narrow terminal width renders text fallback branding (existing test coverage should suffice; verify)
-- [ ] **3.6 GREEN**: Update `tests/tui-configuration.test.ts`:
+- [x] **3.6 GREEN**: Update `tests/tui-configuration.test.ts`:
   - Update the `"opens the init checkbox form"` test: the form no longer exists; replace with a test that the init action runs directly with confirmation
   - Update parity assertions that compare TypeScript and JS adapter output to exclude Pi items
-- [ ] **3.7 GREEN**: Update `tests/tui-status.test.ts`:
+- [x] **3.7 GREEN**: Update `tests/tui-status.test.ts`:
   - Remove/update tests that assert Pi status items exist
   - Update the `"reports an ok readiness summary"` test: remove Pi from the expected items
   - Update the `"does not treat an existing CLAUDE.md as a managed host surface"` test: remove Pi assertions
-- [ ] **3.8 GREEN**: Update `tests/tui-actions.test.ts`:
+- [x] **3.8 GREEN**: Update `tests/tui-actions.test.ts`:
   - Update checkbox form state tests that reference Pi/All options in the init form
   - The form options `[{ id: "all", label: "All" }, { id: "pi", label: "Pi" }, { id: "opencode", label: "OpenCode" }]` must be updated or the test must be removed if the form no longer exists
-- [ ] **3.9 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
-- [ ] **3.10 COMMIT**: `feat(tui): remove Pi from Configuration/Status, direct OpenCode init`
+- [x] **3.9 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
+- [x] **3.10 COMMIT**: `feat(tui): remove Pi from Configuration/Status, direct OpenCode init`
 
 ### Commit Unit 4: Active documentation (Spec 04)
 
-- [ ] **4.1 RED**: Update `tests/tui-docs.test.ts`:
+- [x] **4.1 RED**: Update `tests/tui-docs.test.ts`:
   - Add documentation contract assertions:
     - README does NOT contain `"init --pi"`, `"init --all"`, `"pi install"`, `"Pi setup"`, `"Pi-native"`
     - README DOES contain `"init"` or `"init --opencode"` as the setup path
     - detect-skills SKILL.md does NOT claim Pi discovery or Pi as a supported tool
   - Distinguish prohibited active Pi-host claims from permitted historical OpenSpec references and `@earendil-works/pi-tui` dependency naming
-- [ ] **4.2 GREEN**: Edit `README.md`:
+- [x] **4.2 GREEN**: Edit `README.md`:
   - Line 18: Change `"It works with **Pi** and **OpenCode**."` → remove Pi reference
   - Lines 80: Remove `"Pi extensions continue to load from the source extensions/ package path..."` sentence
   - Lines 90-98: Remove `"Select which tools to configure (Pi, OpenCode, or all)"` and the `--pi`/`--all` flag examples; replace with direct OpenCode init guidance
@@ -212,16 +212,16 @@ Each commit unit is independently buildable and testable (`pnpm typecheck && pnp
   - Lines 385-412: Update Skill Discovery section: remove `"Pi and OpenCode both discover automatically"`, remove `"available in Pi"` claims
   - Line 427: Update Engram memory description: remove `"Pi-native persistent memory"`
   - Preserve: standalone TUI launch/fallback guidance, OpenCode command/workflow guidance, model identifiers, all historical OpenSpec references
-- [ ] **4.3 GREEN**: Edit `skills/detect-skills/SKILL.md`:
+- [x] **4.3 GREEN**: Edit `skills/detect-skills/SKILL.md`:
   - Line 65: Remove `"Pi discovers this directory automatically. No Pi configuration needed for the skills themselves to be available."`
   - Line 121-123: Remove `"These skills are now available to Pi"` claim
   - Line 127: Remove `"compatible with Pi"` reference
   - Replace with OpenCode-focused guidance
-- [ ] **4.4 GREEN**: Update `tests/tui-docs.test.ts`:
+- [x] **4.4 GREEN**: Update `tests/tui-docs.test.ts`:
   - Remove the `PROMPT` import and the `"documents the dispatcher contract in the Pi prompt"` test (if not already done in Commit 1)
   - Add new assertions for the updated README and detect-skills content
-- [ ] **4.5 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
-- [ ] **4.6 COMMIT**: `docs: update active guidance for OpenCode-only host support`
+- [x] **4.5 VERIFY**: `pnpm typecheck && pnpm build && pnpm run health:runtime && pnpm test`
+- [x] **4.6 COMMIT**: `docs: update active guidance for OpenCode-only host support`
 
 ## Interfaces and Technical Contracts
 
@@ -286,26 +286,26 @@ createActionDefinition({
 
 ## Acceptance Criteria
 
-- [ ] The package has no Pi manifest (`"pi"` key), Pi extension (`extensions/`), Pi prompt (`prompts/`), Pi coding-agent dependency, or Pi host package identity; `@earendil-works/pi-tui` remains a peerDependency.
-- [ ] The generated package (dist/) contains the standalone TUI runtime, OpenCode adapters, and skills, but no `extensions/`, `prompts/`, or repository Pi host state.
-- [ ] POSIX and PowerShell `init` configure OpenCode by default and via `--opencode`; `--pi`, `--all`, and `--claude` reject before side effects with non-zero exit.
-- [ ] POSIX and PowerShell `update` operate only on OpenCode and preserve existing user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
-- [ ] CLI help and TUI host surfaces advertise only OpenCode; the TUI remains usable and renders branding/fallback correctly.
-- [ ] Active README and detect-skills guidance no longer promise Pi host/package integration.
-- [ ] Typecheck, build, package archive checks, runtime health, focused tests, and the complete suite pass.
+- [x] The package has no Pi manifest (`"pi"` key), Pi extension (`extensions/`), Pi prompt (`prompts/`), Pi coding-agent dependency, or Pi host package identity; `@earendil-works/pi-tui` remains a peerDependency.
+- [x] The generated package (dist/) contains the standalone TUI runtime, OpenCode adapters, and skills, but no `extensions/`, `prompts/`, or repository Pi host state.
+- [x] POSIX and PowerShell `init` configure OpenCode by default and via `--opencode`; `--pi`, `--all`, and `--claude` reject before side effects with non-zero exit.
+- [x] POSIX and PowerShell `update` operate only on OpenCode and preserve existing user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
+- [x] CLI help and TUI host surfaces advertise only OpenCode; the TUI remains usable and renders branding/fallback correctly.
+- [x] Active README and detect-skills guidance no longer promise Pi host/package integration.
+- [x] Typecheck, build, package archive checks, runtime health, focused tests, and the complete suite pass.
 
 ## Verification
 
-- [ ] Tests: `pnpm test` — all existing and new tests pass (typecheck + build + vitest run)
-- [ ] Build: `pnpm build` — TypeScript compilation succeeds, dist/ contains expected artifacts
-- [ ] Additional Evidence:
+- [x] Tests: `pnpm test` — all existing and new tests pass (typecheck + build + vitest run)
+- [x] Build: `pnpm build` — TypeScript compilation succeeds, dist/ contains expected artifacts
+- [x] Additional Evidence:
   - `pnpm run health:runtime` — all dist/ runtime entries import successfully
   - `pnpm typecheck` — TypeScript validation completes
   - Package archive check: `pnpm pack --dry-run` output or test assertion confirms no Pi-only artifacts
   - POSIX init retirement: `bash scripts/init-project.sh --pi` exits non-zero with retirement message
   - POSIX init default: `bash scripts/init-project.sh` (with memory input) creates OpenCode files only
   - PowerShell init retirement: equivalent PowerShell invocation exits non-zero (Windows CI or local)
-- [ ] Rule Compliance:
+- [x] Rule Compliance:
   - POSIX/PowerShell parity: both platforms have equivalent test coverage for init/update/retirement
   - TDD evidence: each commit unit has RED→GREEN→TRIANGULATE test commits
   - No user-owned files (`.pi/`, `CLAUDE.md`, `.claude/`) are modified or deleted by update
