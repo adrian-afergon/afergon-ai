@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const README = fs.readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+const DETECT_SKILLS = fs.readFileSync(path.join(REPO_ROOT, "skills", "detect-skills", "SKILL.md"), "utf8");
 const APPLY_PROGRESS = fs.readFileSync(
   path.join(REPO_ROOT, "openspec", "changes", "issue-15-tui-mvp", "apply-progress.md"),
   "utf8",
@@ -56,5 +57,40 @@ describe("TUI docs contract", () => {
     expect(APPLY_PROGRESS).toContain("Historical tests added across all TDD slices");
     expect(APPLY_PROGRESS).toContain("Historical passing checkpoints recorded across all slices");
   });
+});
 
+describe("active documentation contract", () => {
+  it("does not advertise Pi as a supported host in the README", () => {
+    expect(README).not.toContain("init --pi");
+    expect(README).not.toContain("init --all");
+    expect(README).not.toContain("pi install");
+    expect(README).not.toContain("Pi setup");
+    expect(README).not.toContain("Pi-native");
+    expect(README).not.toMatch(/works with .*Pi/i);
+  });
+
+  it("directs users to OpenCode init in the README", () => {
+    expect(README).toContain("afergon-ai init");
+    expect(README).toContain("afergon-ai init --opencode");
+    expect(README).toContain("`init` configures OpenCode by default");
+  });
+
+  it("does not claim Pi discovery or configuration in detect-skills guidance", () => {
+    expect(DETECT_SKILLS).not.toContain("Pi discovers");
+    expect(DETECT_SKILLS).not.toContain("compatible with Pi");
+    expect(DETECT_SKILLS).not.toContain("available to Pi");
+    expect(DETECT_SKILLS).toContain("OpenCode discovers");
+  });
+
+  it("preserves permitted Pi references outside active host guidance", () => {
+    const exploration = fs.readFileSync(
+      path.join(REPO_ROOT, "openspec", "changes", "issue-15-tui-mvp", "exploration.md"),
+      "utf8",
+    );
+    expect(exploration).toContain("@earendil-works/pi-tui");
+    expect(exploration).toContain("extensions/startup-banner.ts");
+
+    const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+    expect(packageJson.peerDependencies).toHaveProperty("@earendil-works/pi-tui");
+  });
 });

@@ -62,7 +62,7 @@ Run installation:
 npx autoskills -y
 ```
 
-Skills are installed into `.agents/skills/` — Pi discovers this directory automatically. No Pi configuration needed for the skills themselves to be available.
+Skills are installed into `.agents/skills/` — OpenCode discovers this directory automatically.
 
 ### Step 4 — Register in Skill Registry
 
@@ -118,13 +118,13 @@ Installed (<N> skills):
 
 Skill registry updated: .atl/skill-registry.md
 
-These skills are now available to Pi and will be injected into pipeline
+These skills are now available to OpenCode and will be injected into pipeline
 subagents when their trigger matches the task context.
 ```
 
 ## Notes
 
-- Skills from autoskills follow the universal agent skills format (SKILL.md) — compatible with Pi.
+- Skills from autoskills follow the universal agent skills format (SKILL.md) — compatible with OpenCode.
 - `skills-lock.json` is created/updated by autoskills in the project root. Commit it to lock skill versions.
 - To refresh skills after a stack change, run this skill again. Autoskills will detect the delta.
 - To clear the autoskills cache: `npx autoskills --clear-cache`
