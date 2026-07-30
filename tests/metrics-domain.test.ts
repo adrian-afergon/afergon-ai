@@ -14,6 +14,13 @@ const validEvent = {
   outcome: "useful",
 };
 
+function directReportQueryConstructionMustRemainUnavailable(): ReportQuery {
+  // @ts-expect-error ReportQuery construction is restricted to its validating factory.
+  return new ReportQuery();
+}
+
+void directReportQueryConstructionMustRemainUnavailable;
+
 describe("AFERGON-AI v1 event parser", () => {
   it("normalizes a valid event and preserves unavailable optional attribution", () => {
     const record = new V1EventParser().parse(validEvent);
@@ -91,14 +98,30 @@ describe("AFERGON-AI v1 event parser", () => {
 });
 
 describe("report query value object", () => {
-  it("accepts a supported report dimension", () => {
-    expect(new ReportQuery("modelProfile", { outcome: "useful" })).toMatchObject({
+  it("creates a query with a supported grouping and filter", () => {
+    expect(ReportQuery.create("modelProfile", { outcome: "useful" })).toMatchObject({
       groupBy: "modelProfile",
       filters: { outcome: "useful" },
     });
   });
 
-  it.each(["cost", "source"])('rejects unsupported grouping "%s"', (groupBy) => {
-    expect(() => new ReportQuery(groupBy as never)).toThrow("groupBy:");
+  it("creates the default outcome query without filters", () => {
+    expect(ReportQuery.create()).toMatchObject({ groupBy: "outcome", filters: {} });
+  });
+
+  it("preserves the unsupported-grouping diagnostic", () => {
+    expect(() => ReportQuery.create("unsupported" as never)).toThrow(expect.objectContaining({
+      field: "groupBy",
+      code: "invalid",
+      message: "groupBy: is not a supported report dimension",
+    }));
+  });
+
+  it("preserves the unsupported-filter diagnostic", () => {
+    expect(() => ReportQuery.create("outcome", { unsupported: "value" } as never)).toThrow(expect.objectContaining({
+      field: "filter",
+      code: "invalid",
+      message: "filter: unsupported is not a supported report dimension",
+    }));
   });
 });

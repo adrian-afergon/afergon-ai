@@ -64,7 +64,7 @@ describe("metrics use cases and reports", () => {
       event("event-3", { agent: "agent-b", outcome: "failed" }),
     ]));
 
-    const report = service.generate(new ReportQuery("outcome", { agent: "agent-a" }));
+    const report = service.generate(ReportQuery.create("outcome", { agent: "agent-a" }));
 
     expect(report.total).toBe(2);
     expect(report.rows).toEqual(expect.arrayContaining([
@@ -76,7 +76,7 @@ describe("metrics use cases and reports", () => {
   it("shows unavailable attribution and enrichment without blocking the report", () => {
     const service = new EfficiencyReportService(new InMemoryQuery([event("event-1")]));
 
-    const report = service.generate(new ReportQuery("task"));
+    const report = service.generate(ReportQuery.create("task"));
 
     expect(report.rows).toEqual([
       expect.objectContaining({ dimension: "unavailable", count: 1, attributionGaps: 1, enrichmentGaps: 1 }),

@@ -109,11 +109,18 @@ export class ReportQuery {
   public readonly groupBy: ReportDimension;
   public readonly filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>>;
 
-  public constructor(groupBy: ReportDimension = "outcome", filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>> = {}) {
+  public static create(
+    groupBy: ReportDimension = "outcome",
+    filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>> = {},
+  ): ReportQuery {
     if (!REPORT_DIMENSION_SET.has(groupBy)) throw new MetricsError("groupBy", "invalid", "is not a supported report dimension");
     for (const dimension of Object.keys(filters)) {
       if (!REPORT_DIMENSION_SET.has(dimension as ReportDimension)) throw new MetricsError("filter", "invalid", `${dimension} is not a supported report dimension`);
     }
+    return new ReportQuery(groupBy, filters);
+  }
+
+  private constructor(groupBy: ReportDimension, filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>>) {
     this.groupBy = groupBy;
     this.filters = filters;
   }

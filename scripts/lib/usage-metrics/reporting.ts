@@ -34,7 +34,7 @@ export class EfficiencyReportService {
     private readonly enrichment?: EnrichmentProvider,
   ) {}
 
-  public generate(query: ReportQuery = new ReportQuery()): EfficiencyReport {
+  public generate(query: ReportQuery = ReportQuery.create()): EfficiencyReport {
     const selected = this.records.all().filter((record) => this.matches(record, query));
     const rows = new Map<string, MutableReportRow>();
     let attributionGaps = 0;
