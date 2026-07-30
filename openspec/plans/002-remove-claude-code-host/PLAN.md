@@ -164,6 +164,13 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 - [x] **Step 4.3**: Manual smoke test: `./bin/afergon-ai init --claude` exits non-zero with retirement message
 - [x] **Step 4.4**: Confirm no residual Claude references in production source (excluding model identifiers, historical OpenSpec records, and user-owned files)
 
+### Review Remediation
+
+- [ ] **Step 5.1**: Execute `tests/init-retire-claude.test.ts` in the Windows CI workflow so the PowerShell rejection and update-preservation scenarios run on Windows.
+- [x] **Step 5.2**: Add focused regression coverage for update preservation/refresh, combined remaining init flags with existing Claude files, and packaged adapter contents.
+- [ ] **Step 5.3**: Re-run the complete verification suite after the remediation changes and record the Windows CI result.
+- [ ] **Step 5.4**: Reconcile `RESULT.md` commit and file inventories with the final implementation change set.
+
 ## Interfaces and Technical Contracts
 
 ### `--claude` rejection contract (both scripts)
@@ -225,6 +232,7 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
   - `./bin/afergon-ai --help` prints help without `--claude` in init usage and exits 0
   - `./bin/afergon-ai init --claude` exits non-zero with retirement message
   - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"` returns no active Claude host references (model identifiers and test fixtures excluded)
+- [ ] **Windows CI**: `pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism` — PowerShell rejection and update-preservation scenarios execute on `windows-latest`
 - [x] **Rule Compliance**:
   - POSIX and PowerShell parity verified: both scripts reject `--claude` equivalently
   - No user-owned `CLAUDE.md` or `.claude/` files are modified or deleted
@@ -265,7 +273,7 @@ Vertical slicing is not needed. The task is a single coherent removal across tig
 
 ### Unstaged changes
 
-- None. No unstaged changes to preserve or dispose.
+- `.pi/APPEND_SYSTEM.md` — **Preserve, do not stage**. An unrelated tracked Pi runtime change appeared after the implementation gate; it is outside this task and must remain untouched.
 
 ### Untracked paths
 
@@ -289,3 +297,4 @@ This plan is complete when:
 4. No residual Claude host references exist in production source (scripts, TUI adapter, CLI help, README, adapter directory).
 5. Model identifiers, historical OpenSpec records, and user-owned Claude files remain untouched.
 6. The implement agent has produced a result artifact at `openspec/results/002-remove-claude-code-host/RESULT.md`.
+7. Review remediation checkboxes are complete, including a passing Windows CI run and reconciled RESULT inventory.

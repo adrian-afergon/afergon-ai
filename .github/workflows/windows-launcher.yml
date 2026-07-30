@@ -26,6 +26,9 @@ jobs:
       - name: Verify Windows OpenCode scripts
         shell: bash
         run: pnpm exec vitest run tests/windows-opencode-scripts.test.ts --no-file-parallelism
+      - name: Verify Claude host retirement scripts
+        shell: bash
+        run: pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism
       - name: Smoke the built Windows launcher
         shell: pwsh
         run: |

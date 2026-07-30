@@ -1,6 +1,6 @@
 ## Implementation Status
 
-completed
+completed-with-notes
 
 ## Plan Reference
 
@@ -48,6 +48,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `8f2ba8d` refactor(tui): remove Claude host from CLI help and TUI surfaces
 - `cc948d7` docs(readme): delete Claude adapter and remove active README guidance
 - `eb650e9` docs(plan): mark all 002-remove-claude-code-host steps and criteria complete
+- `2ef1851` docs(result): add implementation result for 002-remove-claude-code-host
 
 ## Files Changed
 
@@ -64,13 +65,17 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
 - `tests/tui-dispatch.test.ts`
 - `README.md`
 - `adapters/claude/CLAUDE.md` (deleted)
+- `openspec/tasks/002-remove-claude-code-host.md`
+- `openspec/specs/002-remove-claude-code-host/spec-01-retire-claude-code-host.md`
 - `openspec/plans/002-remove-claude-code-host/PLAN.md`
+- `openspec/results/002-remove-claude-code-host/RESULT.md`
+- `.github/workflows/windows-launcher.yml` (review remediation step)
 
 ## Verification Results
 
 - Step-level checks:
   - POSIX `init --claude` rejection test: passed
-  - PowerShell `init --claude` rejection test: passed (skipped on non-win32)
+  - PowerShell `init --claude` rejection test: outstanding locally (skipped on non-win32; wired into Windows CI)
   - `init --all` no-Claude-artifacts test: passed
   - TUI configuration tests (no Claude item): passed
   - TUI status tests (no Claude item): passed
@@ -79,7 +84,7 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
   - Windows OpenCode scripts tests: passed (skipped on non-win32)
   - Model profiles tests: passed
 - Final checks:
-  - Tests: passed (319 passed, 10 skipped on macOS)
+  - Tests: passed locally (322 passed, 11 skipped on macOS)
   - Build: passed
   - Typecheck: passed
   - Runtime health: passed
@@ -87,17 +92,20 @@ Retired Claude Code from afergon-ai's active host configuration surfaces. POSIX 
     - `./bin/afergon-ai --help`: passed (no `--claude` in init usage, exit 0)
     - `./bin/afergon-ai init --claude`: passed (exit 1 with retirement message)
     - `grep -r "claude" scripts/ adapters/ --include="*.sh" --include="*.ps1" --include="*.ts"`: passed (only `--claude` rejection messages remain)
+    - Focused remediation tests for update preservation, combined flags, and package contents: passed locally
+    - Windows CI execution of `tests/init-retire-claude.test.ts`: outstanding
 
 ## Blockers or Deviations
 
-None
+- Windows CI has not yet executed the PowerShell rejection/update-preservation scenarios because this macOS worktree has not been pushed for the new workflow step.
 
 ## Notes
 
 - The PowerShell rejection test runs only on win32; the script changes mirror POSIX behavior exactly.
+- The focused remediation tests pass locally; the PowerShell cases remain platform-skipped until Windows CI runs them.
 - `.idea/` and `opencode.json` were preserved and never staged, as required.
 - Historical OpenSpec records and model identifiers such as `anthropic/claude-opus` were intentionally left untouched.
 
 ## Next Step
 
-Hand off to `afergon-review` for review of `openspec/results/002-remove-claude-code-host/RESULT.md` and the committed change set.
+Push the branch when authorized, confirm the new Windows CI step passes, then hand off to `afergon-review` for the final review.
