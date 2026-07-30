@@ -194,6 +194,24 @@ describe("getConfigurationStatus", () => {
     ]);
   });
 
+  it("reports only OpenCode state when a user-owned .pi directory exists but no managed OpenCode install is present", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "user-owned Pi instructions\n");
+
+    const status = getConfigurationStatus({ cwd: tempRoot, env });
+
+    expect(status.items).not.toContainEqual(expect.objectContaining({ id: "pi" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "model-config", state: "warn" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "opencode", state: "warn" }));
+  });
+
   it("reports invalid JSON config with actionable repair guidance", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
