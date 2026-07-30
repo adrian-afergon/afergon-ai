@@ -54,18 +54,6 @@ echo "Package : $PACKAGE_ROOT"
 echo "Project : $TARGET_DIR"
 echo ""
 
-# ── Pi ────────────────────────────────────────────────────────────────────────
-
-APPEND_SYSTEM="$TARGET_DIR/.pi/APPEND_SYSTEM.md"
-if [ -f "$APPEND_SYSTEM" ]; then
-	awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
-	echo "✔ Pi: updated .pi/APPEND_SYSTEM.md"
-	UPDATED=$((UPDATED + 1))
-else
-	echo "  Pi: not installed in this project (skipped)"
-	SKIPPED=$((SKIPPED + 1))
-fi
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 OC_BASE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"

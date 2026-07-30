@@ -21,7 +21,7 @@ export function formatHelp(): string {
     "",
     "Usage:",
     "  afergon-ai tui",
-    "  afergon-ai init [--pi] [--opencode] [--all]",
+    "  afergon-ai init [--opencode]",
     "  afergon-ai doctor [--opencode]",
     "  afergon-ai update",
     "  afergon-ai models [show [profile]|list|switch|set|profile]",

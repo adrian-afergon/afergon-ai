@@ -13,39 +13,12 @@ $TARGET_DIR   = (Get-Location).Path
 $UPDATED = 0
 $SKIPPED = 0
 
-# ── Helper: strip YAML frontmatter ────────────────────────────────────────────
-
-function Get-ContentAfterFrontmatter {
-    param([string]$Path)
-    $lines = Get-Content $Path -Encoding UTF8
-    $dashes = 0
-    $result = [System.Collections.Generic.List[string]]::new()
-    foreach ($line in $lines) {
-        if ($line -eq '---') { $dashes++; continue }
-        if ($dashes -ge 2)   { $result.Add($line) }
-    }
-    return $result
-}
-
 Write-Host ""
 Write-Host "afergon-ai update"
 Write-Host "=================="
 Write-Host "Package : $PACKAGE_ROOT"
 Write-Host "Project : $TARGET_DIR"
 Write-Host ""
-
-# ── Pi ────────────────────────────────────────────────────────────────────────
-
-$APPEND_SYSTEM = Join-Path $TARGET_DIR '.pi\APPEND_SYSTEM.md'
-if (Test-Path $APPEND_SYSTEM) {
-    $content = Get-ContentAfterFrontmatter (Join-Path $PACKAGE_ROOT 'prompts\afergon-ai.md')
-    Set-Content -Path $APPEND_SYSTEM -Value $content -Encoding UTF8
-    Write-Host "OK  Pi: updated .pi\APPEND_SYSTEM.md"
-    $UPDATED++
-} else {
-    Write-Host "    Pi: not installed in this project (skipped)"
-    $SKIPPED++
-}
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
