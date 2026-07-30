@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const README = fs.readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
-const PROMPT = fs.readFileSync(path.join(REPO_ROOT, "prompts", "afergon-ai.md"), "utf8");
 const APPLY_PROGRESS = fs.readFileSync(
   path.join(REPO_ROOT, "openspec", "changes", "issue-15-tui-mvp", "apply-progress.md"),
   "utf8",
@@ -58,13 +57,4 @@ describe("TUI docs contract", () => {
     expect(APPLY_PROGRESS).toContain("Historical passing checkpoints recorded across all slices");
   });
 
-  it("documents the dispatcher contract in the Pi prompt", () => {
-    expect(PROMPT).toContain("## Command Surface And TUI Launch Contract");
-    expect(PROMPT).toContain("Interactive TTY + no args → open the TUI.");
-    expect(PROMPT).toContain("Non-TTY/CI + `tui` → fail fast with guidance and a non-zero exit.");
-    expect(PROMPT).toContain("Windows launchers must match POSIX behavior and preserve the full argv surface");
-    expect(PROMPT).toContain("Home accessibility cues must stay text-first: arrow selection plus Enter, direct `c`/`s`/`m`/`h` shortcuts, explicit exit hints, and plain-text branding fallback when the banner is unsafe.");
-    expect(PROMPT).toContain("Show CLI equivalents only where a stable explicit command already exists");
-    expect(PROMPT).toContain("`tests/tui-docs.test.ts`");
-  });
 });

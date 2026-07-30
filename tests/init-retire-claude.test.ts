@@ -55,37 +55,32 @@ describe("POSIX init --claude rejection", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--claude is retired");
-    expect(result.stderr).toContain("--pi");
     expect(result.stderr).toContain("--opencode");
-    expect(result.stderr).toContain("--all");
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, ".claude"))).toBe(false);
   });
 
-  it("does not create Claude artifacts with --all", () => {
+  it("does not create Claude artifacts with --claude", () => {
     const tempRoot = makeTempRoot();
-    const xdgHome = path.join(tempRoot, "xdg");
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--all"], "4");
+    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home") }, ["--claude"]);
 
-    expect(result.status, result.stderr).toBe(0);
+    expect(result.status).not.toBe(0);
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, ".claude"))).toBe(false);
-    expect(fs.existsSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"))).toBe(true);
-    expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(true);
+    expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(false);
   });
 
-  it("keeps --pi and --opencode behavior intact", () => {
+  it("keeps --opencode behavior intact", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--pi", "--opencode"], "4");
+    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--opencode"], "4");
 
     expect(result.status, result.stderr).toBe(0);
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
-    expect(fs.existsSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(true);
   });
 
-  it("preserves user-owned Claude files with the remaining init flags", () => {
+  it("preserves user-owned Claude files with --opencode", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
     const claudeFile = path.join(tempRoot, "CLAUDE.md");
@@ -94,23 +89,21 @@ describe("POSIX init --claude rejection", () => {
     fs.writeFileSync(claudeFile, "user-owned Claude instructions\n");
     fs.writeFileSync(claudeSkill, "user-owned Claude skill\n");
 
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--pi", "--opencode"], "4");
+    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--opencode"], "4");
 
     expect(result.status, result.stderr).toBe(0);
     expect(fs.readFileSync(claudeFile, "utf8")).toBe("user-owned Claude instructions\n");
     expect(fs.readFileSync(claudeSkill, "utf8")).toBe("user-owned Claude skill\n");
-    expect(fs.existsSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"))).toBe(true);
     expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(true);
   });
 
-  it("rejects --claude even when combined with remaining host flags", () => {
+  it("rejects --claude even when combined with --opencode", () => {
     const tempRoot = makeTempRoot();
     const xdgHome = path.join(tempRoot, "xdg");
-    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--pi", "--claude"]);
+    const result = runBash("init-project.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--opencode", "--claude"]);
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("--claude is retired");
-    expect(fs.existsSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(false);
   });
 
@@ -124,36 +117,7 @@ describe("POSIX init --claude rejection", () => {
     expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(false);
   });
 
-  it("updates Pi and OpenCode without touching user-owned Claude files", () => {
-    const tempRoot = makeTempRoot();
-    const xdgHome = path.join(tempRoot, "xdg");
-    const opencodeAgents = path.join(xdgHome, "opencode", "agents");
-    const claudeFile = path.join(tempRoot, "CLAUDE.md");
-    const claudeSkill = path.join(tempRoot, ".claude", "skills", "custom", "SKILL.md");
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "stale Pi prompt\n");
-    fs.mkdirSync(path.dirname(claudeSkill), { recursive: true });
-    fs.writeFileSync(claudeFile, "user-owned Claude instructions\n");
-    fs.writeFileSync(claudeSkill, "user-owned Claude skill\n");
-    fs.mkdirSync(opencodeAgents, { recursive: true });
-    fs.mkdirSync(path.join(xdgHome, "opencode", "commands"), { recursive: true });
-    fs.writeFileSync(path.join(opencodeAgents, "afergon-ai.md"), "stale OpenCode agent\n");
-
-    const result = runBash("update.sh", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, [], "y");
-
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("Pi: updated .pi/APPEND_SYSTEM.md");
-    expect(result.stdout).toContain("OpenCode: updated");
-    expect(fs.readFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "utf8")).not.toBe("stale Pi prompt\n");
-    expect(fs.readFileSync(path.join(opencodeAgents, "afergon-ai.md"), "utf8")).toBe(
-      fs.readFileSync(path.join(repoRoot, "adapters", "opencode", "agents", "afergon-ai.md"), "utf8"),
-    );
-    expect(fs.existsSync(path.join(opencodeAgents, "afg-review.md"))).toBe(true);
-    expect(fs.readFileSync(claudeFile, "utf8")).toBe("user-owned Claude instructions\n");
-    expect(fs.readFileSync(claudeSkill, "utf8")).toBe("user-owned Claude skill\n");
-  });
-
-  it("packs Pi and OpenCode adapter surfaces without a Claude adapter", () => {
+  it("packs OpenCode adapter surfaces without a Claude adapter", () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")) as { files: string[] };
 
     expect(packageJson.files).toContain("adapters/");
@@ -171,55 +135,9 @@ describe("PowerShell init --claude rejection", () => {
     expect(result.status).not.toBe(0);
     const output = result.stderr + result.stdout;
     expect(output).toContain("--claude is retired");
-    expect(output).toContain("--pi");
     expect(output).toContain("--opencode");
-    expect(output).toContain("--all");
     expect(fs.existsSync(path.join(tempRoot, "CLAUDE.md"))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, ".claude"))).toBe(false);
   });
 
-  it.runIf(process.platform === "win32")("does not create Claude artifacts with --all", () => {
-    const tempRoot = makeTempRoot();
-    const xdgHome = path.join(tempRoot, "xdg");
-    const claudeFile = path.join(tempRoot, "CLAUDE.md");
-    const claudeSkill = path.join(tempRoot, ".claude", "skills", "custom", "SKILL.md");
-    fs.mkdirSync(path.dirname(claudeSkill), { recursive: true });
-    fs.writeFileSync(claudeFile, "user-owned Claude instructions\n");
-    fs.writeFileSync(claudeSkill, "user-owned Claude skill\n");
-    const result = runPowerShell("init-project.ps1", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome }, ["--all"], "4");
-
-    expect(result.status, result.stderr).toBe(0);
-    expect(fs.readFileSync(claudeFile, "utf8")).toBe("user-owned Claude instructions\n");
-    expect(fs.readFileSync(claudeSkill, "utf8")).toBe("user-owned Claude skill\n");
-    expect(fs.existsSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"))).toBe(true);
-    expect(fs.existsSync(path.join(tempRoot, "opencode.json"))).toBe(true);
-  });
-
-  it.runIf(process.platform === "win32")("updates Pi and OpenCode without touching user-owned Claude files", () => {
-    const tempRoot = makeTempRoot();
-    const xdgHome = path.join(tempRoot, "xdg");
-    const opencodeAgents = path.join(xdgHome, "opencode", "agents");
-    const claudeFile = path.join(tempRoot, "CLAUDE.md");
-    const claudeSkill = path.join(tempRoot, ".claude", "skills", "custom", "SKILL.md");
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "stale Pi prompt\n");
-    fs.mkdirSync(path.dirname(claudeSkill), { recursive: true });
-    fs.writeFileSync(claudeFile, "user-owned Claude instructions\n");
-    fs.writeFileSync(claudeSkill, "user-owned Claude skill\n");
-    fs.mkdirSync(opencodeAgents, { recursive: true });
-    fs.mkdirSync(path.join(xdgHome, "opencode", "commands"), { recursive: true });
-    fs.writeFileSync(path.join(opencodeAgents, "afergon-ai.md"), "stale OpenCode agent\n");
-
-    const result = runPowerShell("update.ps1", tempRoot, { HOME: path.join(tempRoot, "home"), XDG_CONFIG_HOME: xdgHome });
-
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("OK  Pi: updated");
-    expect(result.stdout).toContain("OK  OpenCode: updated");
-    expect(fs.readFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "utf8")).not.toBe("stale Pi prompt\n");
-    expect(fs.readFileSync(path.join(opencodeAgents, "afergon-ai.md"), "utf8")).toBe(
-      fs.readFileSync(path.join(repoRoot, "adapters", "opencode", "agents", "afergon-ai.md"), "utf8"),
-    );
-    expect(fs.readFileSync(claudeFile, "utf8")).toBe("user-owned Claude instructions\n");
-    expect(fs.readFileSync(claudeSkill, "utf8")).toBe("user-owned Claude skill\n");
-  });
 });
