@@ -26,6 +26,7 @@ Every ledger row uses exactly one status:
 | PR #62 ancestry/compatibility | merge `c0d80c5c9281c6bc0f0cb02fa58933d00273f2f7`, result `4d2e10bfb42c875ccf02894f877856b61540f01d` | Commit times `2026-07-30T22:33:59+01:00` and `2026-07-31T08:16:31+01:00`; approved combined head. |
 | PR #62 export remediation | `18c4d3442316fe0892cadf1f3d4d667d13d04ef3`, final `f688e07d8afc492c226953192a99cb148237f391` | Commit times `2026-07-31T11:04:39+01:00` and `2026-07-31T11:08:49+01:00`; approved final #62 head. |
 | PR #63 parent propagation and evidence baseline | `ecff353858deea82fc45b3cf3e2c72466a539b68` | Commit time `2026-07-31T12:06:36+01:00`; verification below ran at `2026-07-31T11:31:25Z`–`2026-07-31T11:33:09Z`. |
+| PR #63 canonical artifact publication | `f395cc80c0b2b79faa72f95e32879e4ef307ddde` | Artifact commit; focused/full/build/typecheck/runtime reran successfully before publication and all four publication-head CI jobs passed. |
 
 PR #63 remained open on base `feat/semantic-efficiency-metrics-06-cli` at `f688e07d8afc492c226953192a99cb148237f391` when this artifact was prepared. PRs #81–#83 were excluded and observed unchanged at `56023dcae67ead554ef4d147ff9ad1f45d8fa8fb`, `4b4abc6b669157cc2d4c45971712e4d003837cf0`, and `c3f1fe44a1133b05a08e5302590f809c1e108906`.
 
@@ -91,7 +92,7 @@ All commands in this table ran in the clean isolated PR #63 worktree against `ec
 | #61 `70a1889` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-30T21:22:52Z`–`21:23:58Z`. |
 | #62 `f688e07` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-31T10:12:32Z`–`10:12:47Z`. |
 | #63 `ecff353` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-31T11:10:38Z`–`11:11:29Z`. |
-| Final artifact commit on #63 | outstanding | The commit does not exist until this reviewed artifact is committed. Its required current-head CI must pass after a non-force push and be reported at the mandatory user-review stop. |
+| Artifact publication `f395cc8` | produced | Two `test` jobs succeeded: [job 91146492964](https://github.com/adrian-afergon/afergon-ai/actions/runs/30627648326/job/91146492964) completed `2026-07-31T11:38:44Z`; [job 91146501552](https://github.com/adrian-afergon/afergon-ai/actions/runs/30627651125/job/91146501552) completed `2026-07-31T11:38:51Z`. Two `windows-launcher` jobs succeeded: [job 91146492952](https://github.com/adrian-afergon/afergon-ai/actions/runs/30627648348/job/91146492952) completed `2026-07-31T11:38:18Z`; [job 91146501576](https://github.com/adrian-afergon/afergon-ai/actions/runs/30627651124/job/91146501576) completed `2026-07-31T11:38:20Z`. |
 
 ## Authorization, review, and integration ledger
 
