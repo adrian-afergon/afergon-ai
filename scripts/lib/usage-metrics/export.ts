@@ -45,6 +45,12 @@ export class CsvMetricsExporter implements ReportExporter {
 
 export type MetricsExportFormat = "json" | "csv";
 
+export function assertLocalOutputPath(output: string): void {
+  if (!path.win32.isAbsolute(output) && /^[a-z][a-z\d+.-]*:/i.test(output)) {
+    throw new Error("output: only local filesystem paths are supported");
+  }
+}
+
 export class LocalMetricsExportWriter {
   private readonly exporters: Readonly<Record<MetricsExportFormat, ReportExporter>> = {
     json: new JsonMetricsExporter(),
@@ -52,9 +58,7 @@ export class LocalMetricsExportWriter {
   };
 
   public write(format: MetricsExportFormat, output: string, groupBy: ReportDimension, rows: readonly ReportRow[]): void {
-    if (/^[a-z][a-z\d+.-]*:\/\//i.test(output) || output.startsWith("file:")) {
-      throw new Error("output: only local filesystem paths are supported");
-    }
+    assertLocalOutputPath(output);
     const destination = path.resolve(output);
     mkdirSync(path.dirname(destination), { recursive: true });
     writeFileSync(destination, this.exporters[format].export(groupBy, rows));

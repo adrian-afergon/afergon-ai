@@ -10,7 +10,7 @@ import {
   type ReportFilterValue,
   UNAVAILABLE,
 } from "./lib/usage-metrics/domain.js";
-import { LocalMetricsExportWriter, type MetricsExportFormat } from "./lib/usage-metrics/export.js";
+import { assertLocalOutputPath, LocalMetricsExportWriter, type MetricsExportFormat } from "./lib/usage-metrics/export.js";
 import { MetricsPathResolver } from "./lib/usage-metrics/paths.js";
 import { EfficiencyReportService } from "./lib/usage-metrics/reporting.js";
 import { SqliteMetricsStore } from "./lib/usage-metrics/sqlite.js";
@@ -89,7 +89,7 @@ function exportMetrics(args: readonly string[], cwd: string, store: SqliteMetric
     else throw new Error(`Unknown export argument: ${argument}`);
   }
   if ((format !== "json" && format !== "csv") || !output) throw new Error("Usage: afergon-ai metrics export --format json|csv --output <path> [--group-by <dimension>] [--filter <dimension=value>]...");
-  if (/^[a-z][a-z\d+.-]*:/i.test(output)) throw new Error("output: only local filesystem paths are supported");
+  assertLocalOutputPath(output);
   const { groupBy, filters } = parseReportArguments(reportArguments);
   const report = new EfficiencyReportService(store).generate(ReportQuery.create(groupBy, filters));
   new LocalMetricsExportWriter().write(format, path.resolve(cwd, output), groupBy, report.rows);

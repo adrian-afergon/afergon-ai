@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { ReportRow } from "../scripts/lib/usage-metrics/domain.js";
-import { CsvMetricsExporter, JsonMetricsExporter, LocalMetricsExportWriter } from "../scripts/lib/usage-metrics/export.js";
+import { assertLocalOutputPath, CsvMetricsExporter, JsonMetricsExporter, LocalMetricsExportWriter } from "../scripts/lib/usage-metrics/export.js";
 
 const roots: string[] = [];
 
@@ -22,6 +22,10 @@ afterEach(() => {
 });
 
 describe("metrics exporters", () => {
+  it("accepts a Windows drive absolute path as a local output", () => {
+    expect(() => assertLocalOutputPath("C:\\exports\\metrics.json")).not.toThrow();
+  });
+
   it("uses stable empty JSON and CSV report schemas", () => {
     expect(new JsonMetricsExporter().export("outcome", [])).toBe("[]\n");
     expect(new CsvMetricsExporter().export("outcome", [])).toBe(
