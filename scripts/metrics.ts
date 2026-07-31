@@ -71,7 +71,7 @@ function importEvents(args: readonly string[], cwd: string, parser: V1EventParse
 
 function reportMetrics(args: readonly string[], store: SqliteMetricsStore): MetricsCommandResult {
   const { groupBy, filters } = parseReportArguments(args);
-  const report = new EfficiencyReportService(store).generate(new ReportQuery(groupBy, filters));
+  const report = new EfficiencyReportService(store).generate(ReportQuery.create(groupBy, filters));
   return success(`${JSON.stringify(report, null, 2)}\n`);
 }
 
