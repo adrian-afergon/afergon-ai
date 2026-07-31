@@ -72,6 +72,8 @@ export function buildExecution(
             : buildBashExecution(path.join(packageRoot, "scripts/update.sh"), plan.forwardedArgs, cwd);
         case "models":
           return { command: process.execPath, args: [path.join(packageRoot, "scripts/models.js"), ...plan.forwardedArgs], cwd };
+        case "metrics":
+          return { command: process.execPath, args: [path.join(packageRoot, "scripts/metrics.js"), ...plan.forwardedArgs], cwd };
       }
     case "tui":
       return { command: process.execPath, args: [path.join(packageRoot, "scripts/tui.js"), ...plan.forwardedArgs], cwd };

@@ -50,7 +50,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Add tests for CSV order and escaping, plus JSON gap preservation.
   - Verify export does not mutate records or enable metrics implicitly.
 
-- [ ] **6. Integrate CLI and documentation**
+- [x] **6. Integrate CLI and documentation**
   - Add `metrics enable` and `metrics status` routing.
   - Add `metrics import <event-file>` routing.
   - Add `metrics report` filters and grouping arguments.
@@ -60,7 +60,7 @@ This plan intentionally excludes Gentle AI and its review guardrails. Execution 
   - Document opt-in behavior, local path, privacy, SQLite storage, export, clear, and enrichment limitations.
   - Add CLI smoke tests for arguments, exit codes, and unauthorized persistence.
 
-- [ ] **7. Verify each delivery slice**
+- [x] **7. Verify each delivery slice**
   - Apply RED, GREEN, triangulation, and minimal refactoring for every functional change.
   - Run focused tests after domain, storage, report/export, and CLI slices.
   - Run typecheck and build after each relevant integration.
