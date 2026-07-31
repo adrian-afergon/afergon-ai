@@ -20,7 +20,7 @@ Every ledger row uses exactly one status:
 
 | Scope | Head / commit | Recorded result |
 | --- | --- | --- |
-| PR #57 foundation boundary | `6c839cd58567d6cd24e1aa8877bb209e1891b073` | Source remained outside the later ReportQuery remediation; focused source-scope verification is still outstanding. |
+| PR #57 foundation boundary | `6c839cd58567d6cd24e1aa8877bb209e1891b073` | Focused foundation verification produced at `2026-07-31T20:10:55Z`–`2026-07-31T20:12:18Z`; source remains outside the later ReportQuery factory/private-constructor/caller/unsupported-filter remediation assigned to PR #60. |
 | PR #60 ReportQuery and gap remediation | `51df84e800eb0c69dddb9f46c16673582c75b30f` | Commit time `2026-07-30T21:11:16+01:00`; approved remediation head. |
 | PR #61 propagation | `70a18894c94931f0c676dccd7cbdad2c2725f964` | Commit time `2026-07-30T22:18:36+01:00`; approved propagation head. |
 | PR #62 ancestry/compatibility | merge `c0d80c5c9281c6bc0f0cb02fa58933d00273f2f7`, result `4d2e10bfb42c875ccf02894f877856b61540f01d` | Commit times `2026-07-30T22:33:59+01:00` and `2026-07-31T08:16:31+01:00`; approved combined head. |
@@ -45,12 +45,28 @@ All commands in this table ran in the clean isolated PR #63 worktree against `ec
 | Diff hygiene and ancestry | produced | `git merge-base --is-ancestor f688e07 ecff353`; `git rev-parse ecff353^1 ecff353^2`; `git diff --check f688e07..ecff353` → source reachable, parents `b0e8401` then `f688e07`, and no whitespace errors. |
 | Artifact-only unit tests | not applicable | This slice changes Markdown evidence only; spec-04 requires review rather than pointless unit tests solely for the artifact. Applicable product tests are recorded above. |
 
+## PR #57 focused foundation verification
+
+All commands in this table ran in the clean isolated PR #57 worktree against exact live head `6c839cd58567d6cd24e1aa8877bb209e1891b073`, which was 0 ahead / 0 behind `origin/feat/semantic-efficiency-metrics-01-foundation`.
+
+| Evidence item | Status | Exact command and observable result |
+| --- | --- | --- |
+| Focused foundation test | produced | `pnpm exec vitest run tests/metrics-domain.test.ts --no-file-parallelism` → 1 file passed, 11 tests passed; start `2026-07-31T20:10:55Z`, Vitest duration 156 ms. |
+| Typecheck | produced | `pnpm typecheck` → `tsc -p tsconfig.runtime.json --noEmit`, exit 0; `2026-07-31T20:11:01Z`–`20:11:03Z`. |
+| Build | produced | `pnpm build` → `tsx ./scripts/build-typescript.ts`, exit 0; `2026-07-31T20:11:06Z`–`20:11:09Z`. |
+| Runtime health | produced | `pnpm run health:runtime` → all `dist/scripts/cli-dispatch.js`, `models.js`, and `tui.js` imports succeeded; “Local dist runtime health check passed (no remote telemetry).”; `2026-07-31T20:11:13Z`. |
+| Full suite | produced | `pnpm test` → build succeeded; 21 files passed, 2 skipped; 314 tests passed, 5 skipped; `2026-07-31T20:11:18Z`–`20:12:18Z`, Vitest duration 57.61 s. |
+| Focused diff and source boundary | produced | `git diff --stat`, `git diff --name-status`, and `git diff --check 356dcfe0b50be3efaf22c7f792bb55c31a204286..6c839cd58567d6cd24e1aa8877bb209e1891b073` → one foundation commit, 5 declared files, 304 additions, no deletions, and no whitespace errors. The head contains the original public-constructor `ReportQuery` foundation behavior, but PR #60 remediation commits `b69d92e`, `b9718ab`, and `51df84e` are not ancestors; no factory/private-constructor/caller/unsupported-filter remediation is present. |
+| Live PR head, base, metadata, and CI | produced | PR #57 remained open/clean/mergeable at head `6c839cd`, base `feat/semantic-efficiency-metrics-stack` / `356dcfe`; body retained `Closes #18`, position `1 of 8`, dependency #56, follow-up #58, and the chain through #66; exactly one `type:feature` label; two `test` and two `windows-launcher` jobs successful. |
+| Product runtime smoke beyond health imports | not applicable | PR #57 introduces domain types, ports, and parser behavior but no metrics CLI/runtime command boundary. Focused domain behavior plus the required emitted-module health gate are the applicable runtime evidence. |
+| Focused verification review | produced | Post-run status was clean with no staged, unstaged, or untracked paths in the PR #57 worktree; the declared five-file diff and unchanged live head/base/CI were rechecked. PRs #81–#83 retained heads `56023dc`, `4b4abc6`, and `c3f1fe4`. |
+
 ## Remediation evidence ledger
 
 | Evidence item | Status | Evidence / reason |
 | --- | --- | --- |
 | PR #57 contains no ReportQuery remediation | produced | `ReportQuery` remediation commits `b69d92e`, `b9718ab`, and `51df84e` are descendants of #57 and were authored on #60, not in #57 head `6c839cd`. |
-| PR #57 focused foundation verification | outstanding | The separate plan slice for focused source/diff/typecheck/build/full-suite verification has not been executed; successful CI alone does not replace it. |
+| PR #57 focused foundation verification | produced | The focused foundation test, typecheck, build, runtime health, full suite, focused diff/source-boundary review, metadata/linkage/label review, and current-head CI were verified at exact head `6c839cd` on `2026-07-31`; see the dedicated table above. |
 | PR #60 ReportQuery factory/private constructor behavior | produced | Current cumulative focused command above passes domain/reporting coverage, including defaults, preserved unsupported-dimension diagnostics, and compile-time private-constructor rejection. |
 | PR #60 gap grouping/filtering behavior | produced | Current cumulative focused command passes mixed and single `present|absent` grouping, both gap filters, composed filters, invalid values, totals, and enrichment consistency coverage. |
 | PR #60 historical local outcomes | produced | Recorded against `51df84e`: focused domain/reporting tests 36/36; `pnpm typecheck`, `pnpm build`, and `pnpm run health:runtime` passed; `pnpm test` passed 343 tests with 5 skipped. Exact retained console transcript and focused command timestamp are unavailable, so they are separately outstanding below. |
@@ -87,7 +103,7 @@ All commands in this table ran in the clean isolated PR #63 worktree against `ec
 
 | Head | Status | Exact observable result |
 | --- | --- | --- |
-| #57 `6c839cd` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful on 2026-07-16. These checks do not satisfy the outstanding focused #57 verification slice. |
+| #57 `6c839cd` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful on 2026-07-16. These current-head checks are included with the separately executed focused #57 verification recorded above. |
 | #60 `51df84e` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-30T20:14:43Z`–`20:15:17Z`. |
 | #61 `70a1889` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-30T21:22:52Z`–`21:23:58Z`. |
 | #62 `f688e07` | produced | GitHub reported two `test` and two `windows-launcher` jobs successful, completed `2026-07-31T10:12:32Z`–`10:12:47Z`. |
