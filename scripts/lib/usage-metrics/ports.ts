@@ -1,4 +1,4 @@
-import type { EfficiencyRecord, EnrichmentResult, MetricsStatus } from "./domain.js";
+import type { EfficiencyRecord, EnrichmentResult, MetricsStatus, ReportDimension, ReportRow } from "./domain.js";
 
 export interface EventParser {
   parse(input: unknown): EfficiencyRecord;
@@ -25,6 +25,6 @@ export interface EnrichmentProvider {
   enrich(record: EfficiencyRecord): EnrichmentResult;
 }
 
-export interface RecordExporter {
-  export(records: readonly EfficiencyRecord[]): string;
+export interface ReportExporter {
+  export(groupBy: ReportDimension, rows: readonly ReportRow[]): string;
 }

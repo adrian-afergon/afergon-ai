@@ -10,7 +10,7 @@ import {
   type ReportFilterValue,
   UNAVAILABLE,
 } from "./lib/usage-metrics/domain.js";
-import { LocalMetricsExportWriter, type MetricsExportFormat } from "./lib/usage-metrics/export.js";
+import { assertLocalOutputPath, LocalMetricsExportWriter, type MetricsExportFormat } from "./lib/usage-metrics/export.js";
 import { MetricsPathResolver } from "./lib/usage-metrics/paths.js";
 import { EfficiencyReportService } from "./lib/usage-metrics/reporting.js";
 import { SqliteMetricsStore } from "./lib/usage-metrics/sqlite.js";
@@ -71,21 +71,28 @@ function importEvents(args: readonly string[], cwd: string, parser: V1EventParse
 
 function reportMetrics(args: readonly string[], store: SqliteMetricsStore): MetricsCommandResult {
   const { groupBy, filters } = parseReportArguments(args);
-  const report = new EfficiencyReportService(store).generate(new ReportQuery(groupBy, filters));
+  const report = new EfficiencyReportService(store).generate(ReportQuery.create(groupBy, filters));
   return success(`${JSON.stringify(report, null, 2)}\n`);
 }
 
 function exportMetrics(args: readonly string[], cwd: string, store: SqliteMetricsStore): MetricsCommandResult {
   let format: MetricsExportFormat | undefined;
   let output: string | undefined;
+  const reportArguments: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === "--format") format = args[++index] as MetricsExportFormat;
     else if (argument === "--output") output = args[++index];
+    else if (argument === "--group-by" || argument === "--filter") {
+      reportArguments.push(argument, args[++index] as string);
+    }
     else throw new Error(`Unknown export argument: ${argument}`);
   }
-  if ((format !== "json" && format !== "csv") || !output) throw new Error("Usage: afergon-ai metrics export --format json|csv --output <path>");
-  new LocalMetricsExportWriter().write(format, path.resolve(cwd, output), store.all());
+  if ((format !== "json" && format !== "csv") || !output) throw new Error("Usage: afergon-ai metrics export --format json|csv --output <path> [--group-by <dimension>] [--filter <dimension=value>]...");
+  assertLocalOutputPath(output);
+  const { groupBy, filters } = parseReportArguments(reportArguments);
+  const report = new EfficiencyReportService(store).generate(ReportQuery.create(groupBy, filters));
+  new LocalMetricsExportWriter().write(format, path.resolve(cwd, output), groupBy, report.rows);
   return success(`Exported metrics to ${path.resolve(cwd, output)}.\n`);
 }
 

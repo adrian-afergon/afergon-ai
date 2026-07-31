@@ -99,8 +99,9 @@ export class EfficiencyRecord implements EfficiencyRecordFields {
   public get reworkOfEventId() { return this.fields.reworkOfEventId; }
 }
 
-export const REPORT_DIMENSIONS = ["task", "phase", "agent", "subagent", "model", "modelProfile", "outcome", "reviewCycle"] as const;
+export const REPORT_DIMENSIONS = ["task", "phase", "agent", "subagent", "model", "modelProfile", "outcome", "reviewCycle", "attributionGaps", "enrichmentGaps"] as const;
 export type ReportDimension = typeof REPORT_DIMENSIONS[number];
+export type GapState = "present" | "absent";
 export type ReportFilterValue = string | number | Unavailable;
 
 const REPORT_DIMENSION_SET = new Set<ReportDimension>(REPORT_DIMENSIONS);
@@ -109,11 +110,22 @@ export class ReportQuery {
   public readonly groupBy: ReportDimension;
   public readonly filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>>;
 
-  public constructor(groupBy: ReportDimension = "outcome", filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>> = {}) {
+  public static create(
+    groupBy: ReportDimension = "outcome",
+    filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>> = {},
+  ): ReportQuery {
     if (!REPORT_DIMENSION_SET.has(groupBy)) throw new MetricsError("groupBy", "invalid", "is not a supported report dimension");
     for (const dimension of Object.keys(filters)) {
       if (!REPORT_DIMENSION_SET.has(dimension as ReportDimension)) throw new MetricsError("filter", "invalid", `${dimension} is not a supported report dimension`);
+      const value = filters[dimension as ReportDimension];
+      if ((dimension === "attributionGaps" || dimension === "enrichmentGaps") && value !== "present" && value !== "absent") {
+        throw new MetricsError(`filter.${dimension}`, "invalid", "must be present or absent");
+      }
     }
+    return new ReportQuery(groupBy, filters);
+  }
+
+  private constructor(groupBy: ReportDimension, filters: Readonly<Partial<Record<ReportDimension, ReportFilterValue>>>) {
     this.groupBy = groupBy;
     this.filters = filters;
   }

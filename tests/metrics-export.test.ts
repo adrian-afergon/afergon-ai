@@ -3,24 +3,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { V1EventParser } from "../scripts/lib/usage-metrics/afergon-v1.js";
-import { CsvMetricsExporter, JsonMetricsExporter, LocalMetricsExportWriter } from "../scripts/lib/usage-metrics/export.js";
+import type { ReportRow } from "../scripts/lib/usage-metrics/domain.js";
+import { assertLocalOutputPath, CsvMetricsExporter, JsonMetricsExporter, LocalMetricsExportWriter } from "../scripts/lib/usage-metrics/export.js";
 
-const parser = new V1EventParser();
 const roots: string[] = [];
 
-function record() {
-  return parser.parse({
-    source: "afergon-ai",
-    version: 1,
-    eventId: "event-123",
-    occurredAt: "2026-07-16T08:00:00.000Z",
-    workflowRunId: "run-456",
-    phase: "implement",
-    agent: "afg-implement",
-    outcome: "useful",
-    task: "issue,18",
-  });
+function reportRow(values: Partial<ReportRow> = {}): ReportRow {
+  return {
+    dimension: "agent-a", count: 2, usefulCount: 1, reworkCount: 1, failedCount: 0,
+    coordinationCount: 0, acceptedCount: 0, rejectedCount: 0, unknownCount: 0,
+    reworkRate: 0.5, attributionGaps: 1, enrichmentGaps: 2,
+    ...values,
+  };
 }
 
 afterEach(() => {
@@ -28,25 +22,25 @@ afterEach(() => {
 });
 
 describe("metrics exporters", () => {
-  it("preserves structured gaps and unavailable enrichment in JSON", () => {
-    const payload = JSON.parse(new JsonMetricsExporter().export([record()])) as { records: Array<Record<string, unknown>> };
-
-    expect(payload.records[0]).toMatchObject({
-      id: "event-123",
-      task: "issue,18",
-      model: "unavailable",
-      enrichment: { available: false, estimatedCost: "unavailable" },
-    });
-    expect(payload.records[0].gaps).toMatchObject({ enrichment: ["estimatedCost"] });
+  it("accepts a Windows drive absolute path as a local output", () => {
+    expect(() => assertLocalOutputPath("C:\\exports\\metrics.json")).not.toThrow();
   });
 
-  it("uses a fixed CSV header and explicit unavailable cells", () => {
-    const csv = new CsvMetricsExporter().export([record()]);
-    const [header, row] = csv.trimEnd().split("\n");
+  it("uses stable empty JSON and CSV report schemas", () => {
+    expect(new JsonMetricsExporter().export("outcome", [])).toBe("[]\n");
+    expect(new CsvMetricsExporter().export("outcome", [])).toBe(
+      "groupBy,dimension,count,usefulCount,reworkCount,failedCount,coordinationCount,acceptedCount,rejectedCount,unknownCount,reworkRate,attributionGaps,enrichmentGaps\n",
+    );
+  });
 
-    expect(header).toBe("id,occurredAt,workflowRunId,phase,agent,outcome,task,subagent,model,modelProfile,reviewCycle,correlationId,retryCount,reworkOfEventId,enrichmentAvailable,estimatedCost");
-    expect(row).toContain('"issue,18"');
-    expect(row).toContain("unavailable");
+  it("preserves non-default grouping in matching stable JSON and CSV rows", () => {
+    const row = reportRow();
+
+    expect(JSON.parse(new JsonMetricsExporter().export("agent", [row]))).toEqual([{ groupBy: "agent", ...row }]);
+    expect(new CsvMetricsExporter().export("agent", [row])).toBe(
+      "groupBy,dimension,count,usefulCount,reworkCount,failedCount,coordinationCount,acceptedCount,rejectedCount,unknownCount,reworkRate,attributionGaps,enrichmentGaps\n" +
+      "agent,agent-a,2,1,1,0,0,0,0,0,0.5,1,2\n",
+    );
   });
 
   it("writes only local output paths", () => {
@@ -55,10 +49,10 @@ describe("metrics exporters", () => {
     const output = join(root, "nested", "metrics.json");
     const writer = new LocalMetricsExportWriter();
 
-    writer.write("json", output, [record()]);
+    writer.write("json", output, "outcome", [reportRow({ dimension: "useful", count: 1 })]);
 
     expect(existsSync(output)).toBe(true);
-    expect(readFileSync(output, "utf8")).toContain("event-123");
-    expect(() => writer.write("json", "https://example.test/metrics.json", [record()])).toThrow("output:");
+    expect(readFileSync(output, "utf8")).toContain('"dimension": "useful"');
+    expect(() => writer.write("json", "https://example.test/metrics.json", "outcome", [])).toThrow("output:");
   });
 });
