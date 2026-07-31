@@ -68,7 +68,7 @@ All commands in this table ran in the clean isolated PR #63 worktree against `ec
 | Emitted runtime and health | produced | `node dist/scripts/metrics.js export --help` exited 0 and advertised both `--group-by` and repeatable `--filter`; `pnpm run health:runtime` imported all declared runtime entry points successfully. |
 | Full suite | produced | `pnpm test` → build passed; 25 files passed, 3 skipped; 376 tests passed, 8 skipped. |
 | Documentation review and diff hygiene | produced | Canonical ledger and task-local PLAN/RESULT were checked for stale future-integration claims; `git diff --check` passed. Markdown-only claims are reviewed rather than covered by pointless unit tests. |
-| Forward-only publication | produced | Commits `e2ca7898ebb4bbae451bef4c895f5183d7a51f1e` and `a280a3511acd5097c49696abdbaca8cf77617def` were non-force pushed directly to `main` under the user's explicit authorization. GitHub reported administrator bypass of the pull-request-only and verified-signature rules for those two commits; no historical PR, source branch, or #81–#83 state was altered. |
+| Forward-only publication | produced | The bounded correction commit range after `9e328a760e84544d2db82755d80e8fa159a4894e` was non-force pushed directly to `main` under the user's explicit authorization. GitHub reported administrator bypass of the pull-request-only and verified-signature rules for the correction commits; no historical PR, source branch, or #81–#83 state was altered. |
 
 ## PR #57 focused foundation verification
 

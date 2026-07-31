@@ -33,6 +33,7 @@ Applied the explicitly authorized forward-only correction on `main`. The canonic
 
 - `e2ca7898ebb4bbae451bef4c895f5183d7a51f1e` `fix(metrics): reconcile post-review evidence`
 - `a280a3511acd5097c49696abdbaca8cf77617def` `docs(openspec): record remediation result`
+- `bb7891b43d29ae10895350d21d30e6ef13933a7d` `docs(metrics): record correction publication`
 
 ## Files Changed
 
@@ -60,7 +61,7 @@ Applied the explicitly authorized forward-only correction on `main`. The canonic
 ## Blockers or Deviations
 
 - Prior deviation disclosed: integrations from #62 through main advanced while the canonical ledger still marked required integration and Chain Context evidence outstanding, contrary to spec 06's stop gate. This correction records rather than conceals that history; no history or PR was rewritten.
-- Direct-main publication used the user's explicit authorization; GitHub reported administrator bypass of the pull-request-only and verified-signature rules for the two correction commits.
+- Direct-main publication used the user's explicit authorization; GitHub reported administrator bypass of the pull-request-only and verified-signature rules for the bounded correction commit range.
 
 ## Notes
 
