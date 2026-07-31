@@ -133,6 +133,8 @@ When OpenCode is already installed through afergon-ai, `models switch` and `mode
 Semantic metrics are an explicit opt-in feature and are disabled by default. They accept only AFERGON-AI schema version 1 events and never upload data. The local store uses Node's built-in `node:sqlite` API (the CI runtime is Node 24) and is kept separate from model configuration.
 
 ```bash
+afergon-ai metrics --help
+afergon-ai metrics report --help
 afergon-ai metrics enable
 afergon-ai metrics status
 afergon-ai metrics import ./events.json
@@ -141,6 +143,8 @@ afergon-ai metrics export --format json --output ./metrics.json
 afergon-ai metrics export --format csv --output ./metrics.csv
 afergon-ai metrics clear --confirm
 ```
+
+The metrics help output lists every subcommand and its options. Report dimensions include `task`, `phase`, `agent`, `subagent`, `model`, `modelProfile`, `outcome`, and `reviewCycle`; use `--filter dimension=value` to narrow a report. Command help is side-effect free and does not enable metrics or create the local SQLite directory.
 
 The default metrics directory is `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/metrics/`. It contains only the metrics SQLite database and enablement state. `status` and disabled imports do not create this directory. `clear --confirm` removes metrics-owned files only and preserves unrelated configuration.
 
