@@ -2,12 +2,15 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { buildExecution, formatHelp, resolveDispatchPlan } from "../scripts/cli-dispatch.js";
 import { executeMetrics } from "../scripts/metrics.js";
+import { runPnpm } from "./helpers/process.js";
 
 const roots: string[] = [];
+const repoRoot = path.resolve(import.meta.dirname, "..");
+const emittedMetricsPath = path.join(repoRoot, "dist", "scripts", "metrics.js");
 
 function createWorkspace() {
   const root = mkdtempSync(path.join(tmpdir(), "afergon-cli-"));
@@ -35,6 +38,11 @@ describe("metrics dispatch", () => {
 });
 
 describe("metrics help", () => {
+  beforeAll(() => {
+    const result = runPnpm(["run", "build"], { cwd: repoRoot, encoding: "utf8", timeout: 120000 });
+    expect(result.status).toBe(0);
+  }, 120000);
+
   it.each([
     [["--help"], ["enable", "status", "import", "report", "export", "clear"]],
     [["-h"], ["Usage: afergon-ai metrics"]],
@@ -55,8 +63,7 @@ describe("metrics help", () => {
   });
 
   it("exposes help through the emitted metrics runtime", () => {
-    const runtimePath = path.resolve(import.meta.dirname, "../dist/scripts/metrics.js");
-    const result = spawnSync(process.execPath, [runtimePath, "report", "--help"], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, [emittedMetricsPath, "report", "--help"], { encoding: "utf8" });
 
     expect(result.status).toBe(0);
     expect(result.stderr).not.toContain("must be enabled");
@@ -64,8 +71,7 @@ describe("metrics help", () => {
   });
 
   it("exposes export selection help through the emitted metrics runtime", () => {
-    const runtimePath = path.resolve(import.meta.dirname, "../dist/scripts/metrics.js");
-    const result = spawnSync(process.execPath, [runtimePath, "export", "--help"], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, [emittedMetricsPath, "export", "--help"], { encoding: "utf8" });
 
     expect(result.status).toBe(0);
     expect(result.stderr).not.toContain("must be enabled");

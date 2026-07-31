@@ -1,6 +1,6 @@
 # Semantic efficiency metrics — canonical completion evidence
 
-This is the canonical evidence ledger for the `semantic-efficiency-metrics` change. It records what can be proved and leaves unavailable history and genuinely future integration work outstanding. The artifact records authorization evidence but does not itself grant authorization.
+This is the canonical evidence ledger for the completed `semantic-efficiency-metrics` change through main merge `9e328a760e84544d2db82755d80e8fa159a4894e`. It records what can be proved and leaves only unavailable historical TDD evidence outstanding. The artifact records authorization evidence but does not itself grant authorization.
 
 ## Review path
 
@@ -31,8 +31,15 @@ Every ledger row uses exactly one status:
 | PR #63 → #66 propagation | `b4632cf888b07c18bdcc7b0f03e7875d80aa1dd3` | Ordinary merge with parents prior #66 `602a8b382e28f5d31d675d234c20336ad03fd14e` then approved #63 `09cbf67731612ba606a23325c733d989cf4d5bb1`; focused/full/build/typecheck/runtime and four current-head CI jobs passed, followed by explicit user approval. |
 | Ordered integration #66 → #63 | `0b1d341ed45351cead3b86ef6130beaeb3e06a18` | GitHub ordinary merge with parents current #63 `b9c203c99472ecdf2347c00b8afa31edea66806f` then #66 `b4632cf888b07c18bdcc7b0f03e7875d80aa1dd3`; PR #66 merged, PR #63 advanced, and four result-head CI jobs passed. |
 | Ordered integration #63 → #62 | `52c686a2e3ee6e952a86b4ea42af6de3fe7af8ec` | GitHub ordinary merge with parents prior #62 `f688e07d8afc492c226953192a99cb148237f391` then #63 `0b1d341ed45351cead3b86ef6130beaeb3e06a18`; PR #63 merged and PR #62 advanced with an identical tree to #63. |
+| Ordered integration #62 → #61 | `ebcc119ddc7a9581478af6a9fb2f8ab2226f90f1` | GitHub ordinary merge with parents prior #61 `70a18894c94931f0c676dccd7cbdad2c2725f964` then final #62 `cedc4533250e7ae8d89632ef5d4966c4533f51ca`; PR #62 merged and all four result-head checks passed. |
+| Ordered integration #61 → #60 | `f3e907ba806309c76105bd324cd8e7ad09c79828` | GitHub ordinary merge with parents prior #60 `51df84e800eb0c69dddb9f46c16673582c75b30f` then #61 `ebcc119ddc7a9581478af6a9fb2f8ab2226f90f1`; PR #61 merged and all four result-head checks passed. |
+| Ordered integration #60 → #59 | `829d03eb0bf83f79e3ab31898b070257a16d28b0` | GitHub ordinary merge with parents prior #59 `a23c6c06192bce4e8caf03315429c0ba0002eef3` then #60 `f3e907ba806309c76105bd324cd8e7ad09c79828`; PR #60 merged and all four result-head checks passed. |
+| Ordered integration #59 → #58 | `3bb6e1f5f0c86ac28f85be49b5f5638abad0b81a` | GitHub ordinary merge with parents prior #58 `a4b5303c9b051231ba9d863c0db1c9400b6b4bc7` then #59 `829d03eb0bf83f79e3ab31898b070257a16d28b0`; PR #59 merged and all four result-head checks passed. |
+| Ordered integration #58 → #57 | `6ca8a748a34bac44aa8a9c59faef50376de8fec6` | GitHub ordinary merge with parents prior #57 `6c839cd58567d6cd24e1aa8877bb209e1891b073` then #58 `3bb6e1f5f0c86ac28f85be49b5f5638abad0b81a`; PR #58 merged and all four result-head checks passed. |
+| Ordered integration #57 → tracker #56 | `b2df1def2434f4fbbeb16d0ef3182bc446715f56` | GitHub ordinary merge with parents prior #56 `356dcfe0b50be3efaf22c7f792bb55c31a204286` then #57 `6ca8a748a34bac44aa8a9c59faef50376de8fec6`; PR #57 merged, the complete #66-through-#57 chain became reachable, and all four result-head checks passed. |
+| Tracker #56 → `main` | `9e328a760e84544d2db82755d80e8fa159a4894e` | GitHub ordinary merge with parents prior main `115ac8952c9bb9c01dd299fae6890e3969985d9a` then exact tracker `b2df1def2434f4fbbeb16d0ef3182bc446715f56`; PR #56 merged last. The active one-review rule still blocked readiness, so the user-authorized administrator bypass was used once. Main Test run `30670237955` and Windows launcher run `30670237987` passed. |
 
-Immediately before this reconciliation commit, PRs #66 and #63 are merged. PR #62 is open, clean, and mergeable at `52c686a2e3ee6e952a86b4ea42af6de3fe7af8ec` on unchanged base `feat/semantic-efficiency-metrics-05-exports` at `70a18894c94931f0c676dccd7cbdad2c2725f964`; two `test` and two `windows-launcher` jobs pass at that head. PRs #81–#83 remain excluded, open, and unchanged at `56023dcae67ead554ef4d147ff9ad1f45d8fa8fb`, `4b4abc6b669157cc2d4c45971712e4d003837cf0`, and `c3f1fe44a1133b05a08e5302590f809c1e108906`.
+The complete integration is present on `main` at `9e328a7`. All nine semantic-metrics source branches remain present; no source branch was deleted or rewritten. All nine PR bodies were reconciled to the canonical eight-child Chain Context through #66 while retaining their stacked bases and unrelated content. PRs #81–#83 remain excluded, open, and unchanged at `56023dcae67ead554ef4d147ff9ad1f45d8fa8fb`, `4b4abc6b669157cc2d4c45971712e4d003837cf0`, and `c3f1fe44a1133b05a08e5302590f809c1e108906`.
 
 ## Current cumulative verification
 
@@ -48,6 +55,19 @@ All commands in this table ran in the clean isolated PR #63 worktree against `ec
 | Full suite | produced | `pnpm test` → build succeeded; 25 files passed, 2 skipped; 356 tests passed, 5 skipped; start `2026-07-31T11:31:37Z`, duration 59.62 s. |
 | Diff hygiene and ancestry | produced | `git merge-base --is-ancestor f688e07 ecff353`; `git rev-parse ecff353^1 ecff353^2`; `git diff --check f688e07..ecff353` → source reachable, parents `b0e8401` then `f688e07`, and no whitespace errors. |
 | Artifact-only unit tests | not applicable | This slice changes Markdown evidence only; spec-04 requires review rather than pointless unit tests solely for the artifact. Applicable product tests are recorded above. |
+
+## Post-review correction verification on main
+
+| Evidence item | Status | Exact command and observable result |
+| --- | --- | --- |
+| RED — focused execution without preexisting `dist/` | produced | On main `9e328a7` with no `dist/scripts/metrics.js`, `pnpm exec vitest run tests/metrics-cli.test.ts --no-file-parallelism` failed only the two emitted-runtime help scenarios: 17 passed, 2 failed because the child process exited 1. |
+| GREEN and triangulation — self-contained emitted runtime | produced | The metrics-help behavior setup now runs `pnpm run build` before emitted-runtime assertions. The same focused command from the no-`dist/` state passed 19/19. Report-help and export-help are two structurally distinct runtime scenarios; both retain exit/output/no-enablement assertions. Lowest sufficient TPP move: statement → statements in test setup, with no product-code change. |
+| Focused CLI/TUI tests | produced | `pnpm exec vitest run tests/metrics-cli.test.ts tests/tui-dispatch.test.ts --no-file-parallelism` → 2 files passed, 55 passed, 3 skipped. |
+| Focused metrics regression | produced | `pnpm exec vitest run tests/metrics-domain.test.ts tests/metrics-reporting.test.ts tests/metrics-export.test.ts tests/metrics-cli.test.ts tests/tui-dispatch.test.ts --no-file-parallelism` → 5 files passed, 95 passed, 3 skipped. |
+| Typecheck and build | produced | `pnpm typecheck` and `pnpm build` both exited 0. |
+| Emitted runtime and health | produced | `node dist/scripts/metrics.js export --help` exited 0 and advertised both `--group-by` and repeatable `--filter`; `pnpm run health:runtime` imported all declared runtime entry points successfully. |
+| Full suite | produced | `pnpm test` → build passed; 25 files passed, 3 skipped; 376 tests passed, 8 skipped. |
+| Documentation review and diff hygiene | produced | Canonical ledger and task-local PLAN/RESULT were checked for stale future-integration claims; `git diff --check` passed. Markdown-only claims are reviewed rather than covered by pointless unit tests. |
 
 ## PR #57 focused foundation verification
 
@@ -117,6 +137,8 @@ All commands in this table ran in the clean isolated PR #57 worktree against exa
 | #66 propagation `b4632cf` | produced | Two `test` and two `windows-launcher` check runs succeeded, completing `2026-07-31T13:50:22Z`–`13:51:14Z`. |
 | #66→#63 integration `0b1d341` | produced | Two `test` and two `windows-launcher` check runs succeeded, completing `2026-07-31T20:50:09Z`–`20:53:20Z`. |
 | #63→#62 integration `52c686a` | produced | Two `test` and two `windows-launcher` check runs succeeded, completing `2026-07-31T21:26:53Z`–`21:27:34Z`. |
+| #62→#61 through #57→#56 integrations | produced | Each result head recorded above passed two `test` and two `windows-launcher` jobs before the next bottom-up integration advanced. |
+| Main `9e328a7` | produced | Test workflow run `30670237955` and Windows launcher workflow run `30670237987` completed successfully against the final merge commit. |
 
 ## Authorization, review, and integration ledger
 
@@ -124,16 +146,24 @@ All commands in this table ran in the clean isolated PR #57 worktree against exa
 | --- | --- | --- |
 | Plan→Implement authorization for this canonical-evidence slice | produced | The user explicitly authorized only the PR #63 canonical-evidence slice on current head `ecff353`. |
 | Permission to update and non-force push only PR #63 after green gates | produced | Included in the bounded authorization for this slice. |
-| PR-body edit | not applicable | Explicitly excluded from this slice; no PR body may be edited. The separate chain-context reconciliation remains outstanding overall. |
+| Canonical Chain Context reconciliation | produced | Tracker #56 and children #57–#63/#66 all described the eight-child chain `#57 → #58 → #59 → #60 → #61 → #62 → #63 → #66`; positions, dependencies, follow-ups, stacked bases, and unrelated body content were preserved through integration. |
 | #66 propagation | produced | Approved #63 evidence head `09cbf67` was propagated into prior #66 `602a8b3` by ordinary merge `b4632cf`; verification, non-force push, current-head CI, summary, and explicit #66 approval were produced. |
 | PR merge authorization | produced | After approving the final tracker and all updated semantic-metrics PRs, the user explicitly authorized the unchanged bottom-up merge sequence `#66 → #63 → #62 → #61 → #60 → #59 → #58 → #57 → #56 → main`, with a fresh stop/preflight before each advance. |
-| Completed ordered integration steps | produced | #66→#63 produced merge `0b1d341` with parents `b9c203c b4632cf`; #63→#62 produced merge `52c686a` with parents `f688e07 0b1d341`. PRs #66 and #63 are merged; #62 remains open at `52c686a`. |
-| Remaining ordered integration | outstanding | Future steps remain `#62 → #61 → #60 → #59 → #58 → #57 → #56 → main`. Each requires a fresh exact-state gate and must stop on drift, failed checks, missing evidence, or missing applicable authorization. |
+| Completed ordered integration | produced | The authorized order completed exactly as `#66 → #63 → #62 → #61 → #60 → #59 → #58 → #57 → #56 → main`; exact merge commits and parent identities are recorded in the covered-heads table. No PR was retargeted. |
+| Final tracker readiness and administrator bypass | produced | The user explicitly authorized final tracker readiness and merge. After #56 was marked ready, the active `protect-main` ruleset still required one approving review and no review existed. Repository-role bypass was available to the current admin and was used once only for exact #56 head `b2df1de` → main. |
+| Source branch preservation | produced | Tracker and all eight child source branches remained present after merge; no branch deletion, reset, rebase, or force-push was performed. |
 | PR #63 final post-update approval | produced | The user explicitly approved final evidence head `b9c203c` after its current-head checks passed, before #66 was integrated into #63. |
-| PRs #81–#83 mutation | not applicable | They are outside this task and must remain untouched. |
+| PRs #81–#83 preservation | produced | They remained open at exact heads `56023dc`, `4b4abc6`, and `c3f1fe4`, with their bases, bodies, checks, reviews, comments, refs, and source unchanged before and after final integration. |
 
-## Rollback boundary and next gate
+## Prior evidence-gate deviation
 
-The reconciliation work unit is this file only: `openspec/results/semantic-efficiency-metrics/RESULT.md`. Before push it can be abandoned without affecting published history. After a permitted non-force push, recovery requires a separately approved forward documentation change; published history must not be reset or rewritten.
+| Evidence item | Status | Evidence / reason |
+| --- | --- | --- |
+| Canonical ledger current before every integration | outstanding | Integration advanced from #62 through main while this canonical artifact still described those steps and Chain Context reconciliation as future/outstanding. That contradicted spec 06's requirement to stop on outstanding required evidence. The merges, ancestry, checks, approvals, bodies, branch preservation, and exclusions were independently verified afterward, but this forward-only correction cannot retroactively make the pre-merge ledger current. |
+| Forward-only disclosure and reconciliation | produced | This correction records the completed facts without rewriting merge history, altering closed PRs, deleting branches, or claiming that the prior evidence gate passed when it did not. |
 
-The next integration candidate is open PR #62 at its then-current head, but this reconciliation does not execute or authorize that merge. Resume only after user review of this exact documentation diff and a fresh #62 preflight. Outstanding historical RED evidence remains outstanding and blocks any claim that the complete historical TDD sequence was proved; it must never be fabricated. The remaining ordered integration steps also stay outstanding until individually completed.
+## Rollback boundary and completion
+
+The post-review correction is limited to this ledger, the task-local PLAN/RESULT handoff, and the focused metrics test's self-contained emitted-runtime setup. Before push it can be abandoned without affecting published history. After a non-force push to main, recovery requires another reviewed forward change; published history must not be reset or rewritten.
+
+The semantic-metrics implementation and ordered integration are complete through `9e328a7`. Outstanding historical RED rows remain truthful limitations on claims about the original TDD sequence; they do not describe future product or integration work and must never be fabricated. This forward-only correction is ready for independent re-review after its own verification and current-head CI pass.
