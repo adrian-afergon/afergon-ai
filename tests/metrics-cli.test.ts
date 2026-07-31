@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -28,7 +29,48 @@ describe("metrics dispatch", () => {
       command: process.execPath, args: ["/pkg/scripts/metrics.js", "status"], cwd: "/work",
     });
     expect(formatHelp()).toContain("afergon-ai metrics");
+    expect(formatHelp()).toContain("afergon-ai metrics --help");
     expect(formatHelp()).toContain("metrics export --format json|csv --output <path> [--group-by <dimension>] [--filter <dimension=value>]...");
+  });
+});
+
+describe("metrics help", () => {
+  it.each([
+    [["--help"], ["enable", "status", "import", "report", "export", "clear"]],
+    [["-h"], ["Usage: afergon-ai metrics"]],
+    [["enable", "--help"], ["Usage: afergon-ai metrics enable"]],
+    [["status", "--help"], ["Usage: afergon-ai metrics status"]],
+    [["import", "--help"], ["<event-file>"]],
+    [["report", "--help"], ["--group-by <dimension>", "--filter dimension=value", "reviewCycle"]],
+    [["export", "--help"], ["--format json|csv", "--output <path>", "--group-by <dimension>", "--filter <dimension=value>"]],
+    [["clear", "--help"], ["--confirm"]],
+  ] as const)("prints discoverable help for %s", (argv, expectedFragments) => {
+    const { root, env } = createWorkspace();
+    const result = executeMetrics(argv, { cwd: root, env });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+    for (const fragment of expectedFragments) expect(result.stdout).toContain(fragment);
+    expect(existsSync(path.join(root, "config", "metrics"))).toBe(false);
+  });
+
+  it("exposes help through the emitted metrics runtime", () => {
+    const runtimePath = path.resolve(import.meta.dirname, "../dist/scripts/metrics.js");
+    const result = spawnSync(process.execPath, [runtimePath, "report", "--help"], { encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("must be enabled");
+    expect(result.stdout).toContain("--group-by <dimension>");
+  });
+
+  it("exposes export selection help through the emitted metrics runtime", () => {
+    const runtimePath = path.resolve(import.meta.dirname, "../dist/scripts/metrics.js");
+    const result = spawnSync(process.execPath, [runtimePath, "export", "--help"], { encoding: "utf8" });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("must be enabled");
+    expect(result.stdout).toContain("--group-by <dimension>");
+    expect(result.stdout).toContain("--filter <dimension=value>");
   });
 });
 
