@@ -1,13 +1,16 @@
-import type { EfficiencyRecord, EnrichmentResult, MetricsStatus } from "./domain.js";
+import type { EfficiencyRecord, EnrichmentResult, MetricsStatus, ReportDimension, ReportRow } from "./domain.js";
 
 export interface EventParser {
   parse(input: unknown): EfficiencyRecord;
 }
 
-export interface RecordStore {
+export interface RecordQuery {
+  all(): readonly EfficiencyRecord[];
+}
+
+export interface RecordStore extends RecordQuery {
   transaction<T>(work: () => T): T;
   insert(records: readonly EfficiencyRecord[]): void;
-  all(): readonly EfficiencyRecord[];
   clear(): void;
 }
 
@@ -22,6 +25,6 @@ export interface EnrichmentProvider {
   enrich(record: EfficiencyRecord): EnrichmentResult;
 }
 
-export interface RecordExporter {
-  export(records: readonly EfficiencyRecord[]): string;
+export interface ReportExporter {
+  export(groupBy: ReportDimension, rows: readonly ReportRow[]): string;
 }
