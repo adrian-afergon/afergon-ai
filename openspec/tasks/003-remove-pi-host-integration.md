@@ -1,0 +1,28 @@
+# Task: Remove Pi host integration
+
+- **Intent**: Remove Pi as an afergon-ai configuration host and package host while preserving the standalone TUI and its direct `@earendil-works/pi-tui` dependency.
+- **In Scope**:
+  - Remove Pi package metadata, the Pi manifest, Pi extension loading, and the `@earendil-works/pi-coding-agent` dependency.
+  - Retain `@earendil-works/pi-tui` as a regular runtime dependency for the standalone TUI.
+  - Remove repository Pi host state and the Pi-only startup extension/prompt assets.
+  - Make OpenCode the only initialization target; `init` and `init --opencode` must configure OpenCode.
+  - Retire `--pi` and `--all` with side-effect-free errors; preserve the already-retired `--claude` rejection.
+  - Remove Pi from TUI Configuration/Status and replace host-selection UI with a direct OpenCode initialization action.
+  - Update active README and detect-skills guidance to stop presenting Pi as a supported host.
+  - Preserve OpenCode adapters, skills as OpenCode package content, model identifiers, historical OpenSpec records, the TUI, and user-owned project files.
+- **Out of Scope**:
+  - Removing `@earendil-works/pi-tui` or rewriting the standalone TUI onto another library.
+  - Deleting user-owned `.pi`, `CLAUDE.md`, or `.claude/` files in initialized projects.
+  - Rewriting historical `openspec/changes/**` evidence or model identifiers containing `pi`/`claude`.
+  - Adding Node engine constraints or changing the package version.
+- **Acceptance Criteria**:
+  - The package has no Pi manifest, Pi extension, Pi coding-agent dependency, or Pi host package identity; `@earendil-works/pi-tui` remains a runtime dependency.
+  - The generated package contains the standalone TUI and OpenCode/skills assets, but no `extensions/`, `prompts/`, or repository Pi host state.
+  - POSIX and PowerShell `init` configure OpenCode by default and via `--opencode`; `--pi`, `--all`, and `--claude` reject before side effects.
+  - POSIX and PowerShell `update` operate only on OpenCode and preserve existing user-owned `.pi` and Claude files.
+  - CLI help and TUI host surfaces advertise only OpenCode; the TUI remains usable and renders branding/fallback correctly.
+  - Active README and detect-skills guidance no longer promise Pi host/package integration.
+  - Typecheck, build, package archive checks, runtime health, focused tests, and the complete suite pass.
+- **Dependencies.Requires**: Phase 1 branch `chore/opencode-only-01-remove-claude-host` at commit `968aab6`.
+- **Spec Breadth Hint**: broad
+- **Open Decisions**: None

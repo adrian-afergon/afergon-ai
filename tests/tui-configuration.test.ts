@@ -111,7 +111,7 @@ function normalizeInteractiveActions(actions) {
     form: action.form,
     buildArgvNoArg: captureBuildArgvBehavior(action, false),
     buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
-    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["opencode", "pi"] }),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["one", "two"] }),
   }));
 }
 
@@ -123,15 +123,21 @@ function normalizeConfigurationStatus(status) {
 }
 
 describe("getConfigurationStatus", () => {
-  it("keeps buildInitCommandArgv aligned with the source runtime contract for default, filtered, and all-selected input", () => {
+  it("keeps buildInitCommandArgv aligned with the source runtime contract for OpenCode-only init", () => {
     expect(configStatusAdapterTypeScript.buildInitCommandArgv()).toEqual(buildCommandArgv("init"));
     expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["opencode", "invalid", "pi"] })).toEqual(
-      getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1].buildArgv({ selectedIds: ["opencode", "invalid", "pi"] }),
+      buildCommandArgv("init"),
     );
-    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["opencode", "all", "pi"] })).toEqual(
-      buildCommandArgv("init", ["--all"]),
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["all"] })).toEqual(buildCommandArgv("init"));
+    expect(
+      getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1],
+    ).toEqual(
+      expect.objectContaining({
+        id: "configuration-init",
+        argv: buildCommandArgv("init"),
+        cliEquivalent: "afergon-ai init",
+      }),
     );
-    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude"] })).toEqual(buildCommandArgv("init"));
   });
 
   it("reports missing local configuration/install surfaces and exposes only stable CLI actions", () => {
@@ -145,7 +151,6 @@ describe("getConfigurationStatus", () => {
 
     expect(status.items).toEqual([
       expect.objectContaining({ id: "model-config", state: "warn", detail: expect.stringContaining("not created") }),
-      expect.objectContaining({ id: "pi", state: "warn", detail: "Not installed in this project." }),
       expect.objectContaining({ id: "opencode", state: "warn", detail: expect.stringContaining("not detected") }),
     ]);
 
@@ -165,8 +170,6 @@ describe("getConfigurationStatus", () => {
     const configDir = path.join(xdgHome, "afergon-ai");
     const opencodeBaseDir = path.join(xdgHome, "opencode");
 
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "pi");
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, "config.json"),
@@ -187,9 +190,26 @@ describe("getConfigurationStatus", () => {
 
     expect(status.items).toEqual([
       expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
-      expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
       expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("opencode.json") }),
     ]);
+  });
+
+  it("reports only OpenCode state when a user-owned .pi directory exists but no managed OpenCode install is present", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "user-owned Pi instructions\n");
+
+    const status = getConfigurationStatus({ cwd: tempRoot, env });
+
+    expect(status.items).not.toContainEqual(expect.objectContaining({ id: "pi" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "model-config", state: "warn" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "opencode", state: "warn" }));
   });
 
   it("reports invalid JSON config with actionable repair guidance", () => {
@@ -278,8 +298,6 @@ describe("getConfigurationStatus", () => {
     const configDir = path.join(xdgHome, "afergon-ai");
     const opencodeBaseDir = path.join(xdgHome, "opencode");
 
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "pi");
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, "config.json"),
@@ -302,7 +320,7 @@ describe("renderConfigurationScreen", () => {
     const state = {
       items: [
         { id: "model-config", label: "Model config", state: "ok", detail: "Config file exists." },
-        { id: "pi", label: "Pi", state: "warn", detail: "Not installed in this project." },
+        { id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." },
       ],
       actions: [
         { id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." },
@@ -346,7 +364,7 @@ describe("renderConfigurationScreen", () => {
       {
         items: [
           { id: "model-config", label: "Model config", state: "ok", detail: "Config file exists." },
-          { id: "pi", label: "Pi", state: "warn", detail: "Not installed in this project." },
+          { id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." },
         ],
         actions: [
           { id: "init", label: "afergon-ai init", argv: ["init"], description: "Initialize project files." },
@@ -358,7 +376,7 @@ describe("renderConfigurationScreen", () => {
 
     expect(lines.join("\n")).toContain("Configuration");
     expect(lines.join("\n")).toContain("Model config [ok]: Config file exists.");
-    expect(lines.join("\n")).toContain("Pi [warn]: Not installed in this project.");
+    expect(lines.join("\n")).toContain("OpenCode [warn]: Not installed.");
     expect(lines.join("\n")).toContain("afergon-ai init");
     expect(lines.join("\n")).toContain("afergon-ai doctor");
     expect(lines.join("\n")).toContain("Keyboard help");
@@ -517,7 +535,7 @@ describe("createTuiApp configuration route", () => {
     expect(app.navigation.sectionActionSelection).toBe(0);
   });
 
-  it("opens the init checkbox form, builds only the chosen flags, confirms execution, and refreshes the section", async () => {
+  it("runs the direct OpenCode init action, confirms execution, and refreshes the section", async () => {
     const terminal = new FakeTerminal();
     let configurationLoads = 0;
     const executeAction = vi.fn(async () => ({
@@ -537,8 +555,8 @@ describe("createTuiApp configuration route", () => {
           title: "Configuration",
           items: [
             {
-              id: "pi",
-              label: "Pi",
+              id: "opencode",
+              label: "OpenCode",
               state: configurationLoads > 2 ? "ok" : "warn",
               detail: configurationLoads > 2 ? "Installed in this project." : "Not installed in this project.",
             },
@@ -551,16 +569,8 @@ describe("createTuiApp configuration route", () => {
               kind: "mutate",
               label: "Initialize project files",
               cliEquivalent: "afergon-ai init",
-              buildArgv: ({ selectedIds }) => buildCommandArgv("init", selectedIds.includes("all") ? ["--all"] : selectedIds.map((id) => `--${id}`)),
-              form: {
-                kind: "checkboxes",
-                title: "Choose what to initialize",
-                options: [
-                  { id: "pi", label: "Pi" },
-                  { id: "opencode", label: "OpenCode" },
-                  { id: "all", label: "All" },
-                ],
-              },
+              argv: buildCommandArgv("init"),
+              confirmLabel: "Initialize OpenCode project files?",
             }),
           ],
         };
@@ -576,30 +586,17 @@ describe("createTuiApp configuration route", () => {
     terminal.emitInput("\r");
     await flushTui();
 
-    expect(terminal.output).toContain("Choose what to initialize");
-    expect(terminal.output).toContain("Pi [ ]");
-    expect(terminal.output).toContain("OpenCode [ ]");
-    expect(terminal.output).toContain("All [x]");
-    expect(terminal.output).toContain("Use Space to toggle the selected checkbox.");
-
-    terminal.emitInput(" ");
-    terminal.emitInput("\u001b[B");
-    terminal.emitInput(" ");
-    terminal.emitInput("\u001b[B");
-    terminal.emitInput("\u001b[B");
-    await flushTui();
-
-    terminal.emitInput("\r");
-    await flushTui();
-
+    expect(terminal.output).not.toContain("Choose what to initialize");
+    expect(terminal.output).not.toContain("Pi [ ]");
+    expect(terminal.output).not.toContain("All [x]");
     expect(terminal.output).toContain("Confirmation");
-    expect(terminal.output).toContain("afergon-ai init --pi --opencode");
+    expect(terminal.output).toContain("afergon-ai init");
 
     terminal.emitInput("\r");
     await flushTui();
 
     expect(executeAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action: expect.objectContaining({ id: "configuration-init", argv: ["init", "--pi", "--opencode"] }) }),
+      expect.objectContaining({ action: expect.objectContaining({ id: "configuration-init", argv: ["init"] }) }),
     );
     expect(terminal.output).toContain("Output [ok]");
     expect(terminal.output).toContain("init complete");
@@ -608,7 +605,7 @@ describe("createTuiApp configuration route", () => {
     terminal.emitInput("\u001b");
     await flushTui();
 
-    expect(terminal.output).toContain("Pi [ok]: Installed in this project.");
+    expect(terminal.output).toContain("OpenCode [ok]: Installed in this project.");
     expect(configurationLoads).toBeGreaterThan(2);
   });
 });

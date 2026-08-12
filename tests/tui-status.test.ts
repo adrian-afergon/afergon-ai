@@ -116,7 +116,7 @@ function normalizeInteractiveActions(actions) {
     form: action.form,
     buildArgvNoArg: captureBuildArgvBehavior(action, false),
     buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
-    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["opencode", "pi"] }),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["one", "two"] }),
   }));
 }
 
@@ -188,7 +188,6 @@ describe("getStatusScreenState", () => {
     const status = getStatusScreenState({ cwd: tempRoot, env });
 
     expect(status.items).not.toContainEqual(expect.objectContaining({ id: "claude" }));
-    expect(status.items).toContainEqual(expect.objectContaining({ id: "pi", state: "ok" }));
     expect(status.items).toContainEqual(expect.objectContaining({ id: "opencode", state: "ok" }));
   });
 
@@ -211,8 +210,6 @@ describe("getStatusScreenState", () => {
         },
       },
     });
-    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
-    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "# Append system\n");
     writeJson(path.join(xdgHome, "opencode", "opencode.json"), {
       agent: {
         "afergon-ai": {
@@ -237,14 +234,32 @@ describe("getStatusScreenState", () => {
     expect(status.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
-        expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
         expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("Managed install detected") }),
       ]),
     );
     expect(output).toContain("Readiness [ok]: Ready for guided workflows.");
     expect(output).toContain("Model config [ok]:");
-    expect(output).toContain("Pi [ok]:");
     expect(output).toContain("OpenCode [ok]:");
+    expect(output).not.toContain("Pi [ok]:");
+  });
+
+  it("reports only OpenCode state when a user-owned .pi directory exists but no managed OpenCode install is present", () => {
+    const tempRoot = makeTempRoot();
+    const xdgHome = path.join(tempRoot, "xdg");
+    const env = {
+      HOME: path.join(tempRoot, "home"),
+      XDG_CONFIG_HOME: xdgHome,
+    };
+
+    fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
+    fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "user-owned Pi instructions\n");
+
+    const status = getStatusScreenState({ cwd: tempRoot, env });
+
+    expect(status.items).not.toContainEqual(expect.objectContaining({ id: "pi" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "model-config", state: "warn" }));
+    expect(status.items).toContainEqual(expect.objectContaining({ id: "opencode", state: "warn" }));
+    expect(status.summary.state).toBe("warn");
   });
 
   it("reports readiness failures with preserved root cause and repair guidance", () => {
@@ -322,7 +337,7 @@ describe("renderStatusScreen", () => {
     const state = {
       title: "Status",
       summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
-        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Run afergon-ai init to install project files." }],
+        items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Run afergon-ai init to configure OpenCode." }],
       actions: [
         { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
       ],
@@ -365,7 +380,7 @@ describe("renderStatusScreen", () => {
       {
         title: "Status",
         summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init to finish setup." },
-      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Run afergon-ai init to install project files." }],
+      items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Run afergon-ai init to configure OpenCode." }],
         actions: [
           { id: "doctor", label: "afergon-ai doctor", argv: ["doctor"], description: "Verify current installation state." },
         ],
@@ -375,7 +390,7 @@ describe("renderStatusScreen", () => {
 
     expect(lines.join("\n")).toContain("Status");
     expect(lines.join("\n")).toContain("Readiness [warn]: Run afergon-ai init to finish setup.");
-    expect(lines.join("\n")).toContain("Pi [warn]: Run afergon-ai init to install project files.");
+    expect(lines.join("\n")).toContain("OpenCode [warn]: Run afergon-ai init to configure OpenCode.");
     expect(lines.join("\n")).toContain("afergon-ai doctor");
     expect(lines.join("\n")).toContain("Keyboard help");
     expect(lines.join("\n")).toContain("State labels use [ok], [warn], and [fail] text markers.");
@@ -393,10 +408,10 @@ describe("renderStatusScreen", () => {
         },
         items: [
           {
-            id: "pi",
-            label: "Pi\u009b31m\u009b0m",
+            id: "opencode",
+            label: "OpenCode\u009b31m\u009b0m",
             state: "fail",
-            detail: "Repair \u001b]2;owned\u0007/tmp/.pi/APPEND_SYSTEM.md and retry.",
+            detail: "Repair \u001b]2;owned\u0007/tmp/opencode.json and retry.",
           },
         ],
         actions: [
@@ -414,7 +429,7 @@ describe("renderStatusScreen", () => {
     const output = lines.join("\n");
 
     expect(output).toContain("Readiness [warn]: Inspect /repo/.pi/APPEND_SYSTEM.md?Run afergon-ai doctor.");
-    expect(output).toContain("Pi [fail]: Repair /tmp/.pi/APPEND_SYSTEM.md and retry.");
+    expect(output).toContain("OpenCode [fail]: Repair /tmp/opencode.json and retry.");
     expect(output).toContain("- afergon-ai doctor: Verify current installation");
     expect(output).toContain("[warn]");
     expect(output).toContain("[fail]");
@@ -526,7 +541,7 @@ describe("createTuiApp status route", () => {
       loadStatusScreenState: () => ({
         title: "Status",
         summary: { label: "Readiness", state: "warn", detail: "Setup is incomplete." },
-        items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
+        items: [{ id: "opencode", label: "OpenCode", state: "warn", detail: "Not installed." }],
         actions: [{ id: "update", label: "afergon-ai update", argv: ["update"], description: "Refresh installed files." }],
         interactiveActions: [
           createActionDefinition({

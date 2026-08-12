@@ -15,7 +15,7 @@
 
 ## What is afergon-ai?
 
-afergon-ai is a development harness that turns your coding agent into a **controlled delivery orchestrator**. It works with **Pi** and **OpenCode**.
+afergon-ai is a development harness that turns your coding agent into a **controlled delivery orchestrator**. It works with **OpenCode**.
 
 It provides:
 
@@ -77,7 +77,7 @@ afergon-ai --help
 
 In linked development mode, rerun the build after pulling changes or editing runtime files. If a source checkout launcher reports that afergon-ai has not been built, run `pnpm build` from that checkout and retry. `dist/` is generated, reproducible output and remains ignored by Git; the package lifecycle builds it before publishing. A failed build leaves the last successfully published `dist/` runtime intact, so fix the build error and rerun `pnpm build` rather than recovering generated files manually.
 
-The TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher, models, TUI, their library modules, and the build bootstrap are TypeScript sources; the runtime is emitted as JavaScript. The build command uses `tsx` to execute `scripts/build-typescript.ts`, while `pnpm typecheck` remains the separate static validation step. Pi extensions continue to load from the source `extensions/` package path because that extension loading boundary has not been cut over in this phase.
+The TypeScript transition executes the built `dist/scripts/` runtime. The dispatcher, models, TUI, their library modules, and the build bootstrap are TypeScript sources; the runtime is emitted as JavaScript. The build command uses `tsx` to execute `scripts/build-typescript.ts`, while `pnpm typecheck` remains the separate static validation step.
 
 ### Step 2 — Initialize a project
 
@@ -87,14 +87,12 @@ Run from the root of any project:
 afergon-ai init
 ```
 
-Select which tools to configure (Pi, OpenCode, or all) and which memory system to use. The command creates `openspec/config.yaml` and sets up each tool.
+`init` configures OpenCode by default and prompts for a memory system. The command creates `openspec/config.yaml` and installs the managed OpenCode agents and commands.
 
-**Flags (skips interactive selection):**
+**Explicit flag:**
 
 ```bash
-afergon-ai init --pi
 afergon-ai init --opencode
-afergon-ai init --all
 ```
 
 ### Step 3 — Update after pulling changes
@@ -103,7 +101,7 @@ afergon-ai init --all
 afergon-ai update
 ```
 
-Re-applies the latest files to all tools already installed in the project. Detects which tools are active automatically.
+Re-applies the latest managed OpenCode agents and commands. It preserves user-owned `.pi/`, `CLAUDE.md`, and `.claude/` files.
 
 ### Step 4 — Manage model profiles
 
@@ -193,7 +191,7 @@ Accessibility and keyboard notes:
 - A filterable provider-model registry/list is tracked separately in GitHub issue #29; this slice keeps manual entry as the current assignment path.
 - Model-profile mutations refresh the active profile, saved profile list, and resolved assignments immediately after the action succeeds.
 - `doctor` runs inline inside the TUI and shows bounded stdout/stderr output instead of leaving the screen.
-- `init` opens checkbox choices for Pi, OpenCode, or all before showing a confirmation with the exact argv that will run.
+- `init` runs `afergon-ai init` directly after confirmation; OpenCode is the only supported host.
 - `update` always asks for confirmation before it executes.
 - Home and section screens include explicit text help for returning Home and exiting with `q` or `Esc`.
 - If the full AFERGON-AI banner is unsafe to render, the TUI falls back to plain-text branding instead of broken artwork.
@@ -206,7 +204,7 @@ Chained rollback notes:
 - PR1 launcher/dispatcher: revert `bin/afergon-ai`, `bin/afergon-ai.cmd`, and `scripts/cli-dispatch.ts` together.
 - PR3 CLI-equivalent manifest: revert `scripts/lib/tui/command-manifest.ts` with its tests if command labels drift.
 - PR4/PR5/PR6 screens: revert the matching adapter + screen + focused tests together (`configuration`, `status`, or `model-profiles`).
-- PR7 docs/polish: revert `README.md`, `prompts/afergon-ai.md`, `tests/tui-docs.test.ts`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
+- PR7 docs/polish: revert `README.md`, `tests/tui-docs.test.ts`, and `openspec/changes/issue-15-tui-mvp/*` together if documentation or verification evidence needs to roll back without touching runtime code.
 
 PR2 manual keyboard smoke checks:
 
@@ -282,19 +280,9 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/commands
 
 ## Per-tool setup
 
-### Pi
-
-`init --pi` writes `.pi/APPEND_SYSTEM.md`, which Pi reads automatically on startup from that directory. Skills are globally available once the package is installed via `pi install`.
-
-```bash
-pi install /path/to/afergon-ai
-# or:
-pi install npm:afergon-ai
-```
-
 ### OpenCode
 
-`init --opencode` copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config, and install/update asks before overwriting conflicting files.
+`init` (or `init --opencode`) copies agents and commands to `${XDG_CONFIG_HOME:-~/.config}/opencode/agents/` and `${XDG_CONFIG_HOME:-~/.config}/opencode/commands/`. These merge with your existing global OpenCode config, and install/update asks before overwriting conflicting files.
 
 Agents are also registered in the global `opencode.json` so they appear in the agent selector. The main `afergon-ai` agent is visible (`mode: primary`), while pipeline subagents (`afg-debate`, `afg-breakdown`, `afg-specify`, `afg-plannify`, `afg-implement`, `afg-review`, `afg-design`) are hidden from the user interface and use the `afg-` prefix to avoid name collisions with other installed agents.
 
@@ -379,20 +367,20 @@ ambiguous / risky / large     → full workflow from Discovery
 
 ## Skills
 
-Skills are available in all supported tools. In Pi, invoke with `/skill:<name>`. In OpenCode, use the corresponding `/afg-*` command.
+In OpenCode, invoke skills with the corresponding `/afg-*` command.
 
 ```text
-Pi skill: /skill:debate        OpenCode: /afg-debate
-Pi skill: /skill:breakdown     OpenCode: /afg-breakdown
-Pi skill: /skill:specify       OpenCode: /afg-specify
-Pi skill: /skill:plannify      OpenCode: /afg-plannify
-Pi skill: /skill:implement     OpenCode: /afg-implement
-Pi skill: /skill:design        OpenCode: /afg-design
-Pi skill: /skill:review        OpenCode: /afg-review
-Pi skill: /skill:detect-skills
+/afg-debate
+/afg-breakdown
+/afg-specify
+/afg-plannify
+/afg-implement
+/afg-design
+/afg-review
+/afg-detect-skills
 ```
 
-Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with Pi, Cursor, and OpenCode.
+Skills follow the [Agent Skills](https://agentskills.io) standard and are compatible with OpenCode.
 
 ---
 
@@ -404,7 +392,7 @@ afergon-ai can auto-detect and install skills matched to your project's tech sta
 
 1. `autoskills` scans the project (package.json, file extensions, frameworks detected)
 2. Matches technologies to a curated skill registry (React, TypeScript, Go, Bash, etc.)
-3. Installs matching skills to `.agents/skills/` — a path Pi and OpenCode both discover automatically
+3. Installs matching skills to `.agents/skills/` — a path OpenCode discovers automatically
 4. Updates `.atl/skill-registry.md` so the orchestrator can inject them into pipeline subagents
 
 ### When to use it
@@ -415,10 +403,10 @@ afergon-ai can auto-detect and install skills matched to your project's tech sta
 
 ### Running it
 
-In any supported tool:
+In OpenCode:
 
 ```
-/skill:detect-skills
+/afg-detect-skills
 ```
 
 The skill will show a dry-run preview first and ask for confirmation before installing anything.
@@ -431,7 +419,7 @@ npx autoskills             # interactive install
 npx autoskills -y          # skip confirmation
 ```
 
-Skills installed by `autoskills` follow the [Agent Skills](https://agentskills.io) standard and are immediately available in Pi, Cursor, and OpenCode once installed.
+Skills installed by `autoskills` follow the [Agent Skills](https://agentskills.io) standard and are immediately available in OpenCode once installed.
 
 ---
 
@@ -446,7 +434,7 @@ memory:
 
 | System      | Behavior                                                                                                                                                        |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `engram`    | Pi-native persistent memory. Requires Engram installed. Searches context at session start, saves after each pipeline stage. |
+| `engram`    | Persistent memory. Requires Engram installed. Searches context at session start, saves after each pipeline stage. |
 | `obsidian`  | Appends structured entries to a configured vault folder.                                                                                                        |
 | `memory-md` | Appends to `openspec/MEMORY.md`. Simple and tool-agnostic.                                                                                                      |
 | `none`      | No memory operations.                                                                                                                                           |

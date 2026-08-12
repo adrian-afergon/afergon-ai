@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # afergon-ai/scripts/update.sh
 #
-# Re-copy afergon-ai components to all detected tool installations.
+# Re-copy afergon-ai managed OpenCode components.
 # Run this after pulling updates from the afergon-ai repo.
 #
 # Usage:
@@ -53,18 +53,6 @@ echo "=================="
 echo "Package : $PACKAGE_ROOT"
 echo "Project : $TARGET_DIR"
 echo ""
-
-# ── Pi ────────────────────────────────────────────────────────────────────────
-
-APPEND_SYSTEM="$TARGET_DIR/.pi/APPEND_SYSTEM.md"
-if [ -f "$APPEND_SYSTEM" ]; then
-	awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
-	echo "✔ Pi: updated .pi/APPEND_SYSTEM.md"
-	UPDATED=$((UPDATED + 1))
-else
-	echo "  Pi: not installed in this project (skipped)"
-	SKIPPED=$((SKIPPED + 1))
-fi
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
@@ -125,5 +113,5 @@ fi
 echo ""
 echo "Done. Updated: $UPDATED component(s), skipped: $SKIPPED."
 if [ "$SKIPPED" -gt 0 ]; then
-	echo "Run 'afergon-ai init' to install skipped tools."
+	echo "Run 'afergon-ai init' to install skipped OpenCode files."
 fi

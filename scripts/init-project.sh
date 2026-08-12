@@ -2,13 +2,11 @@
 # afergon-ai/scripts/init-project.sh
 #
 # Initialize afergon-ai in any project.
-# Prefer using the CLI: afergon-ai init [--pi] [--opencode] [--all]
+# Prefer using the CLI: afergon-ai init [--opencode]
 #
-# Flags (combinable):
-#   --pi        Configure Pi (writes .pi/APPEND_SYSTEM.md)
-#   --opencode  Configure OpenCode (sets OPENCODE_CONFIG_DIR hint)
-#   --all       Configure Pi and OpenCode
-#   (no flags)  Interactive tool selection
+# Flags:
+#   --opencode  Configure OpenCode (default)
+#   (no flags)  Configure OpenCode
 
 set -euo pipefail
 
@@ -32,15 +30,22 @@ migrate_legacy_file() {
 	return 0
 }
 
-SETUP_PI=false
 SETUP_OPENCODE=false
 
 # ── Reject retired flags ────────────────────────────────────────────────────────
 
 for arg in "$@"; do
 	case $arg in
+	--pi)
+		echo "Error: --pi is retired. Supported host: --opencode." >&2
+		exit 1
+		;;
+	--all)
+		echo "Error: --all is retired. Supported host: --opencode." >&2
+		exit 1
+		;;
 	--claude)
-		echo "Error: --claude is retired. Supported hosts: --pi, --opencode, --all." >&2
+		echo "Error: --claude is retired. Supported host: --opencode." >&2
 		exit 1
 		;;
 	esac
@@ -50,14 +55,14 @@ done
 
 for arg in "$@"; do
 	case $arg in
-	--pi) SETUP_PI=true ;;
 	--opencode) SETUP_OPENCODE=true ;;
-	--all)
-		SETUP_PI=true
-		SETUP_OPENCODE=true
-		;;
 	esac
 done
+
+# Default to OpenCode when no host flag is provided.
+if ! $SETUP_OPENCODE; then
+	SETUP_OPENCODE=true
+fi
 
 echo ""
 echo "afergon-ai — project initialization"
@@ -78,34 +83,11 @@ if command -v afergon-ai >/dev/null 2>&1; then
 	fi
 fi
 
-# ── Interactive tool selection (no flags provided) ────────────────────────────
-
-if ! $SETUP_PI && ! $SETUP_OPENCODE; then
-	echo "Which AI tools do you want to configure? (space-separated numbers)"
-	echo ""
-	echo "  1) Pi"
-	echo "  2) OpenCode"
-	echo "  3) All"
-	echo ""
-	read -r -p "Select: " tool_input
-
-	for t in $tool_input; do
-		case $t in
-		1) SETUP_PI=true ;;
-		2) SETUP_OPENCODE=true ;;
-		3)
-			SETUP_PI=true
-			SETUP_OPENCODE=true
-			;;
-		esac
-	done
-fi
-
 # ── Memory system ─────────────────────────────────────────────────────────────
 
 echo "Memory system"
 echo "-------------"
-echo "  1) Engram       — Pi-native persistent memory (recommended if installed)"
+echo "  1) Engram       — persistent memory (recommended if installed)"
 echo "  2) Obsidian     — Markdown vault (requires vault path)"
 echo "  3) memory.md    — Simple append-only file at openspec/MEMORY.md"
 echo "  4) None         — No memory"
@@ -166,28 +148,6 @@ EOF
 EOF
 	[ "$MEMORY_SYSTEM" = "memory-md" ] && printf "  path: openspec/MEMORY.md\n" >>"$CONFIG_FILE"
 	echo "✔ Created $CONFIG_FILE"
-fi
-
-# ── Pi ────────────────────────────────────────────────────────────────────────
-
-if $SETUP_PI; then
-	echo ""
-	echo "Pi setup"
-	echo "--------"
-	PI_DIR="$TARGET_DIR/.pi"
-	APPEND_SYSTEM="$PI_DIR/APPEND_SYSTEM.md"
-	mkdir -p "$PI_DIR"
-
-	write_pi=true
-	if [ -f "$APPEND_SYSTEM" ]; then
-		read -r -p "Warning: $APPEND_SYSTEM exists. Overwrite? [y/N] " c
-		[[ "$c" != "y" && "$c" != "Y" ]] && write_pi=false
-	fi
-
-	if $write_pi; then
-		awk '/^---/{found++; next} found==2{print}' "$PACKAGE_ROOT/prompts/afergon-ai.md" >"$APPEND_SYSTEM"
-		echo "✔ Created $APPEND_SYSTEM"
-	fi
 fi
 
 # ── OpenCode ──────────────────────────────────────────────────────────────────
@@ -278,7 +238,6 @@ echo "====================================="
 echo "afergon-ai initialized"
 echo ""
 
-$SETUP_PI && echo "  Pi        → .pi/APPEND_SYSTEM.md (active on next Pi session)"
 $SETUP_OPENCODE && echo "  OpenCode  → ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents/ + commands/"
 
 echo ""

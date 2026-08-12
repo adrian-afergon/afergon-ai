@@ -7,7 +7,7 @@ import { assertCompilerBootstrapSucceeded, createCompilerBootstrapInvocation } f
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(repoRoot, "dist");
-const runtimeDirsToCopy = ["adapters", "prompts", "skills"];
+const runtimeDirsToCopy = ["adapters", "skills"];
 const runtimeScriptAssets = ["init-project.ps1", "init-project.sh", "register-opencode-agents.sh", "update.ps1", "update.sh", "verify-install.ps1", "verify-install.sh"];
 const injectedCopyFailure = process.env.AFERGON_AI_TEST_FAIL_RUNTIME_COPY;
 const injectedCompilerFailure = process.env.AFERGON_AI_TEST_FAIL_COMPILER;

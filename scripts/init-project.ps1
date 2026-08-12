@@ -1,8 +1,16 @@
 # afergon-ai/scripts/init-project.ps1
 # Initialize afergon-ai in any project.
-# Prefer using the CLI: afergon-ai init [--pi] [--opencode] [--all]
+# Prefer using the CLI: afergon-ai init [--opencode]
 
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Flags)
+param(
+    # Declare host switches explicitly so --pi is not abbreviated to PowerShell's
+    # common -PipelineVariable parameter before the retirement check runs.
+    [switch]$Pi,
+    [switch]$All,
+    [switch]$Claude,
+    [switch]$Opencode,
+    [Parameter(ValueFromRemainingArguments = $true)][string[]]$Flags
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -11,36 +19,49 @@ $PACKAGE_ROOT = Split-Path -Parent $SCRIPT_DIR
 $TARGET_DIR   = (Get-Location).Path
 $PROJECT_NAME = Split-Path -Leaf $TARGET_DIR
 
-$SETUP_PI       = $false
 $SETUP_OPENCODE = $false
 
+if ($Pi) {
+    Write-Error "Error: --pi is retired. Supported host: --opencode."
+    exit 1
+}
+if ($All) {
+    Write-Error "Error: --all is retired. Supported host: --opencode."
+    exit 1
+}
+if ($Claude) {
+    Write-Error "Error: --claude is retired. Supported host: --opencode."
+    exit 1
+}
+
 foreach ($flag in $Flags) {
+    if ($flag -eq '--pi') {
+        Write-Error "Error: --pi is retired. Supported host: --opencode."
+        exit 1
+    }
+    if ($flag -eq '--all') {
+        Write-Error "Error: --all is retired. Supported host: --opencode."
+        exit 1
+    }
     if ($flag -eq '--claude') {
-        Write-Error "Error: --claude is retired. Supported hosts: --pi, --opencode, --all."
+        Write-Error "Error: --claude is retired. Supported host: --opencode."
         exit 1
     }
 }
 
+if ($Opencode) {
+    $SETUP_OPENCODE = $true
+}
+
 foreach ($flag in $Flags) {
     switch ($flag) {
-        '--pi'       { $SETUP_PI = $true }
         '--opencode' { $SETUP_OPENCODE = $true }
-        '--all'      { $SETUP_PI = $true; $SETUP_OPENCODE = $true }
     }
 }
 
-# ── Helper: strip YAML frontmatter ────────────────────────────────────────────
-
-function Get-ContentAfterFrontmatter {
-    param([string]$Path)
-    $lines = Get-Content $Path -Encoding UTF8
-    $dashes = 0
-    $result = [System.Collections.Generic.List[string]]::new()
-    foreach ($line in $lines) {
-        if ($line -eq '---') { $dashes++; continue }
-        if ($dashes -ge 2)   { $result.Add($line) }
-    }
-    return $result
+# Default to OpenCode when no host flag is provided.
+if (-not $SETUP_OPENCODE) {
+    $SETUP_OPENCODE = $true
 }
 
 # ── Helper: confirm overwrite ──────────────────────────────────────────────────
@@ -61,30 +82,11 @@ Write-Host "Project : $PROJECT_NAME"
 Write-Host "Directory: $TARGET_DIR"
 Write-Host ""
 
-# ── Interactive tool selection ────────────────────────────────────────────────
-
-if (-not $SETUP_PI -and -not $SETUP_OPENCODE) {
-    Write-Host "Which AI tools do you want to configure? (space-separated numbers)"
-    Write-Host ""
-    Write-Host "  1) Pi"
-    Write-Host "  2) OpenCode"
-    Write-Host "  3) All"
-    Write-Host ""
-    $input = Read-Host "Select"
-    foreach ($t in $input -split '\s+') {
-        switch ($t) {
-            '1' { $SETUP_PI = $true }
-            '2' { $SETUP_OPENCODE = $true }
-            '3' { $SETUP_PI = $true; $SETUP_OPENCODE = $true }
-        }
-    }
-}
-
 # ── Memory system ─────────────────────────────────────────────────────────────
 
 Write-Host "Memory system"
 Write-Host "-------------"
-Write-Host "  1) Engram       -- Pi-native persistent memory (recommended if installed)"
+Write-Host "  1) Engram       -- persistent memory (recommended if installed)"
 Write-Host "  2) Obsidian     -- Markdown vault (requires vault path)"
 Write-Host "  3) memory.md    -- Simple append-only file at openspec/MEMORY.md"
 Write-Host "  4) None         -- No memory"
@@ -136,23 +138,6 @@ memory:
     Write-Host "OK  Created $CONFIG_FILE"
 }
 
-# ── Pi ────────────────────────────────────────────────────────────────────────
-
-if ($SETUP_PI) {
-    Write-Host ""
-    Write-Host "Pi setup"
-    Write-Host "--------"
-    $PI_DIR       = Join-Path $TARGET_DIR '.pi'
-    $APPEND_SYSTEM = Join-Path $PI_DIR 'APPEND_SYSTEM.md'
-    New-Item -ItemType Directory -Force -Path $PI_DIR | Out-Null
-
-    if (Confirm-Overwrite $APPEND_SYSTEM) {
-        $content = Get-ContentAfterFrontmatter (Join-Path $PACKAGE_ROOT 'prompts\afergon-ai.md')
-        Set-Content -Path $APPEND_SYSTEM -Value $content -Encoding UTF8
-        Write-Host "OK  Created $APPEND_SYSTEM"
-    }
-}
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 if ($SETUP_OPENCODE) {
@@ -201,7 +186,6 @@ Write-Host ""
 Write-Host "======================================"
 Write-Host "afergon-ai initialized"
 Write-Host ""
-if ($SETUP_PI)       { Write-Host "  Pi        -> .pi\APPEND_SYSTEM.md (active on next Pi session)" }
 if ($SETUP_OPENCODE) { Write-Host "  OpenCode  -> $OC_BASE_DIR\agents\ + commands/" }
 Write-Host ""
 Write-Host "Available skills (all tools):"

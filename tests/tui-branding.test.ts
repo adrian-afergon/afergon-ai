@@ -1,8 +1,6 @@
 // This parity suite retains imports of the authoritative MJS runtime during Phase 2.
 // @ts-nocheck
-import { readFileSync } from "node:fs";
-
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import * as brandingLogoTypeScript from "../scripts/lib/branding/logo.ts";
 import {
@@ -12,59 +10,9 @@ import {
 } from "../scripts/lib/branding/logo.js";
 import { createNavigationState } from "../scripts/lib/tui/navigation.js";
 import { renderHomeScreen } from "../scripts/tui.js";
-import startupBannerExtension, {
-  STARTUP_BANNER_BRANDING,
-} from "../extensions/startup-banner.ts";
 
 function stripAnsi(text) {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
-}
-
-function renderStartupBanner(width) {
-  vi.useFakeTimers();
-
-  try {
-    let sessionStartHandler;
-    let headerFactory;
-
-    const pi = {
-      getCommands() {
-        return [];
-      },
-      on(event, handler) {
-        if (event === "session_start") {
-          sessionStartHandler = handler;
-        }
-      },
-    };
-
-    startupBannerExtension(pi);
-
-    sessionStartHandler?.({}, {
-      hasUI: true,
-      cwd: process.cwd(),
-      ui: {
-        setHeader(factory) {
-          headerFactory = factory;
-        },
-      },
-    });
-
-    expect(headerFactory).toBeTypeOf("function");
-
-    const header = headerFactory(
-      {
-        requestRender() {},
-      },
-      {},
-    );
-
-    vi.advanceTimersByTime(80);
-
-    return header.render(width).map(stripAnsi);
-  } finally {
-    vi.useRealTimers();
-  }
 }
 
 describe("branding logo contract", () => {
@@ -105,33 +53,7 @@ describe("branding logo contract", () => {
   });
 });
 
-describe("startup banner and TUI home branding", () => {
-  it("imports the emitted JavaScript branding module", () => {
-    const startupBannerSource = readFileSync(new URL("../extensions/startup-banner.ts", import.meta.url), "utf8");
-
-    expect(startupBannerSource).toContain('../scripts/lib/branding/logo.js');
-    expect(startupBannerSource).not.toContain('../scripts/lib/branding/logo.mjs');
-  });
-
-  it("reuses the shared branding source in the startup banner", () => {
-    expect(STARTUP_BANNER_BRANDING).toBe(BRANDING_LOGO);
-  });
-
-  it("renders the shared startup banner output when the viewport can fit it", () => {
-    const lines = renderStartupBanner(120);
-
-    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(true);
-    expect(lines.some((line) => line.includes(BRANDING_LOGO.tagline))).toBe(true);
-  });
-
-  it("renders plain-text startup branding when the full banner is unsafe to fit", () => {
-    const lines = renderStartupBanner(60);
-
-    expect(lines.some((line) => line.includes(BRANDING_LOGO.fallbackTitle))).toBe(true);
-    expect(lines.some((line) => line.includes(BRANDING_LOGO.fallbackCopy))).toBe(true);
-    expect(lines.some((line) => line.includes(BRANDING_LOGO.lines[0]))).toBe(false);
-  });
-
+describe("TUI home branding", () => {
   it("renders the shared banner on Home when the terminal can fit it", () => {
     const lines = renderHomeScreen(createNavigationState(), 120);
 

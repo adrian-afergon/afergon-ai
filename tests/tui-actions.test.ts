@@ -318,8 +318,8 @@ describe("action definitions TypeScript parity", () => {
     });
 
     expect(actionDefinitionsTypeScript.resolveActionArgv(staticAction)).toEqual(resolveActionArgvRuntime(staticAction));
-    expect(actionDefinitionsTypeScript.resolveActionArgv(builtAction, { selectedIds: ["pi", "opencode"] }))
-      .toEqual(resolveActionArgvRuntime(builtAction, { selectedIds: ["pi", "opencode"] }));
+    expect(actionDefinitionsTypeScript.resolveActionArgv(builtAction, { selectedIds: ["one", "two"] }))
+      .toEqual(resolveActionArgvRuntime(builtAction, { selectedIds: ["one", "two"] }));
 
     const invalidBuilderAction = {
       ...builtAction,
@@ -347,8 +347,8 @@ describe("action definitions TypeScript parity", () => {
         kind: "checkboxes",
         title: "Choose what to initialize",
         options: [
-          { id: "pi", label: "Pi" },
-          { id: "opencode", label: "OpenCode" },
+          { id: "one", label: "One" },
+          { id: "two", label: "Two" },
         ],
       },
       confirmLabel: "Initialize the selected surfaces?",
@@ -556,8 +556,8 @@ describe("sanitizeTerminalOutput", () => {
         kind: "checkboxes",
         options: [
           { id: "all", label: "All" },
-          { id: "pi", label: "Pi" },
-          { id: "opencode", label: "OpenCode" },
+          { id: "one", label: "One" },
+          { id: "two", label: "Two" },
         ],
       },
     };
@@ -579,8 +579,8 @@ describe("sanitizeTerminalOutput", () => {
     expect(typeScriptExtracted.getFormSubmitState({ ...checkboxState, activeIndex: 3 })).toEqual(
       runtimeExtracted.getFormSubmitState({ ...checkboxState, activeIndex: 3 }),
     );
-    expect(typeScriptExtracted.getFormInput({ ...checkboxState, selectedIds: ["pi", "opencode"] })).toEqual(
-      runtimeExtracted.getFormInput({ ...checkboxState, selectedIds: ["pi", "opencode"] }),
+    expect(typeScriptExtracted.getFormInput({ ...checkboxState, selectedIds: ["one", "two"] })).toEqual(
+      runtimeExtracted.getFormInput({ ...checkboxState, selectedIds: ["one", "two"] }),
     );
 
     const fieldsAction = {
@@ -718,8 +718,8 @@ describe("sanitizeTerminalOutput", () => {
         kind: "checkboxes",
         options: [
           { id: "all", label: "All" },
-          { id: "pi", label: "Pi" },
-          { id: "opencode", label: "OpenCode" },
+          { id: "one", label: "One" },
+          { id: "two", label: "Two" },
         ],
       },
     };
@@ -759,7 +759,7 @@ describe("sanitizeTerminalOutput", () => {
     expect(selectedSpecific).toEqual({
       ...initialState,
       activeIndex: 1,
-      selectedIds: ["pi"],
+      selectedIds: ["one"],
       validationMessage: "",
     });
     expect(toggleCheckboxFormSelection({
@@ -785,8 +785,8 @@ describe("sanitizeTerminalOutput", () => {
     expect(getCheckboxFormSubmitState({ ...initialState, activeIndex: 3 })).toEqual({ isSubmit: true, isCancel: false });
     expect(getCheckboxFormSubmitState({ ...initialState, activeIndex: 4 })).toEqual({ isSubmit: false, isCancel: true });
     expect(getFormSubmitState({ ...initialState, activeIndex: 4 })).toEqual({ isSubmit: false, isCancel: true });
-    expect(getFormInput({ ...selectedSpecific, selectedIds: ["pi", "opencode"] })).toEqual({
-      selectedIds: ["pi", "opencode"],
+    expect(getFormInput({ ...selectedSpecific, selectedIds: ["one", "two"] })).toEqual({
+      selectedIds: ["one", "two"],
     });
   });
 

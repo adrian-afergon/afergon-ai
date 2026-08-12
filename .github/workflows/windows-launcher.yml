@@ -29,6 +29,9 @@ jobs:
       - name: Verify Claude host retirement scripts
         shell: bash
         run: pnpm exec vitest run tests/init-retire-claude.test.ts --no-file-parallelism
+      - name: Verify Pi host retirement scripts
+        shell: bash
+        run: pnpm exec vitest run tests/init-retire-pi.test.ts --no-file-parallelism
       - name: Smoke the built Windows launcher
         shell: pwsh
         run: |

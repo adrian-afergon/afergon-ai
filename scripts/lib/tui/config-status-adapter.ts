@@ -5,7 +5,6 @@ import { createActionDefinition, type ActionDefinition } from "./actions/definit
 import { buildCommandArgv, getCommandManifestEntry, type CommandManifestEntry, type ManifestCommandArgv } from "./command-manifest.js";
 import { getOpenCodeBaseDir, loadConfig } from "../model-profiles.js";
 
-type SupportedInitId = "pi" | "opencode" | "all";
 type ManifestActionId = CommandManifestEntry["id"];
 type StatusState = "ok" | "warn" | "fail";
 
@@ -102,28 +101,6 @@ function getModelConfigItem(env: NodeJS.ProcessEnv): StatusItem {
   }
 }
 
-function getProjectInstallItem({ id, label, filePath, presentDetail, missingDetail }: {
-  readonly id: string;
-  readonly label: string;
-  readonly filePath: string;
-  readonly presentDetail: string;
-  readonly missingDetail: string;
-}): StatusItem {
-  return fs.existsSync(filePath)
-    ? {
-        id,
-        label,
-        state: "ok",
-        detail: `${presentDetail} (${filePath})`,
-      }
-    : {
-        id,
-        label,
-        state: "warn",
-        detail: missingDetail,
-      };
-}
-
 function getOpenCodeItem(env: NodeJS.ProcessEnv): StatusItem {
   const baseDir = getOpenCodeBaseDir(env);
   const configPath = path.join(baseDir, "opencode.json");
@@ -151,17 +128,9 @@ function createActions(actionIds: readonly ManifestActionId[]): readonly StatusA
 }
 
 export function buildInitCommandArgv({ selectedIds = [] }: { selectedIds?: readonly string[] } = {}): ManifestCommandArgv {
-  const normalizedIds: SupportedInitId[] = Array.isArray(selectedIds)
-    ? selectedIds.filter(
-        (id): id is SupportedInitId => id === "pi" || id === "opencode" || id === "all",
-      )
-    : [];
-
-  if (normalizedIds.includes("all")) {
-    return buildCommandArgv("init", ["--all"]);
-  }
-
-  return buildCommandArgv("init", normalizedIds.map((id) => `--${id}`));
+  // OpenCode is the only supported host; the CLI default is `init` with no flags.
+  void selectedIds;
+  return buildCommandArgv("init");
 }
 
 function createInteractiveActions(section: "configuration" | "status"): readonly ActionDefinition[] {
@@ -181,23 +150,8 @@ function createInteractiveActions(section: "configuration" | "status"): readonly
       kind: "mutate",
       label: "Initialize project files",
       cliEquivalent: "afergon-ai init",
-      buildArgv: (input) => {
-        if (input === undefined) {
-          throw new TypeError("Cannot destructure property 'selectedIds' of 'undefined' as it is undefined.");
-        }
-        const { selectedIds } = input as { selectedIds?: readonly string[] };
-        return buildInitCommandArgv({ selectedIds });
-      },
-      form: {
-        kind: "checkboxes",
-        title: "Choose what to initialize",
-        options: [
-          { id: "pi", label: "Pi" },
-          { id: "opencode", label: "OpenCode" },
-          { id: "all", label: "All" },
-        ],
-      },
-      confirmLabel: "Initialize the selected surfaces?",
+      argv: buildCommandArgv("init"),
+      confirmLabel: "Initialize OpenCode project files?",
       refreshTarget: section,
     }),
     createActionDefinition({
@@ -222,14 +176,6 @@ function addGuidance(item: StatusItem): StatusItem {
         };
       }
       return item;
-    case "pi":
-      if (item.state === "warn") {
-        return {
-          ...item,
-          detail: `${item.detail} Run 'afergon-ai init' to install project files.`,
-        };
-      }
-      return item;
     case "opencode":
       if (item.state === "warn") {
         return {
@@ -243,16 +189,9 @@ function addGuidance(item: StatusItem): StatusItem {
   }
 }
 
-function getBaseStatusItems({ cwd, env }: { cwd: string; env: NodeJS.ProcessEnv }): readonly StatusItem[] {
+function getBaseStatusItems({ env }: { env: NodeJS.ProcessEnv }): readonly StatusItem[] {
   return [
     getModelConfigItem(env),
-    getProjectInstallItem({
-      id: "pi",
-      label: "Pi",
-      filePath: path.join(cwd, ".pi", "APPEND_SYSTEM.md"),
-      presentDetail: "Installed in this project via APPEND_SYSTEM.md",
-      missingDetail: "Not installed in this project.",
-    }),
     getOpenCodeItem(env),
   ];
 }
@@ -283,8 +222,8 @@ function summarizeItems(items: readonly StatusItem[]): StatusSummary {
   };
 }
 
-export function getConfigurationStatus({ cwd = process.cwd(), env = process.env }: GetStateOptions = {}): ConfigurationStatus {
-  const items = getBaseStatusItems({ cwd, env });
+export function getConfigurationStatus({ env = process.env }: GetStateOptions = {}): ConfigurationStatus {
+  const items = getBaseStatusItems({ env });
 
   return {
     title: "Configuration",
@@ -294,8 +233,8 @@ export function getConfigurationStatus({ cwd = process.cwd(), env = process.env 
   };
 }
 
-export function getStatusScreenState({ cwd = process.cwd(), env = process.env }: GetStateOptions = {}): StatusScreenState {
-  const items = getBaseStatusItems({ cwd, env }).map((item) => addGuidance(item));
+export function getStatusScreenState({ env = process.env }: GetStateOptions = {}): StatusScreenState {
+  const items = getBaseStatusItems({ env }).map((item) => addGuidance(item));
 
   return {
     title: "Status",
