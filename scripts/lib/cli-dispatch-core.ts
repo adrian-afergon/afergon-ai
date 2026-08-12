@@ -1,4 +1,4 @@
-export type DispatchCommand = "init" | "doctor" | "update" | "models";
+export type DispatchCommand = "init" | "doctor" | "update" | "models" | "metrics";
 
 export type DispatchPlan =
   | { kind: "command"; command: DispatchCommand; forwardedArgs: string[] }
@@ -12,7 +12,7 @@ export type DispatchRequest = {
   isCI: boolean;
 };
 
-const EXPLICIT_COMMANDS = new Set<DispatchCommand>(["init", "doctor", "update", "models"]);
+const EXPLICIT_COMMANDS = new Set<DispatchCommand>(["init", "doctor", "update", "models", "metrics"]);
 
 export function formatHelp(): string {
   return [
@@ -25,6 +25,9 @@ export function formatHelp(): string {
     "  afergon-ai doctor [--opencode]",
     "  afergon-ai update",
     "  afergon-ai models [show [profile]|list|switch|set|profile]",
+    "  afergon-ai metrics <enable|status|import|report|export|clear>",
+    "  afergon-ai metrics --help",
+    "  afergon-ai metrics export --format json|csv --output <path> [--group-by <dimension>] [--filter <dimension=value>]...",
     "",
     "Commands:",
     "  tui      Open the interactive afergon-ai TUI (TTY only)",
@@ -32,6 +35,7 @@ export function formatHelp(): string {
     "  doctor   Verify install; use --opencode for agents/commands checks",
     "  update   Re-apply latest managed OpenCode agents and commands",
     "  models   Manage afergon-ai model profiles and refresh compatible host config",
+    "  metrics  Store and inspect local semantic workflow metrics (opt-in)",
     "",
   ].join("\n");
 }
