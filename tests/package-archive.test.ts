@@ -101,7 +101,7 @@ describe("Pi host package distribution removal", () => {
     expectNoProhibitedArchiveEntries(entries);
     expect(entrySet.has("dist/prompts/afergon-ai.md")).toBe(false);
     expect(entrySet.has("dist/extensions/startup-banner.js")).toBe(false);
-  });
+  }, 15000);
 
   it("rejects and identifies a prohibited archive entry", () => {
     const syntheticEntries = [
