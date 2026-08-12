@@ -127,6 +127,28 @@ Concrete model strings should use `provider/model` format, for example `openai/g
 
 When OpenCode is already installed through afergon-ai, `models switch` and `models set` refresh the managed OpenCode agent registrations on disk. Existing sessions may still need a new compatible run; live hot-swap is not guaranteed.
 
+### Local semantic metrics
+
+Semantic metrics are an explicit opt-in feature and are disabled by default. They accept only AFERGON-AI schema version 1 events and never upload data. The local store uses Node's built-in `node:sqlite` API (the CI runtime is Node 24) and is kept separate from model configuration.
+
+```bash
+afergon-ai metrics --help
+afergon-ai metrics report --help
+afergon-ai metrics enable
+afergon-ai metrics status
+afergon-ai metrics import ./events.json
+afergon-ai metrics report --group-by outcome --filter agent=afg-review
+afergon-ai metrics export --format json --output ./metrics.json
+afergon-ai metrics export --format csv --output ./metrics.csv
+afergon-ai metrics clear --confirm
+```
+
+The metrics help output lists every subcommand and its options. Report dimensions include `task`, `phase`, `agent`, `subagent`, `model`, `modelProfile`, `outcome`, and `reviewCycle`; use `--filter dimension=value` to narrow a report. Command help is side-effect free and does not enable metrics or create the local SQLite directory.
+
+The default metrics directory is `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/metrics/`. It contains only the metrics SQLite database and enablement state. `status` and disabled imports do not create this directory. `clear --confirm` removes metrics-owned files only and preserves unrelated configuration.
+
+Imports can be one v1 event or a JSON array of v1 events. Invalid events fail before persistence; a batch is atomic. Reports expose unavailable attribution and enrichment gaps instead of inferring values. Token and cost data are optional context, never a success criterion. The enrichment port is replaceable, but no `ccusage` adapter is included in this release.
+
 ### Step 5 — Choose the launch mode
 
 `afergon-ai` now routes through a shared dispatcher so interactive and scripted use stay separate:
