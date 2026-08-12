@@ -51,7 +51,7 @@ function createRouteRenderApp() {
     loadStatusScreenState: () => ({
       title: "Status",
       summary: { label: "Readiness", state: "warn", detail: "Run afergon-ai init." },
-      items: [{ id: "claude", label: "Claude Code", state: "warn", detail: "Not installed." }],
+      items: [{ id: "pi", label: "Pi", state: "warn", detail: "Not installed." }],
       actions: [],
       interactiveActions: [],
     }),
@@ -577,7 +577,6 @@ describe("createTuiApp", () => {
               title: "Choose what to initialize",
               options: [
                 { id: "pi", label: "Pi" },
-                { id: "claude", label: "Claude" },
                 { id: "opencode", label: "OpenCode" },
                 { id: "all", label: "All" },
               ],

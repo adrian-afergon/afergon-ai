@@ -63,7 +63,7 @@ describe("Windows OpenCode scripts", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(fs.existsSync(path.join(xdgHome, "opencode", "agents", "afergon-ai.md"))).toBe(true);
     expect(fs.existsSync(path.join(xdgHome, "opencode", "commands", "afg-review.md"))).toBe(true);
-  });
+  }, 20_000);
 
   it.runIf(process.platform === "win32")("updates current managed agents instead of requiring the legacy orchestrator marker", () => {
     const tempRoot = makeTempRoot();

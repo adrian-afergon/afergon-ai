@@ -111,7 +111,7 @@ function normalizeInteractiveActions(actions) {
     form: action.form,
     buildArgvNoArg: captureBuildArgvBehavior(action, false),
     buildArgvDefault: captureBuildArgvBehavior(action, true, {}),
-    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["claude", "pi"] }),
+    buildArgvSelected: captureBuildArgvBehavior(action, true, { selectedIds: ["opencode", "pi"] }),
   }));
 }
 
@@ -125,12 +125,13 @@ function normalizeConfigurationStatus(status) {
 describe("getConfigurationStatus", () => {
   it("keeps buildInitCommandArgv aligned with the source runtime contract for default, filtered, and all-selected input", () => {
     expect(configStatusAdapterTypeScript.buildInitCommandArgv()).toEqual(buildCommandArgv("init"));
-    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude", "invalid", "pi"] })).toEqual(
-      getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1].buildArgv({ selectedIds: ["claude", "invalid", "pi"] }),
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["opencode", "invalid", "pi"] })).toEqual(
+      getConfigurationStatus({ cwd: makeTempRoot(), env: { HOME: "/tmp/home", XDG_CONFIG_HOME: "/tmp/xdg" } }).interactiveActions[1].buildArgv({ selectedIds: ["opencode", "invalid", "pi"] }),
     );
-    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude", "all", "pi"] })).toEqual(
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["opencode", "all", "pi"] })).toEqual(
       buildCommandArgv("init", ["--all"]),
     );
+    expect(configStatusAdapterTypeScript.buildInitCommandArgv({ selectedIds: ["claude"] })).toEqual(buildCommandArgv("init"));
   });
 
   it("reports missing local configuration/install surfaces and exposes only stable CLI actions", () => {
@@ -145,7 +146,6 @@ describe("getConfigurationStatus", () => {
     expect(status.items).toEqual([
       expect.objectContaining({ id: "model-config", state: "warn", detail: expect.stringContaining("not created") }),
       expect.objectContaining({ id: "pi", state: "warn", detail: "Not installed in this project." }),
-      expect.objectContaining({ id: "claude", state: "warn", detail: "Not installed in this project." }),
       expect.objectContaining({ id: "opencode", state: "warn", detail: expect.stringContaining("not detected") }),
     ]);
 
@@ -167,7 +167,6 @@ describe("getConfigurationStatus", () => {
 
     fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
     fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "pi");
-    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "claude");
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, "config.json"),
@@ -189,7 +188,6 @@ describe("getConfigurationStatus", () => {
     expect(status.items).toEqual([
       expect.objectContaining({ id: "model-config", state: "ok", detail: expect.stringContaining("active profile: default") }),
       expect.objectContaining({ id: "pi", state: "ok", detail: expect.stringContaining("APPEND_SYSTEM.md") }),
-      expect.objectContaining({ id: "claude", state: "ok", detail: expect.stringContaining("CLAUDE.md") }),
       expect.objectContaining({ id: "opencode", state: "ok", detail: expect.stringContaining("opencode.json") }),
     ]);
   });
@@ -282,7 +280,6 @@ describe("getConfigurationStatus", () => {
 
     fs.mkdirSync(path.join(tempRoot, ".pi"), { recursive: true });
     fs.writeFileSync(path.join(tempRoot, ".pi", "APPEND_SYSTEM.md"), "pi");
-    fs.writeFileSync(path.join(tempRoot, "CLAUDE.md"), "claude");
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, "config.json"),
@@ -560,7 +557,6 @@ describe("createTuiApp configuration route", () => {
                 title: "Choose what to initialize",
                 options: [
                   { id: "pi", label: "Pi" },
-                  { id: "claude", label: "Claude" },
                   { id: "opencode", label: "OpenCode" },
                   { id: "all", label: "All" },
                 ],
@@ -582,13 +578,11 @@ describe("createTuiApp configuration route", () => {
 
     expect(terminal.output).toContain("Choose what to initialize");
     expect(terminal.output).toContain("Pi [ ]");
-    expect(terminal.output).toContain("Claude [ ]");
     expect(terminal.output).toContain("OpenCode [ ]");
     expect(terminal.output).toContain("All [x]");
     expect(terminal.output).toContain("Use Space to toggle the selected checkbox.");
 
     terminal.emitInput(" ");
-    terminal.emitInput("\u001b[B");
     terminal.emitInput("\u001b[B");
     terminal.emitInput(" ");
     terminal.emitInput("\u001b[B");

@@ -2,13 +2,12 @@
 # afergon-ai/scripts/init-project.sh
 #
 # Initialize afergon-ai in any project.
-# Prefer using the CLI: afergon-ai init [--pi] [--claude] [--opencode] [--all]
+# Prefer using the CLI: afergon-ai init [--pi] [--opencode] [--all]
 #
 # Flags (combinable):
 #   --pi        Configure Pi (writes .pi/APPEND_SYSTEM.md)
-#   --claude    Configure Claude Code (writes CLAUDE.md)
 #   --opencode  Configure OpenCode (sets OPENCODE_CONFIG_DIR hint)
-#   --all       Configure all three tools
+#   --all       Configure Pi and OpenCode
 #   (no flags)  Interactive tool selection
 
 set -euo pipefail
@@ -34,19 +33,27 @@ migrate_legacy_file() {
 }
 
 SETUP_PI=false
-SETUP_CLAUDE=false
 SETUP_OPENCODE=false
+
+# ── Reject retired flags ────────────────────────────────────────────────────────
+
+for arg in "$@"; do
+	case $arg in
+	--claude)
+		echo "Error: --claude is retired. Supported hosts: --pi, --opencode, --all." >&2
+		exit 1
+		;;
+	esac
+done
 
 # ── Parse flags ───────────────────────────────────────────────────────────────
 
 for arg in "$@"; do
 	case $arg in
 	--pi) SETUP_PI=true ;;
-	--claude) SETUP_CLAUDE=true ;;
 	--opencode) SETUP_OPENCODE=true ;;
 	--all)
 		SETUP_PI=true
-		SETUP_CLAUDE=true
 		SETUP_OPENCODE=true
 		;;
 	esac
@@ -73,24 +80,21 @@ fi
 
 # ── Interactive tool selection (no flags provided) ────────────────────────────
 
-if ! $SETUP_PI && ! $SETUP_CLAUDE && ! $SETUP_OPENCODE; then
+if ! $SETUP_PI && ! $SETUP_OPENCODE; then
 	echo "Which AI tools do you want to configure? (space-separated numbers)"
 	echo ""
 	echo "  1) Pi"
-	echo "  2) Claude Code"
-	echo "  3) OpenCode"
-	echo "  4) All"
+	echo "  2) OpenCode"
+	echo "  3) All"
 	echo ""
 	read -r -p "Select: " tool_input
 
 	for t in $tool_input; do
 		case $t in
 		1) SETUP_PI=true ;;
-		2) SETUP_CLAUDE=true ;;
-		3) SETUP_OPENCODE=true ;;
-		4)
+		2) SETUP_OPENCODE=true ;;
+		3)
 			SETUP_PI=true
-			SETUP_CLAUDE=true
 			SETUP_OPENCODE=true
 			;;
 		esac
@@ -186,35 +190,6 @@ if $SETUP_PI; then
 	fi
 fi
 
-# ── Claude Code ───────────────────────────────────────────────────────────────
-
-if $SETUP_CLAUDE; then
-	echo ""
-	echo "Claude Code setup"
-	echo "-----------------"
-	CLAUDE_MD="$TARGET_DIR/CLAUDE.md"
-
-	write_claude=true
-	if [ -f "$CLAUDE_MD" ]; then
-		read -r -p "Warning: $CLAUDE_MD exists. Overwrite? [y/N] " c
-		[[ "$c" != "y" && "$c" != "Y" ]] && write_claude=false
-	fi
-
-	if $write_claude; then
-		cp "$PACKAGE_ROOT/adapters/claude/CLAUDE.md" "$CLAUDE_MD"
-		echo "✔ Created $CLAUDE_MD"
-	fi
-
-	# Skills: suggest copying to .claude/skills/
-	if [ -d "$TARGET_DIR/.claude" ] || $write_claude; then
-		mkdir -p "$TARGET_DIR/.claude/skills"
-		if [ -d "$PACKAGE_ROOT/skills" ]; then
-			cp -rn "$PACKAGE_ROOT/skills/"* "$TARGET_DIR/.claude/skills/" 2>/dev/null || true
-			echo "✔ Copied skills → .claude/skills/"
-		fi
-	fi
-fi
-
 # ── OpenCode ──────────────────────────────────────────────────────────────────
 
 if $SETUP_OPENCODE; then
@@ -304,7 +279,6 @@ echo "afergon-ai initialized"
 echo ""
 
 $SETUP_PI && echo "  Pi        → .pi/APPEND_SYSTEM.md (active on next Pi session)"
-$SETUP_CLAUDE && echo "  Claude    → CLAUDE.md + .claude/skills/"
 $SETUP_OPENCODE && echo "  OpenCode  → ${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents/ + commands/"
 
 echo ""
