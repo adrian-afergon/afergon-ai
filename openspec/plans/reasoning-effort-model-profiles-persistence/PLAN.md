@@ -137,8 +137,8 @@ Do not shrink coverage, omit evidence, compress unreadably, or request a size ex
 
 ## Implementation Steps
 
-- [ ] Gate: verify publication, accepted Plan, fresh isolation, five Git-state categories, and updated budget; record exact base and evidence.
-- [ ] Unit 1: implement validated mixed reads using the domain value and standalone loader, with sequential behavioral RED/GREEN triangulation.
+- [x] Gate: verify publication, accepted Plan, fresh isolation, five Git-state categories, and updated budget; record exact base and evidence.
+- [x] Unit 1: implement validated mixed reads using the domain value and standalone loader, with sequential behavioral RED/GREEN triangulation.
 - [ ] Unit 2: build/test pure in-memory targeted patch construction with metadata/representation preservation and reused clone independence; no disk writer yet.
 - [ ] Unit 3: implement actual targeted persistence together with complete version migration, snapshot recovery, conflict detection, atomic failure coverage, and internal migration documentation.
 - [ ] Unit 4: require the `scripts/lib/model-profiles/**/*.ts` include entry in `tsconfig.json`; prove inactive boundary, emitted import after build, legacy regressions and complete verification; record compact RESULT and measured review diff. Test-source imports alone are insufficient.
