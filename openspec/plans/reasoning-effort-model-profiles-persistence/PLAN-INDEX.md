@@ -188,5 +188,11 @@ Historical [RESULT](../../results/reasoning-effort-model-profiles-persistence/RE
 Docs isolation: `/tmp/opencode/afergon-ai-issue94-p1-plan-publication`, exact PR99 head `0c0c8e348afcff7e50f12029ad0c01c676f6400f`; no Unit1 source ancestry.
 Current authorized branch suffixes under `docs/issue94-` are `p1-checkpoint`, `p1a-read-plan`, `p1b-preparation-plan`, `p1c-snapshot-plan`, `p1d-writer-plan`, replacing historical naming proposals only.
 Checkpoint published: [PR100](https://github.com/adrian-afergon/afergon-ai/pull/100), `d86ed8a0feb97fa511a48e86f01e3fb975fa7870`, basePR99;78 changed lines.
-A publication: this branch `docs/issue94-p1a-read-plan`, base checkpoint; current commit/actual size in PR metadata. B/C/D entries follow in their own deltas.
+A published: [PR101](https://github.com/adrian-afergon/afergon-ai/pull/101), `16bd96189b3af4e5400d86ce0b0bfae016b4d53d`, base checkpoint;322 changed lines. B/C/D entries follow in their own deltas.
 User decides implementation after GitHub review; task001/issue94 remain incomplete. Never merge dependents early; later retarget/revalidation requires separate authorization.
+
+### B publication
+
+B plan is copied unchanged,120 lines; this unit adds only that artifact and current index navigation.
+Current branch `docs/issue94-p1b-preparation-plan` targets A PR101; exact current head/size are in PR metadata.
+Start: reviewed A planning publication; end: pure preparation plan available for user review. C/D follow separately.
