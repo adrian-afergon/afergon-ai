@@ -206,5 +206,5 @@ Start: B planning published; end: exact-byte snapshot lifecycle plan available f
 ### D publication
 
 D plan is copied unchanged,124 lines; this unit adds only that artifact and current index navigation.
-Current branch `docs/issue94-p1d-writer-plan` targets C PR103; exact current head/size are in PR metadata.
+D published: [PR104](https://github.com/adrian-afergon/afergon-ai/pull/104), branch `docs/issue94-p1d-writer-plan`, base C PR103;132 changed lines. Exact current head is in PR metadata (avoids a self-referential commit hash).
 Start: C planning published; end: all four plans available. Next: user GitHub review/decision, then separately authorized source integration/execution.
