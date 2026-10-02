@@ -194,5 +194,11 @@ User decides implementation after GitHub review; task001/issue94 remain incomple
 ### B publication
 
 B plan is copied unchanged,120 lines; this unit adds only that artifact and current index navigation.
-Current branch `docs/issue94-p1b-preparation-plan` targets A PR101; exact current head/size are in PR metadata.
+B published: [PR102](https://github.com/adrian-afergon/afergon-ai/pull/102), `7de63a33dc17de237b4c45e656f916a66ba19c57`, base A PR101;128 changed lines.
 Start: reviewed A planning publication; end: pure preparation plan available for user review. C/D follow separately.
+
+### C publication
+
+C plan is copied unchanged,121 lines; this unit adds only that artifact and current index navigation.
+Current branch `docs/issue94-p1c-snapshot-plan` targets B PR102; exact current head/size are in PR metadata.
+Start: B planning published; end: exact-byte snapshot lifecycle plan available for user review. D follows separately.
