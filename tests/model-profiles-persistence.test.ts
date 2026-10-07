@@ -378,3 +378,106 @@ describe("preparation reuse characterizations", () => {
     expect(clone).not.toHaveBeenCalled();
   });
 });
+
+describe("C snapshot lifecycle", () => {
+  const backupRefusals: Array<[string, string, string | typeof SyntaxError]> = [
+    ["C2 T1 refuses valid but byte-different backup", "{ }", "Migration snapshot bytes do not match"],
+    ["C2 T2 refuses malformed partial backup without deleting it", "{", SyntaxError],
+    ["C2 rejects invalid known backup shape with its path", '{"models":null}', "models must be an object"],
+  ];
+  it.each(backupRefusals)("%s", (_name, backupBytes, error) => {
+    const fixture = snapshotFixture();
+    fs.writeFileSync(fixture.backup, backupBytes);
+    expect(() => acquireMigrationSnapshot(fixture.input)).toThrow(error);
+    expect(fs.readFileSync(fixture.backup, "utf8")).toBe(backupBytes);
+    fixture.unchanged();
+  });
+  it("C2 reuses a completed exact backup without writing or deleting", () => {
+    const fixture = snapshotFixture();
+    fs.writeFileSync(fixture.backup, fixture.source.sourceBytes!);
+    const write = vi.spyOn(fs, "writeFileSync"), remove = vi.spyOn(fs, "rmSync");
+    expect(acquireMigrationSnapshot(fixture.input)).toEqual({ snapshotPath: fixture.backup, disposition: "reused", complete: true });
+    expect(write).not.toHaveBeenCalled(); expect(remove).not.toHaveBeenCalled();
+    fixture.unchanged();
+  });
+  it("C absent T2 refuses contradictory captured bytes", () => {
+    const fixture = snapshotFixture("{}", true);
+    fixture.source.sourceBytes = Buffer.from("{}");
+    const mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => acquireMigrationSnapshot(fixture.input)).toThrow("Invalid source observation");
+    expect(mkdir).not.toHaveBeenCalled();
+  });
+  it("C absent source creates only a recoverable default snapshot", () => {
+    const fixture = snapshotFixture("{}", true);
+    expect(acquireMigrationSnapshot(fixture.input).complete).toBe(true);
+    expect(fs.readFileSync(fixture.backup, "utf8")).toBe(`${JSON.stringify(fixture.input.recoveryDocument, null, 2)}\n`);
+    expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(fixture.input.recoveryDocument);
+    fixture.unchanged();
+  });
+  const recoveryRefusals: Array<[string, Record<string, unknown>, string, string?, boolean?]> = [
+    ["C recovery rejects malformed known fields before mkdir", { models: null }, "models must be an object"],
+    ["C recovery T1 refuses structurally different recovery", { memo: "unexpected" }, "Recovery document does not match"],
+    ["C recovery T2 refuses matching future schema before mkdir", { version: 3 }, "unsupported profile version 3", '{"version":3}'],
+    ["C absent T1 refuses nondefault recovery before mkdir", {}, "Recovery document does not match", undefined, true],
+  ];
+  it.each(recoveryRefusals)("%s", (_name, recoveryDocument, error, contents, absent = false) => {
+    const fixture = snapshotFixture(contents, absent);
+    const mkdir = vi.spyOn(fs, "mkdirSync"), open = vi.spyOn(fs, "openSync");
+    expect(() => acquireMigrationSnapshot({ source: fixture.source, recoveryDocument })).toThrow(error);
+    expect(mkdir).not.toHaveBeenCalled(); expect(open).not.toHaveBeenCalled();
+    if (!absent) expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe(contents ?? "{}");
+    else expect(fs.existsSync(path.dirname(fixture.backup))).toBe(false);
+    expect(fs.existsSync(fixture.backup)).toBe(false);
+  });
+  it("C1 retains formatted multibyte source instead of reserialization", () => {
+    const fixture = snapshotFixture('{\n "memo": "café ☕", "version": 1\n}\n');
+    fixture.input.recoveryDocument = { version: 1, memo: "café ☕" };
+    acquireMigrationSnapshot(fixture.input);
+    expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+    expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(fixture.input.recoveryDocument);
+    fixture.unchanged();
+  });
+  const sourceConflicts: Array<[string, boolean, string | null]> = [
+    ["C1 T1 refuses changed observed bytes before acquisition", false, "{ }"],
+    ["C1 T2 refuses a source appearing after absent observation", true, "{}"],
+    ["C source deletion fails closed with conflict diagnostic", false, null],
+  ];
+  it.each(sourceConflicts)("%s", (_name, absent, current) => {
+    const fixture = snapshotFixture("{}", absent);
+    fs.mkdirSync(path.dirname(fixture.source.configPath), { recursive: true });
+    if (current === null) fs.unlinkSync(fixture.source.configPath);
+    else fs.writeFileSync(fixture.source.configPath, current);
+    expect(() => assertProfileSourceUnchanged(fixture.source)).toThrow("Profile source changed");
+    expect(() => acquireMigrationSnapshot(fixture.input)).toThrow("Profile source changed");
+    if (current !== null) expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe(current);
+    else expect(fs.existsSync(fixture.source.configPath)).toBe(false);
+    expect(fs.existsSync(fixture.backup)).toBe(false);
+  });
+  it("C1 creates an exact durable snapshot without replacing source", () => {
+    const fixture = snapshotFixture();
+    const sync = vi.spyOn(fs, "fsyncSync");
+    const receipt = acquireMigrationSnapshot(fixture.input);
+    expect(receipt).toEqual({ snapshotPath: fixture.backup, disposition: "created", complete: true });
+    expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+    expect(sync).toHaveBeenCalledOnce();
+    fixture.unchanged();
+  });
+});
+
+import { acquireMigrationSnapshot, assertProfileSourceUnchanged } from "../scripts/lib/model-profiles/infrastructure/migration-snapshot.js";
+
+function snapshotFixture(contents = "{}", absent = false) {
+  const { root } = createConfig();
+  const configDir = path.join(root, "isolated");
+  const env = { HOME: root, XDG_CONFIG_HOME: root, AFERGON_AI_CONFIG_DIR: configDir };
+  if (!absent) { fs.mkdirSync(configDir); fs.writeFileSync(path.join(configDir, "config.json"), contents); }
+  const loaded = loadProfileDocument(env);
+  const source = { configPath: loaded.configPath, exists: loaded.exists, sourceBytes: loaded.sourceBytes };
+  const backup = `${source.configPath}.pre-v2.bak`;
+  const unchanged = () => {
+    expect(fs.existsSync(source.configPath)).toBe(!absent);
+    if (!absent) expect(fs.readFileSync(source.configPath)).toEqual(Buffer.from(contents));
+    expect(fs.readdirSync(configDir)).toEqual(absent ? ["config.json.pre-v2.bak"] : ["config.json", "config.json.pre-v2.bak"]);
+  };
+  return { root, source, backup, input: { source, recoveryDocument: loaded.document }, unchanged };
+}

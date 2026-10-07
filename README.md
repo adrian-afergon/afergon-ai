@@ -125,6 +125,12 @@ Internal pure assignment preparation returns an independent candidate and change
 Its reported version is prospective; the candidate retains the original schema value until snapshot-backed persistence is available.
 Preparation performs no disk or host I/O and does not activate effort controls in CLI/TUI.
 
+Internal snapshot acquisition preserves exact source bytes at `config.json.pre-v2.bak`; an absent source uses recoverable default JSON.
+It rechecks source existence/bytes and reuses only a validated byte-identical backup. Mismatched or partial existing backups block retry.
+This capability does not save configuration or activate effort controls. It provides no general multiwriter lock; concurrent old writers are unsupported.
+Freeze old writers and retain the full current config plus backups before recovery. Restoring a pre-v2 snapshot requires consent to lose later edits.
+Keep the extended reader available; no downgrade exporter is available yet.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
