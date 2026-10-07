@@ -47,10 +47,10 @@ Source/tests are new files absent from the docs PR base. After authorized GREEN,
 
 ## Implementation Steps
 
-- [ ] A1 characterize inherited mixed reads and missing defaults; implement any uncovered exact-byte observation through sequential behavioral cycles.
-- [ ] A2 expose pure full-document validation; reject invalid own recognized fields before JSON cloning and retain original quoted paths.
-- [ ] A3 complete supported/opaque classification, version/container/reference and unusual own-key validation matrix without normalization.
-- [ ] A4 add explicit compiler inclusion; prove emitted import and inactive boundaries; run full original baseline and persist A result/review budget.
+- [x] A1 characterize inherited mixed reads and missing defaults; implement any uncovered exact-byte observation through sequential behavioral cycles.
+- [x] A2 expose pure full-document validation; reject invalid own recognized fields before JSON cloning and retain original quoted paths.
+- [x] A3 complete supported/opaque classification, version/container/reference and unusual own-key validation matrix without normalization.
+- [x] A4 add explicit compiler inclusion; prove emitted import and inactive boundaries; run full original baseline and persist A result/review budget.
 
 ### Ordered TDD and adversarial matrix
 

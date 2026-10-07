@@ -119,7 +119,7 @@ afergon-ai models profile create fallback
 Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`.
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
-The internal profile reader accepts legacy model strings and structured assignments while preserving their stored representation. It validates recognized fields and leaves unsupported agent entries opaque. This reader is not exposed through CLI/TUI and performs no migration or writes; do not use legacy profile commands to write structured assignments until migration-aware persistence is available.
+The internal profile reader accepts legacy model strings and structured assignments while preserving their stored representation. It validates recognized fields, leaves unsupported agent entries opaque, and retains the original text and source bytes for recovery. This reader is not exposed through CLI/TUI and performs no migration or writes; do not use legacy profile commands to write structured assignments until migration-aware persistence is available.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
