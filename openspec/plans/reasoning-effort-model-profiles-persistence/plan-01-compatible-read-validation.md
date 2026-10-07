@@ -83,8 +83,8 @@ Valid legacy strings are nonempty/nonwhitespace, including inherit. Structured o
 
 ## Verification
 
-- [ ] Tests: single-name command per cycle, focused suite per unit, original regression/full suite below.
-- [ ] Build: inspect include/inheritance, typecheck/build/health and emitted import below.
+- [x] Tests: single-name command per cycle, focused suite per unit, original regression/full suite below.
+- [x] Build: inspect include/inheritance, typecheck/build/health and emitted import below.
 - [ ] Additional Evidence: actual ancestry/topology/status/numstat via original PLAN's exact Git commands; A result and native CI.
 - [ ] Rule Compliance: review inward dependencies, validation factory/raw preservation, byte fidelity and no live export.
 
