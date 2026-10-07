@@ -121,12 +121,13 @@ describe("mixed profile storage reads", () => {
   });
 
   it("returns absent-source defaults without creating a file", () => {
-    const { root, configPath } = createConfig();
-    const loaded = loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root });
+    const { root } = createConfig();
+    const configDir = path.join(root, "not-created");
+    const configPath = path.join(configDir, "config.json");
+    const loaded = loadProfileDocument({ AFERGON_AI_CONFIG_DIR: configDir });
 
-    expect(loaded.document).toEqual({ version: 1, models: { activeProfile: null, profiles: {} } });
-    expect(loaded).toMatchObject({ configPath, exists: false });
-    expect(fs.existsSync(configPath)).toBe(false);
+    expect(loaded).toEqual({ document: { version: 1, models: { activeProfile: null, profiles: {} } }, configPath, exists: false });
+    expect(fs.existsSync(configDir)).toBe(false);
   });
 });
 
