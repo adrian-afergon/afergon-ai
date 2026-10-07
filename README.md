@@ -127,6 +127,7 @@ Preparation performs no disk or host I/O and does not activate effort controls i
 
 Internal snapshot acquisition preserves exact source bytes at `config.json.pre-v2.bak`; an absent source uses recoverable default JSON.
 It rechecks source existence/bytes and reuses only a validated byte-identical backup. Mismatched or partial existing backups block retry.
+Only invocation-owned incomplete backups may be cleaned up; cleanup failures retain the original failure and report all cleanup causes.
 This capability does not save configuration or activate effort controls. It provides no general multiwriter lock; concurrent old writers are unsupported.
 Freeze old writers and retain the full current config plus backups before recovery. Restoring a pre-v2 snapshot requires consent to lose later edits.
 Keep the extended reader available; no downgrade exporter is available yet.

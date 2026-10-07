@@ -45,7 +45,7 @@ Reviewed forecast: source90–100 for observation/recovery/exclusive acquisition
 
 - [x] C1 implement exact observation comparison and exclusive completed snapshot acquisition, after all validation and immediate source recheck.
 - [x] C2 verify/reuse valid existing exact backup, refuse mismatch/malformed backup and source existence/byte conflicts, including absent-source recovery.
-- [ ] C3 handle each backup stage failure and owned partial cleanup; preserve completed/prior backups and report cleanup failure honestly.
+- [x] C3 handle each backup stage failure and owned partial cleanup; preserve completed/prior backups and report cleanup failure honestly.
 - [ ] Run full original baseline, review no-writer/ownership boundaries, and persist complete C result and measured diff.
 
 ### Ordered TDD and adversarial matrix

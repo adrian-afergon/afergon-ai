@@ -380,6 +380,48 @@ describe("preparation reuse characterizations", () => {
 });
 
 describe("C snapshot lifecycle", () => {
+  const cleanupFaults: Array<[string, "remove" | "close" | "both"]> = [
+    ["C cleanup removal failure reports original and cleanup errors", "remove"],
+    ["C cleanup T1 close failure still attempts owned removal", "close"],
+    ["C cleanup T2 retains simultaneous close and removal errors", "both"],
+  ];
+  it.each(cleanupFaults)("%s", (_name, stage) => {
+    const fixture = snapshotFixture(), cleanup = new Error(`cleanup ${stage}`);
+    const originals = { rmSync: fs.rmSync.bind(fs), closeSync: fs.closeSync.bind(fs) };
+    const fault = snapshotFault(fixture.backup, "write");
+    const methods = stage === "both" ? ["rmSync", "closeSync"] as const : [stage === "remove" ? "rmSync" : "closeSync"] as const;
+    for (const method of methods) vi.spyOn(fs, method).mockImplementation((target, ...args) => {
+      if (target === (method === "rmSync" ? fixture.backup : fault.descriptor())) throw cleanup;
+      return (originals[method] as (...args: unknown[]) => never)(target, ...args);
+    });
+    let failure: unknown;
+    try { acquireMigrationSnapshot(fixture.input); } catch (error) { failure = error; }
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect((failure as AggregateError).errors).toEqual([fault.failure, stage === "both" ? expect.objectContaining({ errors: [cleanup, cleanup] }) : cleanup]);
+    fixture.unchanged(stage !== "close");
+    vi.restoreAllMocks(); if (stage !== "remove") fs.closeSync(fault.descriptor()!);
+  });
+  const backupFaults: Array<[string, SnapshotFaultStage, boolean?]> = [
+    ["C3 write failure cleans only its newly created partial", "write"],
+    ["C3 T1 fsync failure cleans its incomplete snapshot", "fsync"],
+    ["C3 T2 close failure cleans its incomplete snapshot", "close"],
+    ["C open fault leaves source and no owned backup", "open"],
+    ["C open fault preserves previous valid backup", "open", true],
+    ["C existing backup read fault preserves previous valid backup", "read", true],
+    ["C source permission fault propagates instead of absence", "sourceRead", true],
+  ];
+  it.each(backupFaults)("%s", (_name, stage, previous = false) => {
+    const fixture = snapshotFixture();
+    if (previous) fs.writeFileSync(fixture.backup, fixture.source.sourceBytes!);
+    const fault = snapshotFault(fixture.backup, stage);
+    expect(() => acquireMigrationSnapshot(fixture.input)).toThrow(fault.failure);
+    expect(fault.closeAttempts()).toBeGreaterThanOrEqual(["write", "fsync", "close"].includes(stage) ? 1 : 0);
+    vi.restoreAllMocks();
+    fixture.unchanged(previous);
+    if (previous) expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+    expect(acquireMigrationSnapshot(fixture.input).disposition).toBe(previous ? "reused" : "created");
+    fixture.unchanged();
+  });
   const backupRefusals: Array<[string, string, string | typeof SyntaxError]> = [
     ["C2 T1 refuses valid but byte-different backup", "{ }", "Migration snapshot bytes do not match"],
     ["C2 T2 refuses malformed partial backup without deleting it", "{", SyntaxError],
@@ -400,18 +442,26 @@ describe("C snapshot lifecycle", () => {
     expect(write).not.toHaveBeenCalled(); expect(remove).not.toHaveBeenCalled();
     fixture.unchanged();
   });
-  it("C absent T2 refuses contradictory captured bytes", () => {
-    const fixture = snapshotFixture("{}", true);
-    fixture.source.sourceBytes = Buffer.from("{}");
+  it.each([
+    ["C absent T2 refuses contradictory captured bytes", true, Buffer.from("{}")],
+    ["C observation requires captured Buffer before mkdir", false, undefined],
+    ["C observation characterization refuses non-Buffer bytes", false, new Uint8Array([123, 125]) as never],
+  ] as const)("%s", (_name, absent, sourceBytes) => {
+    const fixture = snapshotFixture("{}", absent);
+    fixture.source.sourceBytes = sourceBytes;
     const mkdir = vi.spyOn(fs, "mkdirSync");
     expect(() => acquireMigrationSnapshot(fixture.input)).toThrow("Invalid source observation");
     expect(mkdir).not.toHaveBeenCalled();
+    expect(() => assertProfileSourceUnchanged(fixture.source)).toThrow("Invalid source observation");
   });
   it("C absent source creates only a recoverable default snapshot", () => {
     const fixture = snapshotFixture("{}", true);
+    const defaultBytes = `${JSON.stringify(fixture.input.recoveryDocument, null, 2)}\n`;
+    fixture.input.recoveryDocument = { models: { profiles: {}, activeProfile: null }, version: 1 };
     expect(acquireMigrationSnapshot(fixture.input).complete).toBe(true);
-    expect(fs.readFileSync(fixture.backup, "utf8")).toBe(`${JSON.stringify(fixture.input.recoveryDocument, null, 2)}\n`);
+    expect(fs.readFileSync(fixture.backup, "utf8")).toBe(defaultBytes);
     expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(fixture.input.recoveryDocument);
+    expect(acquireMigrationSnapshot(fixture.input).disposition).toBe("reused");
     fixture.unchanged();
   });
   const recoveryRefusals: Array<[string, Record<string, unknown>, string, string?, boolean?]> = [
@@ -419,6 +469,7 @@ describe("C snapshot lifecycle", () => {
     ["C recovery T1 refuses structurally different recovery", { memo: "unexpected" }, "Recovery document does not match"],
     ["C recovery T2 refuses matching future schema before mkdir", { version: 3 }, "unsupported profile version 3", '{"version":3}'],
     ["C absent T1 refuses nondefault recovery before mkdir", {}, "Recovery document does not match", undefined, true],
+    ...invalidReads.map(([name, document, error]) => [`C validation reuse ${name}`, document as Record<string, unknown>, error] as [string, Record<string, unknown>, string]),
   ];
   it.each(recoveryRefusals)("%s", (_name, recoveryDocument, error, contents, absent = false) => {
     const fixture = snapshotFixture(contents, absent);
@@ -429,38 +480,37 @@ describe("C snapshot lifecycle", () => {
     else expect(fs.existsSync(path.dirname(fixture.backup))).toBe(false);
     expect(fs.existsSync(fixture.backup)).toBe(false);
   });
-  it("C1 retains formatted multibyte source instead of reserialization", () => {
-    const fixture = snapshotFixture('{\n "memo": "café ☕", "version": 1\n}\n');
-    fixture.input.recoveryDocument = { version: 1, memo: "café ☕" };
-    acquireMigrationSnapshot(fixture.input);
+  it.each([
+    ["C1 creates an exact durable snapshot without replacing source", "{}", {}],
+    ["C1 retains formatted multibyte source instead of reserialization", '{\n "memo": "café ☕", "version": 1\n}\n', { version: 1, memo: "café ☕" }],
+  ] as const)("%s", (_name, contents, recoveryDocument) => {
+    const fixture = snapshotFixture(contents), sync = vi.spyOn(fs, "fsyncSync");
+    fixture.input.recoveryDocument = recoveryDocument;
+    expect(acquireMigrationSnapshot(fixture.input)).toEqual({ snapshotPath: fixture.backup, disposition: "created", complete: true });
     expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
     expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(fixture.input.recoveryDocument);
+    expect(sync).toHaveBeenCalledOnce();
     fixture.unchanged();
   });
-  const sourceConflicts: Array<[string, boolean, string | null]> = [
+  const sourceConflicts: Array<[string, boolean, string | null, boolean?]> = [
     ["C1 T1 refuses changed observed bytes before acquisition", false, "{ }"],
     ["C1 T2 refuses a source appearing after absent observation", true, "{}"],
     ["C source deletion fails closed with conflict diagnostic", false, null],
+    ["C timing rechecks changed bytes after preflight before open", false, "{ }", true],
+    ["C timing rechecks newly appeared source before open", true, "{}", true],
   ];
-  it.each(sourceConflicts)("%s", (_name, absent, current) => {
+  it.each(sourceConflicts)("%s", (_name, absent, current, duringMkdir = false) => {
     const fixture = snapshotFixture("{}", absent);
     fs.mkdirSync(path.dirname(fixture.source.configPath), { recursive: true });
-    if (current === null) fs.unlinkSync(fixture.source.configPath);
-    else fs.writeFileSync(fixture.source.configPath, current);
-    expect(() => assertProfileSourceUnchanged(fixture.source)).toThrow("Profile source changed");
+    const change = () => current === null ? fs.unlinkSync(fixture.source.configPath) : fs.writeFileSync(fixture.source.configPath, current);
+    const mkdir = fs.mkdirSync.bind(fs);
+    if (duringMkdir) vi.spyOn(fs, "mkdirSync").mockImplementation((dir, ...args) => { change(); return mkdir(dir, ...args); });
+    else change();
+    if (!duringMkdir) expect(() => assertProfileSourceUnchanged(fixture.source)).toThrow("Profile source changed");
     expect(() => acquireMigrationSnapshot(fixture.input)).toThrow("Profile source changed");
     if (current !== null) expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe(current);
     else expect(fs.existsSync(fixture.source.configPath)).toBe(false);
     expect(fs.existsSync(fixture.backup)).toBe(false);
-  });
-  it("C1 creates an exact durable snapshot without replacing source", () => {
-    const fixture = snapshotFixture();
-    const sync = vi.spyOn(fs, "fsyncSync");
-    const receipt = acquireMigrationSnapshot(fixture.input);
-    expect(receipt).toEqual({ snapshotPath: fixture.backup, disposition: "created", complete: true });
-    expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
-    expect(sync).toHaveBeenCalledOnce();
-    fixture.unchanged();
   });
 });
 
@@ -474,10 +524,33 @@ function snapshotFixture(contents = "{}", absent = false) {
   const loaded = loadProfileDocument(env);
   const source = { configPath: loaded.configPath, exists: loaded.exists, sourceBytes: loaded.sourceBytes };
   const backup = `${source.configPath}.pre-v2.bak`;
-  const unchanged = () => {
+  const unchanged = (snapshotExists = true) => {
     expect(fs.existsSync(source.configPath)).toBe(!absent);
     if (!absent) expect(fs.readFileSync(source.configPath)).toEqual(Buffer.from(contents));
-    expect(fs.readdirSync(configDir)).toEqual(absent ? ["config.json.pre-v2.bak"] : ["config.json", "config.json.pre-v2.bak"]);
+    expect(fs.readdirSync(configDir)).toEqual([...(absent ? [] : ["config.json"]), ...(snapshotExists ? ["config.json.pre-v2.bak"] : [])]);
   };
   return { root, source, backup, input: { source, recoveryDocument: loaded.document }, unchanged };
+}
+
+type SnapshotFaultStage = "write" | "fsync" | "close" | "open" | "read" | "sourceRead";
+function snapshotFault(backup: string, stage: SnapshotFaultStage) {
+  const failure = new Error(`backup ${stage} fault`), open = fs.openSync.bind(fs), close = fs.closeSync.bind(fs);
+  let descriptor: number | undefined, closes = 0;
+  vi.spyOn(fs, "openSync").mockImplementation((file, flags, ...args) => {
+    if (file === backup && flags === "wx" && stage === "open") throw failure;
+    const fd = open(file, flags, ...args);
+    if (file === backup && flags === "wx") descriptor = fd;
+    return fd;
+  });
+  vi.spyOn(fs, "closeSync").mockImplementation(fd => {
+    if (fd === descriptor && ++closes === 1 && stage === "close") throw failure;
+    return close(fd);
+  });
+  const method = stage === "write" ? "writeFileSync" : stage === "fsync" ? "fsyncSync" : "readFileSync", original = fs[method].bind(fs);
+  if (!["open", "close"].includes(stage)) vi.spyOn(fs, method).mockImplementation((target, ...args) => {
+    const faultTarget = stage === "read" ? backup : stage === "sourceRead" ? backup.slice(0, -".pre-v2.bak".length) : descriptor;
+    if (target === faultTarget) { if (stage === "write") fs.writeSync(descriptor!, "{"); throw failure; }
+    return (original as (...args: unknown[]) => never)(target, ...args);
+  });
+  return { failure, closeAttempts: () => closes, descriptor: () => descriptor };
 }
