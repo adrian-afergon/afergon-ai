@@ -46,7 +46,7 @@ Reviewed forecast: source90–100 for observation/recovery/exclusive acquisition
 - [x] C1 implement exact observation comparison and exclusive completed snapshot acquisition, after all validation and immediate source recheck.
 - [x] C2 verify/reuse valid existing exact backup, refuse mismatch/malformed backup and source existence/byte conflicts, including absent-source recovery.
 - [x] C3 handle each backup stage failure and owned partial cleanup; preserve completed/prior backups and report cleanup failure honestly.
-- [ ] Run full original baseline, review no-writer/ownership boundaries, and persist complete C result and measured diff.
+- [x] Run full original baseline, review no-writer/ownership boundaries, and persist complete C result and measured diff.
 
 ### Ordered TDD and adversarial matrix
 
@@ -84,8 +84,8 @@ Ordinary error ownership is guaranteed, not concurrent hostile backup replacemen
 
 ## Verification
 
-- [ ] Tests: single-case cycles plus focused unit matrix; full original baseline below.
-- [ ] Build: inherited explicit include, typecheck/build/health/emitted store import; inspect emitted snapshot module.
+- [x] Tests: single-case cycles plus focused unit matrix; full original baseline below.
+- [x] Build: inherited explicit include, typecheck/build/health/emitted store import; inspect emitted snapshot module.
 - [ ] Additional Evidence: stage-specific fs spies/descriptor discrimination restored per case, byte restorability/temp/source assertions, original Git commands and C result/native CI.
 - [ ] Rule Compliance: review snapshot ownership/retry/source checks, validation before I/O and no config-writer imports/calls.
 
