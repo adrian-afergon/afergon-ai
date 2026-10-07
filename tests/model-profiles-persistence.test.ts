@@ -6,6 +6,126 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { loadProfileDocument } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
 import { validateProfileDocument } from "../scripts/lib/model-profiles/infrastructure/document-validation.js";
+import { prepareProfileAssignment } from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
+import * as profileCore from "../scripts/lib/model-profiles-core.js";
+import * as documentValidation from "../scripts/lib/model-profiles/infrastructure/document-validation.js";
+
+function prepare(document: Record<string, unknown>, patch: unknown, profileName = "work", agentName = "review") {
+  return prepareProfileAssignment({ document, configPath: "/unused/config.json", profileName, agentName, patch: patch as never });
+}
+
+describe("pure preparation", () => {
+  it("B2 rejects a string masquerading as a patch object", () => {
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    expect(() => prepare(document, "new")).toThrow("Assignment patch must be an object");
+  });
+  it("B2 validates the complete independent candidate after preparation", () => {
+    const validate = vi.spyOn(documentValidation, "validateProfileDocument");
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    const prepared = prepare(document, { model: "new" });
+    expect(validate.mock.calls.map(([candidate]) => candidate)).toEqual([document, prepared.document]);
+    expect(prepared.document).not.toBe(document);
+  });
+  it("B3 characterization isolates foreign metadata and no-op clones both ways", () => {
+    const document = { memo: ["root"], models: { metadata: ["models"], profiles: { work: { foreign: { nested: ["opaque"] }, review: {} }, other: { review: "inherit" } } } };
+    const prepared = prepare(document, {});
+    expect(prepared.document).toEqual(document);
+    (prepared.document as typeof document).models.profiles.work.foreign.nested.push("candidate");
+    document.memo.push("source");
+    expect(document.models.profiles.work.foreign.nested).toEqual(["opaque"]);
+    expect(prepared.document.memo).toEqual(["root"]);
+    expect(prepared.changed).toBe(false);
+  });
+  it("B3 characterization isolates source from nested candidate mutation", () => {
+    const document = { models: { profiles: { work: { review: { reasoningEffort: "high", metadata: { labels: ["source"] } } } } } };
+    const prepared = prepare(document, { model: "new" });
+    const assignment = (prepared.document as typeof document).models.profiles.work.review;
+    assignment.metadata.labels.push("candidate");
+    assignment.reasoningEffort = "low";
+    expect(document.models.profiles.work.review).toEqual({ reasoningEffort: "high", metadata: { labels: ["source"] } });
+  });
+  it("B3 isolates nested candidate data from later source mutations", () => {
+    const document = { models: { profiles: { work: { review: { reasoningEffort: "high", metadata: { labels: ["source"] } } } } } };
+    const prepared = prepare(document, { model: "new" });
+    document.models.profiles.work.review.metadata.labels.push("changed");
+    document.models.profiles.work.review.reasoningEffort = "low";
+    expect(prepared.document).toEqual({ models: { profiles: { work: { review: { model: "new", reasoningEffort: "high", metadata: { labels: ["source"] } } } } } });
+  });
+  it("B2 materialization T2 does not migrate a changed v2 assignment", () => {
+    const document = { version: 2, models: { profiles: { work: { review: { model: "old" } } } } };
+    const prepared = prepare(document, { model: "new" });
+    expect([prepared.changed, prepared.migrationRequired, prepared.version, prepared.document.version]).toEqual([true, false, 2, 2]);
+  });
+  it("B2 materialization T1 leaves absent containers absent for an empty patch", () => {
+    const prepared = prepare({}, {}, "new");
+    expect(prepared.document).toEqual({});
+    expect([prepared.changed, prepared.migrationRequired, prepared.version]).toEqual([false, false, 1]);
+  });
+  it("B2 materializes a missing profile only for a real patch", () => {
+    const prepared = prepare({}, { reasoningEffort: "high" }, "new");
+    expect(prepared.document).toEqual({ models: { profiles: { new: { "afg-review": { reasoningEffort: "high" } } } } });
+    expect([prepared.changed, prepared.migrationRequired, prepared.version, prepared.agentKey]).toEqual([true, true, 2, "afg-review"]);
+  });
+  it("B2 source T2 ignores inherited and unknown patch fields", () => {
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    const patch = Object.assign(Object.create({ model: "inherited", reasoningEffort: null }), { metadata: { forbidden: true } });
+    const prepared = prepare(document, patch);
+    expect(prepared.document).toEqual(document);
+    expect([prepared.changed, prepared.migrationRequired, prepared.version]).toEqual([false, false, 1]);
+  });
+  it("B2 source T1 refuses future version even for an empty patch before clone", () => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    const document = { version: 3, models: { profiles: { work: { review: "old" } } } };
+    expect(() => prepare(document, {})).toThrow("unsupported profile version 3");
+    expect(clone).not.toHaveBeenCalled();
+  });
+  it("B2 source rejects malformed inactive nontarget before clone", () => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    const document = { models: { profiles: { work: { review: "old" }, inactive: { "afg-specify": { model: undefined } } } } };
+    expect(() => prepare(document, { model: "new" })).toThrow('models.profiles.inactive["afg-specify"].model');
+    expect(clone).not.toHaveBeenCalled();
+  });
+  it("B2 T2 refuses ambiguous aliases without an exact key", () => {
+    const document = { models: { profiles: { work: { review: "old", "afg-review": "other" } } } };
+    expect(() => prepare(document, { model: "new" }, "work", "AFG-REVIEW")).toThrow("Ambiguous assignment aliases");
+  });
+  it("B2 T1 diagnoses the sole alias using the actual stored review key", () => {
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    expect(() => prepare(document, { reasoningEffort: "inherit" }, "work", "afg-review")).toThrow('models.profiles["work"]["review"].reasoningEffort');
+  });
+  it("B2 rejects invalid patch at the exact noncanonical stored target", () => {
+    const document = { models: { profiles: { work: { review: "old", "afg-review": "other" } } } };
+    expect(() => prepare(document, { model: " " })).toThrow('models.profiles["work"]["review"].model');
+  });
+  it("B1 varies the patch and preserves foreign fields and raw version", () => {
+    const document = { version: 1, memo: ["root"], models: { activeProfile: "other", note: ["models"], profiles: { other: {}, work: { review: { model: "before", metadata: { labels: ["keep"] } }, foreign: { model: null } } } } };
+    const prepared = prepare(document, { model: "different" });
+    expect(prepared.document).toEqual({ ...document, models: { ...document.models, profiles: { ...document.models.profiles, work: { ...document.models.profiles.work, review: { model: "different", metadata: { labels: ["keep"] } } } } } });
+    expect(document.models.profiles.work.review.model).toBe("before");
+    expect([prepared.changed, prepared.migrationRequired, prepared.version]).toEqual([true, true, 2]);
+  });
+  it("B1 T2 adds effort to legacy while retaining its model", () => {
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    expect(prepare(document, { reasoningEffort: "low" })).toEqual({
+      document: { models: { profiles: { work: { review: { model: "old", reasoningEffort: "low" } } } } },
+      changed: true, migrationRequired: true, version: 2, agentKey: "review",
+    });
+  });
+  it("B1 T1 keeps a model-only legacy edit as a string", () => {
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    expect(prepare(document, { model: "new" })).toEqual({
+      document: { models: { profiles: { work: { review: "new" } } } },
+      changed: true, migrationRequired: false, version: 1, agentKey: "review",
+    });
+  });
+  it("B1 preserves omitted effort in a structured model edit", () => {
+    const document = { models: { profiles: { work: { review: { reasoningEffort: "high" } } } } };
+    expect(prepare(document, { model: "new" })).toEqual({
+      document: { models: { profiles: { work: { review: { reasoningEffort: "high", model: "new" } } } } },
+      changed: true, migrationRequired: true, version: 2, agentKey: "review",
+    });
+  });
+});
 
 const tempRoots: string[] = [];
 

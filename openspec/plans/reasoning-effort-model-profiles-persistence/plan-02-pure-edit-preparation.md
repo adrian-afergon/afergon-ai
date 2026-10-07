@@ -43,7 +43,7 @@ Forecast source65–90, tests125–175, docs4–6, B result65–85, plan6–10 =
 
 ## Implementation Steps
 
-- [ ] B1 construct a validated independent targeted candidate, preserving omitted fields/representation and computing actual change flags.
+- [x] B1 construct a validated independent targeted candidate, preserving omitted fields/representation and computing actual change flags.
 - [ ] B2 enforce own patch validation, exact-key/alias rules, safe own profile creation, future-version refusal and correct migration classification.
 - [ ] B3 prove nested source/clone independence and foreign metadata preservation in both directions; verify no disk/host I/O.
 - [ ] Run original final commands, review pure/inactive boundaries, and persist complete B result/base-relative budget.

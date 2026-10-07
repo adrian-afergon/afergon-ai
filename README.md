@@ -121,6 +121,10 @@ Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also uns
 
 The internal profile reader accepts legacy model strings and structured assignments while preserving their stored representation. It validates recognized fields, leaves unsupported agent entries opaque, and retains the original text and source bytes for recovery. This reader is not exposed through CLI/TUI and performs no migration or writes; do not use legacy profile commands to write structured assignments until migration-aware persistence is available.
 
+Internal pure assignment preparation returns an independent candidate and change/migration flags.
+Its reported version is prospective; the candidate retains the original schema value until snapshot-backed persistence is available.
+Preparation performs no disk or host I/O and does not activate effort controls in CLI/TUI.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
