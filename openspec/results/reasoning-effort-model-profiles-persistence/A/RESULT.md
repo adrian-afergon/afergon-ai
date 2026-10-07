@@ -27,7 +27,8 @@ Completed Plan A only: standalone full-document validation, exact Buffer observa
 
 - `2887100dbfb64cf1cc9371f190f934b850450ffb` `feat(model-profiles): validate mixed stored assignments` (preserved Unit 1)
 - `43a260c9ed428d9d3413f6d5634c1a9f31c38ab9` `merge(docs): integrate reviewed P1 plans`
-- A behavior/docs delivery commit contains this RESULT and the Plan A changes.
+- `ee3b33782d9722c114e79c74ab409e96dc73b482` `feat(model-profiles): validate full profile documents`; `50169639d79fba0a2c5e5f2ac0b68bea1d5e06c0` `feat(model-profiles): validate full profile documents` (result/checkbox follow-up).
+- Warning-fix follow-up commit includes the preserved 35-case matrix and this handoff update; its identity is returned inline because the RESULT cannot contain its own commit hash.
 
 ## Files Changed
 
@@ -38,7 +39,7 @@ Completed Plan A only: standalone full-document validation, exact Buffer observa
 
 ## Verification Results
 
-- Passed: focused **32**; targeted strict compile; `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, emitted import; regressions **132 passed/3 skipped**; `pnpm test` **416 passed/8 skipped**.
+- Passed: focused **35**; targeted strict compile; `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, emitted import; regressions **132 passed/3 skipped**; `pnpm test` **419 passed/8 skipped**.
 - Additional evidence: final base-relative count and Git checks recorded below; native CI/review remain outstanding.
 
 ## Blockers or Deviations
@@ -49,13 +50,13 @@ Completed Plan A only: standalone full-document validation, exact Buffer observa
 
 - Skills: registry-resolved `implement`, `work-unit-commits`, `chained-pr`, `cognitive-doc-design`. Issue #105 OPEN; renewed A-only approval. PR104 OPEN at verified head `a37daeec2d1fee936f0aa7977704bbce49297e40`; Test/Windows checks succeeded; no PR merge.
 - Isolation: branch `feat/reasoning-effort-p1-read-validation` at Unit 1 `2887100dbfb64cf1cc9371f190f934b850450ffb`; merged reviewed docs head as `43a260c`. Old source worktree/untracked plan copies and Unit 1 identity preserved; merge had no conflicts.
-- Exact RED/GREEN cycles:
-  - `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "captures the exact source bytes for multibyte formatted JSON"`: undefined Buffer RED; TPP #4 constant→scalar; Buffer read/text decode GREEN.
-  - `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "propagates a permission read fault instead of treating it as a missing file"`: missing default RED; TPP #6 unconditional→if (ENOENT only); EACCES propagated GREEN.
-  - `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "rejects own undefined recognized fields before a JSON clone can erase them"`: stub did not throw RED; TPP #6 conditional validation; pure extracted validator GREEN.
-  - `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "imports the built reader directly and keeps a missing-file read side-effect free"`: dist entry absent RED; TPP #5 statement→statements (include entry); build emitted import GREEN.
-  - Additional scenarios were inherited/passing characterization, not invented REDs: inactive-profile malformed value, opaque foreign slot, prototype-like keys, future/safe versions, no host write, facade exclusion. Previous RESULT's unrecorded historical command/TPP details remain unknown.
-- Current measured budget against PR104 base: **243 additions + 8 deletions across tracked paths, plus 57 new validator and 62 A-RESULT lines = 370 changed lines**. Reconciled across committed, worktree and new-file layers. All five Git-state categories were rechecked; no unrelated paths staged. This is below 375 and the 399 hard cap, above preferred 350, with 5 lines to the stop checkpoint. Source PR intentionally not opened pending orchestrator review.
+- Historical byte RED filter `captures the exact source bytes for multibyte formatted JSON` maps to runnable `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "captures exact UTF-8 bytes and original formatting"`: missing Buffer; TPP #4 constant→scalar; Buffer read/text decode.
+- Historical EACCES RED filter `propagates a permission read fault instead of treating it as a missing file` maps to runnable `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "propagates a permission read fault instead of returning missing-file defaults"`: false-existence default; TPP #6 ENOENT-only branch; propagate EACCES.
+- Historical undefined RED filter `rejects own undefined recognized fields before a JSON clone can erase them` maps to runnable `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "rejects own undefined recognized fields before cloning"`: stub did not throw; TPP #6 conditional validation. This proves the new pure-validator entry point, not a missing `StoredAssignment` own-key check.
+- Historical emitted RED filter `imports the built reader directly and keeps a missing-file read side-effect free` maps to runnable `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "emits a directly importable reader module"`: dist entry absent; TPP #5 include entry; build emits import.
+- Per-unit triangulation record: A1 has byte-fidelity and EACCES REDs; no distinct second post-GREEN I/O behavior exists because all non-ENOENT codes take one propagation branch. A2's new API own-undefined RED is real; inactive-profile malformed data and opaque slots passed the inherited reader/factory, so no further RED is attributed to extraction. A3's version/container/reference and future/prototype/foreign shapes were likewise already validated by the reused reader and remain characterization. A4's missing emitted entry was RED; no-write/facade exclusion already held and no live route changed. No execution logs found; undocumented historical cycles remain unknown.
+- Matrix coverage: empty/whitespace models; model-only structured values; omitted effort; empty/whitespace/case-varied inherit effort; null/array/numeric assignments; quote/backslash profile keys and whitespace alias keys; safe-version bounds; bytes, raw metadata, inactive profiles and future/foreign values. All inherited cases remain, none removed.
+- Current measured budget against PR104 base: `git diff --numstat a37daeec2d1fee936f0aa7977704bbce49297e40...HEAD` plus worktree/new paths reconciles to **365 additions + 8 deletions = 373 changed lines**. The count includes the final whole-file additions for the new validator/tests/result only once. All five Git-state categories rechecked; no unrelated paths staged. Below375/399, above preferred350; source PR withheld pending review.
 
 ## Next Step
 

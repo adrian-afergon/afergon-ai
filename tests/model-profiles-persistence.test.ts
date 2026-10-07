@@ -40,7 +40,8 @@ const invalidReads: Array<[string, unknown, string]> = [
   ["dangling active profile", { models: { activeProfile: "missing", profiles: {} } }, "models.activeProfile 'missing' does not exist"],
   ["invalid version", { version: 0, models: { profiles: {} } }, "version must be a positive safe integer"],
   ["unsafe version", { version: Number.MAX_SAFE_INTEGER + 1, models: { profiles: {} } }, "version must be a positive safe integer"],
-  ["escaped keys", { models: { profiles: { "bad.name": { "afg-review": { model: 1 } } } } }, 'models.profiles["bad.name"]["afg-review"].model'],
+  ["escaped quote/backslash keys", { models: { profiles: { ['bad.name"\\folder']: { " afg-review ": { model: 1 } } } } }, `models.profiles[${JSON.stringify('bad.name"\\folder')}][${JSON.stringify(" afg-review ")}].model`],
+  ["empty model", { models: { profiles: { work: { "afg-review": "" } } } }, 'models.profiles.work["afg-review"]'],
   ["structured model", { models: { profiles: { work: { "afg-review": { model: 42 } } } } }, 'models.profiles.work["afg-review"].model'],
   ["legacy assignment", { models: { profiles: { work: { "afg-review": 42 } } } }, 'models.profiles.work["afg-review"]'],
   ["null assignment", { models: { profiles: { work: { "afg-review": null } } } }, 'models.profiles.work["afg-review"]'],
@@ -52,6 +53,7 @@ const readableDocuments: Array<[string, Record<string, unknown>]> = [
   ["future schema", { version: 3, models: { activeProfile: null, profiles: {} }, futureField: true }],
   ["legacy omitted containers", { version: 1, foreign: { retain: true } }],
   ["prototype-like profile and opaque foreign agent", JSON.parse('{"version":9007199254740991,"models":{"activeProfile":"__proto__","profiles":{"__proto__":{"afg-review":"inherit","constructor":{"model":null}}}}}')],
+  ["structured model only", { version: 1, models: { profiles: { work: { "afg-review": { model: "openai/gpt-5.5" } } } } }],
 ];
 
 async function importBuiltReader() {
@@ -103,7 +105,7 @@ describe("mixed profile storage reads", () => {
     expect(fs.existsSync(path.join(root, "config.json.pre-v2.bak"))).toBe(false);
   });
 
-  it.each([null, "", " InHerit ", 4, []])("rejects invalid effort %j at its source path", (reasoningEffort) => {
+  it.each([null, "", "  ", " InHerit ", 4, []])("rejects invalid effort %j at its source path", (reasoningEffort) => {
     const { root } = createConfig({ models: { profiles: { work: { "afg-review": { reasoningEffort } } } } });
     expect(() => loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root })).toThrow(
       'models.profiles.work["afg-review"].reasoningEffort',
