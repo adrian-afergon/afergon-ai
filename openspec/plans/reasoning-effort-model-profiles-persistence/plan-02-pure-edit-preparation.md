@@ -44,9 +44,9 @@ Forecast source65–90, tests125–175, docs4–6, B result65–85, plan6–10 =
 ## Implementation Steps
 
 - [x] B1 construct a validated independent targeted candidate, preserving omitted fields/representation and computing actual change flags.
-- [ ] B2 enforce own patch validation, exact-key/alias rules, safe own profile creation, future-version refusal and correct migration classification.
-- [ ] B3 prove nested source/clone independence and foreign metadata preservation in both directions; verify no disk/host I/O.
-- [ ] Run original final commands, review pure/inactive boundaries, and persist complete B result/base-relative budget.
+- [x] B2 enforce own patch validation, exact-key/alias rules, safe own profile creation, future-version refusal and correct migration classification.
+- [x] B3 prove nested source/clone independence and foreign metadata preservation in both directions; verify no disk/host I/O.
+- [x] Run original final commands, review pure/inactive boundaries, and persist complete B result/base-relative budget.
 
 ### Ordered TDD and adversarial matrix
 
@@ -76,17 +76,17 @@ No source observation or snapshot is accepted/created by B. Returned objects are
 
 ## Acceptance Criteria
 
-- [ ] Target edits preserve omitted/foreign fields and exact unrelated representations; source/candidate are independent both directions.
-- [ ] Alias/exact/prototype/no-op/version flags satisfy every named case without any filesystem access.
-- [ ] Invalid source/patch rejects before clone; full candidate validates without defaults or foreign normalization.
+- [x] Target edits preserve omitted/foreign fields and exact unrelated representations; source/candidate are independent both directions.
+- [x] Alias/exact/prototype/no-op/version flags satisfy every named case without any filesystem access.
+- [x] Invalid source/patch rejects before clone; full candidate validates without defaults or foreign normalization.
 - [ ] No live exports or unsafe structured writer; tests/docs/result and actual compliant budget reviewed.
 
 ## Verification
 
-- [ ] Tests: cycle single-name checks, focused suite per unit, full original regression/full suite below.
-- [ ] Build: inherited explicit include, typecheck/build/health/emitted import.
+- [x] Tests: cycle single-name checks, focused suite per unit, full original regression/full suite below.
+- [x] Build: inherited explicit include, typecheck/build/health/emitted import.
 - [ ] Additional Evidence: no-disk/host spy assertions, original Git evidence commands, B result and required native CI.
-- [ ] Rule Compliance: review inward imports, reused clone, own-key handling, migration flags and unchanged live contracts.
+- [x] Rule Compliance: review inward imports, reused clone, own-key handling, migration flags and unchanged live contracts.
 
 Exact original final commands; future only:
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import childProcess from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -289,5 +290,91 @@ describe("compiled inactive boundary", () => {
   it("does not export the standalone reader through the live facade", async () => {
     const live = await import("../scripts/lib/model-profiles.js");
     expect(Object.hasOwn(live, "loadProfileDocument")).toBe(false);
+  });
+});
+
+const invalidFieldValues: Array<[string, unknown]> = [
+  ["undefined", undefined], ["null", null], ["array", []], ["number", 7], ["empty", ""], ["whitespace", " \t"],
+];
+const invalidPatchFields = ["model", "reasoningEffort"].flatMap(field =>
+  invalidFieldValues.map(([name, value]) => [`${field} ${name}`, field, value] as const),
+).concat(["inherit", " InHerit ", "INHERIT"].map(value => [`reasoningEffort ${value}`, "reasoningEffort", value] as const));
+
+describe("preparation reuse characterizations", () => {
+  it.each([{}, { models: {} }, { models: { profiles: {} } }, { version: 1, models: { activeProfile: null, profiles: {} } }])("keeps missing-target empty patch raw: %j", document => {
+    const prepared = prepare(document, {}, "missing");
+    expect(prepared.document).toEqual(document);
+    expect([prepared.changed, prepared.migrationRequired, prepared.version]).toEqual([false, false, 1]);
+  });
+  it.each(["__proto__", "constructor"])("edits existing own profile %s retaining active selection", profileName => {
+    const document = JSON.parse(`{"models":{"activeProfile":"other","profiles":{"other":{},"${profileName}":{"review":{"metadata":[1]}}}}}`);
+    const prepared = prepare(document, { model: "new" }, profileName);
+    expect(prepared.document).toEqual({ models: { activeProfile: "other", profiles: { other: {}, [profileName]: { review: { metadata: [1], model: "new" } } } } });
+    expect(Object.getPrototypeOf((prepared.document.models as typeof document.models).profiles)).toBe(Object.prototype);
+  });
+  const editCases: Array<[string, unknown, object, unknown, boolean, boolean]> = [
+    ["legacy edit amid structured slots", "old", { model: "new" }, "new", true, false],
+    ["identical legacy", "old", { model: "old" }, "old", false, false],
+    ["identical mixed-v1 structured", { model: "old" }, { model: "old" }, { model: "old" }, false, false],
+    ["structured model without effort", { model: "old" }, { model: "new" }, { model: "new" }, true, true],
+    ["effort preserves absent model", {}, { reasoningEffort: " Medium " }, { reasoningEffort: " Medium " }, true, true],
+    ["effort preserves present model", { model: " InHerit " }, { reasoningEffort: "low" }, { model: " InHerit ", reasoningEffort: "low" }, true, true],
+    ["model preserves absent effort", {}, { model: "inherit" }, { model: "inherit" }, true, true],
+    ["both known fields ignore foreign patch", {}, { model: "x", reasoningEffort: "high", foreign: 9 }, { model: "x", reasoningEffort: "high" }, true, true],
+  ];
+  it.each(editCases)("preserves representation and flags: %s", (_name, stored, patch, expected, changed, migration) => {
+    const document = { version: 1, memo: { keep: [1] }, models: { metadata: [2], activeProfile: "other", profiles: { other: {}, work: { review: stored, "afg-design": {}, foreign: { reasoningEffort: null } } } } };
+    const prepared = prepare(document, patch);
+    expect(prepared.document).toEqual({ ...document, models: { ...document.models, profiles: { ...document.models.profiles, work: { ...document.models.profiles.work, review: expected } } } });
+    expect([prepared.changed, prepared.migrationRequired, prepared.version]).toEqual([changed, migration, migration ? 2 : 1]);
+    expect(document.models.profiles.work.review).toEqual(stored);
+  });
+  it.each(["__proto__", "constructor"])("materializes safe own profile %s without selecting it", profileName => {
+    const document = { models: { activeProfile: null, profiles: {} } };
+    const prepared = prepare(document, { model: "inherit" }, profileName);
+    const models = prepared.document.models as { activeProfile: null; profiles: Record<string, unknown> };
+    expect(Object.hasOwn(models.profiles, profileName)).toBe(true);
+    expect(models.profiles[profileName]).toEqual({ "afg-review": { model: "inherit" } });
+    expect(Object.getPrototypeOf(models.profiles)).toBe(Object.prototype);
+    expect(models.activeProfile).toBeNull();
+  });
+  it.each([
+    ["exact duplicate", { review: "old", "afg-review": "other" }, "review", "review"],
+    ["sole alias", { review: "old" }, "afg-review", "review"],
+    ["canonical new", { foreign: { model: null } }, "REVIEW", "afg-review"],
+  ] as const)("selects %s without rewriting unrelated slots", (_name, profile, agentName, key) => {
+    const prepared = prepare({ models: { profiles: { work: profile } } }, { model: "new" }, "work", agentName);
+    expect(prepared.agentKey).toBe(key);
+    expect(prepared.document.models).toEqual({ profiles: { work: { ...profile, [key]: key in profile ? "new" : { model: "new" } } } });
+  });
+  it("rejects unsupported agents before clone", () => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    expect(() => prepare({}, {}, "work", "foreign")).toThrow("Unsupported agent 'foreign'");
+    expect(clone).not.toHaveBeenCalled();
+  });
+  it("performs no filesystem environment-path or host calls", () => {
+    const spies = [vi.spyOn(fs, "readFileSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "mkdirSync"),
+      vi.spyOn(fs, "openSync"), vi.spyOn(fs, "renameSync"), vi.spyOn(os, "homedir"),
+      vi.spyOn(childProcess, "spawnSync"), vi.spyOn(childProcess, "execFileSync")];
+    prepare({}, { model: "inherit" });
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  });
+  it.each(invalidPatchFields)("rejects own %s before clone", (_name, field, value) => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    const document = { models: { profiles: { work: { review: "old" } } } };
+    expect(() => prepare(document, { [field]: value })).toThrow(`models.profiles["work"]["review"].${field}`);
+    const malformedSource = { models: { profiles: { work: { review: "old" }, other: { review: { [field]: value } } } } };
+    expect(() => prepare(malformedSource, {})).toThrow(`models.profiles.other.review.${field}`);
+    expect(clone).not.toHaveBeenCalled();
+  });
+  it.each(invalidReads)("validates whole raw source: %s", (_name, document, expectedPath) => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    expect(() => prepare(document as Record<string, unknown>, {})).toThrow(expectedPath);
+    expect(clone).not.toHaveBeenCalled();
+  });
+  it.each([null, undefined, [], 4])("rejects non-object patch %j before clone", patch => {
+    const clone = vi.spyOn(profileCore, "cloneAssignments");
+    expect(() => prepare({}, patch)).toThrow("Assignment patch must be an object");
+    expect(clone).not.toHaveBeenCalled();
   });
 });

@@ -1,19 +1,22 @@
 ## Implementation Status
-in-progress
+completed-with-notes
 ## Plan Reference
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-02-pure-edit-preparation.md`; sequential.
 ## Execution Summary
 Fresh strict-TDD execution from published A `db9d2962f8ba0228f5f176de82c1ac8b01c2d2b0`. Failed B `9f53f838e2dd5e0ca916285cf81051502ddce8b9` remains clean/unpublished in its original worktree; read-only Review `ses_ee892ccecffef1uVDnX8C1AURi` found stored-target diagnostics, coverage and TDD defects. No old B commits inherited; its noncompliance is not erased.
 ## Completed Steps
-- B1 validated independent targeted edits and flags; focused53 and typecheck passed. B2/B3 coverage completion follows.
+- B1/B2/B3 and original local final checks completed; implementation ready for orchestrator Review, external release acceptance pending.
 ## Updated Plan Artifacts
-- B plan B1 verified checkbox only.
+- B plan verified local checkboxes only; reviewed-PR acceptance and native additional evidence remain unchecked.
 ## Commits Created
-None
+- `b66278c92c0518d9c40e228275ca40e5281b9e05 feat(model-profiles): prepare independent targeted assignment edits` — verified B1 and initial B2/B3 behavior with live cycle records/docs.
+- Final work unit self-commit exception: the commit containing this completion record, uniquely `test(model-profiles): complete pure preparation contract evidence`; resolve full SHA with `git log -1 --format=%H` on the handed-off branch HEAD. Owns matrix, green readability refactor, verified checklist/result; no self-referential SHA invented.
 ## Files Changed
 - `scripts/lib/model-profiles/domain/assignment-patch.ts`, `scripts/lib/model-profiles/infrastructure/prepare-assignment.ts`, `tests/model-profiles-persistence.test.ts`, `README.md`, B plan, this RESULT.
 ## Verification Results
 Baseline: 35 focal tests passed; build passed. Compilable API stub preceded first behavioral test.
+Final local evidence **produced**: focal107; regression132 pass/3skip; full `pnpm test`491 pass/8skip (26 files pass/3skip); `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, exact emitted reader import and extra emitted preparation import+direct invocation all exit0. First full-suite tool invocation hit120s timeout; rerun with300s limit passed in102.59s, no code change or hidden failure.
+Final single-name checks are the C(name) commands below; focal command is `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism`. Regression command is the B plan's exact four-file command; every declared final command ran unchanged. Git commands are original PLAN228–242 with exact A BASE and all three new FILE paths (no-index exit1 means difference).
 Cycle command C(name): `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "<name>"`. Each row records a separate invocation, RED assertion expected/actual (exit1), lowest sufficient TPP, then GREEN exit0/all authored tests green. Passing reuse cases are characterizations.
 | Unit/stage; exact test name | RED expected / actual | GREEN transformation and outcome |
 | --- | --- | --- |
@@ -37,9 +40,24 @@ Cycle command C(name): `pnpm exec vitest run tests/model-profiles-persistence.te
 | B1 RED; B1 preserves omitted effort in a structured model edit | full candidate/true/true/2/review / empty document/false/false/1/no key | #2 constant suffices; C GREEN0, focal36/36; tracked11, forecast291–373 |
 ## Blockers or Deviations
 Two new B3 breaks cannot be found: required unchanged JSON clone serializes the complete validated candidate, detaching every parsed-JSON descendant symmetrically, including no-ops. Both attempted adversarial cases passed unchanged; not RED, no manufactured mutation. B3's helper reuse exception is explicitly documented under Implement's inability clause.
+Local boundary/rule inspection **produced**; canonical fresh Review, current B Ubuntu Test/Windows launcher CI and reviewed-PR acceptance **outstanding**, not waived or claimed complete. Installer parity changes **not applicable** (installers untouched). No publish/approval/merge, no C/D work. Source budget retains full scope/evidence.
+### Coverage matrix (all produced; passing reuse rows are characterization)
+| Contract | Runnable evidence in focal test file |
+| --- | --- |
+| Structured omitted fields, legacy preservation/conversion, unknown root/models/profiles/assignments/foreign slots | B1 first/variation/T1/T2; `preserves representation and flags: %s` (8 named fixtures) |
+| Exact review path and sole alias afg-review→review path, ambiguity, exact duplicate wins, canonical new | B2 patch RED/T1/T2; `selects %s without rewriting unrelated slots` (3) |
+| Whole raw A document and own known patch before clone; unsupported agent; no foreign-patch API | B2 source RED/T2; `rejects own %s before clone` (15 patch+nontarget cases), `validates whole raw source: %s` (14), non-object4, unsupported |
+| Empty/identical/mixedv1 no-op, absent defaults/maps, real missing-profile edit, active selection, safe own keys | B2 materialization RED/T1; `keeps missing-target empty patch raw: %j` (4); safe prototype/new+existing (4); representation fixtures |
+| Future>2 refused before clone/no-op; legacy edit amid structured does not migrate; structured model-onlyv1→prospective2, unchanged raw schema; v2 no repeat | B2 source T1/materialization T2; B1 variation and representation fixtures |
+| Nested source→candidate and candidate→source independence, foreign/no-op clones, candidate validation, no disk/environment-path/host/live activation | B3 RED/two characterizations; B2 candidate validation; I/O spies; unchanged pure core/validator import graph and facade/routes reviewed |
 ## Notes
+Final measured budget **357** = README4 + B plan10add/10delete + RESULT63 + patch interface4 + preparation59 + focused tests207; exact A base, all six paths, below STOP375/hard399. Final Git checks **produced**: diff-check clean, no staged/untracked residue after owned commit; A divergence0/2, main/origin divergence0/20. Old B clean at exact9f53f838, both B remote names absent, A remote stilldb9d2962; root dirty inventory/topology unchanged including prunable registrations. No original PLAN/A RESULT changed.
+Final GREEN refactor+six additional reuse cases: focal107/typecheck pass; measured324 before final result/checklist growth. Final budget is exact A-to-new-HEAD additions+deletions across all six paths, not summed intermediate snapshots. Reverse-chronological cycle rows retain actual execution order via increasing focal counts36–53; T1 was authored only after prior GREEN and T2 only after T1 GREEN.
+48 reuse characterizations and focal101 pass unchanged after harness correction; representation/key/prototype/unsupported/I/O rows pass on first behavioral invocation. Measured305; missing-target/default/prototype-existing cases11+source readability7+result18+plan20 project361. No new algorithm during green refactor (`targetedDocument` naming only).
+I/O characterization setup initially failed: immutable Node ESM namespace cannot spy on spawnSync; corrected to mutable default export. This is a harness error, never counted as behavioral RED;47 matrix cases passed before that setup error.
+Validation matrix characterization:33 newly authored cases passed unchanged (focal86). Own model/effort undefined/null/array/number/empty/whitespace plus three effort-inherit spellings reject at stored paths before clone; identical malformed nontarget fields and all14 inherited invalid raw-document fixtures reject before clone. Four non-object patch shapes pass existing guard. Measured255; remaining preservation/key/I/O fixtures forecast50 lines, source readability8, result20, plan20: projected353, below375 without coverage/evidence cuts.
 GREEN refactor: shared pure `prepare` fixture helper replaces repeated invocation setup; focal53/typecheck pass after refactor. Measured221 before README4+plan2 =227; forecast291–373. Supplemental candidate/patch-shape checks reuse A validation/shape guard: no two new field-validation breaks remain after unchanged helper reuse; matrix cases below are characterization, not preimplemented new validation.
 Isolation authorized at Review→Implement: new `feat/reasoning-effort-p1-pure-edit-preparation-tdd` worktree from exact A; initial divergence0/0, staged/unstaged/untracked empty. Preserve every existing topology registration including four prunable entries; root staged empty, unstaged PROJECT-TASKS161+1 and all32 individually inspected untracked artifacts preserve-only; no transfer/staging. Only six allowlisted B paths may be staged. A remote/PR106 unchanged; Test/Windows SUCCESS. Registry is root-only, loaded from exact registered paths.
 Forecast source70–100/tests140–170/docs4–6/result65–85/plan12 =291–373; remeasure/reforecast every GREEN and result growth; STOP projected375, hard399, no automatic cuts.
 ## Next Step
-Continue genuine sequential cycles; orchestrator fresh Review before publication. Native B checks outstanding until external release gate.
+Orchestrator launches fresh canonical Review of this new branch/worktree/result against exact A; no implementation self-review delegation. Publish only after fresh Review authorization, then obtain current native checks/approval. Old failed B remains preserved separately.

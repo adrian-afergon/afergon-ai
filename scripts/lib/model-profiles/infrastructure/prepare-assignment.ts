@@ -43,7 +43,14 @@ export function prepareProfileAssignment(input: PrepareAssignmentInput): Prepare
   const assignment = legacy ? patch.model ?? stored : { ...(typeof stored === "string" ? { model: stored } : stored as object), ...patch };
   const changed = Object.keys(patch).length > 0 && JSON.stringify(assignment) !== JSON.stringify(stored);
   const migrationRequired = changed && !legacy && sourceVersion === 1;
-  const document = cloneAssignments(changed ? { ...input.document, models: { ...models, profiles: { ...profiles, [input.profileName]: { ...profile, [agentKey]: assignment } } } } : input.document);
+  const targetedDocument = changed ? {
+    ...input.document,
+    models: {
+      ...models,
+      profiles: { ...profiles, [input.profileName]: { ...profile, [agentKey]: assignment } },
+    },
+  } : input.document;
+  const document = cloneAssignments(targetedDocument);
   validateProfileDocument(document, input.configPath);
   return {
     document,
