@@ -77,16 +77,16 @@ Serialization failure injection must reach the saver stage after normal JSON can
 
 ## Acceptance Criteria
 
-- [ ] Direct targeted writer preserves metadata/omitted members/representation, handles aliases/own keys and no-op/future-version rules.
-- [ ] Migration requires completed exact snapshot before version2 replacement; retry, absent source and detectable races obey C contract.
-- [ ] All backup and config fault matrix assertions across C/D prove source/backup/temp/host outcomes honestly; no rollback after rename claim.
+- [x] Direct targeted writer preserves metadata/omitted members/representation, handles aliases/own keys and no-op/future-version rules.
+- [x] Migration requires completed exact snapshot before version2 replacement; retry, absent source and detectable races obey C contract.
+- [x] All backup and config fault matrix assertions across C/D prove source/backup/temp/host outcomes honestly; no rollback after rename claim.
 - [ ] Every original spec/task/PLAN acceptance row is produced, complete inactive built capability and legacy regressions pass.
 - [ ] Docs/results/review/native checks and actual compliant budget complete before P2/P3 release.
 
 ## Verification
 
-- [ ] Tests: sequential single-name cycles, focused suite checkpoints and full original regression/full suite.
-- [ ] Build: explicit inherited include, typecheck/build/health/emitted import; inspect direct API and import graph.
+- [x] Tests: sequential single-name cycles, focused suite checkpoints and full original regression/full suite.
+- [x] Build: explicit inherited include, typecheck/build/health/emitted import; inspect direct API and import graph.
 - [ ] Additional Evidence: stage spies and exact bytes/backup restoration/no temp where possible; full index traceability, original Git commands, D result and native CI.
 - [ ] Rule Compliance: exact saver body unchanged except input type; inward imports/static factory, full raw validation, inactive boundaries, budget/semantic ownership.
 

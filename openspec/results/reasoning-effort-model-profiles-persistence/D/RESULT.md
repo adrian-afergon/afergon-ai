@@ -1,22 +1,34 @@
 ## Implementation Status
-in-progress — D only; no full task acceptance yet.
+blocked — D implementation/all local verification complete; independent review, current native D checks and formal release acceptance outstanding.
 ## Plan Reference
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-04-targeted-migration-atomic-writer.md`; Execution Mode: sequential.
 ## Execution Summary
 Authorized whole A–D implementation after #105, explicit C0600 repair accepted. Fresh D from verified published/reviewed C `071afba72776961a4a68a6e6e780c47a35ee4be7`; PR108 unchanged, four native checks SUCCESS. GitHub formal approval absent; supplied parent Review PASS is separate evidence.
 ## Completed Steps
-- D1/D2/D3 locally verified; D4 final commands/review/native acceptance pending.
+- D1/D2/D3 and D4 local commands/traceability/rule inspection complete. D4 external acceptance is deliberately unchecked; task001 is not yet formally complete.
 ## Updated Plan Artifacts
 - D plan local D1–D3 checkboxes verified; original PLAN/index and A/B/C results preserved.
 ## Commits Created
-None
+- `bed9986e0744a964e174c85f281aa42bca0fe288 feat(model-profiles): persist targeted assignments with recoverable migration` — complete safe writer, all integration tests/docs/live cycle records.
+- Completion-evidence work unit: `docs(model-profiles): record D local verification and acceptance gaps`; full SHA is handed-off HEAD (`git log -1 --format=%H`), avoiding invented self-reference.
 ## Files Changed
-- D allowlist: infrastructure/profile-store.ts, sole config saver parameter union, focal tests, README, D plan, this RESULT; all paths relative to repository.
+- `scripts/lib/model-profiles/infrastructure/profile-store.ts`; `scripts/lib/model-profiles-config.ts` (parameter only); `tests/model-profiles-persistence.test.ts`; `README.md`; D plan linked above; this `openspec/results/reasoning-effort-model-profiles-persistence/D/RESULT.md`.
 ## Verification Results
 Baseline: frozen install/build exit0; focal153 passed. Compilable minimal API stub before first behavioral RED.
 S(name): `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t "<name>"`.
 F: `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism`.
 Each cycle records actual executable S RED exit1/assertion, then minimum TPP S/F GREEN exit0/count and all-layer measurement; tests authored individually after preceding GREEN. No historical waiver for D.
+### Final local checks — produced, every command expected/actual exit0
+| Exact command | Outcome |
+| --- | --- |
+| F (expanded above) | 218 passed; all153 C cases retained;65 D additions |
+| `pnpm typecheck`; `pnpm build` | Both passed; inherited explicit vertical source include retained |
+| `pnpm run health:runtime` | All three runtime entries import successfully |
+| `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')"` | Passed exact emitted reader import |
+| `pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism` | 132 pass/3skip,3 files pass/1skip; legacy counts unchanged |
+| `pnpm test` (300s tool limit) | 602 pass/8skip,26 files pass/3skip;113.10s; mandatory rebuild included |
+| Extra direct emitted writer/import smoke, `node --input-type=module -e` (exact program in session tool transcript) | PASS in `/tmp/opencode/afergon-d-emitted.GIeQkt`:14 read-only loader calls,0 application/host import calls; absent read creates no directory; own-prototype profile two-agent distinct effort round-trip/default backup0600; v2 no new snapshot; live barrel has no writer export |
+Final commands ran with isolated temporary HOME/XDG/config/state at `/tmp/opencode/afergon-d-final.*`. Emitted smoke first encountered loader descriptor closeSync; descriptor-aware allowlisting fixed harness only, not source and not behavioral RED.
 | Unit; exact runnable name | RED expected/actual | Minimal GREEN; checkpoint |
 | --- | --- | --- |
 | D3 T2; D3 T2 future candidate refuses before backup or downgrade | version3 refusal/mkdir0 / no throw+version2 save; S1 | #6 candidate future guard before no-op/backup; S0/F163/typecheck0; measured173 before row/174 after; projected final source30–35/tests195–210/docs10–14/RESULT80–90/plan12–16 =327–367 |
@@ -30,9 +42,26 @@ Each cycle records actual executable S RED exit1/assertion, then minimum TPP S/F
 | D1 T1; D1 T1 refuses future nominal no-op before write I/O | unsupported version3 refusal / no throw; S1 | #5 reuse A read, #4 source version, #6 future guard; S0/F155; measured68 before row/69 after; projected268–366 |
 | D1; D1 no-op preserves exact mixed v1 source and prior snapshot | config path actual / empty string; S1 | #4 constant→path helper scalar; S0/F154; measured56 before row,57 after; projected268–366 |
 ## Blockers or Deviations
+Current D native Ubuntu Test/Windows launcher checks, independent canonical Review and ordinary approval **outstanding**; C/B/A green CI does not prove D. No source PR/publication/merge authorization in this task. Installer parity changes/provider-request tests **not applicable**: inactive storage only. Task001/P2/P3 acceptance remains blocked by external gates, not a local test failure.
 T1 first GREEN attempt exposed a harness assumption: readFileSync internally openSync(r); narrowed assertion to no write-open, no production workaround. This later harness failure is not RED evidence.
 Saver fault characterization: `D3 saver serialize/write/fsync/close/rename failure preserves source and completed snapshot for retry` all5 passed first invocation, then F168/typecheck0; measured210 before note/211 after, projected327–367. No extra breaking saver scenarios exist in the required matrix: unchanged saver catches every listed precommit fault and cleans its own temp. D3 new sequencing instead has genuine initial/T1/T2 RED above; no redundant fault algorithm or manufactured RED. Serialization spy is enabled only inside real saver, after JSON validation; no cyclic fake-valid candidate. Descriptor-aware spies restored per case; retries reuse completed exact snapshot.
 ## Notes
+### Original contract traceability — local behavior produced, external acceptance outstanding
+| Original obligation (PLAN-INDEX129–145; original PLAN192–206) | A/B/C/D runnable evidence |
+| --- | --- |
+| Spec1/taskAC1/PLANAC1 mixed representation/no read migration/noop | A raw reads; B representation fixtures; D1 exact mixedv1 absent/explicit version noops and prior snapshot; D2 subsequent string/object disk round-trips |
+| Spec2/taskAC2 omitted model/effort, no default | A structured inheritance/model-only fixtures; B B1 omitted-member tests; D2 structured-without-effort actual migration and absent-source defaults |
+| Spec3/taskAC2–3/PLANAC2 strict full validation/path diagnosis | A malformed/path fixtures; B source/own fields/candidate tests; D1 integrated14 invalid sources+15 own invalid patches+corrupt/nontarget2; D3 candidate sequencing RED/T1 |
+| Spec4/taskAC3/PLANAC3 preservation and exact/alias/prototype keys | B exact/sole/ambiguous aliases, canonical/new/prototype fixtures; D2 own-profile work/__proto__/constructor, raw whitespace/case, nested root/models/assignment/foreign metadata, other profiles and active selection |
+| Future-version outcomes | A preserves future read; B rejects >2 including noop; D1 T1 source policy; D3 T2 candidate policy before backup/downgrade |
+| Spec5/taskAC4/PLANAC4 migration/version/recovery | B migration flags; C receipt/reuse/source checks; D2 first actual structured save, model-only structured migration, legacy-only raw absent version, v2 no repeat snapshot, absent default0600, matching failed-save retries/malformed or mismatch refusal |
+| Original backup/config fault matrices and source races | C owned open/write/fsync/close/cleanup cases; D3 integrated backup4 save-not-called and config serialize/write/fsync/close/rename5 with retained backup/retry; D2 race6 plus initial sequencing tests and final pure-validation v2 conflict; D3 failed temp cleanup honestly retains original error/temp |
+| Spec6/taskAC5/PLANAC3 clone independence | B B3 nested source→candidate, candidate→source and foreign/noop characterizations; D2 independent raw candidate written without normalization |
+| Spec7/taskAC6/PLANAC5 inactive complete callable capability | A compiler/import/facade tests; D emitted direct writer/no application import I/O/live export; unchanged source consumers and132 legacy regressions; README old-writer/race/consented recovery guidance |
+| Spec8/PLANAC6/delivery and original Units2–4 | A/B/C historical results preserved; complete D delta budget/semantic commits below; local commands produced; current D review/native/approval outstanding, not waived. Historical A-only TDD waiver unchanged |
+Rule inspection produced: inward imports, domain factory/private assignment-only constructor unchanged; saver diff is exactly parameter union (2 changed lines), body byte-for-byte unchanged; no writer clone/lifecycle adapter/callback/CLI/host/barrel activation. Rename is commit point; no CAS/locks or postcommit rollback promise. No original PLAN/index/task checkboxes silently reconciled; those await formal acceptance separately.
+Final complete C-relative budget **365** = README17 + D plan16 + RESULT73 + writer28 + saver2 + tests229 (352 additions/13 deletions); six allowed paths, below STOP375/hard399, above preferred350. Code/docs commit326 plus overlapping result/checklist edits are reconciled against C, not blindly summed; no hidden untracked layer or inherited chain charged. No further source/tests edits.
+Final Git evidence produced: original PLAN228–242 commands with exact C BASE and new RESULT (precommit no-index44 lines/exit1). Root32 artifacts/PROJECT-TASKS161+1, historical six artifacts, all other worktrees/four prunable registrations remain unchanged; C remote still071afba and four SUCCESS checks, remote D absent. Commit1 divergenceC0/1 and main/origin0/26; completion commit makesC0/2/main0/27, clean index/worktree/untracked verified after commit; no upstream/publication claimed.
 F198/typecheck0: round-trip3+absent-default1+invalid-source14 passed unchanged first invocation; measured266 before evidence growth, projected342–372. F201/typecheck0: explicit mixedv1 no-op, v2 last-check and failed-cleanup3 plus extended v2 two-agent efforts/representations pass; measured289. F218: own-invalid-patch15+corrupt/nontarget2 passed; measured313 before plan6+this row1=320. Final result reserve37+final local checkboxes10 projects367; no evidence omitted. Already-green A/B/C/saver/D4 characterizations cannot be RED without rewriting correct reused algorithms; unit-specific reused validation/noop/source/ownership branches explain first passes.
 Detectable race characterization: all6 `D2 before backup/before save detects source change/delete/appear and prevents saver` pass first invocation (F180), external bytes/existence retained, no temp, completed default/original backup retained only after acquisition. Measured238 before note/239 after; refined remaining matrix forecast source28–35+saver2/tests215–225/README10–14/RESULT75–80/plan12–16 =342–372, below STOP375. All original153 inherited tests retained.
 Integrated C characterizations: `D3 backup open/write/fsync/close failure prevents actual saver`4 and prior malformed/mismatch2 pass unchanged on first invocation (F174 exit0); measured222 before note/223 after, projected327–367. Existing C fault/helper behavior reused, but D now proves save-not-called, source/backup/temp invariants; inherited C suite rerun, no claims based solely on C tests.
@@ -41,4 +70,4 @@ Preserve-only: root main b558aad, staged empty, PROJECT-TASKS unstaged161+1 and 
 Registered implement/work-unit-commits/chained-pr/cognitive-doc-design exact paths and root registry/AGENTS read; registry remains root-only. Original PLAN/index/full spec/source A/B/C results and actual saver/type declarations read before source work.
 Forecast writer45–70+saver2/tests125–170/README10–14/RESULT80–100/plan6–10 =268–366; count inherited-file additions+deletions and all new artifacts each GREEN. Prefer350, STOP projected375, hard399; no tests/evidence cuts.
 ## Next Step
-Continue sequential D TDD; canonical external review/native D checks remain outstanding. No source PR, approval, merge, P2/P3 or CLI activation authorized here.
+Orchestrator conducts fresh canonical D Review against exact C BASE; publication/native checks/approval and original artifact reconciliation require their authorized gates. Complete inactive internal storage is locally proven across A–D; task001 acceptance and full user-editing feature are not claimed complete. P2/P3 remain gated.
