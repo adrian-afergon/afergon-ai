@@ -41,9 +41,9 @@ Future owned: domain document/raw/version/recovery policy, retained assignment f
 
 ## Implementation Steps
 
-- [ ] Retain existing factory/class and all valid/invalid stored-value behavior; characterize direct own undefined without serialization loss.
-- [ ] Encapsulate full-document checks with injected05 classification and original path formatting.
-- [ ] Prove inactive/nontarget recognized errors propagate; unsupported slots remain opaque; future reads remain raw.
+- [x] Retain existing factory/class and all valid/invalid stored-value behavior; characterize direct own undefined without serialization loss.
+- [x] Encapsulate full-document checks with injected05 classification and original path formatting.
+- [x] Prove inactive/nontarget recognized errors propagate; unsupported slots remain opaque; future reads remain raw.
 - [ ] Complete no-I/O/inward/class behavior evidence, original command baseline and owned result/review.
 
 ## Interfaces and Technical Contracts
@@ -58,9 +58,9 @@ Strings remain raw nonempty/nonwhitespace, including model inherit. Objects allo
 
 ## Acceptance Criteria
 
-- [ ] All existing invalidReads/readableDocuments/effort matrices and direct own undefined retain errors/values/reference identity.
-- [ ] Malformed inactive/nontarget fields cannot be swallowed; unsupported JSON slots remain opaque.
-- [ ] Missing fields remain missing; future versions remain readable; all original strings/metadata retained.
+- [x] All existing invalidReads/readableDocuments/effort matrices and direct own undefined retain errors/values/reference identity.
+- [x] Malformed inactive/nontarget fields cannot be swallowed; unsupported JSON slots remain opaque.
+- [x] Missing fields remain missing; future versions remain readable; all original strings/metadata retained.
 - [ ] Class owns validation, domain graph is clean, and relevant behavior/tests/docs/result are reviewed together.
 
 ## Verification

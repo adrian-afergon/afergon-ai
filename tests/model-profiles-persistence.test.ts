@@ -3,8 +3,128 @@ import ts from "typescript";
 import { expect, it, vi } from "vitest";
 import { AgentTargetPolicy, SUPPORTED_AGENTS as DOMAIN_AGENTS, type SupportedAgent as DomainAgent } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { normalizeAgentName, SUPPORTED_AGENTS, type SupportedAgent } from "../scripts/lib/model-profiles-core.js";
+import { StoredAssignment } from "../scripts/lib/model-profiles/domain/stored-assignment.js";
+import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 
 const policy = new AgentTargetPolicy();
+const documents = new ProfileDocumentPolicy(policy);
+const invalidDocuments: Array<[string, unknown, string]> = [
+  ["root", [], "root value must be an object."],
+  ["models", { models: null }, "models must be an object."],
+  ["profiles", { models: { profiles: [] } }, "models.profiles must be an object."],
+  ["profile", { models: { profiles: { ['bad.name"\\folder']: null } } }, `models.profiles[${JSON.stringify('bad.name"\\folder')}] must be an object.`],
+  ["version type", { version: "1" }, "version must be a positive safe integer."],
+  ["unsafe version", { version: Number.MAX_SAFE_INTEGER + 1 }, "version must be a positive safe integer."],
+  ["nonpositive version", { version: 0 }, "version must be a positive safe integer."],
+  ["active shape", { models: { activeProfile: [] } }, "models.activeProfile must be a string or null."],
+  ["active reference", { models: { activeProfile: "constructor", profiles: {} } }, "models.activeProfile 'constructor' does not exist."],
+];
+it.each(invalidDocuments)("domain rejects malformed %s", (_name, raw, error) => {
+  expect(() => documents.validate(raw, "source")).toThrow(new Error(`Could not read model profile config at source: ${error}`));
+});
+it("omitted containers remain absent without legacy default injection", () => {
+  const raw = Object.freeze({ foreign: { retained: true } });
+  expect(documents.validate(raw, "source")).toBe(raw);
+});
+
+it.each(["inherit", " custom/model ", {}, { model: " inherit " }, { reasoningEffort: " Unknown " }, { note: { keep: true } }])
+  ("retained factory preserves valid raw %j", (raw) => {
+    expect(StoredAssignment.create(raw, "slot").raw).toBe(raw);
+  });
+it.each([undefined, null, [], 4, "", " \t"])("retained factory rejects invalid assignment %j", (raw) => {
+  expect(() => StoredAssignment.create(raw, "slot")).toThrow("slot must be");
+});
+it.each([undefined, null, [], 4, "", " \t"])("retained factory rejects own invalid fields %j", (value) => {
+  expect(() => StoredAssignment.create({ model: value }, "slot")).toThrow("slot.model must be a nonempty model string.");
+  expect(() => StoredAssignment.create({ reasoningEffort: value }, "slot")).toThrow("slot.reasoningEffort must be a nonempty explicit effort string.");
+});
+it.each(["inherit", " InHerit ", "\tINHERIT\n"])("retained factory rejects effort inheritance %j", (reasoningEffort) => {
+  expect(() => StoredAssignment.create({ reasoningEffort }, "slot")).toThrow("slot.reasoningEffort must be a nonempty explicit effort string.");
+});
+
+it("validates malformed recognized assignments in inactive profiles", () => {
+  const raw = { models: { activeProfile: "active", profiles: { active: {}, archived: { "afg-review": { model: " " } } } } };
+  expect(() => documents.validate(raw, "source")).toThrow('models.profiles.archived["afg-review"].model must be a nonempty model string.');
+});
+it("escaped stored profile and alias spelling retain the original error path", () => {
+  const name = 'bad.name"\\folder';
+  const raw = { models: { profiles: { [name]: { " ReVieW ": { model: 1 } } } } };
+  expect(() => documents.validate(raw, "source")).toThrow(`models.profiles[${JSON.stringify(name)}][" ReVieW "].model must be a nonempty model string.`);
+});
+it("returns the original object and leaves opaque foreign fields untouched", () => {
+  const raw = { version: 3, foreign: { keep: true }, models: { profiles: { work: { foreign: { reasoningEffort: null }, "afg-review": "inherit" } } } };
+  expect(documents.validate(raw, "source")).toBe(raw);
+});
+it("rejects own undefined recognized fields before cloning", () => {
+  expect(() => documents.validate({ models: { profiles: { work: { "afg-review": { reasoningEffort: undefined } } } } }, "source"))
+    .toThrow('models.profiles.work["afg-review"].reasoningEffort');
+});
+it.each([undefined, null, [], 4, "", " \t"])("domain preserves container diagnostics for %j", (value) => {
+  for (const [raw, field] of [[value, "root value"], [{ models: value }, "models"],
+    [{ models: { profiles: value } }, "models.profiles"], [{ models: { profiles: { work: value } } }, "models.profiles.work"]]) {
+    expect(() => documents.validate(raw, "identity")).toThrow(`Could not read model profile config at identity: ${field} must be an object.`);
+  }
+});
+it.each([undefined, null, -1, 1.5, NaN, Infinity, "2"])("domain rejects unsafe version value %j", (version) => {
+  expect(() => documents.validate({ version }, "source")).toThrow("version must be a positive safe integer.");
+});
+it.each([undefined, [], 4, false, {}])("domain rejects active selection value %j", (activeProfile) => {
+  expect(() => documents.validate({ models: { activeProfile } }, "source")).toThrow("models.activeProfile must be a string or null.");
+});
+it.each([undefined, null, [], 4, "", " \t", " InHerit "])("domain validates all nontarget recognized fields %j", (value) => {
+  const slot = (assignment: unknown) => ({ models: { profiles: { work: { main: "inherit", " ReVieW ": assignment } } } });
+  if (value !== " InHerit ") {
+    expect(() => documents.validate(slot(value), "source")).toThrow('models.profiles.work[" ReVieW "]');
+    expect(() => documents.validate(slot({ model: value }), "source")).toThrow('models.profiles.work[" ReVieW "].model');
+  }
+  expect(() => documents.validate(slot({ reasoningEffort: value }), "source")).toThrow('models.profiles.work[" ReVieW "].reasoningEffort');
+});
+it.each([{}, { models: {} }, { models: { activeProfile: null } }, { models: { profiles: {} } },
+  JSON.parse('{"version":9007199254740991,"models":{"activeProfile":"__proto__","profiles":{"__proto__":{"afg-review":"inherit","constructor":{"model":null}}}}}'),
+  { version: 2, foreign: [], models: { memo: { keep: true }, profiles: { constructor: { main: {}, review: { model: " inherit ", reasoningEffort: " Custom ", note: [] } } } } }])
+  ("domain preserves optional and foreign raw shape %j", (raw) => {
+    const before = Object.getOwnPropertyDescriptors(raw);
+    expect(documents.validate(raw, "source")).toBe(raw);
+    expect(Object.getOwnPropertyDescriptors(raw)).toEqual(before);
+  });
+
+it("domain constructor is ambient-free and uses its concrete classification collaborator", () => {
+  const normalize = vi.spyOn(policy, "normalize");
+  const spies = [vi.spyOn(fs, "readFileSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "mkdirSync"), vi.spyOn(process, "cwd")];
+  try {
+    const instance = new ProfileDocumentPolicy(policy);
+    expect(normalize).not.toHaveBeenCalled();
+    const raw = { models: { profiles: { work: { " ReVieW ": {}, foreign: null } } } };
+    expect(instance.validate(raw, "diagnostic-only")).toBe(raw);
+    expect(normalize.mock.calls).toEqual([[" ReVieW "], ["foreign"]]);
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  } finally { normalize.mockRestore(); for (const spy of spies) spy.mockRestore(); }
+});
+it("resolved document domain graph and factory constructor obey inward boundaries", () => {
+  const pending = [import.meta.resolve("../scripts/lib/model-profiles/domain/profile-document-policy.ts")];
+  const visited = new Set<string>();
+  while (pending.length) {
+    const url = pending.pop()!;
+    if (visited.has(url)) continue;
+    visited.add(url);
+    const source = fs.readFileSync(new URL(url), "utf8");
+    expect(source).not.toMatch(/\b(process|globalThis|Buffer|ProcessEnv|require)\b/);
+    const ast = ts.createSourceFile(url, source, ts.ScriptTarget.Latest);
+    for (const node of ast.statements) {
+      if (!ts.isImportDeclaration(node)) continue;
+      const specifier = (node.moduleSpecifier as ts.StringLiteral).text;
+      expect(specifier).toMatch(/^\.\/[\w-]+\.js$/);
+      pending.push(new URL(specifier.replace(/\.js$/, ".ts"), url).href);
+    }
+    if (url.endsWith("/stored-assignment.ts")) {
+      const declaration = ast.statements.find(ts.isClassDeclaration)!;
+      const constructor = declaration.members.find(ts.isConstructorDeclaration)!;
+      expect(constructor.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword)).toBe(true);
+      expect(constructor.body?.statements.length).toBe(0);
+    }
+  }
+  expect(visited.size).toBe(4);
+});
 
 it("exact supplied key wins among equivalent aliases", () => {
   expect(policy.select({ review: "a", "afg-review": "b" }, "review")).toBe("review");
