@@ -1,16 +1,16 @@
 ## Implementation Status
-blocked — D implementation/all local verification complete; independent review, current native D checks and formal release acceptance outstanding.
+completed-with-notes — D implementation/all mandatory local verification complete; subsequent independent Review, current native D CI and formal release acceptance outstanding; task001 not formally accepted.
 ## Plan Reference
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-04-targeted-migration-atomic-writer.md`; Execution Mode: sequential.
 ## Execution Summary
 Authorized whole A–D implementation after #105, explicit C0600 repair accepted. Fresh D from verified published/reviewed C `071afba72776961a4a68a6e6e780c47a35ee4be7`; PR108 unchanged, four native checks SUCCESS. GitHub formal approval absent; supplied parent Review PASS is separate evidence.
 ## Completed Steps
-- D1/D2/D3 and D4 local commands/traceability/rule inspection complete. D4 external acceptance is deliberately unchecked; task001 is not yet formally complete.
+- D1/D2/D3 and D4 local commands/traceability/docs/rule inspection/result/budget complete; no missing implementation behavior or mandatory local test/build requirement. Combined D4/external acceptance checkboxes remain unchecked for subsequent gates; task001 is not formally accepted.
 ## Updated Plan Artifacts
 - D plan local D1–D3 checkboxes verified; original PLAN/index and A/B/C results preserved.
 ## Commits Created
 - `bed9986e0744a964e174c85f281aa42bca0fe288 feat(model-profiles): persist targeted assignments with recoverable migration` — complete safe writer, all integration tests/docs/live cycle records.
-- Completion-evidence work unit: `docs(model-profiles): record D local verification and acceptance gaps`; full SHA is handed-off HEAD (`git log -1 --format=%H`), avoiding invented self-reference.
+- `1c064749882983439322d9be034a75a009588602 docs(model-profiles): record D local verification and acceptance gaps` — prior evidence commit. Result-only orchestration correction: `docs(model-profiles): distinguish D implementation from release gates`; own SHA resolves to handed-off HEAD (`git log -1 --format=%H`), avoiding invented self-reference.
 ## Files Changed
 - `scripts/lib/model-profiles/infrastructure/profile-store.ts`; `scripts/lib/model-profiles-config.ts` (parameter only); `tests/model-profiles-persistence.test.ts`; `README.md`; D plan linked above; this `openspec/results/reasoning-effort-model-profiles-persistence/D/RESULT.md`.
 ## Verification Results
@@ -42,7 +42,7 @@ Final commands ran with isolated temporary HOME/XDG/config/state at `/tmp/openco
 | D1 T1; D1 T1 refuses future nominal no-op before write I/O | unsupported version3 refusal / no throw; S1 | #5 reuse A read, #4 source version, #6 future guard; S0/F155; measured68 before row/69 after; projected268–366 |
 | D1; D1 no-op preserves exact mixed v1 source and prior snapshot | config path actual / empty string; S1 | #4 constant→path helper scalar; S0/F154; measured56 before row,57 after; projected268–366 |
 ## Blockers or Deviations
-Current D native Ubuntu Test/Windows launcher checks, independent canonical Review and ordinary approval **outstanding**; C/B/A green CI does not prove D. No source PR/publication/merge authorization in this task. Installer parity changes/provider-request tests **not applicable**: inactive storage only. Task001/P2/P3 acceptance remains blocked by external gates, not a local test failure.
+Implementation blockers: None. Subsequent current D native Ubuntu Test/Windows launcher CI, independent canonical Review and ordinary release approval **outstanding**; C/B/A green CI does not prove D. Task001/P2/P3 acceptance remains gated. Result-only status correction is orchestration metadata, not user acceptance or a waiver; no source PR/publication/merge authorized. Installer parity changes/provider-request tests **not applicable**: inactive storage only.
 T1 first GREEN attempt exposed a harness assumption: readFileSync internally openSync(r); narrowed assertion to no write-open, no production workaround. This later harness failure is not RED evidence.
 Saver fault characterization: `D3 saver serialize/write/fsync/close/rename failure preserves source and completed snapshot for retry` all5 passed first invocation, then F168/typecheck0; measured210 before note/211 after, projected327–367. No extra breaking saver scenarios exist in the required matrix: unchanged saver catches every listed precommit fault and cleans its own temp. D3 new sequencing instead has genuine initial/T1/T2 RED above; no redundant fault algorithm or manufactured RED. Serialization spy is enabled only inside real saver, after JSON validation; no cyclic fake-valid candidate. Descriptor-aware spies restored per case; retries reuse completed exact snapshot.
 ## Notes
