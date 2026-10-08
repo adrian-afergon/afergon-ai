@@ -23,7 +23,7 @@ plan-05-agent-target-policy.md (verified steps only).
 
 ## Commits Created
 
-Verified capability commit pending; exact SHA will be recorded after commit.
+- 38b4cc354ef1413d2dd027b4a5e0fa90eee0e165 feat(models): own agent targeting in concrete domain policy (code/tests/docs/result). This subsequent result-only handoff records its identity; resolve handoff HEAD with `git log -1 --format=%H`.
 
 ## Files Changed
 
