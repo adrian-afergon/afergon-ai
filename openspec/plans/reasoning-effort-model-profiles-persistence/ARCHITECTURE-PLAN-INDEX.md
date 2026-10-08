@@ -299,7 +299,9 @@ Stacked PRs to main: historical [PR104](https://github.com/adrian-afergon/afergo
 | P2 | plans07–08 | Published [PR112](https://github.com/adrian-afergon/afergon-ai/pull/112); OPEN, not merged |
 | P3 | plans09–10 | Published [PR113](https://github.com/adrian-afergon/afergon-ai/pull/113); OPEN, not merged |
 | P4 | plans11–12 | Published [PR114](https://github.com/adrian-afergon/afergon-ai/pull/114); OPEN, not merged |
-| P5 | plan13 | Prepared on `docs/issue94-p1-class-plan-05`; PR pending |
-| P6 | TEST-ALLOCATION.md | Pending publication |
+| P5 | plan13 | Published [PR115](https://github.com/adrian-afergon/afergon-ai/pull/115); OPEN, not merged |
+| P6 | TEST-ALLOCATION.md | Published [PR116](https://github.com/adrian-afergon/afergon-ai/pull/116); OPEN, not merged |
 
 Forward links to owned plans/ledger become available progressively through P6; they are intentional future links in earlier prefixes. Produced: supplied final planning PASS, exact historical-base verification and byte-identical transfer checks. Not applicable: local application tests/build for docs-only publication. Outstanding: current-head CI, human integration authorization and renewed Plan-to-Implement approval; native persistence/checker evidence remains future implementation work.
+
+P0–P6 publication is produced as PR110–116; all are docs-only and await human integration. The complete docs tip contains all eleven reviewed artifacts; the original eleven D files remain untouched. Current-head CI is reported separately on the PRs; its success does not grant the implementation gate.
