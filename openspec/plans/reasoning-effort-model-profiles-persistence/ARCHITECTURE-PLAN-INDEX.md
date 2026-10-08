@@ -295,8 +295,8 @@ Stacked PRs to main: historical [PR104](https://github.com/adrian-afergon/afergo
 | Unit | Owned documents (plus this block's small descendant delta) | Publication status / URL |
 | --- | --- | --- |
 | P0 | Index only | Published [PR110](https://github.com/adrian-afergon/afergon-ai/pull/110); OPEN, not merged |
-| P1 | plans05–06 | Prepared on `docs/issue94-p1-class-plan-01`; PR pending |
-| P2 | plans07–08 | Pending publication |
+| P1 | plans05–06 | Published [PR111](https://github.com/adrian-afergon/afergon-ai/pull/111); OPEN, not merged |
+| P2 | plans07–08 | Prepared on `docs/issue94-p1-class-plan-02`; PR pending |
 | P3 | plans09–10 | Pending publication |
 | P4 | plans11–12 | Pending publication |
 | P5 | plan13 | Pending publication |
