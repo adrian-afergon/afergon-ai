@@ -22,8 +22,8 @@ plan-06-profile-document-policy.md (verified implementation; independent parent 
 
 ## Commits Created
 
-- 06e7077 feat(models): own complete raw profile validation in domain (first verified work unit).
-- Eligibility work unit commit is recorded by the subsequent handoff; resolve final HEAD with `git log -1 --format=%H`.
+- 06e70775c6db23b4b01e65688285a47eba6804a5 feat(models): own complete raw profile validation in domain (first verified work unit).
+- df71044c1f2859d188b225c8a203bf9c227b8433 feat(models): own profile version and recovery eligibility; subsequent result-only commit binds this handoff (HEAD: `git log -1 --format=%H`).
 
 ## Files Changed
 
