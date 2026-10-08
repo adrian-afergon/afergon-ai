@@ -64,7 +64,7 @@ export function acquireMigrationSnapshot(input: AcquireMigrationSnapshotInput): 
   assertProfileSourceUnchanged(input.source);
   let fd: number;
   try {
-    fd = fs.openSync(snapshotPath, "wx");
+    fd = fs.openSync(snapshotPath, "wx", 0o600);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
     const backupBytes = fs.readFileSync(snapshotPath);

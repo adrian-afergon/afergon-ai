@@ -380,6 +380,21 @@ describe("preparation reuse characterizations", () => {
 });
 
 describe("C snapshot lifecycle", () => {
+  it.skipIf(process.platform === "win32").each([
+    ["C mode creates a private snapshot from a 0600 source under umask022", false, false],
+    ["C mode T1 creates a private absent-source default snapshot", true, false],
+    ["C mode T2 preserves a completed existing backup mode0640", false, true],
+  ] as const)("%s", (_name, absent, previous) => {
+    const fixture = snapshotFixture("{}", absent), mask = process.umask(0o022);
+    try {
+      if (!absent) fs.chmodSync(fixture.source.configPath, 0o600);
+      if (previous) fs.writeFileSync(fixture.backup, fixture.source.sourceBytes!, { mode: 0o640 });
+      acquireMigrationSnapshot(fixture.input);
+      expect(fs.statSync(fixture.backup).mode & 0o777).toBe(previous ? 0o640 : 0o600);
+      if (!absent) expect(fs.statSync(fixture.source.configPath).mode & 0o777).toBe(0o600);
+      fixture.unchanged();
+    } finally { process.umask(mask); }
+  });
   const cleanupFaults: Array<[string, "remove" | "close" | "both"]> = [
     ["C cleanup removal failure reports original and cleanup errors", "remove"],
     ["C cleanup T1 close failure still attempts owned removal", "close"],

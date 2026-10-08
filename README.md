@@ -125,7 +125,7 @@ Internal pure assignment preparation returns an independent candidate and change
 Its reported version is prospective; the candidate retains the original schema value until snapshot-backed persistence is available.
 Preparation performs no disk or host I/O and does not activate effort controls in CLI/TUI.
 
-Internal snapshot acquisition preserves exact source bytes at `config.json.pre-v2.bak`; an absent source uses recoverable default JSON.
+Internal snapshot acquisition preserves exact source bytes at `config.json.pre-v2.bak` with owner-only creation permissions (`0600`, subject to umask); an absent source uses recoverable default JSON. Existing snapshot permissions are preserved.
 It rechecks source existence/bytes and reuses only a validated byte-identical backup. Mismatched or partial existing backups block retry.
 Only invocation-owned incomplete backups may be cleaned up; cleanup failures retain the original failure and report all cleanup causes.
 This capability does not save configuration or activate effort controls. It provides no general multiwriter lock; concurrent old writers are unsupported.
