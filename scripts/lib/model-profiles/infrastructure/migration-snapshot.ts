@@ -35,17 +35,13 @@ export function assertProfileSourceUnchanged(observation: SourceObservation): vo
   if (observation.exists ? !Buffer.isBuffer(observation.sourceBytes) : observation.sourceBytes !== undefined) {
     throw new Error("Invalid source observation");
   }
-  let actual: Buffer;
+  let actual: Buffer | undefined;
   try {
     actual = fs.readFileSync(observation.configPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      if (!observation.exists) return;
-      throw new Error("Profile source changed");
-    }
-    throw error;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
-  if (!observation.exists || !actual.equals(observation.sourceBytes!)) throw new Error("Profile source changed");
+  if (observation.exists ? !actual?.equals(observation.sourceBytes!) : actual !== undefined) throw new Error("Profile source changed");
 }
 
 export function acquireMigrationSnapshot(input: AcquireMigrationSnapshotInput): SnapshotReceipt {

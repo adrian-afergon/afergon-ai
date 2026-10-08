@@ -11,7 +11,8 @@ C only, authorized after #105 and accepted A/B; A's historical evidence exceptio
 ## Commits Created
 - `02c0307fd1b7e7b702da1dca18b77b98b7b2c353 feat(model-profiles): acquire exact-byte migration snapshots` — C1/C2 code/tests/docs/live evidence; C3 deliberately unfinished.
 - `e26c8bf3d56c03e83ea2878c8b6eda5c8986e1a1 fix(model-profiles): clean owned incomplete snapshots and report failures` — C3, complete fault/characterization matrix, default-byte fix, green readability refactor.
-- Completion evidence work unit: `docs(model-profiles): record verified C snapshot lifecycle evidence`; its own SHA is handed-off HEAD (`git log -1 --format=%H`), avoiding an invented self-reference.
+- `c3977f6858ce08c3bea6ecacc1a6bfa7c6c16694 docs(model-profiles): record verified C snapshot lifecycle evidence` — original C completion record; history retained.
+- Headroom work unit: `refactor(model-profiles): share snapshot fixtures and conflict handling`; resolve its SHA from this exact branch's log, not an invented self-reference.
 ## Files Changed
 - `scripts/lib/model-profiles/infrastructure/migration-snapshot.ts`, `tests/model-profiles-persistence.test.ts`, `README.md`, C plan, this RESULT.
 ## Verification Results
@@ -68,6 +69,7 @@ External gates outstanding, not implementation failures: fresh canonical Review,
 | Original+cleanup errors, removal despite close failure, both cleanup causes | Three named cleanup fixtures; AggregateError identity assertions and partial existence/cleanup evidence |
 | Invalid/future/nonmatching recovery before mkdir; observation consistency; no writer/host/live route | Recovery matrix18 incl14 A reuse; observation3; source import audit and emitted smoke; legacy/full regressions |
 ## Notes
+Authorized WARN repair from Review `ses_ee8300415ffefgIz8AfdLkONtR`: new backups0600, existing/source permissions unchanged. GREEN refactor retains150 cases/names/assertions and24 cycle rows; focused150/typecheck/diff-check exit0. Shared backup-byte assertion initially rejected two intentional partials; corrected fixture expectation to `{` (not behavioral RED). Actual B-relative350 = source89/tests157/RESULT85/README7/plan12 before this note+commit row2; forecast final372 includes mode tests15/evidence3/plan2. Reinspected clean C at c3977f6, exact B remote/checks and full topology; all non-C dispositions unchanged.
 24 genuine RED/GREEN cycles, including two later same-name assertion extensions; six main units C1/C2/C3/recovery/absent/cleanup each have initial RED then sequential T1/T2. Supplemental source/observation/default-byte cases extend those units. Reverse-chronological rows preserve order via focal counts; no future fault cleanup preceded its RED.
 Already-green exceptions: unchanged A validation14, open/read propagation4, late-recheck2 and non-Buffer1 (21 added named characterizations). They cannot supply new RED: the reused validators/guards/catch paths already cover them. Absent completed retry also passed unchanged; no fabricated extra triangulation.
 Emitted smoke initially failed twice on loader I/O: Node26 loads module URLs using readFileSync/openSync. Narrow allowlisting of read-only dist/package loading produced10 loader calls and zero application/host calls; no source change. Those harness failures are not RED cycles. All final commands used isolated HOME/XDG/config/state temp roots.
