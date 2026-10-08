@@ -117,12 +117,25 @@ afergon-ai models profile create fallback
 ```
 
 Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`.
+
+The internal `updateProfileAssignment` API in `scripts/lib/model-profiles/infrastructure/profile-store.ts`
+can persist extended assignments directly; CLI/TUI and host workflows still use legacy strings.
+A real structured v1 change first completes sibling `config.json.pre-v2.bak`, then saves version 2.
+No-ops preserve exact bytes/schema; legacy-only edits retain their schema; v2 edits need no new backup.
+An absent source snapshots recoverable defaults. A retry verifies the existing backup's exact bytes;
+malformed or mismatched backups are refused, and completed backups survive config-save failures.
+The atomic rename is the commit point; directory fsync is best effort. Source rechecks detect prior
+changes but do not close the comparison-to-rename race. Concurrent old-writer use is unsupported.
+Old writers discard extended data despite version 2. Before rollback, freeze writes and retain full
+current documents plus backups. Restore a pre-v2 snapshot only with consent to lose later edits;
+keep the extended reader until recovery is verified. No downgrade exporter is available yet.
+
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
-The internal profile reader accepts legacy model strings and structured assignments while preserving their stored representation. It validates recognized fields, leaves unsupported agent entries opaque, and retains the original text and source bytes for recovery. This reader is not exposed through CLI/TUI and performs no migration or writes; do not use legacy profile commands to write structured assignments until migration-aware persistence is available.
+The internal profile reader accepts legacy model strings and structured assignments while preserving their stored representation. It validates recognized fields, leaves unsupported agent entries opaque, and retains the original text and source bytes for recovery. This reader is not exposed through CLI/TUI and performs no migration or writes; do not use legacy profile commands to write structured assignments.
 
 Internal pure assignment preparation returns an independent candidate and change/migration flags.
-Its reported version is prospective; the candidate retains the original schema value until snapshot-backed persistence is available.
+Its reported version is prospective; the candidate retains the original schema value until the snapshot-backed writer commits it.
 Preparation performs no disk or host I/O and does not activate effort controls in CLI/TUI.
 
 Internal snapshot acquisition preserves exact source bytes at `config.json.pre-v2.bak` with owner-only creation permissions (`0600`, subject to umask); an absent source uses recoverable default JSON. Existing snapshot permissions are preserved.

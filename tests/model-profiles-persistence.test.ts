@@ -5,7 +5,7 @@ import childProcess from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadProfileDocument } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
+import { loadProfileDocument, updateProfileAssignment } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
 import { validateProfileDocument } from "../scripts/lib/model-profiles/infrastructure/document-validation.js";
 import { prepareProfileAssignment } from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
 import * as profileCore from "../scripts/lib/model-profiles-core.js";
@@ -549,4 +549,231 @@ function snapshotFault(backup: string, stage: SnapshotFaultStage) {
     return (original as (...args: unknown[]) => never)(target, ...args);
   });
   return { failure, closeAttempts: () => closes, descriptor: () => descriptor };
+}
+
+describe("D bounded persistence", () => {
+  it.each(invalidPatchFields)("D1 integrated invalid patch %s never writes or calls host", (_name, field, value) => {
+    const fixture = snapshotFixture('{"models":{"profiles":{"work":{"review":"old"}}}}');
+    const spies = [vi.spyOn(profileConfig, "saveConfig"), vi.spyOn(fs, "mkdirSync"), vi.spyOn(childProcess, "spawnSync"), vi.spyOn(childProcess, "execFileSync")];
+    expect(() => updateProfileAssignment("work", "review", { [field]: value }, { env: writerEnv(fixture) })).toThrow();
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled(); fixture.unchanged(false);
+  });
+  it.each(['{', '{"models":{"profiles":{"other":{"review":{"reasoningEffort":null}}}}}'])("D1 corrupt or nontarget invalid source %s never writes", bytes => {
+    const fixture = snapshotFixture('{}'); fs.writeFileSync(fixture.source.configPath, bytes);
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => updateProfileAssignment("work", "review", { model: "new" }, { env: writerEnv(fixture) })).toThrow();
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled(); expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe(bytes);
+    expect(fs.readdirSync(path.dirname(fixture.backup))).toEqual(["config.json"]);
+  });
+  it("D1 explicit mixed v1 identical effort preserves exact schema and bytes", () => {
+    const fixture = snapshotFixture('{ "version":1,"models":{"profiles":{"work":{"review":{"reasoningEffort":"high"},"afg-specify":"inherit"}}}}');
+    expect(updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toEqual({ configPath: fixture.source.configPath, version: 1 });
+    fixture.unchanged(false);
+  });
+  it("D2 v2 rechecks after pure final validation before actual saver", () => {
+    const fixture = snapshotFixture('{"version":2}'), validate = documentValidation.validateProfileDocument; let calls = 0;
+    vi.spyOn(documentValidation, "validateProfileDocument").mockImplementation((document, configPath) => {
+      const result = validate(document, configPath); if (++calls === 5) fs.writeFileSync(fixture.source.configPath, '{"external":true}'); return result;
+    });
+    const save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("Profile source changed");
+    expect(save).not.toHaveBeenCalled(); expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe('{"external":true}'); expect(fs.existsSync(fixture.backup)).toBe(false);
+  });
+  it("D3 cleanup failure keeps original precommit error without false temp guarantee", () => {
+    const fixture = snapshotFixture('{}'), failure = configFault("rename"), remove = fs.rmSync.bind(fs);
+    vi.spyOn(fs, "rmSync").mockImplementation((file, options) => { if (String(file).endsWith(".tmp")) throw new Error("cleanup fault"); return remove(file, options); });
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow(failure);
+    expect(fs.readFileSync(fixture.source.configPath)).toEqual(fixture.source.sourceBytes); expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+    expect(fs.readdirSync(path.dirname(fixture.backup)).filter(file => file.endsWith(".tmp"))).toHaveLength(1);
+  });
+  it.each(["work", "__proto__", "constructor"])("D2 round-trips own profile %s with metadata and subsequent v2 representations", profileName => {
+    const profile = { " REVIEW ": { model: " old ", note: { labels: ["keep"] } }, "afg-specify": "inherit", "afergon-ai": { model: "same", reasoningEffort: "high" }, foreign: { model: null } };
+    const document = { version: 1, memo: ["root"], models: { activeProfile: "other", note: ["models"], profiles: { other: { review: { reasoningEffort: "low" } }, [profileName]: profile } } };
+    const fixture = snapshotFixture(JSON.stringify(document)), acquire = vi.spyOn(migrationSnapshot, "acquireMigrationSnapshot");
+    updateProfileAssignment(profileName, "afg-review", { model: " new " }, { env: writerEnv(fixture) });
+    expect(loadProfileDocument(writerEnv(fixture)).document).toEqual({ ...document, version: 2, models: { ...document.models, profiles: { ...document.models.profiles, [profileName]: { ...profile, " REVIEW ": { ...profile[" REVIEW "], model: " new " } } } } });
+    updateProfileAssignment(profileName, "afg-specify", { model: " legacy " }, { env: writerEnv(fixture) });
+    updateProfileAssignment(profileName, " REVIEW ", { model: "same", reasoningEffort: " Low " }, { env: writerEnv(fixture) });
+    const saved = loadProfileDocument(writerEnv(fixture)).document as typeof document;
+    expect(saved.models.profiles[profileName]["afg-specify"]).toBe(" legacy ");
+    expect(saved.models.profiles.other).toEqual(document.models.profiles.other);
+    expect(saved.models.profiles[profileName][" REVIEW "]).toEqual({ model: "same", reasoningEffort: " Low ", note: { labels: ["keep"] } });
+    expect(saved.models.profiles[profileName]["afergon-ai"]).toEqual({ model: "same", reasoningEffort: "high" });
+    expect(acquire).toHaveBeenCalledTimes(1); expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+  });
+  it("D2 absent source structured model-only write snapshots recoverable defaults", () => {
+    const fixture = snapshotFixture('{}', true);
+    updateProfileAssignment("new", "review", { model: "inherit" }, { env: writerEnv(fixture) });
+    expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(profileConfig.createDefaultConfig());
+    expect(loadProfileDocument(writerEnv(fixture)).document).toEqual({ version: 2, models: { activeProfile: null, profiles: { new: { "afg-review": { model: "inherit" } } } } });
+  });
+  it.each(invalidReads)("D1 integrated invalid source %s never saves", (_name, document, diagnostic) => {
+    const fixture = snapshotFixture('{}'), bytes = JSON.stringify(document); fs.writeFileSync(fixture.source.configPath, bytes);
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => updateProfileAssignment("work", "review", {}, { env: writerEnv(fixture) })).toThrow(diagnostic);
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe(bytes); expect(fs.readdirSync(path.dirname(fixture.backup))).toEqual(["config.json"]);
+  });
+  it.each(["before backup", "before save"].flatMap(timing => ["change", "delete", "appear"].map(kind => [timing, kind])))("D2 %s detects source %s and prevents saver", (timing, kind) => {
+    const fixture = snapshotFixture('{}', kind === "appear"); fs.mkdirSync(path.dirname(fixture.backup), { recursive: true });
+    const change = () => kind === "delete" ? fs.unlinkSync(fixture.source.configPath) : fs.writeFileSync(fixture.source.configPath, '{"external":true}');
+    const prepare = assignmentPreparation.prepareProfileAssignment, acquire = migrationSnapshot.acquireMigrationSnapshot;
+    if (timing === "before backup") vi.spyOn(assignmentPreparation, "prepareProfileAssignment").mockImplementation(input => { const result = prepare(input); change(); return result; });
+    else vi.spyOn(migrationSnapshot, "acquireMigrationSnapshot").mockImplementation(input => { const result = acquire(input); change(); return result; });
+    const save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("Profile source changed");
+    expect(save).not.toHaveBeenCalled();
+    if (kind === "delete") expect(fs.existsSync(fixture.source.configPath)).toBe(false);
+    else expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe('{"external":true}');
+    expect(fs.existsSync(fixture.backup)).toBe(timing === "before save");
+    if (timing === "before save") expect(JSON.parse(fs.readFileSync(fixture.backup, "utf8"))).toEqual(fixture.source.document);
+    expect(fs.readdirSync(path.dirname(fixture.backup)).some(file => file.endsWith(".tmp"))).toBe(false);
+  });
+  it.each(["open", "write", "fsync", "close"] as const)("D3 backup %s failure prevents actual saver", stage => {
+    const fixture = snapshotFixture('{}'), fault = snapshotFault(fixture.backup, stage), save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow(fault.failure);
+    expect(save).not.toHaveBeenCalled(); fixture.unchanged(false);
+  });
+  it.each(["{", "{ }"])("D2 refuses prior malformed or mismatched snapshot %s without save", bytes => {
+    const fixture = snapshotFixture('{}'); fs.writeFileSync(fixture.backup, bytes);
+    const save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow();
+    expect(save).not.toHaveBeenCalled(); fixture.unchanged(true, Buffer.from(bytes));
+  });
+  it.each(["serialize", "write", "fsync", "close", "rename"] as const)("D3 saver %s failure preserves source and completed snapshot for retry", stage => {
+    const fixture = snapshotFixture('{}'), fault = configFault(stage);
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow(fault);
+    fixture.unchanged();
+    vi.restoreAllMocks();
+    expect(updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toEqual({ configPath: fixture.source.configPath, version: 2, snapshotPath: fixture.backup });
+    expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+    expect(loadProfileDocument(writerEnv(fixture)).document.version).toBe(2);
+  });
+  it("D3 T2 future candidate refuses before backup or downgrade", () => {
+    const fixture = snapshotFixture('{}'), prepare = assignmentPreparation.prepareProfileAssignment;
+    vi.spyOn(assignmentPreparation, "prepareProfileAssignment").mockImplementation(input => {
+      const candidate = prepare(input); candidate.document.version = 3; return candidate;
+    });
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("unsupported profile version 3");
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    fixture.unchanged(false);
+  });
+  it("D3 T1 invalid candidate prevents backup stage and save", () => {
+    const fixture = snapshotFixture('{}'), prepare = assignmentPreparation.prepareProfileAssignment;
+    vi.spyOn(assignmentPreparation, "prepareProfileAssignment").mockImplementation(input => ({ ...prepare(input), document: { models: null } }));
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("models must be an object");
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    fixture.unchanged(false);
+  });
+  it("D3 validates versioned candidate before actual save", () => {
+    const fixture = snapshotFixture('{}'), versions: unknown[] = [];
+    const validate = documentValidation.validateProfileDocument;
+    vi.spyOn(documentValidation, "validateProfileDocument").mockImplementation((document, configPath) => {
+      versions.push((document as Record<string, unknown>).version); return validate(document, configPath);
+    });
+    const save = profileConfig.saveConfig;
+    vi.spyOn(profileConfig, "saveConfig").mockImplementation((candidate, env) => { expect(versions.at(-1)).toBe(2); return save(candidate, env); });
+    updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) });
+  });
+  it("D2 legacy-only change preserves absent version despite unrelated structured slot", () => {
+    const contents = '{"models":{"profiles":{"work":{"review":"old","afg-specify":{"reasoningEffort":"low"}}}}}';
+    const fixture = snapshotFixture(contents);
+    expect(updateProfileAssignment("work", "review", { model: "new" }, { env: writerEnv(fixture) })).toEqual({ configPath: fixture.source.configPath, version: 1 });
+    expect(loadProfileDocument(writerEnv(fixture)).document).toEqual({ models: { profiles: { work: { review: "new", "afg-specify": { reasoningEffort: "low" } } } } });
+    expect(fs.existsSync(fixture.backup)).toBe(false);
+  });
+  it("D2 T2 rejects stale source before invoking snapshot stage", () => {
+    const fixture = snapshotFixture('{"models":{"profiles":{"work":{"review":"old"}}}}');
+    const prepare = assignmentPreparation.prepareProfileAssignment;
+    vi.spyOn(assignmentPreparation, "prepareProfileAssignment").mockImplementation(input => {
+      const candidate = prepare(input); fs.unlinkSync(fixture.source.configPath); return candidate;
+    });
+    const acquire = vi.spyOn(migrationSnapshot, "acquireMigrationSnapshot"), save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("Profile source changed");
+    for (const spy of [acquire, save]) expect(spy).not.toHaveBeenCalled();
+    expect(fs.readdirSync(path.dirname(fixture.backup))).toEqual([]);
+  });
+  it("D2 T1 rejects source changed after completed snapshot before save", () => {
+    const fixture = snapshotFixture('{"models":{"profiles":{"work":{"review":"old"}}}}');
+    const acquire = migrationSnapshot.acquireMigrationSnapshot;
+    vi.spyOn(migrationSnapshot, "acquireMigrationSnapshot").mockImplementation(input => {
+      const receipt = acquire(input); fs.writeFileSync(fixture.source.configPath, '{"external":true}'); return receipt;
+    });
+    const save = vi.spyOn(profileConfig, "saveConfig");
+    expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: writerEnv(fixture) })).toThrow("Profile source changed");
+    expect(save).not.toHaveBeenCalled();
+    expect(fs.readFileSync(fixture.source.configPath, "utf8")).toBe('{"external":true}');
+    expect(fs.readFileSync(fixture.backup)).toEqual(fixture.source.sourceBytes);
+  });
+  it("D2 first structured change snapshots before real v2 save", () => {
+    const fixture = snapshotFixture('{\n "models":{"profiles":{"work":{"review":"old"},"other":{"afg-specify":"inherit"}}},"memo":["café"]\n}');
+    const originalSave = profileConfig.saveConfig;
+    vi.spyOn(profileConfig, "saveConfig").mockImplementation((candidate, env) => {
+      fixture.unchanged();
+      expect(candidate.version).toBe(2);
+      return originalSave(candidate, env);
+    });
+    expect(updateProfileAssignment("work", "review", { reasoningEffort: " High " }, { env: writerEnv(fixture) })).toEqual({ configPath: fixture.source.configPath, version: 2, snapshotPath: fixture.backup });
+    expect(loadProfileDocument(writerEnv(fixture)).document).toEqual({ ...fixture.source.document, version: 2, models: { profiles: { work: { review: { model: "old", reasoningEffort: " High " } }, other: { "afg-specify": "inherit" } } } });
+    expect(fs.readdirSync(path.dirname(fixture.backup))).toEqual(["config.json", "config.json.pre-v2.bak"]);
+  });
+  it("D1 T2 rejects own undefined patch before save or snapshot", () => {
+    const fixture = snapshotFixture('{"models":{"profiles":{"work":{"review":"old"}}}}');
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => updateProfileAssignment("work", "review", { model: undefined }, { env: writerEnv(fixture) })).toThrow('models.profiles["work"]["review"].model');
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    fixture.unchanged(false);
+  });
+  it("D1 T1 refuses future nominal no-op before write I/O", () => {
+    const fixture = snapshotFixture('{"version":3}');
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync"), open = vi.spyOn(fs, "openSync");
+    expect(() => updateProfileAssignment("work", "review", {}, { env: writerEnv(fixture) })).toThrow("unsupported profile version 3");
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    expect(open.mock.calls.every(([, flags]) => flags === "r")).toBe(true);
+    fixture.unchanged(false);
+  });
+  it("D1 no-op preserves exact mixed v1 source and prior snapshot", () => {
+    const fixture = snapshotFixture('{\n "models":{"profiles":{"work":{"review":{"model":" old ","reasoningEffort":" High "},"afg-specify":"inherit"}}}\n}');
+    fs.writeFileSync(fixture.backup, "prior snapshot");
+    const save = vi.spyOn(profileConfig, "saveConfig"), mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(updateProfileAssignment("work", "review", { model: " old " }, { env: writerEnv(fixture) })).toEqual({ configPath: fixture.source.configPath, version: 1 });
+    fixture.unchanged(true, Buffer.from("prior snapshot"));
+    for (const spy of [save, mkdir]) expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+import * as profileConfig from "../scripts/lib/model-profiles-config.js";
+import * as migrationSnapshot from "../scripts/lib/model-profiles/infrastructure/migration-snapshot.js";
+import * as assignmentPreparation from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
+function writerEnv(fixture: ReturnType<typeof snapshotFixture>) {
+  return { HOME: fixture.root, XDG_CONFIG_HOME: fixture.root, AFERGON_AI_CONFIG_DIR: path.dirname(fixture.source.configPath) };
+}
+
+function configFault(stage: "serialize" | "write" | "fsync" | "close" | "rename") {
+  const failure = new Error(`config ${stage} fault`), open = fs.openSync.bind(fs), close = fs.closeSync.bind(fs);
+  let descriptor: number | undefined, failed = false, saving = false;
+  vi.spyOn(fs, "openSync").mockImplementation((file, flags, ...args) => {
+    const fd = open(file, flags, ...args);
+    if (typeof file === "string" && file.endsWith(".tmp") && flags === "wx") descriptor = fd;
+    return fd;
+  });
+  vi.spyOn(fs, "closeSync").mockImplementation(fd => {
+    if (fd === descriptor && stage === "close" && !failed) { failed = true; throw failure; }
+    const result = close(fd); if (fd === descriptor) descriptor = undefined; return result;
+  });
+  const method = stage === "write" ? "writeFileSync" : stage === "rename" ? "renameSync" : "fsyncSync", original = fs[method].bind(fs);
+  if (!["serialize", "close"].includes(stage)) vi.spyOn(fs, method).mockImplementation((target, ...args) => {
+    if (stage === "rename" ? typeof target === "string" && target.endsWith(".tmp") : target === descriptor) throw failure;
+    return (original as (...args: unknown[]) => never)(target, ...args);
+  });
+  if (stage === "serialize") {
+    const stringify = JSON.stringify, save = profileConfig.saveConfig;
+    vi.spyOn(JSON, "stringify").mockImplementation((...args) => { if (saving) throw failure; return stringify(...args); });
+    vi.spyOn(profileConfig, "saveConfig").mockImplementation((candidate, env) => {
+      saving = true; try { return save(candidate, env); } finally { saving = false; }
+    });
+  }
+  return failure;
 }

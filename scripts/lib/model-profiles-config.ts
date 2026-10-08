@@ -127,7 +127,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): {
   return { config, configPath, exists: true };
 }
 
-export function saveConfig(config: AfergonModelConfig, env: NodeJS.ProcessEnv = process.env): string {
+export function saveConfig(config: AfergonModelConfig | Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): string {
   const configPath = getConfigPath(env);
   const configDir = path.dirname(configPath);
   const tempPath = path.join(configDir, `.config.json.${process.pid}.${Date.now()}.tmp`);

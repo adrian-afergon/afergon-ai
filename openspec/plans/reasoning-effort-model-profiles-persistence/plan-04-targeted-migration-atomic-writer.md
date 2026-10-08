@@ -43,9 +43,9 @@ Forecast new writer45–70 + saver2, tests125–170, docs10–14, D result80–1
 
 ## Implementation Steps
 
-- [ ] D1 bind bounded update to A/B, validate whole source/candidate and refuse future versions before write-side I/O; exact no-op returns without save/snapshot.
-- [ ] D2 integrate C snapshot acquisition and two source rechecks, then migration version and existing atomic save; verify targeted reload/retry/absent-source/version cases.
-- [ ] D3 verify every config precommit fault, snapshot retained on failed save, cleanup where possible, source-conflict preservation and no host side effects.
+- [x] D1 bind bounded update to A/B, validate whole source/candidate and refuse future versions before write-side I/O; exact no-op returns without save/snapshot.
+- [x] D2 integrate C snapshot acquisition and two source rechecks, then migration version and existing atomic save; verify targeted reload/retry/absent-source/version cases.
+- [x] D3 verify every config precommit fault, snapshot retained on failed save, cleanup where possible, source-conflict preservation and no host side effects.
 - [ ] D4 complete original task traceability, internal-only recovery docs, full original final verification/native checks/review, and D result/budget.
 
 ### Ordered TDD and adversarial matrix

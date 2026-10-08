@@ -1,7 +1,10 @@
 import fs from "node:fs";
 
-import { createDefaultConfig, getConfigPath } from "../../model-profiles-config.js";
+import { createDefaultConfig, getConfigPath, saveConfig } from "../../model-profiles-config.js";
 import { validateProfileDocument } from "./document-validation.js";
+import type { AssignmentPatch } from "../domain/assignment-patch.js";
+import { prepareProfileAssignment } from "./prepare-assignment.js";
+import { acquireMigrationSnapshot, assertProfileSourceUnchanged } from "./migration-snapshot.js";
 
 export interface LoadedProfileDocument {
   document: Record<string, unknown>;
@@ -26,4 +29,27 @@ export function loadProfileDocument(env: NodeJS.ProcessEnv = process.env): Loade
   const originalBytes = sourceBytes.toString("utf8");
   const document = validateProfileDocument(JSON.parse(originalBytes) as unknown, configPath);
   return { document, configPath, exists: true, originalBytes, sourceBytes };
+}
+
+export function updateProfileAssignment(
+  profileName: string, agentName: string, patch: AssignmentPatch,
+  options: { env?: NodeJS.ProcessEnv } = {},
+): { configPath: string; version: number; snapshotPath?: string } {
+  const source = loadProfileDocument(options.env);
+  const prepared = prepareProfileAssignment({ ...source, profileName, agentName, patch });
+  validateProfileDocument(prepared.document, source.configPath);
+  if (typeof prepared.document.version === "number" && prepared.document.version > 2) {
+    throw new Error(`Cannot update unsupported profile version ${prepared.document.version}`);
+  }
+  if (!prepared.changed) return { configPath: source.configPath, version: prepared.version };
+  assertProfileSourceUnchanged(source);
+  let snapshotPath: string | undefined;
+  if (prepared.migrationRequired) {
+    snapshotPath = acquireMigrationSnapshot({ source, recoveryDocument: source.document }).snapshotPath;
+    prepared.document.version = 2;
+  }
+  validateProfileDocument(prepared.document, source.configPath);
+  assertProfileSourceUnchanged(source);
+  saveConfig(prepared.document, options.env);
+  return { configPath: source.configPath, version: prepared.version, ...(snapshotPath ? { snapshotPath } : {}) };
 }
