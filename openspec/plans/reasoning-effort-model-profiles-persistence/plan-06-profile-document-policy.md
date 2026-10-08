@@ -44,7 +44,7 @@ Future owned: domain document/raw/version/recovery policy, retained assignment f
 - [x] Retain existing factory/class and all valid/invalid stored-value behavior; characterize direct own undefined without serialization loss.
 - [x] Encapsulate full-document checks with injected05 classification and original path formatting.
 - [x] Prove inactive/nontarget recognized errors propagate; unsupported slots remain opaque; future reads remain raw.
-- [ ] Complete no-I/O/inward/class behavior evidence, original command baseline and owned result/review.
+- [x] Complete no-I/O/inward/class behavior evidence, original command baseline and owned result/review handoff; independent parent Review remains outstanding.
 
 ## Interfaces and Technical Contracts
 
@@ -61,7 +61,7 @@ Strings remain raw nonempty/nonwhitespace, including model inherit. Objects allo
 - [x] All existing invalidReads/readableDocuments/effort matrices and direct own undefined retain errors/values/reference identity.
 - [x] Malformed inactive/nontarget fields cannot be swallowed; unsupported JSON slots remain opaque.
 - [x] Missing fields remain missing; future versions remain readable; all original strings/metadata retained.
-- [ ] Class owns validation, domain graph is clean, and relevant behavior/tests/docs/result are reviewed together.
+- [x] Class owns validation, domain graph is clean, and relevant behavior/tests/docs/result travel together for independent parent Review (outstanding).
 
 ## Verification
 
@@ -71,7 +71,7 @@ Future exact single-name/focal/typecheck/build/health/emitted/regression/full co
 
 Prefix emitted evidence is `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/domain/profile-document-policy.js')"` using05's inherited include. Original profile-store emitted import remains outstanding until07 supplies its reader; full original final acceptance still requires it.
 
-Produced: contracts/source audit and approved replacement basis. Not applicable now: tests/build. Outstanding: parent targeted re-review, separately authorized planning publication, renewed Implement gate and future evidence/budgets. Old A passes remain historical.
+Produced: approved06 gate,121 focal/132 regression/505 full tests, typecheck/build/health/emitted policy+factory and measured371-line whole delta; exact TDD provenance is in correction/S06/RESULT.md. Not applicable: reader import until07. Outstanding: parent Review, post-publication06 CI and full13 native acceptance; old A remains historical.
 
 ## Open Questions
 
@@ -79,7 +79,7 @@ None
 
 ## Dependencies
 
-05 complete and accepted, corrective planning publication/gate.07/08 depend on this validator;10 also uses it. P2/P3 wait for full13 acceptance.
+05 PR117 exact06a0748 Review PASS/four Test+Windows SUCCESS and approved issue94 verified; user approved sequential05–13 gate. Only06 executed;07 waits for independent06 Review/publication/CI. P2/P3 wait for full13 acceptance.
 
 ## Risks and Watchouts
 

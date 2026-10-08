@@ -8,6 +8,38 @@ import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/prof
 
 const policy = new AgentTargetPolicy();
 const documents = new ProfileDocumentPolicy(policy);
+it("refuses future preparation with its original diagnostic", () => {
+  expect(() => documents.requireSupportedVersion({ version: 3 }, "prepare"))
+    .toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
+});
+it("refuses future update with operation-specific punctuation", () => {
+  expect(() => documents.requireSupportedVersion({ version: 3 }, "update"))
+    .toThrow(new Error("Cannot update unsupported profile version 3"));
+});
+it("supported version two permits preparation", () => {
+  expect(() => documents.requireSupportedVersion({ version: 2 }, "prepare")).not.toThrow();
+});
+it("omitted legacy version permits update without injecting version one", () => {
+  expect(() => documents.requireSupportedVersion(Object.freeze({}), "update")).not.toThrow();
+});
+it("refuses future snapshot using the actual version and original text", () => {
+  expect(() => documents.requireSupportedVersion({ version: 4 }, "snapshot"))
+    .toThrow(new Error("Cannot snapshot unsupported profile version 4"));
+});
+it("refuses a mismatched recovery document before acquisition", () => {
+  expect(() => documents.requireRecoveryMatch(false)).toThrow(new Error("Recovery document does not match captured source"));
+});
+it("permits a matching recovery document", () => {
+  expect(() => documents.requireRecoveryMatch(true)).not.toThrow();
+});
+it.each([{}, { version: 1 }, { version: 2 }, { version: 3 }, { version: Number.MAX_SAFE_INTEGER }])("version eligibility matrix %j", (raw) => {
+  for (const operation of ["prepare", "update", "snapshot"] as const) {
+    const run = () => documents.requireSupportedVersion(raw, operation);
+    if ("version" in raw && raw.version! > 2) expect(run).toThrow(new Error(operation === "prepare"
+      ? `Cannot prepare assignment for unsupported profile version ${raw.version}.` : `Cannot ${operation} unsupported profile version ${raw.version}`));
+    else expect(run).not.toThrow();
+  }
+});
 const invalidDocuments: Array<[string, unknown, string]> = [
   ["root", [], "root value must be an object."],
   ["models", { models: null }, "models must be an object."],
@@ -96,6 +128,8 @@ it("domain constructor is ambient-free and uses its concrete classification coll
     expect(normalize).not.toHaveBeenCalled();
     const raw = { models: { profiles: { work: { " ReVieW ": {}, foreign: null } } } };
     expect(instance.validate(raw, "diagnostic-only")).toBe(raw);
+    instance.requireSupportedVersion(raw, "snapshot");
+    instance.requireRecoveryMatch(true);
     expect(normalize.mock.calls).toEqual([[" ReVieW "], ["foreign"]]);
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   } finally { normalize.mockRestore(); for (const spy of spies) spy.mockRestore(); }

@@ -54,4 +54,14 @@ export class ProfileDocumentPolicy {
     return document;
   }
 
+  requireSupportedVersion(document: RawProfileDocument, operation: "prepare" | "update" | "snapshot"): void {
+    const version = typeof document.version === "number" ? document.version : 1;
+    if (version <= 2) return;
+    if (operation === "prepare") throw new Error(`Cannot prepare assignment for unsupported profile version ${version}.`);
+    throw new Error(`Cannot ${operation} unsupported profile version ${version}`);
+  }
+
+  requireRecoveryMatch(matches: boolean): void {
+    if (!matches) throw new Error("Recovery document does not match captured source");
+  }
 }

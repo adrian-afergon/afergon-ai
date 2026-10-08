@@ -119,6 +119,7 @@ afergon-ai models profile create fallback
 Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`.
 The inactive persistence domain exposes `ProfileDocumentPolicy` with a concrete `AgentTargetPolicy` collaborator and `StoredAssignment.create` validation.
 It validates the complete raw document without rewriting strings, optional fields, foreign metadata or future readable schemas; errors retain stored-key paths.
+Its separate eligibility methods refuse preparation, update and snapshot acquisition above version 2, and reject recovery mismatches; readers do not migrate data.
 These direct domain capabilities do not activate structured writes in CLI, TUI or host registration.
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
