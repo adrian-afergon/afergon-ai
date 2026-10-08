@@ -1,33 +1,8 @@
-export const SUPPORTED_AGENTS = [
-  "afergon-ai",
-  "afg-debate",
-  "afg-breakdown",
-  "afg-specify",
-  "afg-plannify",
-  "afg-implement",
-  "afg-review",
-  "afg-design",
-] as const;
+import { AgentTargetPolicy, SUPPORTED_AGENTS, type SupportedAgent } from "./model-profiles/domain/agent-target-policy.js";
 
-const AGENT_ALIASES = new Map<string, SupportedAgent>([
-  ["afergon-ai", "afergon-ai"],
-  ["orchestrator", "afergon-ai"],
-  ["main", "afergon-ai"],
-  ["afg-debate", "afg-debate"],
-  ["debate", "afg-debate"],
-  ["afg-breakdown", "afg-breakdown"],
-  ["breakdown", "afg-breakdown"],
-  ["afg-specify", "afg-specify"],
-  ["specify", "afg-specify"],
-  ["afg-plannify", "afg-plannify"],
-  ["plannify", "afg-plannify"],
-  ["afg-implement", "afg-implement"],
-  ["implement", "afg-implement"],
-  ["afg-review", "afg-review"],
-  ["review", "afg-review"],
-  ["afg-design", "afg-design"],
-  ["design", "afg-design"],
-]);
+export { SUPPORTED_AGENTS, type SupportedAgent } from "./model-profiles/domain/agent-target-policy.js";
+
+const agentTargetPolicy = new AgentTargetPolicy();
 
 const DEGRADED_REFRESH_GUIDANCE_PATTERNS = [
   /\bwarning\b/u,
@@ -49,8 +24,6 @@ const DEGRADED_REFRESH_GUIDANCE_PATTERNS = [
   /\bmissing managed agent file/u,
   /\bonly afergon-ai config was updated/u,
 ];
-
-export type SupportedAgent = (typeof SUPPORTED_AGENTS)[number];
 
 export interface ParsedProviderModel {
   readonly provider: string;
@@ -185,16 +158,7 @@ export function suggestCloseModelIds(requestedModelId: unknown, availableModelId
 }
 
 export function normalizeAgentName(input: unknown): SupportedAgent {
-  if (typeof input !== "string" || !input.trim()) {
-    throw new Error(`Unsupported agent ''. Supported agents: ${SUPPORTED_AGENTS.join(", ")}`);
-  }
-
-  const normalized = AGENT_ALIASES.get(input.trim().toLowerCase());
-  if (!normalized) {
-    throw new Error(`Unsupported agent '${input}'. Supported agents: ${SUPPORTED_AGENTS.join(", ")}`);
-  }
-
-  return normalized;
+  return agentTargetPolicy.normalize(input);
 }
 
 export function normalizeProfileName(input: unknown): string {

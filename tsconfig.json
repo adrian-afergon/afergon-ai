@@ -14,6 +14,7 @@
     "scripts/lib/model-profiles-availability.ts",
     "scripts/lib/model-profiles-config.ts",
     "scripts/lib/model-profiles-core.ts",
+    "scripts/lib/model-profiles/**/*.ts",
     "scripts/lib/model-profiles-host-seeding.ts",
     "scripts/lib/model-profiles-save.ts",
     "scripts/lib/model-profiles.ts",

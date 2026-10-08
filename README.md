@@ -119,6 +119,9 @@ afergon-ai models profile create fallback
 Model profiles are stored in afergon-ai-owned config at `${AFERGON_AI_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/afergon-ai}/config.json`.
 Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also unset or `inherit`, afergon-ai preserves the runtime default instead of forcing a model.
 
+The pure `AgentTargetPolicy` owns supported agent aliases and stored-key targeting. It selects an exact supplied own key, otherwise the sole equivalent stored alias, otherwise the canonical new key; ambiguous aliases are refused and source keys stay untouched.
+The legacy normalization API delegates to this policy. This first corrective capability does not activate structured profile persistence; application ports, adapters and compatibility composition follow in plans06–13.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.

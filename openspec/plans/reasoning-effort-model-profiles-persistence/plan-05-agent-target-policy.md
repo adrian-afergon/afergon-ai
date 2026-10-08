@@ -41,10 +41,10 @@ Future owned: domain policy, narrow core alias exports/body, initial vertical ts
 
 ## Implementation Steps
 
-- [ ] Characterize all legacy supported aliases, whitespace/case and exact unsupported errors; preserve supported-array order and exported type.
-- [ ] Introduce class-owned normalization with the same policy; retain legacy compatibility exports/delegation, not duplicate divergent maps.
-- [ ] Implement actual stored-key selection with sequential behavioral cycles and own-key safety.
-- [ ] Verify legacy parity/inward imports/no I/O and produce owned tests/docs/result/review budget before06.
+- [x] Characterize all legacy supported aliases, whitespace/case and exact unsupported errors; preserve supported-array order and exported type.
+- [x] Introduce class-owned normalization with the same policy; retain legacy compatibility exports/delegation, not duplicate divergent maps.
+- [x] Implement actual stored-key selection with sequential behavioral cycles and own-key safety.
+- [x] Verify legacy parity/inward imports/no I/O and produce owned tests/docs/result/review budget before06.
 
 ## Interfaces and Technical Contracts
 
@@ -56,10 +56,10 @@ No new utility classes for path formatting or plain-object checks are required. 
 
 ## Acceptance Criteria
 
-- [ ] All old aliases/canonical names/error messages and order are unchanged through legacy facade and new class.
-- [ ] Exact duplicate priority, sole alias spelling, canonical new key, ambiguity and unsupported requests have behavioral evidence.
-- [ ] Own/prototype-like keys cannot become inherited targets; source untouched; domain import graph has no legacy dependencies.
-- [ ] Complete callable policy, tests/docs/result and measured budget/review travel together; no source activation.
+- [x] All old aliases/canonical names/error messages and order are unchanged through legacy facade and new class.
+- [x] Exact duplicate priority, sole alias spelling, canonical new key, ambiguity and unsupported requests have behavioral evidence.
+- [x] Own/prototype-like keys cannot become inherited targets; source untouched; domain import graph has no legacy dependencies.
+- [x] Complete callable policy, tests/docs/result and measured budget/review travel together; no source activation.
 
 ## Verification
 
@@ -69,7 +69,7 @@ Future single-name/focal/regression/build/health/emitted/full-suite commands are
 
 Prefix emitted evidence is `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/domain/agent-target-policy.js')"`; initial explicit include ships here. Original profile-store import becomes applicable from07 and remains required at final acceptance;05 cannot claim a not-yet-delivered reader emitted successfully.
 
-Produced: source-grounded contracts and approved replacement basis. Not applicable now: tests/build for Markdown. Outstanding: parent targeted re-review, separately authorized planning publication, renewed Implement gate and future behavior/parity/native/result/budget evidence.
+Produced: user-approved Implement gate,41 owned tests,132 legacy regressions, full425 passed/8 skipped, typecheck/build/health/emitted policy and measured all-layer budget; see correction/S05/RESULT.md under the original results slug. Not applicable: future reader import and installer parity. Outstanding: independent parent source Review and source CI/native acceptance.
 
 ## Open Questions
 
@@ -77,7 +77,7 @@ None
 
 ## Dependencies
 
-Approved PR104 replacement basis; parent targeted re-review, separately authorized reviewed planning publication and renewed Implement gate pending. No behavioral prerequisite.06/08 consume this policy; P2/P3 await13/full P1 acceptance. Readiness is not execution approval.
+Published PR116 exact7dc6628 is the approved source base; explicit user Plan→Implement approval covers05–13. This execution is05 only.06 waits for independent source Review and05 source CI; P2/P3 await13/full P1 acceptance.
 
 ## Risks and Watchouts
 
