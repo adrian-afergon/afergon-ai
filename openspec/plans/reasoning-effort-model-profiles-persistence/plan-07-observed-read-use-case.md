@@ -1,5 +1,7 @@
 # Plan07: Validated reads through an injected storage observation
 
+> Historical delivery record: user-approved [S07 split authority](S07-PLAN-INDEX.md) supersedes this single-unit delivery with 07A → 07B after reviewed docs publication/current-head CI. Technical goals/APIs remain valid; the State/checklists/budget/permission statements below describe the old plan, not a currently executable ready07. S08 and later original07 consumers wait for completed07B. No old technical record or blocked RESULT is rewritten.
+
 - **Source Task**: `openspec/tasks/001-reasoning-effort-model-profiles-persistence.md`
 - **Source Spec(s)**: `openspec/specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md` — ready; sole P1 spec.
 - **State**: ready-with-assumptions

@@ -4,21 +4,22 @@
 - **Source Spec(s)**: [spec-01-compatible-profile-storage.md](../../specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md) — `ready`, sole P1 spec.
 - **State**: ready-with-assumptions
 - **Execution Mode**: sequential
-- **Vertical Slicing**: applied to planning; nine complete capabilities on the approved replacement delivery basis.
+- **Vertical Slicing**: applied to planning; ten complete capabilities on the approved replacement delivery basis (07 → 07A/07B).
 
 ## Summary
 
 Correct architecture while retaining the existing persistence behavior. Domain classes own validation, alias targeting and edit policy; application use cases own orchestration through constructor-injected semantic ports; infrastructure classes own Node filesystem, defaults, paths and legacy saver mechanics. This is corrective planning for task001, not a new product task.
 
-**Execution authority for the correction:** this index and plans05–13 are ready-with-assumptions forward planning contracts on the user-approved replacement basis. Targeted parent re-review, separately authorized planning publication and renewed Plan-to-Implement approval remain required; readiness authorizes none of these actions. [PLAN.md](PLAN.md), [PLAN-INDEX.md](PLAN-INDEX.md), plans01–04 and A–D results remain unchanged historical behavior/evidence, not forward correction architecture authority.
+**Execution authority for the correction:** this index and plans05–13 retain the approved architecture; [S07-PLAN-INDEX.md](S07-PLAN-INDEX.md) dispatches the approved 07 delivery to [07A application reader](plan-07a-injected-read-use-case.md) then [07B Node integration](plan-07b-node-observed-read.md). Split publication/sequential implementation are user-approved, gated on reviewed docs/current-head CI; no source work in this docs pass. Old plan07 delivery is historical; its technical goals remain valid. [PLAN.md](PLAN.md), [PLAN-INDEX.md](PLAN-INDEX.md), plans01–04 and A–D results remain historical behavior/evidence.
 
-Canonical re-entry remains `Review → Implement (confirmed defect; correction escalated) → Plan/plannify`. User approval now covers replanning, the replacement delivery basis and obsolete PR deprecation/closure only. Planning publication and new source implementation are NOT authorized. The approved class-based domain/application-port/infrastructure-adapter architecture remains unchanged.
+Canonical re-entry remains `Review → Implement (confirmed defect; correction escalated) → Plan/plannify`. D's dated inventory, permission statements and P0–P6 measurements below are historical planning records; the current S07 split authority above and its publication navigation govern this authorized docs pass. The approved class-based domain/application-port/infrastructure-adapter architecture remains unchanged.
 
 | Order | Plan | Callable outcome | State |
 | --- | --- | --- | --- |
 | 05 | [Agent identity and target policy](plan-05-agent-target-policy.md) | Concrete alias classification and exact stored-key selection | ready-with-assumptions |
 | 06 | [Validated raw document](plan-06-profile-document-policy.md) | Full-document validation class and retained assignment factory | ready-with-assumptions |
-| 07 | [Observed read](plan-07-observed-read-use-case.md) | Read use case injected with a real observation adapter | ready-with-assumptions |
+| 07A | [Injected application read](plan-07a-injected-read-use-case.md) | Complete memory-capability reader/observation port; no Node load edge | ready-with-assumptions |
+| 07B | [Node observed read](plan-07b-node-observed-read.md) | Actual observation adapter/original load edge; completes old07 | ready-with-assumptions |
 | 08 | [Independent preparation](plan-08-independent-preparation-use-case.md) | Pure edit-policy class, clone ownership and prepare use case | ready-with-assumptions |
 | 09 | [Guarded atomic storage](plan-09-storage-recheck-atomic-adapter.md) | Source recheck and unchanged atomic-save adapter mechanics | ready-with-assumptions |
 | 10 | [Existing recovery inspection](plan-10-snapshot-inspection-adapter.md) | Read-only recovery matching and completed-backup verification | ready-with-assumptions |
@@ -30,7 +31,7 @@ The sole human structural decision is resolved, not assumed. All plans are ready
 
 Planning WARN `ses_ee49cd162ffeTMC1TU4D5x56JD` gaps were corrected; parent reports technical planning PASS for types/path binding/allocation/checker/Windows/atomic boundaries. This pass changes readiness/delivery provenance only, not those contracts. Parent handles targeted re-review; this pass claims no independent review.
 
-Human review path has five conceptual steps: (1) own identity/validation policies05–06, (2) read and prepare through classes07–08, (3) preserve atomic/recovery mechanics09–11, (4) orchestrate injected capabilities12, (5) compose original APIs and prove platform behavior13. Nine budget slices implement these five steps; they are not nine new product features.
+Human review path has five conceptual steps: (1) own identity/validation policies05–06, (2) read and prepare through classes07A/07B–08, (3) preserve atomic/recovery mechanics09–11, (4) orchestrate injected capabilities12, (5) compose original APIs and prove platform behavior13. Ten budget slices implement these five steps; they are not ten new product features.
 
 ## Planning Scope
 
@@ -56,7 +57,7 @@ None
 
 ## Vertical Slicing Decision
 
-Nine units separate alias extraction, validation, observed reads, preparation, atomic storage mechanics, existing-backup inspection, owned creation, injected orchestration and real composition. Four original PRs have only 25/42/27/34 lines before hard399; class moves add constructor/port/fake-test churn and replacement deletions. Read-only inspection separates C's refusal/reuse cases from creation/cleanup without ever landing a partial snapshot writer. Atomic mechanics remain an internal low-level capability, not a public structured-update API. Unit12 completes orchestration; unit13 binds the original API to those already complete capabilities.
+Ten units separate alias extraction, validation, injected application read, Node integration, preparation, atomic storage mechanics, existing-backup inspection, owned creation, injected orchestration and real composition. Four original PRs have only 25/42/27/34 lines before hard399; class moves add constructor/port/fake-test churn and replacement deletions. Read-only inspection separates C's refusal/reuse cases from creation/cleanup without ever landing a partial snapshot writer. Atomic mechanics remain an internal low-level capability, not a public structured-update API. Unit12 completes orchestration; unit13 binds the original API to those already complete capabilities.
 
 Every prefix is compiled, directly testable and inactive. Ports ship with their consuming use case or adapter, never as scaffolding-only PRs; tests/results/docs ship with the capability, never as tests-only source PRs. P2/P3 wait for full corrected P1 acceptance, not an intermediate unit.
 
@@ -147,7 +148,8 @@ D's six-module source baseline is297 lines; focal suite779 lines is absent from 
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | 05 | 110–145 | 55–90 | 4–6 | 55–65 | 8–12 | 232–318 |
 | 06 | 100–125 | 70–105 | 4–6 | 55–70 | 8–12 | 237–318 |
-| 07 | 75–95 | 100–145 | 4–6 | 55–65 | 8–12 | 242–323 |
+| 07A | 39–46 | 47–60 | 4 | 68–80 | 16–20 | 174–210 |
+| 07B | 65–76 | 159–186 | 4 | 68–80 | 16–20 | 312–366 |
 | 08 | 85–105 | 150–180 | 4–6 | 55–65 | 8–12 | 302–368 |
 | 09 | 50–65 | 90–120 | 4–6 | 55–65 | 8–12 | 207–268 |
 | 10 | 65–85 | 65–90 | 4–6 | 55–65 | 8–12 | 197–258 |
@@ -224,9 +226,9 @@ Domain: `AgentTargetPolicy.normalize(input: unknown): SupportedAgent`, `select(p
 
 `ProfileDocumentPolicy.validate(raw: unknown, sourceIdentity: string): RawProfileDocument` returns the same object, with no defaults/normalization. `ProfileAssignmentPolicy.prepare(input: PrepareAssignmentInput): PreparedAssignment` receives concrete validator, target policy and `RawProfileDocumentCloner` via constructor. Move the exact generic clone JSON body into that domain-owned cloner, reproducing its same pure asPlainObject guard locally; legacy `cloneAssignments<T>(...)` delegates with the same default/fallback behavior. Retain legacy core's unrelated asPlainObject helper for its other consumers; no broad guard migration. This narrow deliberate extraction avoids domain→legacy imports, retains generic clone behavior and establishes one clone owner. No replaceable-cloner interface is justified.
 
-Shared ownership:06 delivers DOMAIN `RawProfileDocument` at `domain/profile-document.ts`, retaining arbitrary unknown members.07 delivers APPLICATION `ProfileDocumentObservation { sourceIdentity: string; exists: boolean; sourceBytes?: Uint8Array }`, `ObservedProfile { document: unknown; source: ProfileDocumentObservation; originalText?: string }` and `LoadedProfile` at `application/profile-document-observation.ts`, importing the domain type.10 delivers APPLICATION `AcquireMigrationSnapshotInput { source: ProfileDocumentObservation; recoveryDocument: RawProfileDocument }` and `SnapshotReceipt { snapshotPath: string; disposition: "created" | "reused"; complete: true }` at `application/migration-snapshot-contracts.ts` with its real inspector;11/12 import them without redeclaration. Present/absent byte consistency and defensive copies remain required. Identity is a configured capability/diagnostic token, never caller-selected I/O or environment authority.
+Shared ownership:06 delivers DOMAIN `RawProfileDocument` at `domain/profile-document.ts`, retaining arbitrary unknown members.07A delivers APPLICATION `ProfileDocumentObservation { sourceIdentity: string; exists: boolean; sourceBytes?: Uint8Array }`, `ObservedProfile { document: unknown; source: ProfileDocumentObservation; originalText?: string }` and `LoadedProfile` at `application/profile-document-observation.ts`, importing the domain type;07B imports them unchanged.10 delivers APPLICATION `AcquireMigrationSnapshotInput { source: ProfileDocumentObservation; recoveryDocument: RawProfileDocument }` and `SnapshotReceipt { snapshotPath: string; disposition: "created" | "reused"; complete: true }` at `application/migration-snapshot-contracts.ts` with its real inspector;11/12 import them without redeclaration. Present/absent byte consistency and defensive copies remain required. Identity is a configured capability/diagnostic token, never caller-selected I/O or environment authority.
 
-Prefix contracts:07 declares `ProfileObservationPort.observe(): ObservedProfile` at `application/profile-observation-port.ts`; NodeProfileStorageAdapter implements **only that complete capability**.09 declares `ProfileStoragePort extends ProfileObservationPort` at `application/profile-storage-port.ts`, adding `recheck(source: ProfileDocumentObservation): void` and `atomicPersist(document: RawProfileDocument, source: ProfileDocumentObservation): void`; actual adapter then implements all methods.10's real NodeSnapshotInspectionAdapter implements no SnapshotPort.11 declares complete `SnapshotPort.acquire(input: AcquireMigrationSnapshotInput): SnapshotReceipt` at `application/snapshot-port.ts`, and NodeMigrationSnapshotAdapter implements acquire. No accepted prefix has missing methods or throwing future stubs; ports ship with real consumers.
+Prefix contracts:07A declares `ProfileObservationPort.observe(): ObservedProfile` at `application/profile-observation-port.ts` with the consuming reader/memory evidence;07B's NodeProfileStorageAdapter implements **only that complete capability**.09 declares `ProfileStoragePort extends ProfileObservationPort` at `application/profile-storage-port.ts`, adding `recheck(source: ProfileDocumentObservation): void` and `atomicPersist(document: RawProfileDocument, source: ProfileDocumentObservation): void`; actual adapter then implements all methods.10's real NodeSnapshotInspectionAdapter implements no SnapshotPort.11 declares complete `SnapshotPort.acquire(input: AcquireMigrationSnapshotInput): SnapshotReceipt` at `application/snapshot-port.ts`, and NodeMigrationSnapshotAdapter implements acquire. No accepted prefix has missing methods or throwing future stubs; ports ship with real consumers.
 
 `ReadProfileDocumentUseCase(storage, validator).execute(): LoadedProfile`; `PrepareProfileAssignmentUseCase(policy).execute(input): PreparedAssignment`; `UpdateProfileAssignmentUseCase(reader, preparer, validator, storage: ProfileStoragePort, snapshots: SnapshotPort).execute({profileName, agentName, patch}): UpdateResult`. Constructors receive collaborators, never read environment or fs. Concrete domain collaborators need no interface without alternate behavior. Port fakes substitute storage/snapshot capabilities in memory.
 
@@ -268,7 +270,7 @@ Future TDD follows exact `skills/implement/SKILL.md`: one runnable assertion RED
 
 Future commands, **not run here**: focal `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism` and single-name `-t "<exact single test name>"`; additional architecture/use-case files run explicitly per owned unit; `pnpm typecheck`; `pnpm build`; `pnpm run health:runtime`; `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')"`; original regression `pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism`; `pnpm test` (includes mandatory rebuild). Retain original Ubuntu Test/native Windows launcher checks. No current602/218 rerun is claimed; counts are historical D result evidence. Isolate HOME/XDG/config/state and restore stage spies per case.
 
-Replacement-prefix applicability:05 owns the initial explicit tsconfig vertical include (one addition);07 inherits it without charging it twice. Before the reader exists,05/06 require their own exact emitted imports declared in those plans; the historical profile-store import is outstanding/not yet applicable to those pure capabilities, never fabricated as passed. From07 onward the exact original profile-store emitted import and full final baseline apply. All prefixes still run typecheck/build/health/original regression/full suite; no command is run during this planning session.
+Replacement-prefix applicability:05 owns the initial explicit tsconfig vertical include (one addition);07A/07B inherit it without charging it twice.05/06 require their own emitted imports;07A requires `dist/scripts/lib/model-profiles/application/read-profile-document-use-case.js`, not the absent Node reader. From07B onward require `dist/scripts/lib/model-profiles/infrastructure/profile-store.js` and full final baseline. All prefixes still run typecheck/build/health/original regression/full suite; no command is run during this planning session.
 
 ## Open Questions
 
@@ -276,7 +278,7 @@ None
 
 ## Dependencies
 
-Approved replacement basis (produced) → parent targeted planning re-review → separately authorized measured P0–P6 publication rooted at exact PR104 → renewed Implement gate → 05→06→07→08→09→10→11→12→13 → full P1 acceptance → original P2/P3. Ordinary publication/implementation gates are pending, not unresolved design. Per-PR diagrams mark current 📍. Technical dependency:06 uses05;07 uses06;08 uses05/06;09 extends07;10 uses06/07;11 uses09/10;12 uses07/08/09/11;13 composes all. No delegation required.
+Approved replacement basis → reviewed P0–P6 publication → accepted05→06(PR118) → approved R0→R1 docs review/publication/current-head CI → 07A→07B→08→09→10→11→12→13 → full P1 acceptance → original P2/P3. Per-PR diagrams mark current 📍. Technical dependency:06 uses05;07A uses06;07B integrates07A;08 waits07B on the approved chain;09 extends07B;10 uses06/07B;11 uses09/10;12 uses07B/08/09/11;13 composes all. Original07 consumers cannot proceed on memory-only07A. No delegation required.
 
 ## Risks and Watchouts
 
@@ -288,7 +290,7 @@ Planning output is ready-with-assumptions: approved structural basis recorded, n
 
 ## Publication navigation — authorized 2026-10-08
 
-**Planning publication only; replacement implementation awaits user approval.** User authorized P0–P6 publication after final planning Review PASS `ses_ee49cd162ffeTMC1TU4D5x56JD`. The preceding 287 lines are the byte-preserved D planning record: its inventory, permission statements, counts and pending gates describe that dated planning tree, not this clean docs publication tree. This block records the later publication authorization; architecture contracts and source forecasts are unchanged.
+**Historical P0–P6 publication navigation.** User authorized P0–P6 after planning Review PASS `ses_ee49cd162ffeTMC1TU4D5x56JD`. The preceding D record retains its dated inventory/permissions/measurements except the explicitly approved S07 dispatch, ownership, dependency and ten-prefix coordination edits. Current split/publication/sequential-implementation permission is recorded in S07-PLAN-INDEX; old permission statements do not override it. Architecture contracts are unchanged; S07's original forecast is superseded by the split estimates.
 
 Stacked PRs to main: historical [PR104](https://github.com/adrian-afergon/afergon-ai/pull/104) at `a37daeec2d1fee936f0aa7977704bbce49297e40` → P0 → P1 → P2 → P3 → P4 → P5 → P6. Each pending child targets its immediate predecessor; integration/retargeting requires later authorization. PR101–104 remain historical; PR106–109 are CLOSED/unmerged and superseded, with branches/history preserved. This index is forward corrective architecture authority; no merge/review approval or source gate is granted.
 
