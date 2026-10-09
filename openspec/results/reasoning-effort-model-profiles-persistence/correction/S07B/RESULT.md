@@ -25,7 +25,7 @@ Constructor dependencies are explicit and assignment-only. One unencoded Buffer 
 
 ## Commits Created
 
-- Implementation work-unit commit and verified evidence follow-up identities are recorded after commit creation.
+- 0921fc248419bf5a013deab84ff09ec655944299 feat(models): compose exact-byte Node profile reads (complete source/tests/docs/RESULT work unit); evidence-only follow-up pins this tested source boundary, with final HEAD in Git history.
 
 ## Files Changed
 
@@ -64,7 +64,7 @@ None blocking local implementation. Independent B Review, publication and curren
 - Budget measured against exact A, additions AND deletions across all9 paths: source67/tests203/README4/plan25/RESULT72 =371 (358 additions+13 deletions). All fixtures/helpers/evidence charged, unchanged A/domain/core/include inherited. Above preferred350, below STOP375/hard399; no compression, case cuts or automatic extra split; allow conservative GitHub±2 when later published.
 - Checkpoint forecasts above were contemporaneous remaining-work estimates, not caps; final count includes final checks/result/plan. Old blocked135-line S07 result preserves403/388–457 budget provenance and is not copied/charged into B.
 - All five categories inspected before isolation: root main0/0, A upstream0/0,19 full registrations; new unused local/remote/disk B collision checks and parent ls passed. B initially clean0/0 to A;20 registrations now, including all four preserved prunables.
-- Root32 individual artifacts +index161+1, D11, historical6, original07 at a55 with three untracked split plans/blocked RESULT, new docs publication and all old heads remain preserve/no transfer/no stage. PR106–109 verified CLOSED. Stage only the nine named B paths.
+- Final five-category/topology reinspection preserves root32/index161+1, D11, historical6, original07 a55/three plans/blocked RESULT, docs publication and old heads; old07 RESULT hash6e970c5f28fd81b0963700cdeb184eea40e0ffdc and A RESULT99d689df058e28c7638c5f9a461f39a08f7e600a unchanged. PR106–109 CLOSED; only nine B paths staged; source-A/domain/core/config/compiler/CI diffs empty.
 - Rollback: B-owned four infrastructure modules/read API, focal additions/raw fixture, README guidance and local B plan/result; preserve A/S05/S06 and historical contracts. Permutation/opaque/future/raw-path/empty/inheritance behavior stays with existing policy; saver/cwd movement proof belongs09/13.
 
 ## Next Step
