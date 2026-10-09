@@ -128,7 +128,9 @@ The legacy normalization API delegates to this policy. This first corrective cap
 
 The internal `ReadProfileDocumentUseCase` accepts an application-owned `ProfileObservationPort` and the existing `ProfileDocumentPolicy` through its constructor. It validates one supplied observation without normalizing the raw document or selecting defaults.
 Its captured source envelope and genuine Uint8Array bytes are defensively copied, with present/absent byte consistency enforced; supplied original text is retained unchanged.
-This injected reader is memory-callable; real Node loading and the original read API follow in S07B. Existing CLI/TUI workflows remain on their legacy path, and public reasoning-effort editing is still future work.
+The internal `infrastructure/profile-store` load API now composes that reader with a complete observation-only Node adapter and injected legacy defaults.
+It captures one Buffer, retains exact UTF8 text/raw JSON and binds the initial absolute config path privately; only a read-time ENOENT returns in-memory defaults, without creating files.
+Existing CLI/TUI workflows remain on their legacy path, and public reasoning-effort editing is still future work.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 

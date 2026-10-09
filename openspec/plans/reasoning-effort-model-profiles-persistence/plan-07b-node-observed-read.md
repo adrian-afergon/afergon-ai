@@ -41,10 +41,10 @@ Forecast source65–76/tests159–186/docs4/result68–80/plan16–20 =312–366
 
 ## Implementation Steps
 
-- [ ] Deliver class-owned observation with injected filesystem/default dependencies; construction performs no reads/default invocation.
-- [ ] Read one Buffer, decode/parse that capture and distinguish ENOENT from permission/read/parse/default-factory errors.
-- [ ] Bind initial absolute source once, retain private environment for later saver binding, and delegate the original load signature through S07A.
-- [ ] Preserve all32 actual read assertions and add adapter/binding evidence; verify emitted inactive read, legacy baseline and complete result.
+- [x] Deliver class-owned observation with injected filesystem/default dependencies; construction performs no reads/default invocation.
+- [x] Read one Buffer, decode/parse that capture and distinguish ENOENT from permission/read/parse/default-factory errors.
+- [x] Bind initial absolute source once, retain private environment for later saver binding, and delegate the original load signature through S07A.
+- [x] Preserve all32 actual read assertions and add adapter/binding evidence; verify emitted inactive read, legacy baseline and complete result.
 
 ## Interfaces and Technical Contracts
 
@@ -77,17 +77,17 @@ Additional checks cover injected defaults called once only after ENOENT, constru
 
 ## Acceptance Criteria
 
-- [ ] All32 historical cases execute against the original actual reader/compiled edge with complete assertions.
-- [ ] Same captured bytes/text/raw JSON, strict failure scope and absent read without writes are proved.
-- [ ] Absolute binding and outside-only Buffer/environment/default conversion preserve the approved architecture.
-- [ ] No live exports, writer methods, backups or partial full-storage interface claims.
+- [x] All32 historical cases execute against the original actual reader/compiled edge with complete assertions.
+- [x] Same captured bytes/text/raw JSON, strict failure scope and absent read without writes are proved.
+- [x] Absolute binding and outside-only Buffer/environment/default conversion preserve the approved architecture.
+- [x] No live exports, writer methods, backups or partial full-storage interface claims.
 
 ## Verification
 
-- [ ] Tests: single-name sequential cycles, memory suite inherited from S07A, focal suite, original regressions and full suite.
-- [ ] Build: typecheck/build/health and required original emitted profile-store import.
+- [x] Tests: single-name sequential cycles, memory suite inherited from S07A, focal suite, original regressions and full suite.
+- [x] Build: typecheck/build/health and required original emitted profile-store import.
 - [ ] Additional Evidence: direct compiled absent read, constructor/capture/default/error/binding spies, current-source-head CI, complete result and actual budget.
-- [ ] Rule Compliance: complete adapter capability, explicit composition, preserved source identity and all historical allocations.
+- [x] Rule Compliance: complete adapter capability, explicit composition, preserved source identity and all historical allocations.
 
 Future commands, not run for this proposal:
 
@@ -119,3 +119,6 @@ The upper366 is only nine below STOP375 and not a proof of final size. Initial f
 ## Completion Condition
 
 Permission is ready-with-assumptions: user-approved structural split is a decision, not an assumption; only local reversible fixture/budget estimates remain. After reviewed docs publication/current-head CI and accepted S07A, all reader/integration/emission/case/result/review/current-head checks and compliant measured budget complete the original S07 outcome. This does not complete full storage, snapshots or user effort editing; later approved plans remain necessary.
+
+Local execution produced: focal162 + memory11, regression132/3 skipped, full557/8 skipped, typecheck/build/health and emitted import/absent smoke. Exact cycles, all-layer budget and preservation: [S07B RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S07B/RESULT.md).
+The approved docs/S07A prerequisites are verified; independent B Review and post-publication current-head CI remain normal external handoff evidence, not another implementation-permission gate. Additional Evidence stays unchecked for that CI obligation; S13 native persistence remains separate.
