@@ -1,10 +1,187 @@
 import fs from "node:fs";
 import ts from "typescript";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { AgentTargetPolicy, SUPPORTED_AGENTS as DOMAIN_AGENTS, type SupportedAgent as DomainAgent } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { normalizeAgentName, SUPPORTED_AGENTS, type SupportedAgent } from "../scripts/lib/model-profiles-core.js";
 import { StoredAssignment } from "../scripts/lib/model-profiles/domain/stored-assignment.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
+import { NodeProfileStorageAdapter } from "../scripts/lib/model-profiles/infrastructure/node-profile-storage-adapter.js";
+import { LegacyProfileDefaultsAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-profile-defaults-adapter.js";
+import os from "node:os";
+import path from "node:path";
+import { loadProfileDocument } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
+import { invalidReads, readableDocuments } from "./_testModelRawFixtures.js";
+import { bindProfileRead } from "../scripts/lib/model-profiles/infrastructure/profile-read-composition.js";
+import { getConfigPath } from "../scripts/lib/model-profiles-config.js";
+import { spawnSync } from "node:child_process";
+
+const tempRoots: string[] = [];
+afterEach(() => {
+  vi.restoreAllMocks();
+  for (const root of tempRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+function createConfig(document?: unknown, contents = JSON.stringify(document)) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-profile-store-"));
+  tempRoots.push(root);
+  const configPath = path.join(root, "config.json");
+  if (contents !== undefined) fs.writeFileSync(configPath, contents);
+  return { root, configPath };
+}
+function loadDocument(document: unknown) {
+  const { root } = createConfig(document);
+  return loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root });
+}
+function expectExactFailure(action: () => unknown, failure: Error) {
+  try { action(); throw new Error("Expected failure"); }
+  catch (error) { expect(error).toBe(failure); }
+}
+
+it("captures exact UTF-8 bytes and original formatting", () => {
+  const contents = '{\n  "version": 1,\n  "memo": "café ☕",\n  "models": {"profiles": {}}\n}\n';
+  const { root, configPath } = createConfig({}, contents);
+  const read = vi.spyOn(fs, "readFileSync");
+  const loaded = loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root });
+  expect(loaded.sourceBytes).toEqual(Buffer.from(contents, "utf8"));
+  expect(loaded.originalBytes).toBe(contents);
+  expect(read.mock.calls).toEqual([[configPath]]);
+  fs.writeFileSync(configPath, "{}");
+  expect(loaded.sourceBytes).toEqual(Buffer.from(contents));
+  expect(loaded.document).toEqual(JSON.parse(contents));
+});
+it("returns absent-source defaults without creating a file", () => {
+  const { root } = createConfig();
+  const configDir = path.join(root, "not-created");
+  const configPath = path.join(configDir, "config.json");
+  const loaded = loadProfileDocument({ AFERGON_AI_CONFIG_DIR: configDir });
+  expect(loaded).toEqual({ document: { version: 1, models: { activeProfile: null, profiles: {} } }, configPath, exists: false });
+  expect(fs.existsSync(configDir)).toBe(false);
+});
+it("propagates a permission read fault instead of returning missing-file defaults", () => {
+  const { root, configPath } = createConfig({ models: { profiles: {} } });
+  const failure = Object.assign(new Error("permission denied"), { code: "EACCES" });
+  const readFileSync = fs.readFileSync.bind(fs);
+  vi.spyOn(fs, "existsSync").mockReturnValue(false);
+  const read = vi.spyOn(fs, "readFileSync").mockImplementation((filePath, ...args) => {
+    if (filePath === configPath) throw failure;
+    return readFileSync(filePath, ...args);
+  });
+  expectExactFailure(() => loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root }), failure);
+  expect(read.mock.calls).toEqual([[configPath]]);
+});
+it("retains mixed raw assignments and does not rewrite or migrate", () => {
+  const document = {
+    version: 1,
+    models: { activeProfile: "work", profiles: { work: {
+      "afergon-ai": "openai/gpt-5.5",
+      "afg-review": { reasoningEffort: "medium", note: { keep: true } },
+      "afg-specify": {},
+      "afg-implement": { model: " inherit ", reasoningEffort: " Medium " },
+      "foreign-agent": { model: null, reasoningEffort: "inherit" },
+    } } },
+  };
+  const originalBytes = `${JSON.stringify(document, null, 2)}\n`;
+  const { root, configPath } = createConfig(document, originalBytes);
+  const loaded = loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root });
+  expect(loaded).toEqual({ document, configPath, exists: true, originalBytes, sourceBytes: Buffer.from(originalBytes) });
+  expect(fs.readFileSync(configPath, "utf8")).toBe(originalBytes);
+  expect(fs.existsSync(path.join(root, "config.json.pre-v2.bak"))).toBe(false);
+});
+it.each([null, "", "  ", " InHerit ", 4, []])("rejects invalid effort %j at its source path", (reasoningEffort) => {
+  const { root } = createConfig({ models: { profiles: { work: { "afg-review": { reasoningEffort } } } } });
+  expect(() => loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root })).toThrow('models.profiles.work["afg-review"].reasoningEffort');
+});
+it.each(readableDocuments)("preserves %s on read", (_name, document) => {
+  expect(loadDocument(document).document).toEqual(document);
+});
+it.each(invalidReads)("rejects %s with the original path", (_name, document, expectedPath) => {
+  expect(() => loadDocument(document)).toThrow(expectedPath);
+});
+it.each([
+  { AFERGON_AI_CONFIG_DIR: "relative-config", XDG_CONFIG_HOME: "relative-xdg", HOME: "relative-home" },
+  { XDG_CONFIG_HOME: "relative-xdg", HOME: "relative-home" }, { HOME: "relative-home" }, {},
+])("binding privately pins initial config precedence %j", (env: NodeJS.ProcessEnv) => {
+  const original = { ...env };
+  const identity = path.resolve(getConfigPath(env));
+  const composition = bindProfileRead(env);
+  expect(env).toEqual(original);
+  env.AFERGON_AI_CONFIG_DIR = "later-config";
+  env.XDG_CONFIG_HOME = "later-xdg";
+  const read = vi.spyOn(fs, "readFileSync").mockReturnValue(Buffer.from("{}"));
+  expect(composition.createReader().execute().source.sourceIdentity).toBe(identity);
+  expect(path.isAbsolute(identity)).toBe(true);
+  expect(path.basename(identity)).toBe("config.json");
+  expect(read.mock.calls).toEqual([[identity]]);
+});
+
+function builtRead(script: string) {
+  const { root } = createConfig();
+  const entry = "./dist/scripts/lib/model-profiles/infrastructure/profile-store.js";
+  expect(fs.existsSync(new URL(`../${entry}`, import.meta.url))).toBe(true);
+  return spawnSync(process.execPath, ["--input-type=module", "-e", `import * as built from '${entry}'; ${script}`],
+    { encoding: "utf8", env: { ...process.env, HOME: root, XDG_CONFIG_HOME: root, XDG_STATE_HOME: root, AFERGON_AI_CONFIG_DIR: root } });
+}
+it("emits a directly importable reader module", () => {
+  const result = builtRead("if (typeof built.loadProfileDocument !== 'function') throw new Error('Reader missing');");
+  expect(result.status, result.stderr).toBe(0);
+});
+it("keeps a built missing-file read side-effect free", () => {
+  const result = builtRead("import fs from 'node:fs'; const loaded = built.loadProfileDocument(); if (loaded.exists || fs.existsSync(loaded.configPath)) throw new Error('Unexpected source');");
+  expect(result.status, result.stderr).toBe(0);
+});
+it("does not export the standalone reader through the live facade", async () => {
+  const live = await import("../scripts/lib/model-profiles.js");
+  expect(Object.hasOwn(live, "loadProfileDocument")).toBe(false);
+});
+
+it("Node observation captures formatted multibyte data in one read", () => {
+  const text = '{\n "memo": "café ☕", "version": 3\n}\n';
+  const capture = Buffer.from(text);
+  const read = vi.spyOn(fs, "readFileSync").mockReturnValue(capture);
+  const factory = vi.fn(() => ({}));
+  try {
+    const adapter = new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory));
+    expect(read).not.toHaveBeenCalled();
+    expect(factory).not.toHaveBeenCalled();
+    const packet = adapter.observe();
+    expect(packet).toEqual({ document: JSON.parse(text), originalText: text,
+      source: { sourceIdentity: "/bound/config.json", exists: true, sourceBytes: new Uint8Array(capture) } });
+    expect(read.mock.calls).toEqual([["/bound/config.json"]]);
+    expect(factory).not.toHaveBeenCalled();
+    capture.fill(0);
+    expect(packet.source.sourceBytes).toEqual(new Uint8Array(Buffer.from(text)));
+    expect(packet.originalText).toBe(text);
+    expect(packet.document).toEqual(JSON.parse(text));
+    packet.source.sourceBytes![0] = 8;
+    expect(capture[0]).toBe(0);
+  } finally { read.mockRestore(); }
+});
+it.each(["read", "parse", "defaults"])("Node propagates the exact %s fault without fallback", (stage) => {
+  const failure = Object.assign(stage === "parse" ? new SyntaxError("invalid JSON") : new Error(stage), { code: stage === "read" ? "EACCES" : "ENOENT" });
+  const factory = vi.fn(() => { throw failure; });
+  const read = vi.spyOn(fs, "readFileSync").mockImplementation(() => {
+    if (stage === "parse") return Buffer.from("{");
+    throw stage === "read" ? failure : Object.assign(new Error("absent"), { code: "ENOENT" });
+  });
+  if (stage === "parse") {
+    expect(() => JSON.parse("{")).toThrow(SyntaxError);
+    vi.spyOn(JSON, "parse").mockImplementation(() => { throw failure; });
+  }
+  expectExactFailure(() => new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory)).observe(), failure);
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(factory).toHaveBeenCalledTimes(stage === "defaults" ? 1 : 0);
+});
+it("Node absence delegates defaults once without capturing bytes", () => {
+  const failure = Object.assign(new Error("missing"), { code: "ENOENT" });
+  const read = vi.spyOn(fs, "readFileSync").mockImplementation(() => { throw failure; });
+  const document = { version: 1, models: { activeProfile: null, profiles: {} } };
+  const factory = vi.fn(() => document);
+  try {
+    expect(new NodeProfileStorageAdapter("/absent/config.json", fs, new LegacyProfileDefaultsAdapter(factory)).observe())
+      .toEqual({ document, source: { sourceIdentity: "/absent/config.json", exists: false } });
+    expect(read.mock.calls).toEqual([["/absent/config.json"]]);
+    expect(factory).toHaveBeenCalledTimes(1);
+  } finally { read.mockRestore(); }
+});
 
 const policy = new AgentTargetPolicy();
 const documents = new ProfileDocumentPolicy(policy);
