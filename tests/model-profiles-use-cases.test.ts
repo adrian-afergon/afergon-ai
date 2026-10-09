@@ -94,6 +94,6 @@ it("reader preserves second identity future raw document and original text", () 
     const loaded = reader.execute();
     expect(loaded.document).toBe(observed.document); expect(loaded.originalText).toBe(observed.originalText);
     expect(loaded.source).toEqual(observed.source); expect(observe).toHaveBeenCalledTimes(1);
-    expect(validate.mock.calls).toEqual([[observed.document, "configured:second"]]);
+    expect(validate.mock.calls).toEqual([[observed.document, "configured:second"]]); expect(validate.mock.calls[0][0]).toBe(observed.document);
   } finally { validate.mockRestore(); }
 });
