@@ -2,7 +2,7 @@
 
 - **Source Task**: [001](../../tasks/001-reasoning-effort-model-profiles-persistence.md)
 - **Source Spec**: [sole ready P1 spec](../../specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md)
-- **Authority**: [corrective index](ARCHITECTURE-PLAN-INDEX.md); ready-with-assumptions plans on the explicitly approved replacement basis; planning publication/new implementation still separately unauthorized.
+- **Authority**: [corrective index](ARCHITECTURE-PLAN-INDEX.md) and approved [S07 split dispatch](S07-PLAN-INDEX.md); ready-with-assumptions, user-approved docs/sequential implementation, gated on reviewed publication/current-head CI. This pass is docs-only; original55 groups/218 tuples and assertions are unchanged.
 - **Evidence**: planning enumeration from the actual D test source at8963d8e; no tests executed or results reconstructed.
 
 ## Counting and publication basis
@@ -11,21 +11,21 @@
 
 There are55 source groups below, expanding to **A35 + B72 + C46 + D65 =218**. Each original expanded case and its semantic assertions is retained once in this allocation. New domain/fake-port/inspection/checker/path-binding cases are additional, never counted as substitutes. Original test identifiers are the exact existing title/template plus its original table argument tuple; line ranges locate definitions/calls in the preserved D file.
 
-The14 `invalidReads` entries at155–170 are: non-object root; models container; profiles container; profile value; active profile shape; dangling active profile; invalid version; unsafe version; escaped quote/backslash keys; empty model; structured model; legacy assignment; null assignment; array assignment. All14 remain independently exercised at **read07, prepare08, acquire11 and update13**. Share fixture data, not these four entrypoint assertions.
+The14 `invalidReads` entries at155–170 are: non-object root; models container; profiles container; profile value; active profile shape; dangling active profile; invalid version; unsafe version; escaped quote/backslash keys; empty model; structured model; legacy assignment; null assignment; array assignment. All14 remain independently exercised at **read07B, prepare08, acquire11 and update13**. Share fixture data, not these four entrypoint assertions.
 
 ## A: 35 read/validation/boundary cases
 
 | ID | Exact source group / range | Expanded | Destination | Retained obligations |
 | --- | --- | ---: | --- | --- |
-| A01 | captures exact UTF-8 bytes and original formatting,187–194 | 1 | 07 | Same-read Buffer/text, multibyte and formatting |
-| A02 | propagates a permission read fault instead of returning missing-file defaults,196–207 | 1 | 07 | EACCES propagates despite misleading existsSync |
-| A03 | retains mixed raw assignments and does not rewrite or migrate,209–227 | 1 | 07 | Full loaded shape/raw values/exact disk bytes/no backup |
-| A04 | rejects invalid effort %j at its source path,229–234 | 6 | 07 | null/empty/whitespace/mixed-case inherit/number/array, actual path |
-| A05 | preserves %s on read,236–238; readableDocuments172–178 | 5 | 07 | Structured inheritance/future/omitted containers/prototype foreign/model-only |
-| A06 | rejects %s with the original path,240–242; invalidReads155–170 | 14 | 07 | All14 raw fixtures at reader, no normalization |
-| A07 | returns absent-source defaults without creating a file,244–252 | 1 | 07 | Canonical defaults, exists:false, no directory |
+| A01 | captures exact UTF-8 bytes and original formatting,187–194 | 1 | 07B | Same-read Buffer/text, multibyte and formatting |
+| A02 | propagates a permission read fault instead of returning missing-file defaults,196–207 | 1 | 07B | EACCES propagates despite misleading existsSync |
+| A03 | retains mixed raw assignments and does not rewrite or migrate,209–227 | 1 | 07B | Full loaded shape/raw values/exact disk bytes/no backup |
+| A04 | rejects invalid effort %j at its source path,229–234 | 6 | 07B | null/empty/whitespace/mixed-case inherit/number/array, actual path |
+| A05 | preserves %s on read,236–238; readableDocuments172–178 | 5 | 07B | Structured inheritance/future/omitted containers/prototype foreign/model-only |
+| A06 | rejects %s with the original path,240–242; invalidReads155–170 | 14 | 07B | All14 raw fixtures at reader, no normalization |
+| A07 | returns absent-source defaults without creating a file,244–252 | 1 | 07B | Canonical defaults, exists:false, no directory |
 | A08 | pure document validation,256–273 | 3 | 06 | Own undefined; inactive malformed path; same object/opaque foreign |
-| A09 | compiled inactive boundary,277–293 | 3 | 07 | Emitted reader, built absent read/no file, absent live export |
+| A09 | compiled inactive boundary,277–293 | 3 | 07B | Emitted reader, built absent read/no file, absent live export |
 
 Subtotal:1+1+1+6+5+14+1+3+3=35.06's additional direct domain matrix is new class evidence, not a relabelled duplicate of A06.
 
@@ -102,7 +102,8 @@ Subtotal:10 at12 +55 at13 =65. At12 these ten old cases use the real constructed
 | --- | ---: | --- |
 | 05 | 0 | Concrete identity/target class and legacy parity |
 | 06 | 3 | Complete direct domain class matrix and supported-version/recovery policy |
-| 07 | 32 | Observation injection/constructor behavior; owns shared raw/readable fixture data and initial setup |
+| 07A | 0 | Callable application reader/observation port, memory/copy/constructor and positive inward graph evidence; no original cases credited |
+| 07B | 32 | Actual Node adapter/defaults/loadProfileDocument; owns shared raw/readable fixture data and initial read setup |
 | 08 | 72 | Class preparation seam; reused named tables retain every B entrypoint assertion |
 | 09 | 0 | Trusted legacy atomic primitives, identity/path/cwd pinning and source comparison |
 | 10 | 0 | Real inspector standalone behavior; shared snapshot fixture/expected-state helpers |
@@ -111,8 +112,8 @@ Subtotal:10 at12 +55 at13 =65. At12 these ten old cases use the real constructed
 | 13 | 55 | Final compatibility/environment composition and targeted native Windows execution |
 | **Total** | **218** | New tests have separate exact-cycle/result ownership |
 
-Source helpers are fixtures, not extra cases: createConfig/loadDocument/assertions138–153; snapshotFixture516–529; snapshotFault531–552; writerEnv750–752; configFault754–779.07 owns initial read/raw setup,10 snapshot setup,11 snapshot fault stages,13 real saver fault stages. Shared definitions are charged when first published; edits/replacements later count both sides. Do not charge unchanged inherited2705-line regression contents or skip any original focal case because its data fixture is shared.
+Source helpers are fixtures, not extra cases: createConfig/loadDocument/assertions138–153; snapshotFixture516–529; snapshotFault531–552; writerEnv750–752; configFault754–779.07B owns initial read/raw setup,10 snapshot setup,11 snapshot fault stages,13 real saver fault stages. Shared definitions are charged when first published; edits/replacements later count both sides. Do not charge unchanged inherited2705-line regression contents or skip any original focal case because its data fixture is shared. The focal filename remains `tests/model-profiles-persistence.test.ts`;07B uses actual `loadProfileDocument`, including absent defaults and emitted `infrastructure/profile-store.js`, while07A emits the application reader only.
 
 ## Evidence and acceptance
 
-Produced: unchanged static55-group/218-case ledger and approved replacement basis. Not applicable now: tests. Outstanding: parent targeted readiness re-review, separately authorized planning publication/renewed Implement gate and future exact assertions/seam TDD/native evidence. All plans ready-with-assumptions for local fixture/source estimates only; no count/behavior allocation changed, counts not budget caps/proof. No delegation here.
+Produced: static55-group/218-case ledger, approved split permission and parent docs review; eight original read groups dispatch07→07B (32 cases),07A zero,06 direct3 unchanged, other183 destinations unchanged. Not applicable now: local application tests/build. Outstanding: reviewed publication/current-head CI and future exact assertions/seam TDD/native persistence evidence. All plans ready-with-assumptions for local fixture/source estimates only; no source tuple/assertion changed, counts not budget caps/proof. No delegation here.
