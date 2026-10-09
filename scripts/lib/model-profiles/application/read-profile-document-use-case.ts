@@ -8,6 +8,14 @@ export class ReadProfileDocumentUseCase {
   execute(): LoadedProfile {
     const observed = this.storage.observe();
     const document = this.validator.validate(observed.document, observed.source.sourceIdentity);
-    return { ...observed, document };
+    if (observed.source.exists && !(observed.source.sourceBytes instanceof Uint8Array && ArrayBuffer.isView(observed.source.sourceBytes))) {
+      throw new Error("Present observation requires Uint8Array source bytes");
+    }
+    if (!observed.source.exists && observed.source.sourceBytes !== undefined) {
+      throw new Error("Absent observation must not carry source bytes");
+    }
+    const source = { ...observed.source };
+    if (source.sourceBytes !== undefined) source.sourceBytes = new Uint8Array(source.sourceBytes);
+    return { ...observed, document, source };
   }
 }

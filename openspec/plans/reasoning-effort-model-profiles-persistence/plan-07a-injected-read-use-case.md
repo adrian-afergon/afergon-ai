@@ -43,7 +43,7 @@ Forecast source39–46/tests47–60/docs4/result68–80/plan16–20 =174–210. 
 
 - [x] Establish compilable data/port/class seams only, then a behavioral assertion RED for validating an observed malformed raw document.
 - [x] Complete observe-once, validator delegation, supplied identity/raw preservation and failure propagation through sequential cycles.
-- [ ] Require present/absent consistency and defensively detach byte/envelope ownership; retain text without reserialization.
+- [x] Require present/absent consistency and defensively detach byte/envelope ownership; retain text without reserialization.
 - [ ] Verify memory/constructor/import boundaries, local final commands and honest result before independent review/publication.
 
 ## Interfaces and Technical Contracts

@@ -17,11 +17,11 @@ Callable memory observation reader; no Node producer, default selection, legacy 
 
 ## Updated Plan Artifacts
 
-None
+- `openspec/plans/reasoning-effort-model-profiles-persistence/plan-07a-injected-read-use-case.md` — verified local checkboxes only.
 
 ## Commits Created
 
-None
+- `d2754ac` injected validation unit (source/contracts, tests, README, local plan and contemporaneous result).
 
 ## Files Changed
 
@@ -34,11 +34,17 @@ Cycle command S(name): `pnpm exec vitest run tests/model-profiles-use-cases.test
 | Unit / exact name | Actual RED | Minimal GREEN / TPP | Actual GREEN / remaining all-layer forecast |
 | --- | --- | --- | --- |
 | reader rejects malformed observed models with supplied identity | Exit1: expected function to throw; compilable constant seam returned instead | #5 supported observe + exact policy call; #2 return constant remains, since rejection never returns. Lower constants cannot satisfy concrete argument/call assertions | Exit0/1 pass; full source39–46/tests47–60/README4/result68–80/plan16–20=174–210 forecast, not cap |
-
 | reader preserves second identity future raw document and original text | Exit1: returned{} rather than exact observed document | #4 constant→collaborator scalar and supplied envelope; lower constants cannot retain arbitrary raw identity/text | Exit0/1 pass; projected complete delivery174–225 (extra cycle/fixture headroom) |
 | reader propagates exact port error without validation retry or fallback | No RED: characterization immediately exit0/1 pass | No change: unconditional observe already propagates identity and short-circuits validation. Existing S06 validator plus direct delegation exhaust rejection adversaries; cannot honestly force second failure without introducing a catch/retry defect | Memory3/focal121=124 pass; projected source46/tests85/README4/result75/plan20≈230 |
+| reader detaches captured bytes from producer mutation | Exit1: output bytes changed to[9,2] with producer | #5 add copied source/portable Uint8Array construction; scalar aliases cannot satisfy ownership | Exit0/1 pass; source46/tests100/README4/result80/plan20≈250 all-layer forecast |
+| reader rejects present observation without captured bytes | Exit1: did not throw | #6 conditional present/undefined refusal; unconditional refusal breaks valid observations | Exit0/1 pass; source49/tests105/README4/result80/plan20≈258 all-layer forecast |
+| reader rejects absent observation carrying bytes | Exit1: did not throw | #6 absent/payload refusal; present guard alone cannot reject contradiction | Exit0/1 pass; source52/tests110/README4/result80/plan20≈266 all-layer forecast |
+| reader retains absent capture without manufacturing byte payload | Exit1: empty Uint8Array rather than undefined | #6 copy only supplied bytes; unconditional construction manufactures absent payload | Exit0/1 pass; source53/tests120/README4/result80/plan20≈277 all-layer forecast |
+| reader refuses array masquerading as captured Uint8Array | Exit1: did not throw | #6 generalize predicate to actual Uint8Array membership; undefined-only guard admits arrays | Exit0/1 pass; source53/tests130/README4/result80/plan20≈287 all-layer forecast |
+| reader refuses prototype-only byte impostor with consistency diagnostic | Exit1: native typed-array error instead of consistency diagnostic | #6 add portable ArrayBuffer.isView brand predicate; prototype membership alone is insufficient | Exit0/1 pass; source53/tests140/README4/result80/plan20≈297 all-layer forecast |
 
-Step-level checks: pending. Final tests/typecheck/build/health/emitted import/regression/full suite: outstanding.
+Step-level: memory11 + inherited focal121 =132 pass; typecheck passed. Uint8Array/Buffer bidirectional ownership, cold constructor, source envelope identity/exists/byte replacement and silent I/O spies passed as characterizations: portable copying already generalized these cases. No implementation change or fabricated RED. Resolved AST graph visits all seven real app/domain modules including data owner→raw domain type, retains domain-only import restrictions before app allowances; no S12 synthetic checker claimed.
+Fresh-tree typecheck initially exit2 because inherited tui-dispatch test imports absent generated dist; prerequisite `pnpm build` then typecheck exit0. Not behavior RED. Optional TypeScript source-map ENOENT warning is nonbehavioral; tests pass. Final build/health/emitted import/regression/full suite outstanding.
 
 ## Blockers or Deviations
 
