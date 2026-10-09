@@ -134,8 +134,8 @@ it("domain constructor is ambient-free and uses its concrete classification coll
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   } finally { normalize.mockRestore(); for (const spy of spies) spy.mockRestore(); }
 });
-it("resolved document domain graph and factory constructor obey inward boundaries", () => {
-  const pending = [import.meta.resolve("../scripts/lib/model-profiles/domain/profile-document-policy.ts")];
+it("resolved application and document domain graph obey inward boundaries", () => {
+  const pending = [import.meta.resolve("../scripts/lib/model-profiles/application/read-profile-document-use-case.ts")];
   const visited = new Set<string>();
   while (pending.length) {
     const url = pending.pop()!;
@@ -145,10 +145,13 @@ it("resolved document domain graph and factory constructor obey inward boundarie
     expect(source).not.toMatch(/\b(process|globalThis|Buffer|ProcessEnv|require)\b/);
     const ast = ts.createSourceFile(url, source, ts.ScriptTarget.Latest);
     for (const node of ast.statements) {
-      if (!ts.isImportDeclaration(node)) continue;
+      if (!ts.isImportDeclaration(node) && !(ts.isExportDeclaration(node) && node.moduleSpecifier)) continue;
       const specifier = (node.moduleSpecifier as ts.StringLiteral).text;
-      expect(specifier).toMatch(/^\.\/[\w-]+\.js$/);
-      pending.push(new URL(specifier.replace(/\.js$/, ".ts"), url).href);
+      if (url.includes("/domain/")) expect(specifier).toMatch(/^\.\/[\w-]+\.js$/);
+      else expect(specifier).toMatch(/^(\.\/|\.\.\/domain\/)[\w-]+\.js$/);
+      const dependency = new URL(specifier.replace(/\.js$/, ".ts"), url).href;
+      expect(dependency).toMatch(/\/model-profiles\/(domain|application)\/[\w-]+\.ts$/);
+      pending.push(dependency);
     }
     if (url.endsWith("/stored-assignment.ts")) {
       const declaration = ast.statements.find(ts.isClassDeclaration)!;
@@ -157,7 +160,11 @@ it("resolved document domain graph and factory constructor obey inward boundarie
       expect(constructor.body?.statements.length).toBe(0);
     }
   }
-  expect(visited.size).toBe(4);
+  const vertical = "../scripts/lib/model-profiles/";
+  expect([...visited].sort()).toEqual([
+    "application/read-profile-document-use-case.ts", "application/profile-observation-port.ts", "application/profile-document-observation.ts",
+    "domain/profile-document-policy.ts", "domain/profile-document.ts", "domain/agent-target-policy.ts", "domain/stored-assignment.ts",
+  ].map((path) => import.meta.resolve(vertical + path)).sort());
 });
 
 it("exact supplied key wins among equivalent aliases", () => {

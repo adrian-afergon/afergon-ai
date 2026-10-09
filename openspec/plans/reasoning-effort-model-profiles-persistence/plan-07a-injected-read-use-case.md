@@ -41,10 +41,10 @@ Forecast source39–46/tests47–60/docs4/result68–80/plan16–20 =174–210. 
 
 ## Implementation Steps
 
-- [ ] Establish compilable data/port/class seams only, then a behavioral assertion RED for validating an observed malformed raw document.
-- [ ] Complete observe-once, validator delegation, supplied identity/raw preservation and failure propagation through sequential cycles.
-- [ ] Require present/absent consistency and defensively detach byte/envelope ownership; retain text without reserialization.
-- [ ] Verify memory/constructor/import boundaries, local final commands and honest result before independent review/publication.
+- [x] Establish compilable data/port/class seams only, then a behavioral assertion RED for validating an observed malformed raw document.
+- [x] Complete observe-once, validator delegation, supplied identity/raw preservation and failure propagation through sequential cycles.
+- [x] Require present/absent consistency and defensively detach byte/envelope ownership; retain text without reserialization.
+- [x] Verify memory/constructor/import boundaries, local final commands and honest result before independent review/publication.
 
 ## Interfaces and Technical Contracts
 
@@ -65,19 +65,19 @@ Memory cases also assert no collaborator calls during construction, exact valida
 
 ## Acceptance Criteria
 
-- [ ] Injected memory observations execute correctly without Node/environment/filesystem dependencies.
-- [ ] Validation rejects invalid raw data; valid raw values, identity and text remain unchanged with one observe call.
-- [ ] Observation consistency and defensive ownership work for genuine Uint8Array and Buffer test inputs.
-- [ ] No default selection, partial Node adapter, live routing or claimed credit for the32 original read cases.
+- [x] Injected memory observations execute correctly without Node/environment/filesystem dependencies.
+- [x] Validation rejects invalid raw data; valid raw values, identity and text remain unchanged with one observe call.
+- [x] Observation consistency and defensive ownership work for genuine Uint8Array and Buffer test inputs.
+- [x] No default selection, partial Node adapter, live routing or claimed credit for the32 original read cases.
 
 ## Verification
 
-- [ ] Tests: exact owned single-name cycles, memory test file and inherited focal/regression/full suite.
-- [ ] Build: `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, emitted application use-case import.
-- [ ] Additional Evidence: constructor spies, supplied class collaborator calls, current-head checks and exact base-relative budget.
-- [ ] Rule Compliance: resolved inward imports, complete consuming port/class, all result headings/cycle records and preservation.
+- [x] Tests: exact owned single-name cycles, memory test file and inherited focal/regression/full suite.
+- [x] Build: `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, emitted application use-case import.
+- [x] Additional Evidence: local constructor spies, supplied class collaborator calls and exact base-relative budget produced; source-head native checks outstanding after Review/publication.
+- [x] Rule Compliance: resolved inward imports, complete consuming port/class, all result headings/cycle records and preservation.
 
-Future commands, not run for this proposal:
+Executed local commands (exact single-test names and outcomes in correction/S07A/RESULT.md):
 
 ```text
 pnpm exec vitest run tests/model-profiles-use-cases.test.ts --no-file-parallelism -t "<exact test name>"
@@ -90,7 +90,7 @@ pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.
 pnpm test
 ```
 
-Use isolated temporary HOME/XDG/config/state for inherited integration checks. Native Windows launcher baseline remains required after publication; full native persistence/architecture coverage remains S13. The original profile-store import is not applicable until S07B exists. Expected evidence: all future cycles/tests/build/review/CI outstanding; Markdown application tests not applicable.
+Produced: memory11/focal121=132 pass, legacy132 pass/3 skipped, full516 pass/8 skipped, typecheck/build/health/emitted reader and resolved seven-module positive graph. Regression/full runs used isolated temporary HOME/XDG/config/state. Not applicable: original profile-store import until S07B, installer parity. Outstanding: fresh parent Review and source-head native Test/Windows checks after publication; full native persistence/negative architecture coverage remains S13/S12. Local completion is completed-with-notes, not full S07 acceptance.
 
 ## Open Questions
 

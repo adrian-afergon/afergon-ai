@@ -126,6 +126,10 @@ Missing agent assignments inherit from `afergon-ai`. If `afergon-ai` is also uns
 The pure `AgentTargetPolicy` owns supported agent aliases and stored-key targeting. It selects an exact supplied own key, otherwise the sole equivalent stored alias, otherwise the canonical new key; ambiguous aliases are refused and source keys stay untouched.
 The legacy normalization API delegates to this policy. This first corrective capability does not activate structured profile persistence; application ports, adapters and compatibility composition follow in plans06–13.
 
+The internal `ReadProfileDocumentUseCase` accepts an application-owned `ProfileObservationPort` and the existing `ProfileDocumentPolicy` through its constructor. It validates one supplied observation without normalizing the raw document or selecting defaults.
+Its captured source envelope and genuine Uint8Array bytes are defensively copied, with present/absent byte consistency enforced; supplied original text is retained unchanged.
+This injected reader is memory-callable; real Node loading and the original read API follow in S07B. Existing CLI/TUI workflows remain on their legacy path, and public reasoning-effort editing is still future work.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
