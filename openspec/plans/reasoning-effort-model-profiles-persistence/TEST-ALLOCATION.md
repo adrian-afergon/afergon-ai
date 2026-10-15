@@ -31,25 +31,27 @@ Subtotal:1+1+1+6+5+14+1+3+3=35.06's additional direct domain matrix is new class
 
 ## B: 72 preparation cases
 
+Approved [S08 dispatch](S08-PLAN-INDEX.md): A0/B72/C0 original-case credits. B owns every full preparation assertion below; C must actually rerun all72 through original wrapper→application→domain, including B15 dual-error assertions and B07 getter outcomes. C reruns are additional compatibility evidence, not duplicate credits. Tuple definitions, identifiers, ranges, expanded counts and semantic assertions are unchanged; no runtime execution is claimed in this docs publication.
+
 | ID | Exact source group / range | Expanded | Destination | Retained obligations |
 | --- | --- | ---: | --- | --- |
-| B01 | B2 rejects a string masquerading as a patch object,19–22 | 1 | 08 | Object-only patch error |
-| B02 | B2 validates the complete independent candidate after preparation,23–29 | 1 | 08 | Whole source then independent candidate validation |
-| B03 | Three B3 clone cases,30–54 | 3 | 08 | Foreign/no-op clone both ways, nested candidate/source mutations |
-| B04 | Three B2 materialization cases,55–69 | 3 | 08 | v2 flags/raw version; absent empty no maps; real missing profile |
-| B05 | Three B2 source cases,70–88 | 3 | 08 | Ignore inherited/unknown patch; future no-op/nontarget error before clone |
-| B06 | B2 T2/T1/exact noncanonical target cases,89–100 | 3 | 08 | Ambiguous aliases; sole stored-key effort path; exact stored model path |
-| B07 | Four B1 cases,101–128 | 4 | 08 | Raw foreign fields/version, effort-to-string, legacy model-only, omitted effort |
-| B08 | keeps missing-target empty patch raw: %j,304–308 | 4 | 08 | {},models{},profiles{},canonical defaults all retain raw maps/flags |
-| B09 | edits existing own profile %s retaining active selection,309–314 | 2 | 08 | __proto__/constructor, candidate content and unchanged prototype |
-| B10 | preserves representation and flags: %s,315–331 | 8 | 08 | Every editCases tuple, raw metadata/source, changed/migration/version |
-| B11 | materializes safe own profile %s without selecting it,332–340 | 2 | 08 | Own key/data/prototype/activeProfile:null |
-| B12 | selects %s without rewriting unrelated slots,341–349 | 3 | 08 | Exact duplicate/sole alias/canonical new plus complete candidate |
-| B13 | rejects unsupported agents before clone,350–354 | 1 | 08 | Unsupported error and clone0 |
-| B14 | performs no filesystem environment-path or host calls,355–361 | 1 | 08 | All eight original ambient-call spies remain silent |
-| B15 | rejects own %s before clone,362–369; fields296–301 | 15 | 08 | model/effort six invalid kinds each plus effort three inherit forms; both patch and nontarget source paths; clone0 |
-| B16 | validates whole raw source: %s,370–374 | 14 | 08 | All14 raw fixtures at preparation; original diagnostics and clone0 |
-| B17 | rejects non-object patch %j before clone,375–379 | 4 | 08 | null/undefined/array/number; clone0 |
+| B01 | B2 rejects a string masquerading as a patch object,19–22 | 1 | 08B | Object-only patch error |
+| B02 | B2 validates the complete independent candidate after preparation,23–29 | 1 | 08B | Whole source then independent candidate validation |
+| B03 | Three B3 clone cases,30–54 | 3 | 08B | Foreign/no-op clone both ways, nested candidate/source mutations |
+| B04 | Three B2 materialization cases,55–69 | 3 | 08B | v2 flags/raw version; absent empty no maps; real missing profile |
+| B05 | Three B2 source cases,70–88 | 3 | 08B | Ignore inherited/unknown patch; future no-op/nontarget error before clone |
+| B06 | B2 T2/T1/exact noncanonical target cases,89–100 | 3 | 08B | Ambiguous aliases; sole stored-key effort path; exact stored model path |
+| B07 | Four B1 cases,101–128 | 4 | 08B | Raw foreign fields/version, effort-to-string, legacy model-only, omitted effort |
+| B08 | keeps missing-target empty patch raw: %j,304–308 | 4 | 08B | {},models{},profiles{},canonical defaults all retain raw maps/flags |
+| B09 | edits existing own profile %s retaining active selection,309–314 | 2 | 08B | __proto__/constructor, candidate content and unchanged prototype |
+| B10 | preserves representation and flags: %s,315–331 | 8 | 08B | Every editCases tuple, raw metadata/source, changed/migration/version |
+| B11 | materializes safe own profile %s without selecting it,332–340 | 2 | 08B | Own key/data/prototype/activeProfile:null |
+| B12 | selects %s without rewriting unrelated slots,341–349 | 3 | 08B | Exact duplicate/sole alias/canonical new plus complete candidate |
+| B13 | rejects unsupported agents before clone,350–354 | 1 | 08B | Unsupported error and clone0 |
+| B14 | performs no filesystem environment-path or host calls,355–361 | 1 | 08B | All eight original ambient-call spies remain silent |
+| B15 | rejects own %s before clone,362–369; fields296–301 | 15 | 08B | model/effort six invalid kinds each plus effort three inherit forms; both patch and nontarget source paths; clone0 |
+| B16 | validates whole raw source: %s,370–374 | 14 | 08B | All14 raw fixtures at preparation; original diagnostics and clone0 |
+| B17 | rejects non-object patch %j before clone,375–379 | 4 | 08B | null/undefined/array/number; clone0 |
 
 Subtotal:18 pure cases +54 expanded characterizations =72.05 adds direct selection/parity tests, but B06/B12 stay at08 because they also assert candidate/path behavior. No count is moved to05 merely to improve budget.
 
@@ -104,7 +106,9 @@ Subtotal:10 at12 +55 at13 =65. At12 these ten old cases use the real constructed
 | 06 | 3 | Complete direct domain class matrix and supported-version/recovery policy |
 | 07A | 0 | Callable application reader/observation port, memory/copy/constructor and positive inward graph evidence; no original cases credited |
 | 07B | 32 | Actual Node adapter/defaults/loadProfileDocument; owns shared raw/readable fixture data and initial read setup |
-| 08 | 72 | Class preparation seam; reused named tables retain every B entrypoint assertion |
+| 08A | 0 | Validated independent context and cloner; new tests, no original credits |
+| 08B | 72 | Complete domain preparation; reused named tables retain every B entrypoint assertion |
+| 08C | 0 | Original wrapper/application actually reruns72; additional compatibility evidence, no duplicate credits |
 | 09 | 0 | Trusted legacy atomic primitives, identity/path/cwd pinning and source comparison |
 | 10 | 0 | Real inspector standalone behavior; shared snapshot fixture/expected-state helpers |
 | 11 | 46 | Acquire injection/race seams; owns descriptor-aware snapshot fault helper |
