@@ -4,7 +4,7 @@
 - **Source Spec(s)**: [spec-01-compatible-profile-storage.md](../../specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md) — `ready`, sole P1 spec.
 - **State**: ready-with-assumptions
 - **Execution Mode**: sequential
-- **Vertical Slicing**: applied to planning; ten complete capabilities on the approved replacement delivery basis (07 → 07A/07B).
+- **Vertical Slicing**: applied to planning; twelve complete capabilities on the approved replacement delivery basis (07 → 07A/07B; 08 → 08A/08B/08C).
 
 ## Summary
 
@@ -14,13 +14,17 @@ Correct architecture while retaining the existing persistence behavior. Domain c
 
 Canonical re-entry remains `Review → Implement (confirmed defect; correction escalated) → Plan/plannify`. D's dated inventory, permission statements and P0–P6 measurements below are historical planning records; the current S07 split authority above and its publication navigation govern this authorized docs pass. The approved class-based domain/application-port/infrastructure-adapter architecture remains unchanged.
 
+**Current S08 dispatch — approved 2026-10-15:** [S08-PLAN-INDEX.md](S08-PLAN-INDEX.md) replaces original08 delivery with A validated independent context → B complete domain preparation → C application/original API. User “Correcto, apruebo” approves this boundary and planning publication only; a separate renewed Implement gate remains mandatory. Technical planning review `ses_edf013fdeffe28KY1gSymJngGK` PASS retains budget risk; A291–370/B289–369/C143–206 are forecasts, not measured source fits. Full S08 completes only after C; original08 behavior/history below remains historical, with current budgets/gates governed by the S08 index.
+
 | Order | Plan | Callable outcome | State |
 | --- | --- | --- | --- |
 | 05 | [Agent identity and target policy](plan-05-agent-target-policy.md) | Concrete alias classification and exact stored-key selection | ready-with-assumptions |
 | 06 | [Validated raw document](plan-06-profile-document-policy.md) | Full-document validation class and retained assignment factory | ready-with-assumptions |
 | 07A | [Injected application read](plan-07a-injected-read-use-case.md) | Complete memory-capability reader/observation port; no Node load edge | ready-with-assumptions |
 | 07B | [Node observed read](plan-07b-node-observed-read.md) | Actual observation adapter/original load edge; completes old07 | ready-with-assumptions |
-| 08 | [Independent preparation](plan-08-independent-preparation-use-case.md) | Pure edit-policy class, clone ownership and prepare use case | ready-with-assumptions |
+| 08A | [Validated context](plan-08a-validated-edit-context.md) | Full validation/selection/capture and independent draft; zero original credits | ready-with-assumptions |
+| 08B | [Complete domain preparation](plan-08b-complete-preparation-use-case.md) | Same policy applies full edit/classification/validation; all72 original cases | ready-with-assumptions |
+| 08C | [Application/original compatibility](plan-08c-application-preparation-compatibility.md) | Delegation/original API; actually reruns72, zero duplicate credits; completes08 | ready-with-assumptions |
 | 09 | [Guarded atomic storage](plan-09-storage-recheck-atomic-adapter.md) | Source recheck and unchanged atomic-save adapter mechanics | ready-with-assumptions |
 | 10 | [Existing recovery inspection](plan-10-snapshot-inspection-adapter.md) | Read-only recovery matching and completed-backup verification | ready-with-assumptions |
 | 11 | [Owned snapshot acquisition](plan-11-snapshot-acquisition-adapter.md) | Complete exclusive creation/reuse/cleanup capability | ready-with-assumptions |
@@ -31,7 +35,7 @@ The sole human structural decision is resolved, not assumed. All plans are ready
 
 Planning WARN `ses_ee49cd162ffeTMC1TU4D5x56JD` gaps were corrected; parent reports technical planning PASS for types/path binding/allocation/checker/Windows/atomic boundaries. This pass changes readiness/delivery provenance only, not those contracts. Parent handles targeted re-review; this pass claims no independent review.
 
-Human review path has five conceptual steps: (1) own identity/validation policies05–06, (2) read and prepare through classes07A/07B–08, (3) preserve atomic/recovery mechanics09–11, (4) orchestrate injected capabilities12, (5) compose original APIs and prove platform behavior13. Ten budget slices implement these five steps; they are not ten new product features.
+Human review path has five conceptual steps: (1) own identity/validation policies05–06, (2) read and prepare through classes07A/07B–08A/08B/08C, (3) preserve atomic/recovery mechanics09–11, (4) orchestrate injected capabilities12, (5) compose original APIs and prove platform behavior13. Twelve budget slices implement these five steps; they are not twelve new product features.
 
 ## Planning Scope
 
@@ -57,7 +61,7 @@ None
 
 ## Vertical Slicing Decision
 
-Ten units separate alias extraction, validation, injected application read, Node integration, preparation, atomic storage mechanics, existing-backup inspection, owned creation, injected orchestration and real composition. Four original PRs have only 25/42/27/34 lines before hard399; class moves add constructor/port/fake-test churn and replacement deletions. Read-only inspection separates C's refusal/reuse cases from creation/cleanup without ever landing a partial snapshot writer. Atomic mechanics remain an internal low-level capability, not a public structured-update API. Unit12 completes orchestration; unit13 binds the original API to those already complete capabilities.
+Twelve units separate alias extraction, validation, injected application read, Node integration, validated context, complete domain preparation, application preparation/original API, atomic storage mechanics, existing-backup inspection, owned creation, injected orchestration and real composition. Four original PRs have only 25/42/27/34 lines before hard399; class moves add constructor/port/fake-test churn and replacement deletions. Read-only inspection separates C's refusal/reuse cases from creation/cleanup without ever landing a partial snapshot writer. Atomic mechanics remain an internal low-level capability, not a public structured-update API. Unit12 completes orchestration; unit13 binds the original API to those already complete capabilities.
 
 Every prefix is compiled, directly testable and inactive. Ports ship with their consuming use case or adapter, never as scaffolding-only PRs; tests/results/docs ship with the capability, never as tests-only source PRs. P2/P3 wait for full corrected P1 acceptance, not an intermediate unit.
 
@@ -278,7 +282,7 @@ None
 
 ## Dependencies
 
-Approved replacement basis → reviewed P0–P6 publication → accepted05→06(PR118) → approved R0→R1 docs review/publication/current-head CI → 07A→07B→08→09→10→11→12→13 → full P1 acceptance → original P2/P3. Per-PR diagrams mark current 📍. Technical dependency:06 uses05;07A uses06;07B integrates07A;08 waits07B on the approved chain;09 extends07B;10 uses06/07B;11 uses09/10;12 uses07B/08/09/11;13 composes all. Original07 consumers cannot proceed on memory-only07A. No delegation required.
+Approved replacement basis → reviewed P0–P6 publication → accepted05→06(PR118) → approved S07 docs review/publication/current-head CI → 07A→07B(PR123) → S08 R0→R1→R2 docs/current-head CI → renewed Implement gate → 08A→08B→08C→09→10→11→12→13 → full P1 acceptance → original P2/P3. Per-PR diagrams mark current 📍. Technical dependency:06 uses05;07A uses06;07B integrates07A;08A uses05/06 after07B,08B uses08A,08C uses08B;09 extends07B;10 uses06/07B;11 uses09/10;12 uses07B/full08(08C)/09/11;13 composes all. Future09–13 dependencies remain unchanged; strategic09 waits full08C. Original07 consumers cannot proceed on memory-only07A. No delegation required.
 
 ## Risks and Watchouts
 

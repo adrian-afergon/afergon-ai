@@ -1,5 +1,7 @@
 # Plan08: Class-owned targeted preparation and independent JSON clones
 
+> **Historical delivery contract:** approved 2026-10-15 [S08-PLAN-INDEX.md](S08-PLAN-INDEX.md) replaces this single delivery with 08A validated context → 08B full domain preparation → 08C application/original compatibility. Full S08 completes only after C. The original behavior contract, estimates and history below are retained; current forecasts/gates are in the new index. Boundary/publication approval is explicit; new source execution awaits a separate renewed Implement gate. The incomplete original S08 checkpoint remains preserved in its source tree and is not transferred or published here.
+
 - **Source Task**: `openspec/tasks/001-reasoning-effort-model-profiles-persistence.md`
 - **Source Spec(s)**: `openspec/specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md` — ready; sole P1 spec.
 - **State**: ready-with-assumptions
