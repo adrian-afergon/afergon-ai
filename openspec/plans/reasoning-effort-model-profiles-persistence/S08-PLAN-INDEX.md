@@ -154,3 +154,17 @@ Do not credit A tests or C reruns twice against original72, transfer whole histo
 ## Completion Condition
 
 Plan is ready-with-assumptions: technical review PASS and explicit boundary/publication approval recorded, literal None questions/tensions, local reversible layout assumptions only; no measured source delivery is claimed. Publication/current-head CI and renewed implementation gate remain separate dependencies. Full S08 completes only after C's actual72 compatibility reruns/app/wrapper proof, preceding A/B evidence/review and measured compliant deliveries; A alone may be considered as a safe subplan if forecasts fail, but is not execution authority.
+
+## Publication navigation — authorized 2026-10-15
+
+Stacked PRs to main; each pending docs child targets its immediate predecessor. Forward plan links in earlier prefixes resolve at this complete R2 tip. Original inventories/permission observations above retain their dates; this block records publication, not source completion.
+
+| Unit | Exact owned documents / amendments | Publication |
+| --- | --- | --- |
+| R0 | This index + A | [PR124](https://github.com/adrian-afergon/afergon-ai/pull/124), branch docs/issue94-p1-class-08-split-plan-00; 266+0=266 lines, 2 files |
+| R1 | B + clean-base architecture dispatch/original08 notice/17-row ledger | [PR125](https://github.com/adrian-afergon/afergon-ai/pull/125), branch docs/issue94-p1-class-08-split-plan-01; 164+23=187 lines, 4 files |
+| R2 | C + this publication/dependency navigation | Branch docs/issue94-p1-class-08-split-plan-02, immediate base R1; current PR URL/head/CI recorded by GitHub publication |
+
+Complete planning path: PR123 → R0 → R1 → R2 → **separate renewed Plan → Implement approval** → future accepted A → B → C →09→10→11→12→13.09 extends07B technically but waits full C strategically;12 uses C preparer/full B; all future bindings unchanged. Old106–109 stay CLOSED/unmerged and deprecated with refs/history preserved.
+
+Produced: supplied technical planning PASS with budget-risk note, explicit boundary/publication approval, complete A/B/C planning and reviewed docs-only dispatch/ledger amendments, byte-identical plan transfer (this navigation appended separately), measured per-unit diffs and checkpoint preservation. Not applicable: local runtime tests/build for Markdown-only publication. Outstanding: current-head CI and human PR review/integration, renewed Implement gate and every future source/TDD/emitted/native/budget result. All new PRs remain open/unmerged; no GitHub approving review or source-unit branch creation.
