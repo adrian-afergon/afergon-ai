@@ -14,6 +14,9 @@ import { invalidReads, readableDocuments } from "./_testModelRawFixtures.js";
 import { bindProfileRead } from "../scripts/lib/model-profiles/infrastructure/profile-read-composition.js";
 import { getConfigPath } from "../scripts/lib/model-profiles-config.js";
 import { spawnSync } from "node:child_process";
+import { ProfileAssignmentPolicy, type PrepareAssignmentInput } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
+import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
+import { aliasCases, changingPatch, editCases, invalidPatchFields, missingContainers } from "./_testModelPreparationFixtures.js";
 
 const tempRoots: string[] = [];
 it("generic clone defaults to an empty object", () => {
@@ -203,6 +206,154 @@ it("Node absence delegates defaults once without capturing bytes", () => {
 
 const policy = new AgentTargetPolicy();
 const documents = new ProfileDocumentPolicy(policy);
+const cloner = new RawProfileDocumentCloner();
+const assignments = new ProfileAssignmentPolicy(documents, policy, cloner);
+it("context returns an independent whole raw draft", () => {
+  const document = { foreign: { values: [1, 2] } };
+  const input = { document, sourceIdentity: "context:source", profileName: "work", agentName: "afg-review", patch: {} };
+  const context = assignments.prepareContext(input);
+  expect(context).toEqual({ document, knownPatch: {}, selectedKey: "afg-review", effectiveVersion: 1, sourceIdentity: "context:source", profileName: "work" });
+  (context.document.foreign as typeof document.foreign).values[0] = 3;
+  document.foreign.values[1] = 4;
+  expect(context.document.foreign).toEqual({ values: [3, 2] });
+  expect(document.foreign).toEqual({ values: [1, 4] });
+});
+it("context treats inherited constructor profile as absent", () => {
+  const select = vi.spyOn(policy, "select");
+  const document = { models: { profiles: {} } };
+  const context = assignments.prepareContext({ document, sourceIdentity: "context:own", profileName: "constructor", agentName: "review", patch: {} });
+  expect(select).toHaveBeenCalledWith({}, "review");
+  expect(context.document).toEqual(document);
+  expect(context.selectedKey).toBe("afg-review");
+});
+it("context retains the actual stored alias and supplied identity", () => {
+  const document = { version: 2, models: { profiles: { archive: { " ReVieW ": "inherit" } } } };
+  const context = assignments.prepareContext({ document, sourceIdentity: "context:second", profileName: "archive", agentName: "afg-review", patch: {} });
+  expect(context).toEqual({ document, knownPatch: {}, selectedKey: " ReVieW ", effectiveVersion: 2, sourceIdentity: "context:second", profileName: "archive" });
+  expect(context.document).not.toBe(document);
+});
+it("context captures changing recognized getters once", () => {
+  const { patch, reads } = changingPatch();
+  const context = assignments.prepareContext({ document: {}, sourceIdentity: "context:getter", profileName: "work", agentName: "review", patch });
+  expect(context.knownPatch).toEqual({ model: "custom/first", reasoningEffort: "high" });
+  expect(reads).toEqual({ model: 1, reasoningEffort: 1 });
+});
+it("context refuses own undefined effort at actual stored path before clone", () => {
+  const clone = vi.spyOn(cloner, "clone");
+  const document = { models: { profiles: { work: { " ReVieW ": "inherit" } } } };
+  expect(() => assignments.prepareContext({ document, sourceIdentity: "context:invalid", profileName: "work", agentName: "review", patch: { reasoningEffort: undefined } }))
+    .toThrow('models.profiles["work"][" ReVieW "].reasoningEffort');
+  expect(clone).not.toHaveBeenCalled();
+});
+it("context rejects malformed source with supplied identity before clone", () => {
+  const clone = vi.spyOn(cloner, "clone");
+  expect(() => assignments.prepareContext({ document: { models: null }, sourceIdentity: "context:corrupt", profileName: "work", agentName: "review", patch: {} }))
+    .toThrow("Could not read model profile config at context:corrupt: models must be an object.");
+  expect(clone).not.toHaveBeenCalled();
+});
+it("context refuses future version even for an empty patch", () => {
+  const clone = vi.spyOn(cloner, "clone");
+  expect(() => assignments.prepareContext({ document: { version: 3 }, sourceIdentity: "context:future", profileName: "work", agentName: "review", patch: {} }))
+    .toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
+  expect(clone).not.toHaveBeenCalled();
+});
+it.each([["string", "bad"], ["null", null], ["array", []], ["undefined", undefined], ["number", 7]])("context rejects patch shape %s before clone", (_name, patch) => {
+  const clone = vi.spyOn(cloner, "clone");
+  expect(() => assignments.prepareContext({ document: {}, sourceIdentity: "context:shape", profileName: "work", agentName: "review", patch } as PrepareAssignmentInput))
+    .toThrow("Assignment patch must be an object.");
+  expect(clone).not.toHaveBeenCalled();
+});
+it.each(invalidReads)("context rejects whole raw source %s before clone", (_name, document, expectedPath) => {
+  const clone = vi.spyOn(cloner, "clone");
+  expect(() => assignments.prepareContext({ document, sourceIdentity: "context:matrix", profileName: "work", agentName: "review", patch: {} } as PrepareAssignmentInput)).toThrow(expectedPath);
+  expect(clone).not.toHaveBeenCalled();
+});
+it.each(invalidPatchFields)("context rejects captured %s before clone", (_name, field, value) => {
+  const clone = vi.spyOn(cloner, "clone");
+  const document = { models: { profiles: { work: { " ReVieW ": "old" } } } };
+  expect(() => assignments.prepareContext({ document, sourceIdentity: "context:fields", profileName: "work", agentName: "review", patch: { [field]: value } }))
+    .toThrow(`models.profiles["work"][" ReVieW "].${field}`);
+  expect(() => assignments.prepareContext({ document: { models: { profiles: { other: { review: { [field]: value } } } } }, sourceIdentity: "context:nontarget", profileName: "work", agentName: "review", patch: {} }))
+    .toThrow(`models.profiles.other.review.${field}`);
+  expect(clone).not.toHaveBeenCalled();
+});
+it.each(editCases)("context retains raw input projection: %s", (_name, stored, patch) => {
+  const document = { version: 1, models: { profiles: { work: { review: structuredClone(stored) } } } };
+  const command = structuredClone(patch);
+  const context = assignments.prepareContext({ document, sourceIdentity: "context:edit", profileName: "work", agentName: "review", patch: command });
+  expect(context.document).toEqual(document);
+  expect(context.knownPatch).toEqual(Object.fromEntries(Object.entries(command).filter(([key]) => key === "model" || key === "reasoningEffort")));
+  expect(context.selectedKey).toBe("review");
+});
+it.each(missingContainers)("context leaves missing containers absent: %j", (raw) => {
+  const document = structuredClone(raw);
+  const context = assignments.prepareContext({ document, sourceIdentity: "context:missing", profileName: "__proto__", agentName: "review", patch: {} });
+  expect(context.document).toEqual(document);
+  expect(context.selectedKey).toBe("afg-review");
+});
+it.each(aliasCases)("context selects input projection: %s", (_name, profile, agentName, selectedKey) => {
+  const document = { models: { profiles: { work: structuredClone(profile) } } };
+  const context = assignments.prepareContext({ document, sourceIdentity: "context:alias", profileName: "work", agentName, patch: {} });
+  expect(context).toEqual({ document, knownPatch: {}, selectedKey, effectiveVersion: 1, sourceIdentity: "context:alias", profileName: "work" });
+});
+it.each(["__proto__", "constructor"])("context keeps own prototype-like profile %s", (profileName) => {
+  const document = { models: { profiles: { [profileName]: { " ReVieW ": "old" } } } };
+  expect(assignments.prepareContext({ document, sourceIdentity: "context:own", profileName, agentName: "review", patch: {} }).selectedKey).toBe(" ReVieW ");
+  const select = vi.spyOn(policy, "select");
+  assignments.prepareContext({ document: { models: { profiles: {} } }, sourceIdentity: "context:absent", profileName, agentName: "review", patch: {} });
+  expect(Object.getPrototypeOf(select.mock.calls[0][0])).toBe(Object.prototype);
+});
+it.each(["foreign", " REVIEW "])("context refuses target %s before capture or clone", (agentName) => {
+  const clone = vi.spyOn(cloner, "clone");
+  const { patch, reads } = changingPatch();
+  const document = { models: { profiles: { work: { review: "old", "afg-review": "other" } } } };
+  expect(() => assignments.prepareContext({ document, sourceIdentity: "context:target", profileName: "work", agentName, patch }))
+    .toThrow(agentName === "foreign" ? "Unsupported agent 'foreign'" : "Ambiguous assignment aliases");
+  expect(reads).toEqual({ model: 0, reasoningEffort: 0 });
+  expect(clone).not.toHaveBeenCalled();
+});
+it("context ignores inherited recognized and own unknown getter traps", () => {
+  const { patch, reads } = changingPatch(false);
+  const context = assignments.prepareContext({ document: {}, sourceIdentity: "context:traps", profileName: "work", agentName: "review", patch });
+  expect(context.knownPatch).toEqual({});
+  expect(Object.getPrototypeOf(context.knownPatch)).toBe(Object.prototype);
+  expect(reads).toEqual({ model: 0, reasoningEffort: 0 });
+});
+it("context command and supplied patch remain independent both ways", () => {
+  const patch = { model: "old", reasoningEffort: "high" };
+  const context = assignments.prepareContext({ document: {}, sourceIdentity: "context:copy", profileName: "work", agentName: "review", patch });
+  patch.model = "later";
+  context.knownPatch.reasoningEffort = "low";
+  expect(context.knownPatch).toEqual({ model: "old", reasoningEffort: "low" });
+  expect(patch).toEqual({ model: "later", reasoningEffort: "high" });
+});
+it("context accepts frozen source command and input without mutation", () => {
+  const document = Object.freeze({ foreign: Object.freeze({ keep: true }) });
+  const input = Object.freeze({ document, sourceIdentity: "context:frozen", profileName: "work", agentName: "review", patch: Object.freeze({ model: "new" }) });
+  const context = assignments.prepareContext(input);
+  (context.document.foreign as { keep: boolean }).keep = false;
+  expect(document.foreign.keep).toBe(true);
+  expect(context.knownPatch).toEqual(input.patch);
+});
+it("context construction is inert and execution uses inward collaborators once", () => {
+  const validate = vi.spyOn(documents, "validate");
+  const supported = vi.spyOn(documents, "requireSupportedVersion");
+  const select = vi.spyOn(policy, "select");
+  const clone = vi.spyOn(cloner, "clone");
+  const ambient = [vi.spyOn(fs, "readFileSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "mkdirSync"), vi.spyOn(process, "cwd")];
+  const json = [vi.spyOn(JSON, "parse"), vi.spyOn(JSON, "stringify")];
+  const instance = new ProfileAssignmentPolicy(documents, policy, cloner);
+  new RawProfileDocumentCloner();
+  for (const spy of [validate, supported, select, clone, ...ambient, ...json]) expect(spy).not.toHaveBeenCalled();
+  const input = { document: {}, sourceIdentity: "context:order", profileName: "work", agentName: "review", patch: {} };
+  expect(instance.prepareContext(input).document).toEqual({});
+  expect(validate.mock.calls).toEqual([[input.document, input.sourceIdentity]]);
+  expect(supported.mock.calls).toEqual([[input.document, "prepare"]]);
+  expect(clone.mock.calls).toEqual([[input.document]]);
+  expect(validate.mock.invocationCallOrder[0]).toBeLessThan(select.mock.invocationCallOrder[0]);
+  expect(select.mock.invocationCallOrder[0]).toBeLessThan(clone.mock.invocationCallOrder[0]);
+  for (const spy of ambient) expect(spy).not.toHaveBeenCalled();
+});
 it("refuses future preparation with its original diagnostic", () => {
   expect(() => documents.requireSupportedVersion({ version: 3 }, "prepare"))
     .toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
@@ -330,7 +481,9 @@ it("domain constructor is ambient-free and uses its concrete classification coll
   } finally { normalize.mockRestore(); for (const spy of spies) spy.mockRestore(); }
 });
 it("resolved application and document domain graph obey inward boundaries", () => {
-  const pending = [import.meta.resolve("../scripts/lib/model-profiles/application/read-profile-document-use-case.ts")];
+  const pending = [import.meta.resolve("../scripts/lib/model-profiles/application/read-profile-document-use-case.ts"),
+    import.meta.resolve("../scripts/lib/model-profiles/domain/profile-assignment-policy.ts"),
+    import.meta.resolve("../scripts/lib/model-profiles/domain/raw-profile-document-cloner.ts")];
   const visited = new Set<string>();
   while (pending.length) {
     const url = pending.pop()!;
@@ -359,6 +512,7 @@ it("resolved application and document domain graph obey inward boundaries", () =
   expect([...visited].sort()).toEqual([
     "application/read-profile-document-use-case.ts", "application/profile-observation-port.ts", "application/profile-document-observation.ts",
     "domain/profile-document-policy.ts", "domain/profile-document.ts", "domain/agent-target-policy.ts", "domain/stored-assignment.ts",
+    "domain/profile-assignment-policy.ts", "domain/assignment-patch.ts", "domain/raw-profile-document-cloner.ts",
   ].map((path) => import.meta.resolve(vertical + path)).sort());
 });
 

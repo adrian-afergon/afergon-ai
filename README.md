@@ -132,6 +132,10 @@ The internal `infrastructure/profile-store` load API now composes that reader wi
 It captures one Buffer, retains exact UTF8 text/raw JSON and binds the initial absolute config path privately; only a read-time ENOENT returns in-memory defaults, without creating files.
 Existing CLI/TUI workflows remain on their legacy path, and public reasoning-effort editing is still future work.
 
+The internal `ProfileAssignmentPolicy.prepareContext` validates the entire source, refuses unsupported versions even for no-ops, selects the actual stored key and captures known command fields once before cloning the whole raw document.
+Its plain mutable context owns independent JSON data and command values; it does not edit assignments, materialize missing containers or promote schema versions. `RawProfileDocumentCloner` also owns the unchanged generic JSON cloning used by the legacy facade.
+These domain capabilities remain inactive in public workflows; full preparation and persistence follow in later corrective slices.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
