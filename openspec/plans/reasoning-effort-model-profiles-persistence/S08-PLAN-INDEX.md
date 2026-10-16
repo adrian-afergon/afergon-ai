@@ -31,6 +31,8 @@ None
 
 ## Reviewed budget worksheet
 
+**2026-10-16 S08A-only amendment:** user explicitly approved the sole P1 specification/plan revision before resuming the existing A tree at25b6588 from PR126 ab54a695. A now has an inclusive450 changed-line ceiling instead of its historical STOP375/hard399; count all source/tests/helpers/docs/spec/plan/result/review fixes and stop above450 complete projection. Retain the approved A→B→C boundary and history; no fourth prefix or code/evidence compression. B/C retain STOP375/hard399. The worksheet below remains dated planning history, not measured fit; current actual/projection is in correction/S08A/RESULT.md.
+
 Technical planning review `ses_edf013fdeffe28KY1gSymJngGK` reports three-prefix semantics PASS with budget-risk note: B292–381 when domain emission is duplicated. Its mandatory invocation proof is retained below: a real A-owned compiled-domain preamble and the existing child-process helper eliminate repeated imports/construction in B, not assertions. Boundary/publication approval is explicit; no remaining structural decision is pending. Reviewed publication/current-head CI and a renewed Implement gate remain separate dependencies, never source-success evidence.
 
 | Layer: additions + deletions | A | B domain only | C application/compatibility |
