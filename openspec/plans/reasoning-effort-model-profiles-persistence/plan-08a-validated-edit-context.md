@@ -29,6 +29,8 @@ None
 
 ## Reviewed budget risk
 
+**Current execution authority — 2026-10-16:** user explicitly authorized resuming this same S08A with an inclusive450-line ceiling and the prior specification/plan amendment. This S08A-only exception supersedes its historical STOP375/hard399 below; stop if complete projection exceeds450. All helpers, exception docs, evidence and review fixes count; no compression, evidence deletion, further slicing or new prefix. Resume existing nine-cycle history at25b6588, base PR126 ab54a695; B/C retain STOP375/hard399. Prior boundary and source-execution approvals stand; independent Review/source-head CI remain subsequent gates.
+
 Technical planning review `ses_edf013fdeffe28KY1gSymJngGK` PASS retains a budget-risk note. The revised worksheet supports A upper370/B369 with fragile5/6 margins before STOP375; no measured fit. Any physical mismatch or new-cycle/review growth reopens the technical budget issue before execution continues. User “Correcto, apruebo” approves A→B→C boundaries and planning publication only; renewed Implement approval remains required. Current skill paths are refreshed in the index without rewriting dated observations.
 
 ## Vertical Slicing Decision
@@ -61,11 +63,13 @@ Compiled upper21 is grounded in builtRead168–174: optional program-prefix para
 
 ## Implementation Steps
 
-- [ ] After reviewed publication, explicit A→B→C boundary approval and renewed gate, obtain clean isolation and remeasure every layer.
-- [ ] Characterize six generic default/fallback/JSON parity cases; extract exact unchanged owner and legacy facade as green-only refactor.
-- [ ] Introduce one behavioral context assertion, then minimal GREEN; add T1 and T2 individually RED/GREEN before green-only refactor.
-- [ ] Add source/future/patch/alias/capture/copy matrix, shared getter/table definitions and tested emitted-domain prefix; prove direct context invocation and inward graph/constructor behavior.
+- [x] After reviewed publication, explicit A→B→C boundary approval and renewed gate, obtain clean isolation and remeasure every layer.
+- [x] Characterize six generic default/fallback/JSON parity cases; extract exact unchanged owner and legacy facade as green-only refactor.
+- [x] Introduce one behavioral context assertion, then minimal GREEN; add T1 and T2 individually RED/GREEN before green-only refactor.
+- [x] Add source/future/patch/alias/capture/copy matrix, shared getter/table definitions and tested emitted-domain prefix; prove direct context invocation and inward graph/constructor behavior.
 - [ ] Run full prefix verification, record actual evidence/result/budget and review before publishing accepted A for B.
+
+Local verification/evidence is complete in `correction/S08A/RESULT.md` (2026-10-16). The final combined step and acceptance sign-off remain open for independent Review before publication; all local implementation/test obligations are produced, and source-head CI follows publication. Neither is permission to start B here.
 
 ## Interfaces and Technical Contracts
 
