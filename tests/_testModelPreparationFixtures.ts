@@ -39,3 +39,14 @@ export const aliasCases = [
 export const missingContainers = [
   {}, { models: {} }, { models: { profiles: {} } }, { version: 1, models: { activeProfile: null, profiles: {} } },
 ] as const;
+
+export const domainProgramPrefix = `
+import { AgentTargetPolicy } from './dist/scripts/lib/model-profiles/domain/agent-target-policy.js';
+import { ProfileDocumentPolicy } from './dist/scripts/lib/model-profiles/domain/profile-document-policy.js';
+import { RawProfileDocumentCloner } from './dist/scripts/lib/model-profiles/domain/raw-profile-document-cloner.js';
+import { ProfileAssignmentPolicy } from './dist/scripts/lib/model-profiles/domain/profile-assignment-policy.js';
+const agents = new AgentTargetPolicy();
+const validator = new ProfileDocumentPolicy(agents);
+const cloner = new RawProfileDocumentCloner();
+const policy = new ProfileAssignmentPolicy(validator, agents, cloner);
+`;

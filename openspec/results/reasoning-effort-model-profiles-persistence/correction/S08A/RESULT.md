@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-In progress — 2026-10-16 user-approved S08A-only inclusive450 exception supersedes the historical blocked checkpoint below; B/C retain STOP375/hard399.
+completed-with-notes — all local S08A obligations produced under the 2026-10-16 user-approved inclusive450 exception; independent Review/source-head CI pending. B/C retain STOP375/hard399.
 
 ## Plan Reference
 
@@ -19,21 +19,30 @@ Preserve/no transfer/no stage: root PROJECT-TASKS161+1 and32 enumerated original
 
 - Isolation and remote gate verification produced.
 - Six clone characterizations and exact inward extraction complete; `pnpm build`, then `pnpm typecheck` exit0; `git diff --check` exit0. Rollback: cloner, core facade and six focal clone cases as one unit. Runtime invocation belongs to context delivery.
+- Complete context, all input matrices/copies/getter traps, constructor/inward graph, real emitted prefix invocation and final local verification produced. Plan's final combined review/publication step and acceptance sign-off remain for independent Review, not missing local tests.
 
 ## Updated Plan Artifacts
 
-None
+- `openspec/plans/reasoning-effort-model-profiles-persistence/plan-08a-validated-edit-context.md` — scoped exception and verified local completion.
+- `openspec/plans/reasoning-effort-model-profiles-persistence/S08-PLAN-INDEX.md` — scoped exception, dated history preserved.
+- `openspec/specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md` — narrow requirement19 exception only; Gherkin unchanged.
 
 ## Commits Created
 
 - `25b6588b9a5f81e57484ccb5ab35ea16974ac28a` — `refactor(models): own characterized raw JSON cloning in domain` (verified extraction plus six cases and contemporaneous result).
+- `f37899c` — `docs(models): authorize scoped S08A size exception` before resumed source edits.
+- `d3d66b2` — `feat(models): prepare validated independent assignment contexts` with fixtures/tests/README/result.
+- Final emitted-proof/completion evidence commit contains this result; its exact SHA is supplied in the final handoff rather than circularly embedding itself.
 
 ## Files Changed
 
-- Source: core clone facade, domain raw cloner, assignment-patch interface, profile-assignment-policy interfaces/class (prepareContext only, incomplete).
-- Tests: focal clone/context cycles and `_testModelPreparationFixtures.ts` changing getter factory; this result. README/plan completion untouched.
+- Source: core clone facade, domain raw cloner, assignment-patch interface, complete profile-assignment-policy interfaces/class (prepareContext only).
+- Tests: focal clone/context cycles, matrices/graph/emitted invocation and `_testModelPreparationFixtures.ts` fresh getter/data/program prefix; README/result and three scoped exception documents above.
 
 ## Verification Results
+
+- Final2026-10-16 reran the exact build/typecheck/health/reader-import/single emitted/focal/application/regression/full commands recorded below, with HOME/XDG/config/state isolated in fresh `/tmp/opencode/afergon-s08a-final.*`, spies restored, pnpm workaround unchanged: all exit0. Full `pnpm test` timeout300s completed in107.49s, including its rebuild.
+- Final counts: emitted1 pass/232 skipped; focal233 passes (162 inherited +6 clone +64 context +1 emitted); application11; legacy quartet132 passes/3 skips; full628 passes/8 skips across27 passed/3 skipped files. Produced: all local evidence. N/A: new native Windows persistence target (S13). Outstanding external: independent Review and current source-head CI after authorized publication. Source-map warning remains non-failing.
 
 Resume2026-10-16: rechecked all five categories/full23 topology. Reuse same isolated branch at25b6588, HEAD/base1/0, no upstream/remote source ref, stage empty; result/focal modified and domain patch/policy/getter helper untracked exactly as checkpoint. These A-owned paths may stage when verified; root32/index161+1, old S08 eight checkpoints+four plan originals, S07 four, D11, all historical refs/seven prunables preserve/no transfer/no stage. PR126 remote exact ab54a695/four SUCCESS, issue94 OPEN/status:approved. Only extra owned paths are sole spec and A plan/index exception amendments, placed before further source changes. Docs-only review produced; runtime N/A for amendment. Forecast405 + exception6 + new evidence/review allowance20 =431, remeasure every GREEN;450 ceiling applies to complete delivery, not a target.
 
@@ -46,6 +55,8 @@ Commands run from the isolated worktree. Environment prefix `pnpm_config_pm_on_f
 - Context command template: `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t '<selector>'`; exact selectors below are runnable regexes. First `^context returns an independent whole raw draft$`: RED exit1 expected six-field context, received undefined (compiled seam, no algorithm); TPP2 fresh constant context only; GREEN exit0 one pass/168 skipped. Forecast source current52→final65–90/tests34→138–169/docs4–6/result68–85/plans16–20 =291–370.
 
 ### Budget checkpoint and cycle evidence
+
+- Emitted characterization: exact selector `^emitted context executes the real domain policy and cloner$` using the same focal command template, exit0 one pass/232 skipped; focal exit0 233 passes. Four actual emitted imports/four constructors run real cloner.clone and policy.prepareContext, child status0 and full parsed output equals both raw clone and six-field context. Added optional builtRead preamble preserves inherited reader calls/results; initial exported prefix/helper/invocation costs21 changed test lines, fully A-owned. No future production method stub. Already-green emitted behavior is characterization, no missing-import/compile RED claimed. Actual426 before this evidence; source67/tests238/README4/result113/spec2/plans4=428. Remaining completion/checklist/evidence estimate≤22 reaches450; independent Review may require another measured budget stop rather than edits beyond450.
 
 - Resume constructor/graph characterization and tuple typing fix: `pnpm typecheck` exit0; focal exact command exit0 232 passes. Actual policy/cloner are graph roots with full domain membership; old reader graph/VO constructor checks retained. Constructor spies prove no validator/version/selector/cloner/JSON/ambient calls; execution validates once with supplied identity, requires prepare version, selects then clones whole source once, ambient silent. No defect found to manufacture two REDs for inert parameter-property constructors or already-inward imports. Rollback context unit: domain patch/policy, new context fixture/cases/graph additions and README context paragraph; retain preceding clone extraction. Complete forecast source67/tests217+emitted21/result111+final8/README4/spec2/plans4+completion12 =446; actual proof/review growth still subject to450.
 
@@ -97,15 +108,16 @@ Produced: nine sequential behavioral RED/GREENs, six extraction characterization
 
 ## Blockers or Deviations
 
-Local completion blocked by budget. Partial context remains uncommitted; only verified clone extraction was committed. No review, publication, GitHub approval, merge or history rewrite. The approved full-A boundary remains the best cohesive candidate; do not invent another prefix or compress evidence to fit. Final all-layer measurements follow in Notes.
+Historical STOP375 blockage below was resolved by explicit S08A-only450 approval and prior spec/plan amendment; no remaining local blocker. No review delegation, publication, GitHub approval, merge or history rewrite. Approved full-A boundary retained without code/evidence compression or another prefix. Further review fixes must also fit450 or stop; B/C unchanged.
 
 ## Notes
 
-- Final measured delta from exact base, including untracked files and both replacement sides: source66/tests84/README0/RESULT99/planchurn0 =249 lines across7 paths. Complete projection updated for this actual99-line result: source75/tests211/README4/RESULT99/planchurn16 =405 (30 over STOP375,6 over hard399); remaining156. No evidence removed to recover the earlier90-line assumption. `git diff --check` exit0; staged set empty. This is a projection of required complete work, not a claim that405 lines were implemented.
+- Final complete measured base-relative delta (all11 paths, both replacement sides, no untracked omissions): source67/tests238/README4/RESULT123/spec2/plans14 =448 changed lines, within the inclusive450 S08A-only exception with2 lines remaining. Required local work remaining0; no further evidence-size assumption. Plan's combined review/publication and acceptance sign-off stay pending independent Review; no source CI claimed yet. `git diff --check` exit0; final evidence commit self-reference is resolved by handoff HEAD.
+- Historical pre-exception checkpoint delta from exact base, including untracked files and both replacement sides: source66/tests84/README0/RESULT99/planchurn0 =249 lines across7 paths. Complete projection updated for that99-line result: source75/tests211/README4/RESULT99/planchurn16 =405 (30 over STOP375,6 over hard399); remaining156. No evidence removed to recover the earlier90-line assumption. `git diff --check` exit0; staged set empty. This was a projection of required complete work, not a claim that405 lines were implemented.
 - Initial forecast: source65–90/tests138–169/docs4–6/result68–85/planchurn16–20 =291–370; reforecast after each GREEN.
-- Expected evidence: checkpoint tests/build produced; complete context/graph/emitted proof outstanding; independent review and source-head CI external gates after local completion. Windows new persistence fault target belongs to S13. No B72 credits. No independent review delegated.
-- Final identity: base `ab54a695fa796e34a50cda41c5a4064b13eeb0d7`; HEAD `25b6588b9a5f81e57484ccb5ab35ea16974ac28a`; branch/worktree above. Stage empty; partial context/tests/result remain explicitly A-owned unstaged/untracked. Original22 registrations/refs preserved plus this new23rd; seven prunable untouched. PR106–109 verified CLOSED/unmerged with original heads. No unavailable tree claimed clean.
+- Expected evidence: full local context/clone/graph/constructor/emitted/build/regressions produced; independent review/source-head CI external gates remain. S13 owns new native persistence faults. No B72 credits; B/C72 proofs remain future. No full P1 or public effort UI claim.
+- Final identity: base `ab54a695fa796e34a50cda41c5a4064b13eeb0d7`; final commit self-reference above, exact HEAD in handoff; same branch/worktree. Original23 registrations/refs preserved, seven prunables untouched. PR106–109 remain CLOSED/unmerged with original heads; no unavailable tree claimed clean. Only explicitly A-owned paths staged/committed, no dirty transfers.
 
 ## Next Step
 
-Human decision required on measured cohesive S08A budget. Preserve current checkpoint; do not start B/C or another prefix. Remaining local evidence is outstanding, not an external source-CI dependency.
+Parent performs fresh independent Review, then separately authorized publication/current-head CI. No PR or B/C execution here; source remains an inactive context capability, not final P1 or public effort UI.

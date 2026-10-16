@@ -63,11 +63,13 @@ Compiled upper21 is grounded in builtRead168–174: optional program-prefix para
 
 ## Implementation Steps
 
-- [ ] After reviewed publication, explicit A→B→C boundary approval and renewed gate, obtain clean isolation and remeasure every layer.
-- [ ] Characterize six generic default/fallback/JSON parity cases; extract exact unchanged owner and legacy facade as green-only refactor.
-- [ ] Introduce one behavioral context assertion, then minimal GREEN; add T1 and T2 individually RED/GREEN before green-only refactor.
-- [ ] Add source/future/patch/alias/capture/copy matrix, shared getter/table definitions and tested emitted-domain prefix; prove direct context invocation and inward graph/constructor behavior.
+- [x] After reviewed publication, explicit A→B→C boundary approval and renewed gate, obtain clean isolation and remeasure every layer.
+- [x] Characterize six generic default/fallback/JSON parity cases; extract exact unchanged owner and legacy facade as green-only refactor.
+- [x] Introduce one behavioral context assertion, then minimal GREEN; add T1 and T2 individually RED/GREEN before green-only refactor.
+- [x] Add source/future/patch/alias/capture/copy matrix, shared getter/table definitions and tested emitted-domain prefix; prove direct context invocation and inward graph/constructor behavior.
 - [ ] Run full prefix verification, record actual evidence/result/budget and review before publishing accepted A for B.
+
+Local verification/evidence is complete in `correction/S08A/RESULT.md` (2026-10-16). The final combined step and acceptance sign-off remain open for independent Review before publication; all local implementation/test obligations are produced, and source-head CI follows publication. Neither is permission to start B here.
 
 ## Interfaces and Technical Contracts
 

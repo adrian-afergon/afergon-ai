@@ -16,7 +16,7 @@ import { getConfigPath } from "../scripts/lib/model-profiles-config.js";
 import { spawnSync } from "node:child_process";
 import { ProfileAssignmentPolicy, type PrepareAssignmentInput } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
-import { aliasCases, changingPatch, editCases, invalidPatchFields, missingContainers } from "./_testModelPreparationFixtures.js";
+import { aliasCases, changingPatch, domainProgramPrefix, editCases, invalidPatchFields, missingContainers } from "./_testModelPreparationFixtures.js";
 
 const tempRoots: string[] = [];
 it("generic clone defaults to an empty object", () => {
@@ -134,16 +134,22 @@ it.each([
   expect(read.mock.calls).toEqual([[identity]]);
 });
 
-function builtRead(script: string) {
+function builtRead(script: string, programPrefix?: string) {
   const { root } = createConfig();
   const entry = "./dist/scripts/lib/model-profiles/infrastructure/profile-store.js";
   expect(fs.existsSync(new URL(`../${entry}`, import.meta.url))).toBe(true);
-  return spawnSync(process.execPath, ["--input-type=module", "-e", `import * as built from '${entry}'; ${script}`],
+  return spawnSync(process.execPath, ["--input-type=module", "-e", `${programPrefix ?? `import * as built from '${entry}';`} ${script}`],
     { encoding: "utf8", env: { ...process.env, HOME: root, XDG_CONFIG_HOME: root, XDG_STATE_HOME: root, AFERGON_AI_CONFIG_DIR: root } });
 }
 it("emits a directly importable reader module", () => {
   const result = builtRead("if (typeof built.loadProfileDocument !== 'function') throw new Error('Reader missing');");
   expect(result.status, result.stderr).toBe(0);
+});
+it("emitted context executes the real domain policy and cloner", () => {
+  const input = { document: { models: { profiles: { work: { " ReVieW ": "old" } } }, foreign: { keep: [1] } }, sourceIdentity: "emitted:source", profileName: "work", agentName: "review", patch: { reasoningEffort: "high" } };
+  const result = builtRead(`const input = ${JSON.stringify(input)}; console.log(JSON.stringify({ direct: cloner.clone(input.document), context: policy.prepareContext(input) }));`, domainProgramPrefix);
+  expect(result.status, result.stderr).toBe(0);
+  expect(JSON.parse(result.stdout)).toEqual({ direct: input.document, context: { document: input.document, knownPatch: input.patch, selectedKey: " ReVieW ", effectiveVersion: 1, sourceIdentity: input.sourceIdentity, profileName: input.profileName } });
 });
 it("keeps a built missing-file read side-effect free", () => {
   const result = builtRead("import fs from 'node:fs'; const loaded = built.loadProfileDocument(); if (loaded.exists || fs.existsSync(loaded.configPath)) throw new Error('Unexpected source');");
