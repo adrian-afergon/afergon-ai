@@ -2,7 +2,7 @@ import fs from "node:fs";
 import ts from "typescript";
 import { afterEach, expect, it, vi } from "vitest";
 import { AgentTargetPolicy, SUPPORTED_AGENTS as DOMAIN_AGENTS, type SupportedAgent as DomainAgent } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
-import { normalizeAgentName, SUPPORTED_AGENTS, type SupportedAgent } from "../scripts/lib/model-profiles-core.js";
+import { cloneAssignments, normalizeAgentName, SUPPORTED_AGENTS, type SupportedAgent } from "../scripts/lib/model-profiles-core.js";
 import { StoredAssignment } from "../scripts/lib/model-profiles/domain/stored-assignment.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 import { NodeProfileStorageAdapter } from "../scripts/lib/model-profiles/infrastructure/node-profile-storage-adapter.js";
@@ -16,6 +16,24 @@ import { getConfigPath } from "../scripts/lib/model-profiles-config.js";
 import { spawnSync } from "node:child_process";
 
 const tempRoots: string[] = [];
+it("generic clone defaults to an empty object", () => {
+  expect(cloneAssignments()).toEqual({});
+});
+it.each([null, [], "not an object"])("generic clone retains fallback for %j", (raw) => {
+  expect(cloneAssignments(raw as unknown as Record<string, unknown>)).toEqual({});
+});
+it("generic clone preserves JSON conversion semantics", () => {
+  const raw = { missing: undefined, values: [undefined, NaN], date: new Date("2020-01-01Z") };
+  expect(cloneAssignments(raw)).toEqual({ values: [null, null], date: "2020-01-01T00:00:00.000Z" });
+});
+it("generic clone keeps nested metadata independent both ways", () => {
+  const raw = { review: { note: { values: [1, 2] } } };
+  const copy: typeof raw = cloneAssignments(raw);
+  copy.review.note.values[0] = 3;
+  raw.review.note.values[1] = 4;
+  expect(copy.review.note.values).toEqual([3, 2]);
+  expect(raw.review.note.values).toEqual([1, 4]);
+});
 afterEach(() => {
   vi.restoreAllMocks();
   for (const root of tempRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });

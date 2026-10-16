@@ -1,4 +1,5 @@
 import { AgentTargetPolicy, SUPPORTED_AGENTS, type SupportedAgent } from "./model-profiles/domain/agent-target-policy.js";
+import { RawProfileDocumentCloner } from "./model-profiles/domain/raw-profile-document-cloner.js";
 
 export { SUPPORTED_AGENTS, type SupportedAgent } from "./model-profiles/domain/agent-target-policy.js";
 
@@ -224,7 +225,7 @@ export function resolveAssignments(profile: Record<string, unknown> = {}): Resol
 }
 
 export function cloneAssignments<T extends Record<string, unknown>>(assignments: T = {} as T): T {
-  return JSON.parse(JSON.stringify(asPlainObject(assignments))) as T;
+  return new RawProfileDocumentCloner().clone(assignments);
 }
 
 export function hasDegradedRefreshGuidance({ stdout = "", stderr = "" }: { stdout?: unknown; stderr?: unknown } = {}): boolean {
