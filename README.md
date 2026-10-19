@@ -136,10 +136,12 @@ The internal `ProfileAssignmentPolicy.prepareContext` validates the entire sourc
 Its plain mutable context owns independent JSON data and command values; it does not edit assignments, materialize missing containers or promote schema versions. `RawProfileDocumentCloner` also owns the unchanged generic JSON cloning used by the legacy facade.
 The same policy's `prepare` applies only captured command fields to that independent document, preserves omitted fields and foreign metadata, and validates the entire final candidate.
 It retains legacy strings for model-only edits and reports prospective migration only for actual structured changes in effective version 1; it never promotes the raw version or writes files.
-These domain capabilities remain inactive in public workflows; application/compatibility composition and persistence follow in later corrective slices.
+These domain capabilities remain inactive in public workflows; persistence follows in later corrective slices.
 
 The internal `PrepareProfileAssignmentUseCase` accepts the concrete domain preparation policy and delegates the exact input, result and errors.
 Its constructor only stores that collaborator; preparation rules remain owned by the domain policy.
+The original internal `infrastructure/prepare-assignment` API now composes that use case and maps the supplied `configPath` to diagnostic `sourceIdentity` only.
+It returns the domain's complete prepared result without resolving paths, selecting defaults, cloning again or performing I/O; this completes semantic preparation, not persistence acceptance.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 

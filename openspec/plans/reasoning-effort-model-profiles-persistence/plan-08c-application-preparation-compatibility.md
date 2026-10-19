@@ -52,10 +52,10 @@ Tests40–60: registration/imports/fresh wrapper invocation+prototype-spy adapte
 
 ## Implementation Steps
 
-- [ ] Obtain explicit three-boundary approval, reviewed docs/current-CI/new gate and exact accepted B; remeasure complete ownership.
-- [ ] Introduce one app delegation behavioral assertion RED→minimal lowest-TPP GREEN, T1 RED/GREEN, T2 RED/GREEN; constructor is ambient-free.
-- [ ] Deliver pure original wrapper with diagnostic mapping; run genuine input/error/mapping adversaries sequentially, not just export-presence tests.
-- [ ] Register/execute shared full72 through actual wrapper with fresh actual prototype spies; retain getter traps/copies/flags/two validations/clone0.
+- [x] Obtain explicit three-boundary approval, reviewed docs/current-CI/new gate and exact accepted B; remeasure complete ownership.
+- [x] Introduce one app delegation behavioral assertion RED→minimal lowest-TPP GREEN; separately characterize already-green T1/T2, documenting why minimum delegation has no two breaking adversaries; constructor is ambient-free.
+- [x] Deliver pure original wrapper with diagnostic mapping; run genuine input/error/mapping adversaries sequentially, not just export-presence tests.
+- [x] Register/execute shared full72 through actual wrapper with fresh actual prototype spies; retain getter traps/copies/flags/two validations/clone0.
 - [ ] Prove direct emitted app/wrapper invocation and real app graph, run full baseline, record complete result/budget/review; only then complete S08.
 
 ## Interfaces and Technical Contracts
@@ -96,3 +96,6 @@ Registrar registration is not test execution; record all72 actual wrapper runs. 
 ## Completion Condition
 
 Ready-with-assumptions: technical review PASS and explicit boundary/publication approval recorded; technical layout estimates are reversible, not measured fit. Reviewed publication/current-CI/new gate/acceptedB remain separate pending dependencies. Full original S08 completes only after accepted C's actual app/wrapper cycles, full72 compatibility rerun, direct compiled proofs, inward graph, complete result/review and measured≤399 with STOP375 addressed. No storage/live activation follows from C itself.
+
+2026-10-19 execution: renewed approval is supplied by the user/Engram4449; Issue94 status:approved, PR126/four SUCCESS and exact reviewed B PR128 fe1189b/four SUCCESS verified. Fresh isolated C preserves all prior state. App and wrapper initial behavioral RED→minimal GREEN are recorded in [S08C result](../../results/reasoning-effort-model-profiles-persistence/correction/S08C/RESULT.md); their separately added T1/T2 adversaries already pass through unconditional delegation/inherited B rules, with explicit reasons rather than fabricated RED.
+All77 inherited registrar cases actually rerun through original API plus four source wrapper seams; direct emitted app/wrapper/full result/mapped diagnostics and actual inward app graph pass. No B source/registrar/fixture changes or original-credit redistribution. Final local baseline, exact budget and parent Review/source-head CI status are recorded in the result; historical planning forecasts above remain forecasts.
