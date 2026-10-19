@@ -165,6 +165,8 @@ Grounding:05 alias/core extraction counts deletions/facades/include;06 owns doma
 
 These are local reversible readable-fixture reuse forecasts, not caps/proven fits.08/11 retain only7/5 lines before STOP; extra cycles/review fixes require reforecast or another complete-capability split before execution continues. No known technical blocker remains. Count all additions/deletions/helpers/results/CI/artifacts; prefer≤350, **STOP375, hard399**, never cut evidence. Remeasure each actual approved replacement PR base; no additive source delivery is authorized.
 
+**S09-only override, 2026-10-19:** user “Autorizo superar el techo de líneas para esta tarea” authorizes `size:exception` for the complete cohesive S09 after its226-actual/428-projected checkpoint. No new numerical limit was supplied;450 was only an earlier suggestion. Count full source/test/helper/README/spec/plan/index/result/review growth against exact S08C `777b9022bc06392e8c69b606a9a80fe6c4882ee3`; report measured final size and review burden, retain all evidence, no further slicing/compression. This changes only S09's size acceptance, not functional scope, architecture, Review or native CI. Separate A/B450 exceptions and C/S10–S13 STOP375/hard399 remain unchanged. [Plan09](plan-09-storage-recheck-atomic-adapter.md) and correction/S09/RESULT.md carry execution evidence.
+
 ### Planning publication units — future authorization only
 
 All eleven corrective planning artifacts aggregate well above400 lines; parent already warned. Replace the old359-line P0 grouping with an index-only predecessor and separate exact owned pairs/ledger. Initial docs are fully charged before source delivery, never free overhead.
