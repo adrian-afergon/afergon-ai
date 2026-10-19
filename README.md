@@ -128,7 +128,7 @@ The legacy normalization API delegates to this policy. This first corrective cap
 
 The internal `ReadProfileDocumentUseCase` accepts an application-owned `ProfileObservationPort` and the existing `ProfileDocumentPolicy` through its constructor. It validates one supplied observation without normalizing the raw document or selecting defaults.
 Its captured source envelope and genuine Uint8Array bytes are defensively copied, with present/absent byte consistency enforced; supplied original text is retained unchanged.
-The internal `infrastructure/profile-store` load API now composes that reader with a complete observation-only Node adapter and injected legacy defaults.
+The internal `infrastructure/profile-store` load API now composes that reader with a complete Node storage adapter and injected legacy defaults.
 It captures one Buffer, retains exact UTF8 text/raw JSON and binds the initial absolute config path privately; only a read-time ENOENT returns in-memory defaults, without creating files.
 Existing CLI/TUI workflows remain on their legacy path, and public reasoning-effort editing is still future work.
 
@@ -142,6 +142,12 @@ The internal `PrepareProfileAssignmentUseCase` accepts the concrete domain prepa
 Its constructor only stores that collaborator; preparation rules remain owned by the domain policy.
 The original internal `infrastructure/prepare-assignment` API now composes that use case and maps the supplied `configPath` to diagnostic `sourceIdentity` only.
 It returns the domain's complete prepared result without resolving paths, selecting defaults, cloning again or performing I/O; this completes semantic preparation, not persistence acceptance.
+
+The internal `ProfileStoragePort` extends observation with exact source recheck and trusted atomic persistence. `NodeProfileStorageAdapter` receives its filesystem, defaults and concrete `LegacyAtomicProfileSaverAdapter`; constructors perform no I/O.
+The composition privately pins the initial absolute config path and saver environment despite later cwd or caller-environment changes. A mismatched identity is refused, never used as a caller-selected path; present observations accept genuine Uint8Array bytes.
+The primitive's caller owns whole-document validation, version and migration/snapshot policy. Before the update use case is delivered it has no production caller; direct mechanical tests use validated legacy documents only.
+The unchanged legacy saver commits at rename, attempts directory fsync best-effort, and preserves original precommit errors even if cleanup fails and leaves a temporary file. Source comparison does not close the compare-to-rename race or promise CAS/crash durability.
+This storage capability does not complete P1 migration recovery or enable reasoning-effort writes in CLI, TUI or host registration; the later snapshot/update/composition slices remain required.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 

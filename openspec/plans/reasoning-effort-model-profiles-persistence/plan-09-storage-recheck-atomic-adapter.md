@@ -10,6 +10,8 @@
 
 Extend07's actual Node storage class with semantic source recheck and atomic persistence through a concrete legacy-save adapter. No business migration/version policy is placed in the adapter. Preserve the saver body exactly; only its already-established parameter union is needed relative to PR104.
 
+**Current S09-only budget authority, 2026-10-19:** user “Autorizo superar el techo de líneas para esta tarea” grants `size:exception` for this same complete cohesive S09, without a new numerical ceiling. The earlier416/428 projections and STOP375/hard399 observations below are dated checkpoint history, not current execution stops or final measurements. Resume the existing S09 tree; count every owned layer and report final size/review burden. No further split, code golf or evidence cuts. Scope, TDD, validation and parent Review/current-head CI remain required; S08A/B450 stay separate and S08C/S10–S13 keep STOP375/hard399. This authorized amendment and resume need no additional documentation PR or gate.
+
 ## Planning Scope
 
 Bound identity/existence/byte conflicts, ENOENT/error differentiation and real saver serialize/write/fsync/close/rename/cleanup behavior. No public structured update route, snapshot implementation, locking/CAS or new durability claim. Low-level atomic mechanics do not complete task001.
@@ -41,10 +43,10 @@ Future owned: complete storage role/actual Node+saver classes, bound private env
 
 ## Implementation Steps
 
-- [ ] Extend actual storage class/port with exact observation recheck; validate observation consistency and bound diagnostic identity.
-- [ ] Bind concrete atomic-save collaborator to the same captured environment/path used by observe; preserve saver body byte-for-byte.
-- [ ] Verify all real precommit faults/temp cleanup limits and source existence transitions with descriptor-aware spies.
-- [ ] Prove internal/inactive boundaries, whole baseline, result/review budget before snapshot acquisition/update.
+- [x] Extend actual storage class/port with exact observation recheck; validate observation consistency and bound diagnostic identity.
+- [x] Bind concrete atomic-save collaborator to the same captured environment/path used by observe; preserve saver body byte-for-byte.
+- [x] Verify all real precommit faults/temp cleanup limits and source existence transitions with descriptor-aware spies.
+- [x] Prove internal/inactive boundaries, whole baseline, result/review budget before snapshot acquisition/update.
 
 ## Interfaces and Technical Contracts
 
@@ -58,9 +60,9 @@ Absolute binding is infrastructure-only: select initial absolute path via path.r
 
 ## Acceptance Criteria
 
-- [ ] Observation invalidity/mismatch/conflicts and real ENOENT/permission cases preserve external bytes/existence.
-- [ ] Saver exact body unchanged; serialization/write/fsync/close/rename faults preserve precommit source, with honest temp cleanup/retry guarantees.
-- [ ] Uint8Array role works with memory fakes/Node conversion; no infra data leaks inward and constructors do no I/O.
+- [x] Observation invalidity/mismatch/conflicts and real ENOENT/permission cases preserve external bytes/existence.
+- [x] Saver exact body unchanged; serialization/write/fsync/close/rename faults preserve precommit source, with honest temp cleanup/retry guarantees.
+- [x] Uint8Array role works with memory fakes/Node conversion; no infra data leaks inward and constructors do no I/O.
 - [ ] Internal capability/tests/docs/result reviewed together; no public unsafe structured writer or activation.
 
 ## Verification
@@ -87,4 +89,18 @@ Do not claim atomicPersist closes compare-to-rename gap or makes snapshots optio
 
 ## Completion Condition
 
-Plan is ready-with-assumptions on approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication and source implementation still require separate approvals. Completion requires source/fault/body/inward/inactive evidence, result/review/native checks and measured≤399; no product writer released by this prefix.
+Plan is ready-with-assumptions on approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication and source implementation still require separate approvals. Completion requires source/fault/body/inward/inactive evidence, result/review/native checks and actual all-layer measurement with review-burden disclosure under the explicit S09-only size:exception above, without a replacement numerical ceiling; no product writer released by this prefix.
+
+## Historical pre-exception execution checkpoint — 2026-10-19
+
+User explicitly authorized S09 after reviewed/published S08C PR129 exact `777b9022bc06392e8c69b606a9a80fe6c4882ee3`, four current-head checks SUCCESS. Fresh `feat/reasoning-effort-p1-class-09` and matching `/tmp/opencode/` worktree preserve all prior state; all five Git categories rechecked.
+Four sequential runnable assertion RED/GREEN cycles are produced, with exact names/commands/minimal TPP in [S09 result](../../results/reasoning-effort-model-profiles-persistence/correction/S09/RESULT.md). Execution is **blocked**, not complete: actual fixture growth invalidates the207–268 forecast; complete-capability checkpoint projection416 reaches STOP375 and exceeds hard399 by17.
+Retain this same cohesive S09 after the already-approved slicing pass; no further prefix, source publication, S10 handoff, evidence cuts, compression or transferred A/B450 allowance. A human-scoped budget decision is required before additional implementation;416 remains a forecast, not a proven final fit.
+Source recheck is incomplete TDD state and must not be accepted as an adapter implementation. All four implementation checkboxes and acceptance criteria above remain unchecked. Saver-body identity is produced; mechanical-fault/private-cwd-binding/emitted storage/zero-I/O proofs and independent Review remain outstanding.
+Checkpoint checks produced: typecheck/build/health/inherited emitted reader import; focal394+memory14+storage4=412 pass; legacy132 pass/3 skip; full796 pass/8 skip. These green baselines do not validate unimplemented S09 behavior. Native S09 CI remains a later ordinary publication gate, not a circular local blocker.
+
+## Local completion — 2026-10-19
+
+S09 is **completed-with-notes** under the user-authorized S09-only size exception, with no inferred numerical ceiling. All four local implementation steps are verified; exact final additions/deletions/layers and commit identities are in [RESULT.md](../../results/reasoning-effort-model-profiles-persistence/correction/S09/RESULT.md), counted from exact S08C777b902, not the amendment commit. Earlier207–268/416/428 figures remain dated forecasts, not final size caps.
+Produced: all51 owned storage cases (including14 precommit fault/existence tuples,2 cleanup cases,4 emitted cwd/env variants),394 focal,14 memory,132 legacy/3 skipped, full843/8 skipped114.63s; typecheck/build/health/inherited emitted reader import, actual emitted legacy persistence/zero-application-I/O, full saver-body identity. Four original plus eight resumed assertion RED/GREEN cycles are preserved separately from already-green mechanics.
+Outstanding external handoff: parent fresh Review of source/tests/docs/result together (the final acceptance checkbox above), then authorized publication/current-head Test/Windows checks; native persistence-suite expansion remains S13's scope and must include the new owned storage casefile. These gates do not block completed local Implement status. No source PR, independent Review claim, S10 code, merge/approval/force/history rewrite or live activation. Full P1 snapshot/update/migration acceptance and CLI/TUI/host effort activation remain future work.

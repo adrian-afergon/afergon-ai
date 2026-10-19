@@ -22,6 +22,8 @@ Defines directly callable profile persistence for legacy model-string and struct
 
   User-approved exception, 2026-10-19: S08B alone MAY contain up to **450 changed lines inclusive** against published S08A HEAD1ada42fd504fab645ec7ebca615b34195519f0a7, including all source, tests, fixtures, documentation, this amendment, plans, results and review fixes. Stop above450 complete projection; no automatic extension, further prefix, code compression or evidence cuts. S08A's separate450 exception remains scoped to A; S08C/all other deliveries retain their original STOP375/hard399 and general rule.
 
+  - User-approved S09-only `size:exception`, 2026-10-19: “Autorizo superar el techo de líneas para esta tarea.” The complete cohesive S09 storage capability MAY exceed STOP375/hard399; no replacement numerical ceiling was specified or inferred from the earlier450 suggestion. Count and report the final additions plus deletions across source, tests, fixtures, README, specification, plans/index, result and review fixes; preserve meaningful evidence and report review burden. Functional Gherkin, migration/inactive boundaries and verification/review/CI obligations remain unchanged. No further slicing or code/evidence compression. S08A/B450 remain independent historical exceptions; S08C and S10–S13 retain STOP375/hard399.
+
 ## Acceptance Criteria
 
 ```gherkin
