@@ -89,6 +89,8 @@ it("storage rejects same-length byte changes even when parsed JSON is equal", ()
   fs.writeFileSync(configPath, '{"version":1, "memo":"☕"}\n');
   const source = storage.observe().source;
   const external = '{ "version":1,"memo":"☕"}\n';
+  expect(Buffer.byteLength(external)).toBe(source.sourceBytes!.byteLength);
+  expect(JSON.parse(external)).toEqual(JSON.parse(Buffer.from(source.sourceBytes!).toString("utf8")));
   fs.writeFileSync(configPath, external);
   expect(() => storage.atomicPersist(document, source)).toThrow("Profile source changed");
   expect(save).not.toHaveBeenCalled();
@@ -289,4 +291,205 @@ it.each([
   expect(output.after.document.memo).toBe("café ☕");
   expect(output.laterFiles).toEqual([]);
   expect(output.wrongPathExists).toBe(false);
+});
+
+function realFixture(present: boolean) {
+  const setup = fixture();
+  const original = '{\n  "version": 1, "memo": "original café ☕", "models": {"profiles": {"work": {"review": "old/model"}}}\n}\n';
+  validator.validate(JSON.parse(original), setup.configPath);
+  if (present) fs.writeFileSync(setup.configPath, original);
+  const storage = bindProfileRead(setup.boundEnv).createStorage();
+  return { ...setup, storage, original, source: storage.observe().source };
+}
+
+function saverFault(setup: ReturnType<typeof realFixture>, stage: string, cleanupFailure = false, cleanupCloseFailure = false) {
+  const { root, configPath, document } = setup;
+  const failure = new Error(`injected ${stage}`);
+  const cleanupError = new Error("injected cleanup failure");
+  const events: string[] = [];
+  const descriptors = new Map<number, "temp" | "dir">();
+  const original = {
+    mkdir: fs.mkdirSync.bind(fs), open: fs.openSync.bind(fs), write: fs.writeFileSync.bind(fs),
+    fsync: fs.fsyncSync.bind(fs), close: fs.closeSync.bind(fs), rename: fs.renameSync.bind(fs),
+    remove: fs.rmSync.bind(fs), stringify: JSON.stringify.bind(JSON),
+  };
+  const isTemp = (file: unknown) => typeof file === "string" && path.dirname(file) === root && /^\.config\.json\..+\.tmp$/.test(path.basename(file));
+  vi.spyOn(fs, "mkdirSync").mockImplementation((folder, options) => {
+    if (folder === root && stage === "mkdir") throw failure;
+    return original.mkdir(folder, options);
+  });
+  vi.spyOn(fs, "openSync").mockImplementation((file, flags, mode) => {
+    const kind = isTemp(file) && flags === "wx" ? "temp" : file === root && flags === "r" ? "dir" : undefined;
+    if (kind) events.push(`${kind}-open`);
+    if (kind === "temp" && stage === "open") throw failure;
+    let descriptor: number;
+    try { descriptor = original.open(file, flags, mode); }
+    catch (error) {
+      if (kind === "dir") events.push("dir-open-unsupported");
+      throw error;
+    }
+    if (kind) descriptors.set(descriptor, kind);
+    return descriptor;
+  });
+  vi.spyOn(JSON, "stringify").mockImplementation((value, replacer, space) => {
+    if (value === document) {
+      events.push("serialize");
+      if (stage === "serialize") throw failure;
+    }
+    return original.stringify(value, replacer, space);
+  });
+  vi.spyOn(fs, "writeFileSync").mockImplementation((file, data, options) => {
+    if (typeof file === "number" && descriptors.get(file) === "temp") {
+      events.push("temp-write");
+      if (stage === "write") throw failure;
+    }
+    return original.write(file, data, options);
+  });
+  vi.spyOn(fs, "fsyncSync").mockImplementation((descriptor) => {
+    const kind = descriptors.get(descriptor);
+    if (kind) events.push(`${kind}-fsync`);
+    if ((kind === "temp" && stage === "fsync") || (kind === "dir" && stage === "dir-fsync")) throw failure;
+    return original.fsync(descriptor);
+  });
+  let closeFailed = false;
+  vi.spyOn(fs, "closeSync").mockImplementation((descriptor) => {
+    const kind = descriptors.get(descriptor);
+    if (kind) events.push(`${kind}-close`);
+    if (kind === "temp" && ((!closeFailed && stage === "close") || cleanupCloseFailure)) {
+      closeFailed = true;
+      throw cleanupCloseFailure ? cleanupError : failure;
+    }
+    original.close(descriptor);
+    descriptors.delete(descriptor);
+  });
+  vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+    if (isTemp(from) && to === configPath) {
+      events.push("rename");
+      if (stage === "rename") throw failure;
+    }
+    return original.rename(from, to);
+  });
+  vi.spyOn(fs, "rmSync").mockImplementation((file, options) => {
+    if (isTemp(file)) {
+      events.push("temp-remove");
+      if (cleanupFailure) throw cleanupError;
+    }
+    return original.remove(file, options);
+  });
+  return { failure, cleanupError, events, restore() {
+    vi.restoreAllMocks();
+    // Release test-owned descriptors even when the injected cleanup close fails.
+    for (const descriptor of descriptors.keys()) original.close(descriptor);
+    descriptors.clear();
+  } };
+}
+
+const precommitStages = ["mkdir", "open", "serialize", "write", "fsync", "close", "rename"];
+const precommitCases = [false, true].flatMap((present) => precommitStages.map((stage) => ({ present, stage })));
+it.each(precommitCases)("real saver preserves captured existence $present through $stage fault and retry", ({ present, stage }) => {
+  const setup = realFixture(present);
+  const fault = saverFault(setup, stage);
+  let caught: unknown;
+  try { setup.storage.atomicPersist(setup.document, setup.source); }
+  catch (error) { caught = error; }
+  finally { fault.restore(); }
+  expect(caught, stage).toBe(fault.failure);
+  expect(fs.existsSync(setup.configPath), stage).toBe(present);
+  if (present) expect(fs.readFileSync(setup.configPath, "utf8"), stage).toBe(setup.original);
+  expect(fs.readdirSync(setup.root), stage).toEqual(present ? ["config.json"] : []);
+  if (stage === "close") expect(fault.events.filter((event) => event === "temp-close")).toHaveLength(2);
+  setup.storage.atomicPersist(setup.document, setup.source);
+  expect(setup.storage.observe().document, stage).toEqual(setup.document);
+  expect(fs.readFileSync(setup.configPath, "utf8"), stage).toBe(`${JSON.stringify(setup.document, null, 2)}\n`);
+  expect(fs.readdirSync(setup.root), stage).toEqual(["config.json"]);
+});
+
+it.each(["rename", "write"])("real saver retains the original %s error when cleanup also fails", (stage) => {
+  const setup = realFixture(true);
+  const fault = saverFault(setup, stage, true, stage === "write");
+  let caught: unknown;
+  try { setup.storage.atomicPersist(setup.document, setup.source); }
+  catch (error) { caught = error; }
+  finally { fault.restore(); }
+  expect(caught).toBe(fault.failure);
+  expect(caught).not.toBe(fault.cleanupError);
+  expect(fs.readFileSync(setup.configPath, "utf8")).toBe(setup.original);
+  expect(fault.events).toContain("temp-remove");
+  const retained = fs.readdirSync(setup.root).filter((file) => file.endsWith(".tmp"));
+  expect(retained).toHaveLength(1);
+  // No false automatic-retry/clean-directory promise after cleanup failure.
+});
+
+it("real saver commits at rename and suppresses only the later directory fsync fault", () => {
+  const setup = realFixture(true);
+  const fault = saverFault(setup, "dir-fsync");
+  let caught: unknown;
+  try { setup.storage.atomicPersist(setup.document, setup.source); }
+  catch (error) { caught = error; }
+  finally { fault.restore(); }
+  expect(caught).toBeUndefined();
+  const committed = ["temp-open", "serialize", "temp-write", "temp-fsync", "temp-close", "rename"];
+  if (fault.events.includes("dir-fsync")) {
+    expect(fault.events).toEqual([...committed, "dir-open", "dir-fsync", "dir-close"]);
+  } else {
+    // Some native filesystems reject opening directories before fsync is possible.
+    expect(fault.events).toEqual([...committed, "dir-open", "dir-open-unsupported"]);
+  }
+  expect(setup.storage.observe().document).toEqual(setup.document);
+  expect(fs.readdirSync(setup.root)).toEqual(["config.json"]);
+});
+
+it("real storage reads once before invoking its injected saver", () => {
+  const { storage, document, configPath, save } = fixture();
+  fs.writeFileSync(configPath, "{}");
+  const source = storage.observe().source;
+  const read = vi.spyOn(fs, "readFileSync");
+  save.mockImplementation(() => {
+    expect(read.mock.calls).toEqual([[configPath]]);
+    return configPath;
+  });
+  storage.atomicPersist(document, source);
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(read.mock.invocationCallOrder[0]).toBeLessThan(save.mock.invocationCallOrder[0]);
+});
+
+it("emitted application imports perform no config filesystem or host I/O", () => {
+  const { root } = fixture();
+  const dist = fileURLToPath(new URL("../dist/", import.meta.url));
+  const application = new URL("../dist/scripts/lib/model-profiles/application/", import.meta.url).href;
+  const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import fs from 'node:fs'; import childProcess from 'node:child_process'; import { fileURLToPath } from 'node:url';
+    const originalRead = fs.readFileSync.bind(fs); const originalOpen = fs.openSync.bind(fs); const forbidden = [];
+    fs.readFileSync = (file, ...args) => {
+      const name = file instanceof URL ? fileURLToPath(file) : String(file);
+      if (!name.startsWith(${JSON.stringify(dist)})) { forbidden.push(name); throw new Error('Unexpected config read: ' + name); }
+      return originalRead(file, ...args);
+    };
+    fs.openSync = (file, flags, ...args) => {
+      const name = file instanceof URL ? fileURLToPath(file) : String(file);
+      if (flags === 'r' && name.startsWith(${JSON.stringify(dist)})) return originalOpen(file, flags, ...args);
+      forbidden.push('openSync:' + name); throw new Error('Unexpected openSync');
+    };
+    for (const method of ['writeFileSync', 'mkdirSync', 'renameSync', 'rmSync']) {
+      fs[method] = () => { forbidden.push(method); throw new Error('Unexpected ' + method); };
+    }
+    for (const method of ['spawnSync', 'execSync', 'execFileSync']) {
+      childProcess[method] = () => { forbidden.push(method); throw new Error('Unexpected host call'); };
+    }
+    process.cwd = () => { forbidden.push('cwd'); throw new Error('Unexpected cwd'); };
+    for (const entry of ['profile-storage-port', 'read-profile-document-use-case', 'prepare-profile-assignment-use-case']) {
+      await import(${JSON.stringify(application)} + entry + '.js');
+    }
+    console.log(JSON.stringify(forbidden));`],
+  { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root, XDG_CONFIG_HOME: root, XDG_STATE_HOME: root, AFERGON_AI_CONFIG_DIR: root } });
+  expect(result.status, result.stderr).toBe(0);
+  expect(JSON.parse(result.stdout)).toEqual([]);
+  expect(fs.readdirSync(root)).toEqual([]);
+});
+
+it("keeps the storage primitive outside the live model-profile facade", async () => {
+  const live = await import("../scripts/lib/model-profiles.js");
+  for (const name of ["NodeProfileStorageAdapter", "LegacyAtomicProfileSaverAdapter", "atomicPersist", "updateProfileAssignment"]) {
+    expect(Object.hasOwn(live, name)).toBe(false);
+  }
 });
