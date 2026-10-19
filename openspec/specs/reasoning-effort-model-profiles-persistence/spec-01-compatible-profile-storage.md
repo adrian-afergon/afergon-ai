@@ -18,7 +18,9 @@ Defines directly callable profile persistence for legacy model-string and struct
 - P1 MUST expose directly testable storage capability without routing live CLI, TUI, install, update, or refresh workflows through extended writes or changing host output. Focused tests and migration/old-writer limitation documentation MUST accompany the capability.
 - Each implementation delivery MUST remain independently safe in dependency order and strictly below 400 changed lines, counting additions and deletions across implementation, tests, documentation, and artifacts; tests/docs MUST remain with their behavior unit.
 
-  User-approved exception, 2026-10-16: S08A alone MAY contain up to **450 changed lines inclusive**, counting every source, test, helper, documentation, specification, plan, result and review-fix delta. Stop if its complete projection exceeds450; no automatic extension or evidence cuts. S08B/S08C retain STOP375/hard399; functional requirements and all other deliveries retain the general rule above.
+  User-approved exception, 2026-10-16: S08A alone MAY contain up to **450 changed lines inclusive**, counting every source, test, helper, documentation, specification, plan, result and review-fix delta. Stop if its complete projection exceeds450; no automatic extension or evidence cuts. S08C retains STOP375/hard399; functional requirements and all other deliveries retain the general rule above, except the separately approved S08B exception below.
+
+  User-approved exception, 2026-10-19: S08B alone MAY contain up to **450 changed lines inclusive** against published S08A HEAD1ada42fd504fab645ec7ebca615b34195519f0a7, including all source, tests, fixtures, documentation, this amendment, plans, results and review fixes. Stop above450 complete projection; no automatic extension, further prefix, code compression or evidence cuts. S08A's separate450 exception remains scoped to A; S08C/all other deliveries retain their original STOP375/hard399 and general rule.
 
 ## Acceptance Criteria
 
