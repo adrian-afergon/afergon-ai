@@ -29,9 +29,9 @@ Preserve/no transfer/no stage: root32 individually enumerated paths in architect
 
 ## Commits Created
 
-None
+- `8958046` docs(models): authorize scoped S09 size exception — four owned documents only, diff/format reviewed; tests/runtime N/A for authority amendment; rollback is those four document deltas, not source.
 
-No completed storage work unit exists to commit safely; preserve partial source/tests/results in this isolated worktree. No commits, stage, push or source PR created.
+At the original blocked checkpoint no completed storage unit existed and no commit/stage/push/source PR was created. Resumed verified work-unit commits are listed here as they become available.
 
 ## Files Changed
 
@@ -52,6 +52,26 @@ Initial `pnpm build` exit0; isolated focal+memory exit0,408 tests. Installed pnp
 | storage refuses absent observations carrying bytes before invoking saver | S(name): expected consistency refusal; exit1, did not throw | #6 conditional; S exit0,4 pass | Actual186 before checkpoint expansion. Remaining source20/tests159/docs5/plan16/result30 =416; STOP. |
 
 Each RED ran individually before its production edit; each GREEN reran all existing storage cases. No missing-import/API/type failure was credited. First checkpoint typecheck exposed TS2345: save mock accepted only RawProfileDocument, narrower than legacy union. Corrected mock parameter to Parameters<typeof saveConfig>[0]; this is fixture typing, not behavioral RED. Final checkpoint outcomes follow below.
+
+### Resumed sequential cycles — 2026-10-19
+
+Runner `bash /tmp/opencode/s09-pnpm.sh` is the exact E environment above followed by pnpm and its arguments, with no test logic or repository configuration. `R(name)` is `E pnpm exec vitest run tests/model-profiles-storage.test.ts --no-file-parallelism -t '<name>'`; `R` omits selector. `M` is Git base-relative numstat plus all owned untracked files, excluding operational node_modules; source is always measured against777b902, never the docs amendment. All counts include meaningful evidence; size exception permits growth without a new numerical gate.
+
+| Exact test name | RED expected / actual | Lowest sufficient TPP / GREEN | Checkpoint |
+| --- | --- | --- | --- |
+| storage accepts unchanged captured non-Buffer bytes in one bound read | typecheck0 first; R(name) exit1, unexpected Profile source changed | #6 branch permits existing present read; no byte algorithm yet; R exit0,5 pass | Source27 adapter delta; test79 lines; full measured count follows next checkpoint. |
+| storage rejects same-length byte changes even when parsed JSON is equal | R(name) exit1, missing refusal | #4 capture actual scalar then #6 exact Buffer comparison; no semantic JSON comparison; R exit0,6 pass | M268 before this row; remaining types/deletion/errors/real saver/binding/evidence, exception active. |
+| storage rejects deleted captured source without recreating it | R(name) exit1, missing refusal | #6 ENOENT/present branch; absence-only return retained; R exit0,7 pass | M280; consistency/read-error characterization and saver/binding evidence remain. |
+| storage rejects present observation without bytes before any read | R(name) exit1, wrong Profile source changed diagnostic | #6 missing-byte branch; R exit0,8 pass | M290; no preimplemented kind/impostor/boolean guards. |
+| storage rejects arrays masquerading as captured bytes before any read | R(name) exit1, wrong conflict diagnostic | #6 generalize missing check to Uint8Array instance; R exit0,9 pass | M300; genuine view check still not added ahead. |
+| storage rejects prototype-only Uint8Array impostors before any read | R(name) exit1, wrong conflict diagnostic | #6 genuine view predicate; R exit0,10 pass | M311; two genuine kind adversaries completed after missing-byte initial. |
+| storage rejects non-boolean existence before reading or saving | R(name) exit1, missing refusal | #6 typeof-boolean guard; R exit0,11 pass | M322; correct guard's further kinds/error paths require characterization, not invented RED. |
+| bound storage composes the actual saver with its private absolute environment | typecheck0; R(name) exit1, explicit temporary seam error | #4 injected constructor expression with captured env; R exit0,20 pass | M379; exception active; fault/cwd/cold/emitted/full proof still required. |
+
+Read-error and boolean-kind characterization ran separately before the composition RED: `R` with `-t 'storage characterizes non-boolean existence|storage preserves original read faults'` exit0,8 pass/12 skipped. Existing exact catch/typeof code already handles EACCES/EIO for present and absent sources plus six other flag kinds; no production change or manufactured read-error RED. Exact-error identity, two bound reads, saver0 and original file state are asserted. Two new breaking cases cannot be found for this already-correct catch/guard without changing its specified semantics. Byte-comparison unit has two genuine sequential adversaries (same-length changed bytes and deletion); type-validation unit has array and prototype-only genuine adversaries. Composition has four subsequent cwd/env precedence adversaries below; if already green they remain characterization.
+
+Green-only refactor: reader now uses createStorage() rather than duplicating the same constructor expression; expanded injected constructor formatting and documented trusted policy/compare-to-rename gap. `E pnpm build`, `E pnpm typecheck`, combined focal/memory/storage command above all exit0:439 tests (394+14+31). M500 before these evidence/docs updates. Constructors/capability memory test, captured subarray/view kinds and four emitted cwd/env precedence children are additional already-green characterizations; inherited resolved inward graph now includes the new storage port and all31 storage tests restore spies. Same-candidate saver/environment identity is asserted through actual saveConfig.
+Composition adversaries cannot expose two new breaks because S07B already pins an absolute AFERGON override in a copied private environment; S09 merely passes that same captured environment to the concrete saver. Four real child-process variants assert original identity/full persisted document/exact bytes, later cwd empty and caller-mutated path absent. No worker chdir, manual extended write or new product policy. First storage work-unit rollback is the new storage port/saver, Node recheck/persist and constructor wiring, new storage tests, inherited constructor/graph deltas and matching README/current-plan/result deltas; preserve earlier observation behavior.
 
 ### Produced checkpoint verification
 
@@ -88,7 +108,7 @@ Final measured checkpoint: **216 additions +10 deletions =226** across nine owne
 ## Notes
 
 S09 owns zero original218 credits; all storage cases are additional. D12 completed-backup/retry integration remains required later. Constructors assign collaborators only; temporary compilable seams are TDD state, never accepted future-method stubs.
-Budget STOP375/hard399; A/B450 exceptions do not apply. No comment/spacing/evidence cuts or additional slicing. Source50–65/tests90–120/docs4–6/result55–65/plan8–12 are forecasts, not caps; count every layer and replacement deletion.
+Historical pre-authorization budget: STOP375/hard399; A/B450 exceptions did not apply. Current S09-only size:exception above resolves that stop, with no new numeric cap. No comment/spacing/evidence cuts or additional slicing. Source50–65/tests90–120/docs4–6/result55–65/plan8–12 were forecasts, not caps; count every layer and replacement deletion.
 Outstanding: remaining consistency/positive/byte/error cycles, actual legacy fault characterization, private binding subprocess proof, emitted storage real persist/zero-application-I/O import smoke, independent Review and native post-publication CI. No helper fault-matrix GREEN/RED is claimed: unchanged helper not yet wired to those real fault tests; future serialize/write/fsync/close/rename tests must be honest characterization, with per-unit reasons when two breaks cannot be found. No production atomicPersist caller before12; no unsafe update wrapper/activation before13. Rename is commit point, directory fsync best-effort; compare-to-rename gap remains.
 
 ## Next Step

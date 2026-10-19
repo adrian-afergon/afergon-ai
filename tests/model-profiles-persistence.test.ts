@@ -7,6 +7,7 @@ import { StoredAssignment } from "../scripts/lib/model-profiles/domain/stored-as
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 import { NodeProfileStorageAdapter } from "../scripts/lib/model-profiles/infrastructure/node-profile-storage-adapter.js";
 import { LegacyProfileDefaultsAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-profile-defaults-adapter.js";
+import { LegacyAtomicProfileSaverAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-atomic-profile-saver-adapter.js";
 import os from "node:os";
 import path from "node:path";
 import { loadProfileDocument } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
@@ -240,7 +241,7 @@ it("Node observation captures formatted multibyte data in one read", () => {
   const read = vi.spyOn(fs, "readFileSync").mockReturnValue(capture);
   const factory = vi.fn(() => ({}));
   try {
-    const adapter = new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory));
+    const adapter = new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory), new LegacyAtomicProfileSaverAdapter(() => "", {}));
     expect(read).not.toHaveBeenCalled();
     expect(factory).not.toHaveBeenCalled();
     const packet = adapter.observe();
@@ -267,7 +268,7 @@ it.each(["read", "parse", "defaults"])("Node propagates the exact %s fault witho
     expect(() => JSON.parse("{")).toThrow(SyntaxError);
     vi.spyOn(JSON, "parse").mockImplementation(() => { throw failure; });
   }
-  expectExactFailure(() => new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory)).observe(), failure);
+  expectExactFailure(() => new NodeProfileStorageAdapter("/bound/config.json", fs, new LegacyProfileDefaultsAdapter(factory), new LegacyAtomicProfileSaverAdapter(() => "", {})).observe(), failure);
   expect(read).toHaveBeenCalledTimes(1);
   expect(factory).toHaveBeenCalledTimes(stage === "defaults" ? 1 : 0);
 });
@@ -277,7 +278,7 @@ it("Node absence delegates defaults once without capturing bytes", () => {
   const document = { version: 1, models: { activeProfile: null, profiles: {} } };
   const factory = vi.fn(() => document);
   try {
-    expect(new NodeProfileStorageAdapter("/absent/config.json", fs, new LegacyProfileDefaultsAdapter(factory)).observe())
+    expect(new NodeProfileStorageAdapter("/absent/config.json", fs, new LegacyProfileDefaultsAdapter(factory), new LegacyAtomicProfileSaverAdapter(() => "", {})).observe())
       .toEqual({ document, source: { sourceIdentity: "/absent/config.json", exists: false } });
     expect(read.mock.calls).toEqual([["/absent/config.json"]]);
     expect(factory).toHaveBeenCalledTimes(1);
@@ -571,6 +572,7 @@ it("domain constructor is ambient-free and uses its concrete classification coll
 });
 it("resolved application and document domain graph obey inward boundaries", () => {
   const pending = [import.meta.resolve("../scripts/lib/model-profiles/application/read-profile-document-use-case.ts"),
+    import.meta.resolve("../scripts/lib/model-profiles/application/profile-storage-port.ts"),
     import.meta.resolve("../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.ts"),
     import.meta.resolve("../scripts/lib/model-profiles/domain/profile-assignment-policy.ts"),
     import.meta.resolve("../scripts/lib/model-profiles/domain/raw-profile-document-cloner.ts")];
@@ -601,6 +603,7 @@ it("resolved application and document domain graph obey inward boundaries", () =
   const vertical = "../scripts/lib/model-profiles/";
   expect([...visited].sort()).toEqual([
     "application/prepare-profile-assignment-use-case.ts",
+    "application/profile-storage-port.ts",
     "application/read-profile-document-use-case.ts", "application/profile-observation-port.ts", "application/profile-document-observation.ts",
     "domain/profile-document-policy.ts", "domain/profile-document.ts", "domain/agent-target-policy.ts", "domain/stored-assignment.ts",
     "domain/profile-assignment-policy.ts", "domain/assignment-patch.ts", "domain/raw-profile-document-cloner.ts",

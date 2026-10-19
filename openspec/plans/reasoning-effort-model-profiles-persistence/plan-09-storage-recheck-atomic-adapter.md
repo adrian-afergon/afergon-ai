@@ -43,8 +43,8 @@ Future owned: complete storage role/actual Node+saver classes, bound private env
 
 ## Implementation Steps
 
-- [ ] Extend actual storage class/port with exact observation recheck; validate observation consistency and bound diagnostic identity.
-- [ ] Bind concrete atomic-save collaborator to the same captured environment/path used by observe; preserve saver body byte-for-byte.
+- [x] Extend actual storage class/port with exact observation recheck; validate observation consistency and bound diagnostic identity.
+- [x] Bind concrete atomic-save collaborator to the same captured environment/path used by observe; preserve saver body byte-for-byte.
 - [ ] Verify all real precommit faults/temp cleanup limits and source existence transitions with descriptor-aware spies.
 - [ ] Prove internal/inactive boundaries, whole baseline, result/review budget before snapshot acquisition/update.
 
