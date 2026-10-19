@@ -2,7 +2,7 @@
 
 - **Source Task**: `openspec/tasks/001-reasoning-effort-model-profiles-persistence.md`
 - **Source Spec(s)**: `openspec/specs/reasoning-effort-model-profiles-persistence/spec-01-compatible-profile-storage.md` — ready; sole P1 spec.
-- **State**: ready-with-assumptions
+- **State**: completed-with-notes — local implementation verified; parent Review/source-head CI external.
 - **Execution Mode**: sequential
 - **Vertical Slicing**: recommended; completes original S08 after domain preparation.
 
@@ -56,7 +56,7 @@ Tests40–60: registration/imports/fresh wrapper invocation+prototype-spy adapte
 - [x] Introduce one app delegation behavioral assertion RED→minimal lowest-TPP GREEN; separately characterize already-green T1/T2, documenting why minimum delegation has no two breaking adversaries; constructor is ambient-free.
 - [x] Deliver pure original wrapper with diagnostic mapping; run genuine input/error/mapping adversaries sequentially, not just export-presence tests.
 - [x] Register/execute shared full72 through actual wrapper with fresh actual prototype spies; retain getter traps/copies/flags/two validations/clone0.
-- [ ] Prove direct emitted app/wrapper invocation and real app graph, run full baseline, record complete result/budget/review; only then complete S08.
+- [x] Prove direct emitted app/wrapper invocation and real app graph, run full baseline and record complete local result/budget/scope review; semantic S08 implementation complete, acceptance awaits parent Review/source-head CI.
 
 ## Interfaces and Technical Contracts
 
@@ -67,11 +67,11 @@ Test-only `registerPreparationContract(label, createInvoker)` is inherited from 
 
 ## Acceptance Criteria
 
-- [ ] Complete app/original API delegates and preserves exact input/output/diagnostics/errors; constructor and wrapper pure.
-- [ ] All72 shared cases actually pass through compatibility, including full B15 dual errors/clone0, B16 raw14, B14 eight spies, B02 exact two calls.
-- [ ] Original B07 outcomes plus captured model/effort counts/ignored getter traps rerun, alongside copies/flags; no ledger double credit.
-- [ ] Direct emitted application and wrapper invocations return full expected results and diagnose mapped invalid inputs, not merely import.
-- [ ] Real app/domain graph inward/Node/core/config/env-free, complete fresh evidence/review and compliant measured delivery; full S08 then complete.
+- [x] Complete app/original API delegates and preserves exact input/output/diagnostics/errors; constructor and wrapper pure.
+- [x] All72 shared cases actually pass through compatibility, including full B15 dual errors/clone0, B16 raw14, B14 eight spies, B02 exact two calls.
+- [x] Original B07 outcomes plus captured model/effort counts/ignored getter traps rerun, alongside copies/flags; no ledger double credit.
+- [x] Direct emitted application and wrapper invocations return full expected results and diagnose mapped invalid inputs, not merely import.
+- [x] Real app/domain graph inward/Node/core/config/env-free, complete fresh local evidence/scope review and compliant measured delivery; independent Review/source-head CI remain acceptance gates.
 
 ## Verification
 
@@ -99,3 +99,4 @@ Ready-with-assumptions: technical review PASS and explicit boundary/publication 
 
 2026-10-19 execution: renewed approval is supplied by the user/Engram4449; Issue94 status:approved, PR126/four SUCCESS and exact reviewed B PR128 fe1189b/four SUCCESS verified. Fresh isolated C preserves all prior state. App and wrapper initial behavioral RED→minimal GREEN are recorded in [S08C result](../../results/reasoning-effort-model-profiles-persistence/correction/S08C/RESULT.md); their separately added T1/T2 adversaries already pass through unconditional delegation/inherited B rules, with explicit reasons rather than fabricated RED.
 All77 inherited registrar cases actually rerun through original API plus four source wrapper seams; direct emitted app/wrapper/full result/mapped diagnostics and actual inward app graph pass. No B source/registrar/fixture changes or original-credit redistribution. Final local baseline, exact budget and parent Review/source-head CI status are recorded in the result; historical planning forecasts above remain forecasts.
+Local final checks: focal394, application14, domain77 and compatibility77 separate runs; quartet132/3 skips; full792/8 skips, typecheck/build/health/reader import passed. Parent fresh independent Review must precede source publication; native current-head CI follows publication. S09 and full P1 acceptance are not executed here.

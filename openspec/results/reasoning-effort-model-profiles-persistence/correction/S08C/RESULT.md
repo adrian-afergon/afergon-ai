@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-In progress — authorized S08C only, STOP375/hard399 with no A/B exception inherited.
+completed-with-notes — all local S08C obligations verified; independent parent Review and source-head CI remain external. STOP375/hard399 retained, no A/B exception inherited.
 
 ## Plan Reference
 
@@ -21,6 +21,7 @@ Accessible old08 four tracked checkpoints/eight untracked checkpoint/planning pa
 - Verified exact predecessor, authorization and isolation; frozen dependency installation and initial inherited build passed.
 - Application delegation, varied-input identity and exact-error boundary verified; constructor only stores concrete policy.
 - Original wrapper maps diagnostic identity and uses real app/domain classes; all77 inherited preparation bodies actually rerun with per-test real prototype spies.
+- Direct emitted app/wrapper/full result/mapped error, strict actual inward graph and full declared local baseline passed. Semantic S08 implementation complete; acceptance awaits external gates.
 
 ## Updated Plan Artifacts
 
@@ -29,6 +30,8 @@ Accessible old08 four tracked checkpoints/eight untracked checkpoint/planning pa
 ## Commits Created
 
 - 2f75bf6 — `feat(models): delegate preparation through application use case` (app/three tests/docs/contemporaneous evidence).
+- e8f7c71 — `feat(models): compose original preparation API through application` (wrapper/77 real reruns/four seams/emission/graph/docs/progress evidence).
+- Final evidence commit contains this result and verified C plan; exact final SHA is supplied by handoff HEAD rather than circular self-reference.
 
 ## Files Changed
 
@@ -53,6 +56,41 @@ Actual registrar characterization: focal selector `compatibility preparation` ex
 Step verification: `pnpm build` → `pnpm typecheck` → `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism` all exit0; focal394 passes,7.13s. Full emitted application and original wrapper produce identical complete PreparedAssignment, raw version1/prospective2/padded alias/foreign metadata; caught invalid source retains literal legacy configPath. Actual prep app graph root/membership added to inherited checker, domain-only import rule unchanged; reader/domain/cloner roots and exact membership retained. Source39/tests111/README7/result≈68/plan19≈244; remaining result32/final plan12 gives288,87 below STOP. Already-green graph/emission are actual execution characterization, not stale-dist or import failures presented as RED.
 Rollback unit2: new compatibility wrapper, focal C adapters/seams/emission/graph-root addition, README compatibility note and C plan/result progress. Unit1 app remains a complete callable capability; inherited B is untouched. No runtime write/host boundary; actual emitted child process and source wrapper invocations supply applicable runtime evidence.
 
+### Original API reconciliation — actual shared assertions rerun, no duplicate ledger credit
+
+| Group | Cases | Retained assertion through original wrapper→app→domain |
+| --- | ---: | --- |
+| B01 | 1 | String patch rejected as non-object |
+| B02 | 1 | Exact source→independent final candidate validations twice, one whole-source clone |
+| B03 | 3 | Foreign/no-op and nested candidate/source mutations independent both ways |
+| B04 | 3 | v2 flags/raw version, empty absent maps, real missing-profile materialization |
+| B05 | 3 | Inherited/unknown patch ignored, future no-op and malformed nontarget rejected before clone |
+| B06 | 3 | Ambiguous aliases and actual stored target diagnostic paths |
+| B07 | 4 | Original outputs/foreign fields/raw version/omitted effort; changing model/effort getters read once, ignored traps silent |
+| B08 | 4 | All missing-container no-op shapes/flags unchanged |
+| B09 | 2 | Existing own __proto__/constructor contents and ordinary prototype preserved |
+| B10 | 8 | Every edit tuple's full candidate/raw metadata/source and changed/migration/version flags |
+| B11 | 2 | New own prototype-like profiles preserve active selection/prototype |
+| B12 | 3 | Exact duplicate, sole alias and canonical new target with complete candidate |
+| B13 | 1 | Unsupported agent refused before clone |
+| B14 | 1 | All eight filesystem/path/host spies silent, including wrapper construction/execution |
+| B15 | 15 | Every own patch tuple AND malformed nontarget source error, clone0 |
+| B16 | 14 | Every raw-source tuple/diagnostic at preparation, clone0 |
+| B17 | 4 | null/undefined/array/number patch refusal, clone0 |
+
+Total72 originals +5 inherited extras (mixed-v1 copy1/identity2/final-candidate faults2)=77 per entrypoint. A0/B72/C0 ledger credits unchanged. Fixtures/registrar/domainProgramPrefix/builtRead inherited unchanged; C's own imports/adapters/app/wrapper/graph/program/assertions fully charged.
+
+### Final local checks — all exit0
+
+Fresh four-variable HOME/XDG_CONFIG_HOME/XDG_STATE_HOME/AFERGON_AI_CONFIG_DIR isolation under `/tmp/opencode/afergon-s08c-final.*`; earlier cycle runs used `afergon-s08c-check.*`, all spies restored per case. No environment/config changes persisted in repository.
+- `pnpm typecheck` → `pnpm build` → `pnpm run health:runtime` → `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')"`: passed.
+- Exact focal single command `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t '^emitted application and original wrapper execute complete preparation and mapped diagnostics$'`:1 pass/393 skips,6.54s.
+- Same focal command with `-t '^domain preparation '`:77 passes/317 skips,6.63s. With `-t '^compatibility preparation (identical|B[123]|materializes|preserves|keeps|edits|selects|rejects|performs|validates)'`:77 passes/317 skips,6.58s.
+- `pnpm exec vitest run tests/model-profiles-use-cases.test.ts --no-file-parallelism`:14 passes,0.314s. Focal without filter:394 passes,7.13s (312 inherited+77 registrar+4 seams+1 emitted).
+- `pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism`:132 passes/3 skips,9.82s.
+- `pnpm test` in separate fresh `afergon-s08c-full.*` four-variable isolation, timeout300s:792 passes/8 skips,27 passed/3 skipped files,108.40s including rebuild. No new skips.
+Produced: TDD provenance, actual full compatibility reconciliation, local tests/typecheck/build/health/emitted/inward graph and scope/diff review. Outstanding external: fresh independent parent Review, subsequent source publication/current-head CI. N/A: installer/platform changes, native full-fault S13 target, persistence writer/host integration and whole-P1 acceptance.
+
 ## Blockers or Deviations
 
 - None
@@ -61,7 +99,9 @@ Rollback unit2: new compatibility wrapper, focal C adapters/seams/emission/graph
 
 Independent parent Review and source-head CI are external gates; no own Review delegation or source PR before Review. Native Windows launcher baseline does not imply all72 preparation cases ran on Windows; S13 full-fault target remains future. Semantic S08 completion is distinct from full P1 acceptance/live activation.
 Forecast source45/tests125/README4/result100/plan20=294, all additions+deletions. Forecasts are not caps; measure each GREEN including committed/index/working/untracked paths, without charging inherited B436/registrar220 again.
+Final five-category reinspection: C clean before evidence update, two source work-unit commits ahead of exact B, no upstream, empty index/untracked set; final evidence stages only this result/C plan. All25 registrations/16 prunables retained; root32/index161+1 and accessible old08/S07/docs/A/B statuses match entry. Missing old trees retain metadata/refs, no unavailable file/hash verification claimed. B PR128 exact head/base/four SUCCESS and Issue94 OPEN/status:approved reverified read-only.
+Final all-layer B-base measurement, including this line: source39/tests111/README7/result107/C plan26 = **290 changed lines (277 additions +13 deletions), seven paths**;85 below STOP375/109 below hard399. No local obligations hidden in remaining forecast. Committed/index/working/untracked aggregate counted once against B; domain/registrar/fixtures/spec diff empty. `git diff --check` and artifact heading/link/scope review produced; final evidence-only commit requires no repeated runtime suite.
 
 ## Next Step
 
-Execute strict application delegation cycle, original wrapper mapping cycle, all77 actual compatibility cases, emitted app/wrapper and inward graph proofs, final baseline and coherent commits; hand off for parent Review.
+Parent performs fresh independent Review against exact B fe1189b; after PASS, use already-approved publication workflow and source-head/native launcher CI. No source PR before that Review. No own Review delegation, merge, GitHub approving review, force/history rewrite or S09 implementation occurred.
