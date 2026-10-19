@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-Execution in progress under the approved B-only inclusive450 exception; historical STOP375 checkpoint retained below. All72 domain assertions now run; final local boundary/build evidence and parent Review remain outstanding.
+completed-with-notes — all local B obligations produced under the approved B-only inclusive450 exception. Parent independent Review and source-head/native CI remain external; historical STOP375 checkpoint retained below. C remains STOP375/hard399.
 
 ## Plan Reference
 
@@ -19,21 +19,25 @@ Preserve/no transfer/no stage: root32 originals/index161+1; old08 four tracked/f
 ## Completed Steps
 
 - Verified dependency gate and fresh isolation; installed frozen dependencies and built inherited baseline.
-- Three sequential behavioral RED/GREENs (initial/T1/T2), with compileable typed seam and fresh-per-case registrar. General mutation/flags/materialization/final-validation behavior remains incomplete; two literal changed results intentionally remain at the minimal TPP checkpoint.
+- 2026-10-16 checkpoint: three sequential behavioral RED/GREENs (initial/T1/T2), with compileable typed seam and fresh-per-case registrar. General mutation/flags/materialization/final-validation behavior remained incomplete; two literal changed results intentionally remained at the minimal TPP checkpoint.
+- Resume complete: domain prepare/result, full reusable72 registrar, getter adaptation, five extra contract cases, cold constructor/actual inward graph/direct emitted preparation, README and final local baseline. Twelve further genuine RED/GREENs (eleven domain + one test-fixture), fifteen including preserved initial three; characterization reasons documented per reused boundary below.
 
 ## Updated Plan Artifacts
 
-- B plan and S08 index: dated budget-stop checkpoint only; approved boundaries and B/C375/399 unchanged.
+- B plan/S08 index and sole P1 req19: scoped B450 exception before code, dated checkpoints and verified local completion; A450 separate/C375/399 unchanged.
 
 ## Commits Created
 
-None — no complete deliverable behavior unit exists yet; do not commit the partial constant implementation as a completed feature. All checkpoint paths remain unstaged.
+- Historical checkpoint: None; incomplete constants were not committed as a feature.
+- bb6cc48 — `docs(models): authorize scoped S08B size exception` before resumed source.
+- 7a95b72 — `feat(models): prepare independent domain assignments` with full72/fixture/graph/emitted proof/README and contemporaneous result.
+- Final local-verification evidence commit contains this result; exact self-reference is supplied by final handoff HEAD.
 
 ## Files Changed
 
 - Domain `profile-assignment-policy.ts`: result interface and runnable prepare seam.
 - Tests: focal real domain registration and new `_testModelPreparationContract.ts`.
-- This result; no inherited A result/spec/exception changes.
+- Result/B plan/index/sole spec requirement19 scoped B amendment; A result and functional Gherkin unchanged.
 
 ## Verification Results
 
@@ -52,7 +56,12 @@ Final-validation T1 `B3 characterization isolates foreign metadata and no-op clo
 Getter fixture selector `B1 T2 adds effort to legacy while retaining its model` augmented with fresh effort-only changing getter/full original outcome: RED exit1 expected old/low, actual custom/first/high. TPP4/6 parameterizes per-own-field fixture definitions; unchanged defaults and throwing inherited/unknown traps retained. GREEN selector `domain preparation|context captures changing|context ignores inherited` exit0,24 passes/231 skipped,6.58s; model-only augmentation is already-green field variation, no fabricated extra fixture failures. Physical fixture churn12; complete446 forecast retained until full registrar remeasurement.
 Full registrar `domain preparation`: exit0,77 passes/233 skipped,6.58s = all72 originals (B01–17 counts1/1/3/3/3/3/4/4/2/8/2/3/1/1/15/14/4) plus5 extra (mixed-v1 copy1/other identities2/final nontarget clone-fault2). Every old outcome retained; source guards/aliases/JSON independence/shape and all matrices already green through actual prepare, so no new fake failures or blanket waiver. New raw candidates/patch counters are fresh per case. Current source37/tests244/result98/spec4/plans12=395; remaining constructor10/emission7/README4/result22/plans8 plus readable ternary newline1 =>447. Graph roots/membership already include actual policy/cloner in inherited A test, rerun unchanged rather than invent graph replacement churn. Rollback behavior unit: policy prepare/result, registrar/focal registration, fixture adaptation and README; retain prior amendment commit.
 Step verification after readable ternary-only refactor/cold constructor/emitted proof: `pnpm build` then `pnpm typecheck` exit0; exact focal command exit0,312 passes,7.05s. Cold actual three collaborators untouched until execution; own prepareContext called once. Inherited resolved reader/domain graph still proves actual policy/cloner inward roots and full membership/VO checks; no app-before-C claim. Emitted test uses inherited domainProgramPrefix/builtRead, fresh complete input, child status0/full PreparedAssignment equality, rawversion1/prospective2/actual padded alias/foreign metadata. Already-green construction/graph/emission characterize real behavior; no two new breaking scenarios without changing existing parameter-only constructor/inward boundary or using stale dist as false RED. Actual source38/tests260/README4/result100/spec4/plans18=424; remaining final result20/index2 =>446 before parent Review. All helper/module initial contents and replacement deletions charged.
+Final2026-10-19 commands (same exact focal/application/quartet commands recorded below): fresh isolated four-variable HOME/XDG/config/state under `/tmp/opencode/afergon-s08b-final.*`, unchanged pnpm workaround. `pnpm typecheck` → `pnpm build` → `pnpm run health:runtime` → inherited reader-import command all exit0. Exact single selector `^emitted preparation executes the complete domain policy$`: exit0,1 pass/311 skips,6.61s; focal312 passes,7.07s; application11 passes,0.295s; legacy quartet132 passes/3 skips,9.92s. All spies restored per case.
+Final `pnpm test` in separate `/tmp/opencode/afergon-s08b-final-full.*` four-variable isolation, timeout300s: exit0,707 passes/8 skips,27 passed/3 skipped files,107.88s including rebuild. Focal312 =233 inherited +72 original B +5 extra registrar +cold constructor1 +emitted prepare1. No new test skips; native Windows current-head execution remains external, not inferred from Linux quartet.
+Produced: all local tests/build/typecheck/runtime/reader/domain graph/emitted evidence, full72 semantic reconciliation and fifteen sequential RED/GREENs with TPP/characterization records. Outstanding external: parent fresh Review/source-head CI; N/A here: installers/platform changes, filesystem writes, C wrapper/application and future13 native fault target. No remaining local behavior or budget blocker.
 Rechecked five Git categories: B HEAD/base1ada42f0/0/no upstream, staged empty, exactly six owned checkpoint paths. Reuse isolated B; preserve/no transfer/no stage all unrelated state. All24 registrations retained;16 now prunable (previous7), no unavailable S07/D/history files claimed inspected or clean. Accessible root32/index161+1 and old08 checkpoint/planning paths unchanged. A PR127 exact remote1ada42f/four SUCCESS and issue94 OPEN/status:approved verified again. Complete389 + amendment8 + evidence/remaining-cycle allowance35 =432 forecast, not a bound; remeasure every GREEN against450.
+
+### Historical checkpoint — 2026-10-16
 
 Commands run from B worktree; every pnpm command uses `pnpm_config_pm_on_fail=ignore` (installed11.3.0; pinned11.21.0 auto-switch fails ENOENT). No repo configuration changes.
 - Setup: `pnpm --version` failed before execution (ENOENT, not behavioral RED). `pnpm install --frozen-lockfile` and initial `pnpm build` with workaround exit0.
@@ -73,7 +82,7 @@ Commands run from B worktree; every pnpm command uses `pnpm_config_pm_on_fail=ig
 
 ## Blockers or Deviations
 
-Full delivery projection379 already exceeds STOP375 by4 before required getter-factory adaptation. No B exception is authorized; A450 does not apply. Stop after the approved single slicing pass; preserve best full-B boundary for human decision, no fourth prefix or compressed evidence.
+Historical2026-10-16: full delivery projection379 exceeded STOP375 by4 before getter-factory adaptation; no B exception was then authorized and A450 did not apply. That stop is resolved only by the explicit B-only450 approval and prior bb6cc48 amendment. No further prefix or compressed evidence was used. Historical worksheet below retains its original projection meaning.
 
 | Complete-layer worksheet | Changed lines, additions + deletions |
 | --- | ---: |
@@ -91,10 +100,11 @@ Additional discovered cost: A's changingPatch always defines BOTH nonconfigurabl
 ## Notes
 
 Initial approved source25–40/tests176–218/docs4–6/result68–85/plans16–20=289–369 is a forecast, not a measured fit or evidence cap. Charge whole new registrar/types/lifecycle/assertions and all replacement deletions. No further slicing/code golf/evidence cuts.
-Produced: dependency/isolation/setup, three fresh cycles and passing checkpoint local baseline. Outstanding: full behavior/72+new constructor/graph/emitted tests, compliant budget, parent independent Review and source-head CI. New native full-fault target belongs to13; native B current-head evidence remains external/unproduced. No source PR, own review delegation, GitHub approval, merge, force or history rewrite; C/09 not started.
+Historical checkpoint status: produced dependency/isolation/setup, three fresh cycles and passing checkpoint local baseline; then outstanding full behavior/72+new constructor/graph/emitted tests, compliant budget, parent independent Review and source-head CI. New native full-fault target belongs to13; native B current-head evidence remains external/unproduced. No source PR, own review delegation, GitHub approval, merge, force or history rewrite; C/09 not started.
 Old S08 cycles and old D assertions are authority/provenance only, not new TDD evidence. No wholesale test/algorithm transfer.
-- Final actual A-base delta: source26/tests55/README0/result83/plan-index8 =172 changed lines across6 paths, all unstaged; staged0, HEAD/base still1ada42fd504fab645ec7ebca615b34195519f0a7/divergence0/0. Remaining complete baseline207 (source14/tests179/docs4/result2/plans8), plus approximate10 getter-factory churn gives389. `git diff --check` exit0; artifact heading/link/scope review produced. Final inventory retains all23 prior registrations/dirty statuses/seven prunables plus new B; no unrelated changes made. Rollback boundary is exactly these six B checkpoint paths, not any preserved source tree.
+- Historical checkpoint actual A-base delta: source26/tests55/README0/result83/plan-index8 =172 changed lines across6 paths, all unstaged; staged0, HEAD/base still1ada42fd504fab645ec7ebca615b34195519f0a7/divergence0/0. Remaining complete baseline207 (source14/tests179/docs4/result2/plans8), plus approximate10 getter-factory churn gave389. `git diff --check` exit0; artifact heading/link/scope review produced. Inventory retained all23 prior registrations/dirty statuses/seven prunables plus new B; no unrelated changes made. Rollback boundary was exactly those six B checkpoint paths, not any preserved source tree.
+- Final2026-10-19 complete A-base measurement: source38/tests260 (registrar220 + fixture9add3del + focal28)/README4/result110/spec4/plan-index20 =436 additions+deletions across9 paths,14 below inclusive450; no remaining local work hidden in forecast. Current24 registrations/16 prunables/refs retained, accessible root32/index161+1/old08 untouched, no unavailable S07/D files claimed clean. `git diff --check` and artifact heading/link/scope review produced; final evidence commit only result/index, no runtime changes after full suite. Combined final review/publication checkbox and acceptance sign-off remain external parent Review gates, not missing local checks.
 
 ## Next Step
 
-Parent reports genuine full-B overage for human decision before any resumed implementation. Retain this exact checkpoint and all prior worktrees; full S08/public effort UI remain future until C and subsequent acceptance.
+Parent performs fresh independent Review of this complete B against exact A1ada42f, then separately authorized publication/current-head native CI before C. No own Review delegation/PR/merge/GitHub approval/history rewrite/C09 work here; full S08/public effort UI remain future until C and subsequent acceptance.
