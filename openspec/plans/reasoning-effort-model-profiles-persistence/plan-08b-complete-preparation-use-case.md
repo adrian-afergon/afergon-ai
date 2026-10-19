@@ -28,6 +28,8 @@ None
 
 ## Reviewed budget risk
 
+**2026-10-19 approved B-only amendment:** user authorizes inclusive450 changed lines against published A1ada42f, counting all source/tests/fixture churn/README/specification/plan/index/result/review fixes. Stop above450 complete projection; no code/evidence compression or further prefix. A450 remains separate; C/all other deliveries retain STOP375/hard399. This amendment precedes resumed code; the379/389 checkpoint and worksheet below remain dated history, not actual complete sizes.
+
 Technical planning review `ses_edf013fdeffe28KY1gSymJngGK` PASS retains a budget-risk note. Review's domain-only292–381 included8–14 repeated emitted setup; actual A-owned preamble retains invocation5–7, reducing upper by7 to374. Complete domain-only result layout68–85 then yields369, without cutting any mandatory section/cycle/command. No fourth prefix; six-line margin is forecast risk, not measured fit/permission. User “Correcto, apruebo” approves A→B→C boundaries and planning publication only; renewed Implement approval remains required. Current skill paths are refreshed in the index without rewriting dated observations.
 
 ## Vertical Slicing Decision
@@ -62,10 +64,10 @@ Source25–40 is method/resultDTO/bindings/helper/final-validation, not a cap; n
 
 ## Implementation Steps
 
-- [ ] Obtain explicit A→B→C approval, reviewed publication/new gate and exact accepted A predecessor; remeasure complete worksheet.
-- [ ] Introduce one runnable prepare behavior RED, minimal lowest-TPP GREEN, then T1 and T2 separately RED/GREEN; no general algorithm before tests force it.
-- [ ] Complete captured-command application/classification and final candidate validation; preserve exact two-call semantics.
-- [ ] First publish/charge the shared full72 registrar; run domain registration, augmented original getter bodies, extra T2/constructor/graph/direct domain emission.
+- [x] Obtain explicit A→B→C approval, reviewed publication/new gate and exact accepted A predecessor; remeasure complete worksheet.
+- [x] Introduce one runnable prepare behavior RED, minimal lowest-TPP GREEN, then T1 and T2 separately RED/GREEN; no general algorithm before tests force it.
+- [x] Complete captured-command application/classification and final candidate validation; preserve exact two-call semantics.
+- [x] First publish/charge the shared full72 registrar; run domain registration, augmented original getter bodies, extra T2/constructor/graph/direct domain emission.
 - [ ] Run all prefix checks, record complete fresh result/review and measured budget before B becomes an accepted dependency.
 
 ## Interfaces and Technical Contracts
@@ -129,3 +131,7 @@ Raw clone erases undefined: captured own values reject before clone; full nontar
 ## Completion Condition
 
 Ready-with-assumptions: technical review PASS and explicit boundary/publication approval recorded; complete worksheet uses local reversible source-backed assumptions, no measured fit claim. Publication/current-CI/acceptedA/new gate remain pending. Accepted B requires full72+getter/T2/constructor/domain graph/own emitted prepare, fresh complete result/review and compliant budget; original S08 and strategic09 still wait C's actual full72 compatibility rerun/app/original API evidence.
+
+### Execution checkpoint — 2026-10-16
+
+Dependency gate verified at published/reviewed A1ada42f (PR127, four SUCCESS checks). Fresh B stopped after initial/T1/T2 GREEN: complete baseline379, before additional getter-factory/result growth, exceeds STOP375. Only2/72 original bodies plus1 extra executed; no complete capability, commit, source PR or C handoff. See [S08B result](../../results/reasoning-effort-model-profiles-persistence/correction/S08B/RESULT.md). Existing dated planning statements above remain historical; B/C375/399 unchanged.
