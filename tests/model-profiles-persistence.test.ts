@@ -17,6 +17,18 @@ import { spawnSync } from "node:child_process";
 import { ProfileAssignmentPolicy, type PrepareAssignmentInput } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
 import { aliasCases, changingPatch, domainProgramPrefix, editCases, invalidPatchFields, missingContainers } from "./_testModelPreparationFixtures.js";
+import { registerPreparationContract } from "./_testModelPreparationContract.js";
+
+registerPreparationContract("domain preparation", () => {
+  const agents = new AgentTargetPolicy();
+  const validator = new ProfileDocumentPolicy(agents);
+  const cloner = new RawProfileDocumentCloner();
+  const policy = new ProfileAssignmentPolicy(validator, agents, cloner);
+  return { validate: vi.spyOn(validator, "validate"), clone: vi.spyOn(cloner, "clone"),
+    prepare: (document, patch, profileName = "work", agentName = "review") => policy.prepare({
+      document, patch, profileName, agentName, sourceIdentity: "/unused/config.json",
+    } as PrepareAssignmentInput) };
+});
 
 const tempRoots: string[] = [];
 it("generic clone defaults to an empty object", () => {
@@ -151,6 +163,13 @@ it("emitted context executes the real domain policy and cloner", () => {
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({ direct: input.document, context: { document: input.document, knownPatch: input.patch, selectedKey: " ReVieW ", effectiveVersion: 1, sourceIdentity: input.sourceIdentity, profileName: input.profileName } });
 });
+it("emitted preparation executes the complete domain policy", () => {
+  const input = { document: { version: 1, foreign: [1], models: { profiles: { work: { " ReVieW ": { model: "old", reasoningEffort: "high", note: [2] } } } } }, sourceIdentity: "emitted:prepare", profileName: "work", agentName: "review", patch: { model: "new" } };
+  const result = builtRead(`console.log(JSON.stringify(policy.prepare(${JSON.stringify(input)})));`, domainProgramPrefix);
+  expect(result.status, result.stderr).toBe(0);
+  expect(JSON.parse(result.stdout)).toEqual({ document: { version: 1, foreign: [1], models: { profiles: { work: { " ReVieW ": { model: "new", reasoningEffort: "high", note: [2] } } } } }, changed: true, migrationRequired: true, version: 2, agentKey: " ReVieW " });
+});
+
 it("keeps a built missing-file read side-effect free", () => {
   const result = builtRead("import fs from 'node:fs'; const loaded = built.loadProfileDocument(); if (loaded.exists || fs.existsSync(loaded.configPath)) throw new Error('Unexpected source');");
   expect(result.status, result.stderr).toBe(0);
@@ -214,6 +233,15 @@ const policy = new AgentTargetPolicy();
 const documents = new ProfileDocumentPolicy(policy);
 const cloner = new RawProfileDocumentCloner();
 const assignments = new ProfileAssignmentPolicy(documents, policy, cloner);
+it("preparation construction is cold and invokes its own context once", () => {
+  const spies = [vi.spyOn(documents, "validate"), vi.spyOn(documents, "requireSupportedVersion"), vi.spyOn(policy, "select"), vi.spyOn(cloner, "clone")];
+  const instance = new ProfileAssignmentPolicy(documents, policy, cloner);
+  for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  const input = { document: {}, sourceIdentity: "cold:prepare", profileName: "work", agentName: "review", patch: {} };
+  const context = vi.spyOn(instance, "prepareContext");
+  expect(instance.prepare(input)).toEqual({ document: {}, changed: false, migrationRequired: false, version: 1, agentKey: "afg-review" });
+  expect(context.mock.calls).toEqual([[input]]);
+});
 it("context returns an independent whole raw draft", () => {
   const document = { foreign: { values: [1, 2] } };
   const input = { document, sourceIdentity: "context:source", profileName: "work", agentName: "afg-review", patch: {} };

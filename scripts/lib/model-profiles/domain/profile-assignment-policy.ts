@@ -22,12 +22,50 @@ export interface ValidatedAssignmentContext {
   profileName: string;
 }
 
+export interface PreparedAssignment {
+  document: RawProfileDocument;
+  changed: boolean;
+  migrationRequired: boolean;
+  version: number;
+  agentKey?: string;
+}
+
 export class ProfileAssignmentPolicy {
   constructor(
     private readonly validator: ProfileDocumentPolicy,
     private readonly agents: AgentTargetPolicy,
     private readonly cloner: RawProfileDocumentCloner,
   ) {}
+
+  prepare(input: PrepareAssignmentInput): PreparedAssignment {
+    const context = this.prepareContext(input);
+    if (Object.keys(context.knownPatch).length === 0) {
+      this.validator.validate(context.document, context.sourceIdentity);
+      return { document: context.document, changed: false, migrationRequired: false,
+        version: context.effectiveVersion, agentKey: context.selectedKey };
+    }
+    const models = (context.document.models ??= {}) as { profiles?: Record<string, Record<string, unknown>> };
+    const profiles = (models.profiles ??= {});
+    if (!Object.hasOwn(profiles, context.profileName)) {
+      Object.defineProperty(profiles, context.profileName, { value: {}, enumerable: true, writable: true, configurable: true });
+    }
+    const profile = profiles[context.profileName];
+    const previous = profile[context.selectedKey];
+    const next = typeof previous === "string" && !Object.hasOwn(context.knownPatch, "reasoningEffort")
+      ? context.knownPatch.model
+      : {
+        ...(typeof previous === "string" ? { model: previous } : previous as Record<string, unknown>),
+        ...context.knownPatch,
+      };
+    const changed = JSON.stringify(previous) !== JSON.stringify(next);
+    if (changed) profile[context.selectedKey] = next;
+    const migrationRequired = changed && typeof next !== "string" && context.effectiveVersion === 1;
+    this.validator.validate(context.document, context.sourceIdentity);
+    return {
+      document: context.document, changed, migrationRequired,
+      version: migrationRequired ? 2 : context.effectiveVersion, agentKey: context.selectedKey,
+    };
+  }
 
   prepareContext(input: PrepareAssignmentInput): ValidatedAssignmentContext {
     this.validator.validate(input.document, input.sourceIdentity);

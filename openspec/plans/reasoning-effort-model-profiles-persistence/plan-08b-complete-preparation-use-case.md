@@ -65,9 +65,9 @@ Source25–40 is method/resultDTO/bindings/helper/final-validation, not a cap; n
 ## Implementation Steps
 
 - [x] Obtain explicit A→B→C approval, reviewed publication/new gate and exact accepted A predecessor; remeasure complete worksheet.
-- [ ] Introduce one runnable prepare behavior RED, minimal lowest-TPP GREEN, then T1 and T2 separately RED/GREEN; no general algorithm before tests force it.
-- [ ] Complete captured-command application/classification and final candidate validation; preserve exact two-call semantics.
-- [ ] First publish/charge the shared full72 registrar; run domain registration, augmented original getter bodies, extra T2/constructor/graph/direct domain emission.
+- [x] Introduce one runnable prepare behavior RED, minimal lowest-TPP GREEN, then T1 and T2 separately RED/GREEN; no general algorithm before tests force it.
+- [x] Complete captured-command application/classification and final candidate validation; preserve exact two-call semantics.
+- [x] First publish/charge the shared full72 registrar; run domain registration, augmented original getter bodies, extra T2/constructor/graph/direct domain emission.
 - [ ] Run all prefix checks, record complete fresh result/review and measured budget before B becomes an accepted dependency.
 
 ## Interfaces and Technical Contracts

@@ -1,4 +1,6 @@
-export function changingPatch(ownFields = true) {
+export function changingPatch(ownFields = true,
+  values: { model?: string; reasoningEffort?: string } = { model: "custom/first", reasoningEffort: "high" },
+) {
   const reads = { model: 0, reasoningEffort: 0 };
   const patch = Object.create({
     get ignoredInherited(): never { throw new Error("Inherited unknown read"); },
@@ -7,8 +9,12 @@ export function changingPatch(ownFields = true) {
   });
   Object.defineProperties(patch, {
     ...(ownFields ? {
-      model: { get: () => ++reads.model === 1 ? "custom/first" : undefined },
-      reasoningEffort: { get: () => ++reads.reasoningEffort === 1 ? "high" : "inherit" },
+      ...(Object.hasOwn(values, "model") ? {
+        model: { get: () => ++reads.model === 1 ? values.model : undefined },
+      } : {}),
+      ...(Object.hasOwn(values, "reasoningEffort") ? {
+        reasoningEffort: { get: () => ++reads.reasoningEffort === 1 ? values.reasoningEffort : "inherit" },
+      } : {}),
     } : {}),
     unknown: { enumerable: true, get: (): never => { throw new Error("Own unknown read"); } },
   });
