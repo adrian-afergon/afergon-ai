@@ -4,8 +4,60 @@ import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-ta
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 import type { ObservedProfile } from "../scripts/lib/model-profiles/application/profile-document-observation.js";
 import { ReadProfileDocumentUseCase } from "../scripts/lib/model-profiles/application/read-profile-document-use-case.js";
+import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
+import { ProfileAssignmentPolicy, type PreparedAssignment } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
+import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
+
+it("preparer delegates exact input and result without constructor activity", () => {
+  const agents = new AgentTargetPolicy();
+  const documents = new ProfileDocumentPolicy(agents);
+  const cloner = new RawProfileDocumentCloner();
+  const policy = new ProfileAssignmentPolicy(documents, agents, cloner);
+  const result: PreparedAssignment = { document: {}, changed: false, migrationRequired: false, version: 1 };
+  const prepare = vi.spyOn(policy, "prepare").mockReturnValue(result);
+  const validate = vi.spyOn(documents, "validate");
+  const clone = vi.spyOn(cloner, "clone");
+  try {
+    const useCase = new PrepareProfileAssignmentUseCase(policy);
+    expect(prepare).not.toHaveBeenCalled();
+    const input = { document: {}, sourceIdentity: "memory:prepare", profileName: "work", agentName: "review", patch: {} };
+    expect(useCase.execute(input)).toBe(result);
+    expect(prepare.mock.calls).toEqual([[input]]);
+    expect(prepare.mock.calls[0][0]).toBe(input);
+    expect(validate).not.toHaveBeenCalled();
+    expect(clone).not.toHaveBeenCalled();
+  } finally { prepare.mockRestore(); validate.mockRestore(); clone.mockRestore(); }
+});
 
 const validator = new ProfileDocumentPolicy(new AgentTargetPolicy());
+it("preparer varies supplied input without caching or rewriting results", () => {
+  const policy = new ProfileAssignmentPolicy(validator, new AgentTargetPolicy(), new RawProfileDocumentCloner());
+  const prepare = vi.spyOn(policy, "prepare");
+  try {
+    const useCase = new PrepareProfileAssignmentUseCase(policy);
+    const first = { document: {}, sourceIdentity: "memory:first", profileName: "work", agentName: "review", patch: {} };
+    const second = { document: {}, sourceIdentity: "memory:second", profileName: "archive", agentName: "implement", patch: { model: "different" } };
+    expect(useCase.execute(first)).toEqual({ document: {}, changed: false, migrationRequired: false, version: 1, agentKey: "afg-review" });
+    const result = useCase.execute(second);
+    expect(result).toEqual({ document: { models: { profiles: { archive: { "afg-implement": { model: "different" } } } } }, changed: true, migrationRequired: true, version: 2, agentKey: "afg-implement" });
+    expect(result).toBe(prepare.mock.results[1].value);
+    expect(prepare.mock.calls[0][0]).toBe(first);
+    expect(prepare.mock.calls[1][0]).toBe(second);
+  } finally { prepare.mockRestore(); }
+});
+it("preparer propagates the exact policy failure without retry", () => {
+  const policy = new ProfileAssignmentPolicy(validator, new AgentTargetPolicy(), new RawProfileDocumentCloner());
+  const failure = new Error("policy refused");
+  const prepare = vi.spyOn(policy, "prepare").mockImplementation(() => { throw failure; });
+  try {
+    const useCase = new PrepareProfileAssignmentUseCase(policy);
+    const input = { document: {}, sourceIdentity: "memory:failure", profileName: "work", agentName: "review", patch: {} };
+    let caught: unknown;
+    try { useCase.execute(input); } catch (error) { caught = error; }
+    expect(caught).toBe(failure);
+    expect(prepare.mock.calls).toEqual([[input]]);
+  } finally { prepare.mockRestore(); }
+});
 it.each(["Uint8Array", "Buffer"])("reader keeps %s capture independent in both directions without ambient I/O", (kind) => {
   const bytes = kind === "Buffer" ? Buffer.from([7, 8]) : new Uint8Array([7, 8]);
   const observed = { document: {}, source: { sourceIdentity: "configured:token", exists: true, sourceBytes: bytes }, originalText: "unchanged" };

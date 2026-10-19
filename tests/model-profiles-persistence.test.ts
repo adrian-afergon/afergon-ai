@@ -17,7 +17,43 @@ import { spawnSync } from "node:child_process";
 import { ProfileAssignmentPolicy, type PrepareAssignmentInput } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
 import { aliasCases, changingPatch, domainProgramPrefix, editCases, invalidPatchFields, missingContainers } from "./_testModelPreparationFixtures.js";
-import { registerPreparationContract } from "./_testModelPreparationContract.js";
+import { registerPreparationContract, type PreparationInvoker } from "./_testModelPreparationContract.js";
+import { prepareProfileAssignment, type PrepareAssignmentInput as LegacyPrepareInput, type PreparedAssignment as LegacyPreparedAssignment } from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
+import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
+
+registerPreparationContract("compatibility preparation", (): PreparationInvoker => ({
+  validate: vi.spyOn(ProfileDocumentPolicy.prototype, "validate"),
+  clone: vi.spyOn(RawProfileDocumentCloner.prototype, "clone"),
+  prepare: (document, patch, profileName = "work", agentName = "review"): LegacyPreparedAssignment => prepareProfileAssignment({
+    document, patch, profileName, agentName, configPath: "/unused/config.json",
+  } as LegacyPrepareInput),
+}));
+
+it("compatibility preparation executes the actual application with mapped input", () => {
+  const execute = vi.spyOn(PrepareProfileAssignmentUseCase.prototype, "execute");
+  const input = { document: {}, configPath: "legacy:composition", profileName: "archive", agentName: "design", patch: { model: "inherit" } };
+  const result: LegacyPreparedAssignment = prepareProfileAssignment(input);
+  expect(execute.mock.calls).toEqual([[{ document: input.document, sourceIdentity: input.configPath, profileName: input.profileName, agentName: input.agentName, patch: input.patch }]]);
+  expect(execute.mock.calls[0][0].document).toBe(input.document);
+  expect(execute.mock.calls[0][0].patch).toBe(input.patch);
+  expect(result).toBe(execute.mock.results[0].value);
+  expect(result).toEqual({ document: { models: { profiles: { archive: { "afg-design": { model: "inherit" } } } } }, changed: true, migrationRequired: true, version: 2, agentKey: "afg-design" });
+});
+
+it("compatibility preparation maps the exact configured diagnostic identity", () => {
+  const input: LegacyPrepareInput = { document: { models: null }, configPath: "legacy:configured/not-a-resolved-path", profileName: "work", agentName: "review", patch: {} };
+  expect(() => prepareProfileAssignment(input)).toThrow("Could not read model profile config at legacy:configured/not-a-resolved-path: models must be an object.");
+});
+it("compatibility preparation retains a second raw-path diagnostic without resolution", () => {
+  const input = { document: { models: { profiles: { inactive: null } } }, configPath: "../unresolved/☕.json", profileName: "work", agentName: "review", patch: {} };
+  expect(() => prepareProfileAssignment(input)).toThrow("Could not read model profile config at ../unresolved/☕.json: models.profiles.inactive must be an object.");
+});
+it("compatibility preparation diagnoses the actual selected alias before cloning", () => {
+  const clone = vi.spyOn(RawProfileDocumentCloner.prototype, "clone");
+  const input = { document: { models: { profiles: { archive: { " ReVieW ": "old" } } } }, configPath: "legacy:alias", profileName: "archive", agentName: "review", patch: { reasoningEffort: undefined } };
+  expect(() => prepareProfileAssignment(input)).toThrow('models.profiles["archive"][" ReVieW "].reasoningEffort');
+  expect(clone).not.toHaveBeenCalled();
+});
 
 registerPreparationContract("domain preparation", () => {
   const agents = new AgentTargetPolicy();
@@ -169,6 +205,24 @@ it("emitted preparation executes the complete domain policy", () => {
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({ document: { version: 1, foreign: [1], models: { profiles: { work: { " ReVieW ": { model: "new", reasoningEffort: "high", note: [2] } } } } }, changed: true, migrationRequired: true, version: 2, agentKey: " ReVieW " });
 });
+it("emitted application and original wrapper execute complete preparation and mapped diagnostics", () => {
+  const input: LegacyPrepareInput = { document: { version: 1, foreign: [1], models: { profiles: { work: { " ReVieW ": { model: "old", reasoningEffort: "high", note: [2] } } } } }, configPath: "emitted:legacy/☕.json", profileName: "work", agentName: "review", patch: { model: "new" } };
+  const prefix = `${domainProgramPrefix}
+    import { PrepareProfileAssignmentUseCase } from './dist/scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js';
+    import { prepareProfileAssignment } from './dist/scripts/lib/model-profiles/infrastructure/prepare-assignment.js';`;
+  const result = builtRead(`
+    const input = ${JSON.stringify(input)};
+    const { configPath, ...command } = input;
+    const application = new PrepareProfileAssignmentUseCase(policy).execute({ ...command, sourceIdentity: configPath });
+    const compatibility = prepareProfileAssignment(input);
+    let diagnostic;
+    try { prepareProfileAssignment({ ...input, document: { models: null } }); }
+    catch (error) { diagnostic = error.message; }
+    console.log(JSON.stringify({ application, compatibility, diagnostic }));`, prefix);
+  expect(result.status, result.stderr).toBe(0);
+  const expected: LegacyPreparedAssignment = { document: { version: 1, foreign: [1], models: { profiles: { work: { " ReVieW ": { model: "new", reasoningEffort: "high", note: [2] } } } } }, changed: true, migrationRequired: true, version: 2, agentKey: " ReVieW " };
+  expect(JSON.parse(result.stdout)).toEqual({ application: expected, compatibility: expected, diagnostic: "Could not read model profile config at emitted:legacy/☕.json: models must be an object." });
+});
 
 it("keeps a built missing-file read side-effect free", () => {
   const result = builtRead("import fs from 'node:fs'; const loaded = built.loadProfileDocument(); if (loaded.exists || fs.existsSync(loaded.configPath)) throw new Error('Unexpected source');");
@@ -177,6 +231,7 @@ it("keeps a built missing-file read side-effect free", () => {
 it("does not export the standalone reader through the live facade", async () => {
   const live = await import("../scripts/lib/model-profiles.js");
   expect(Object.hasOwn(live, "loadProfileDocument")).toBe(false);
+  expect(Object.hasOwn(live, "prepareProfileAssignment")).toBe(false);
 });
 
 it("Node observation captures formatted multibyte data in one read", () => {
@@ -516,6 +571,7 @@ it("domain constructor is ambient-free and uses its concrete classification coll
 });
 it("resolved application and document domain graph obey inward boundaries", () => {
   const pending = [import.meta.resolve("../scripts/lib/model-profiles/application/read-profile-document-use-case.ts"),
+    import.meta.resolve("../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.ts"),
     import.meta.resolve("../scripts/lib/model-profiles/domain/profile-assignment-policy.ts"),
     import.meta.resolve("../scripts/lib/model-profiles/domain/raw-profile-document-cloner.ts")];
   const visited = new Set<string>();
@@ -544,6 +600,7 @@ it("resolved application and document domain graph obey inward boundaries", () =
   }
   const vertical = "../scripts/lib/model-profiles/";
   expect([...visited].sort()).toEqual([
+    "application/prepare-profile-assignment-use-case.ts",
     "application/read-profile-document-use-case.ts", "application/profile-observation-port.ts", "application/profile-document-observation.ts",
     "domain/profile-document-policy.ts", "domain/profile-document.ts", "domain/agent-target-policy.ts", "domain/stored-assignment.ts",
     "domain/profile-assignment-policy.ts", "domain/assignment-patch.ts", "domain/raw-profile-document-cloner.ts",
