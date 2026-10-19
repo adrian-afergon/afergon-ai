@@ -88,3 +88,8 @@ Never semantic-compare existing backup bytes: exact equality is mandatory. Never
 ## Completion Condition
 
 Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication and implementation gates remain pending. Completion requires read-only class/receipt/refusal semantics, no-write evidence, result/review/native baseline and measured≤399; no acquisition/config writer completed here.
+
+## S10 execution checkpoint — 2026-10-19
+
+Approved execution from published S09 `402722a1892f62dae621ac7bbe69adcdb38d3c8f` after supplied Review PASS and independently verified four current-head CI successes. Fresh isolated class-10 tree; all old worktree metadata/refs/root/partial work preserved. Inspector/contracts/shared fixture and38 standalone cases implemented;14 genuine sequential assertion RED/GREEN cycles plus immediately passing delegated characterizations. No acquire delivered or old218-case credit.
+Budget STOP at380; frozen verification/result brings actual398 (source57/tests247/result89/plan5). Full881/8 skipped and focal+memory+storage+inspection497 pass; typecheck/build/health/emitted checks pass. Remaining cohesive completion421–434; original checkboxes remain unmarked. See `openspec/results/reasoning-effort-model-profiles-persistence/correction/S10/RESULT.md`; no S09 size exception transferred and no source publication authorized by this checkpoint.
