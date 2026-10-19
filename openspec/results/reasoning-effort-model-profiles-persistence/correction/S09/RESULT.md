@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-In progress — resumed under explicit S09-only size:exception; no completed capability or handoff claimed yet.
+completed-with-notes — all local S09 implementation/verification complete under explicit S09-only size:exception; fresh parent Review and post-publication current-head CI remain external handoff gates.
 
 ## Plan Reference
 
@@ -21,23 +21,28 @@ Preserve/no transfer/no stage: root32 individually enumerated paths in architect
 
 - Loaded exact current root registry/AGENTS/README and registered implement plus .agents work-unit-commits/chained-pr/cognitive-doc-design.
 - Read full S09, architecture/S07/S08 dispatch,218-case allocation, sole P1 spec and actual adapter/composition/legacy saver.
-- Four new assertion RED/GREEN cycles and compile/build/full-regression checkpoint only; no plan implementation checkbox marked complete.
+- Historical checkpoint: four new assertion RED/GREEN cycles and compile/build/full-regression checkpoint only; no plan implementation checkbox was marked complete then.
+- Completed the actual full storage role, Node recheck/persist and concrete injected saver; private composition pins one absolute location for reader/storage/saver. All four current S09 implementation steps now verified; no accepted missing-method/future stubs or new domain/application behavior owner.
+- Verified validated-legacy-only mechanics, fourteen named precommit stage/existence cases, honest cleanup/commit limits, four emitted cwd/env variants, full memory/cold/inward/inactive evidence and final baseline. S09 completes only this internal capability, not full P1 or public effort editing.
 
 ## Updated Plan Artifacts
 
 `openspec/plans/reasoning-effort-model-profiles-persistence/plan-09-storage-recheck-atomic-adapter.md` — appended verified blocked checkpoint; original technical contracts retained.
+Current S09 size authority and local completion also recorded in that plan, `ARCHITECTURE-PLAN-INDEX.md` and sole P1 specification requirement19. Functional Gherkin remains byte-identical; no broad budget-policy change.
 
 ## Commits Created
 
 - `8958046` docs(models): authorize scoped S09 size exception — four owned documents only, diff/format reviewed; tests/runtime N/A for authority amendment; rollback is those four document deltas, not source.
 - `89e1ef1` feat(models): complete bound profile storage capability — complete role/Node+saver/composition,31 owned tests, inherited constructor/graph changes, README/current plan/result. Precommit storage31 pass; combined439/typecheck/build pass before strengthened child byte assertions; storage31 rechecked after them.
+- `c6ab35b` test(models): characterize atomic saver faults and inactive imports — real descriptor-aware fixtures/51 cases/current-plan/result; precommit typecheck0 and storage51 pass. No production helper rewrite.
+- Final verification commit contains the named fixture correction and final plan/result evidence. Resolve its complete identity with `git log --format='%H %s' 777b9022bc06392e8c69b606a9a80fe6c4882ee3..HEAD`; a commit cannot embed its own hash without a circular rewrite. No amend/force/history rewrite.
 
 At the original blocked checkpoint no completed storage unit existed and no commit/stage/push/source PR was created. Resumed verified work-unit commits are listed here as they become available.
 
 ## Files Changed
 
 - Application `profile-storage-port.ts`; infrastructure `node-profile-storage-adapter.ts`, `legacy-atomic-profile-saver-adapter.ts`; `tests/model-profiles-storage.test.ts`; this result. All paths under the existing model-profiles vertical unless qualified.
-- Existing infrastructure `profile-read-composition.ts` explicit saver wiring; `scripts/lib/model-profiles-config.ts` sole signature union; `tests/model-profiles-persistence.test.ts` three constructor call sites/import; current S09 plan checkpoint. README and every other domain/application/source08 module unchanged because capability is blocked.
+- Existing infrastructure `profile-read-composition.ts` explicit storage/saver wiring; `scripts/lib/model-profiles-config.ts` sole signature union; `tests/model-profiles-persistence.test.ts` three constructor call sites/import and inward graph root; current S09 plan/index/spec/result and README. Previous domain/application/source08 implementations remain unchanged; the only new application source is its storage role.
 
 ## Verification Results
 
@@ -80,12 +85,12 @@ Composition adversaries cannot expose two new breaks because S07B already pins a
 
 | Unit / exact runnable name(s) | Actual evidence and why no two new breaking adversaries |
 | --- | --- |
-| real saver preserves captured existence false through serialize fault and retry; same name with true | Ordinary validated legacy candidate only; serializer spy activates on candidate identity inside actual saver after precheck, no cyclic/invalid accepted JSON. Original failure object/source absence or bytes/temp cleanup/retry asserted. Unchanged helper already catches serialization; other candidate shapes follow the same expression, not a new algorithm RED. |
-| real saver preserves captured existence false through write fault and retry; true variant | Only tracked config-temp descriptor is faulted; parent/read descriptors are separate. Both existence variants already green because helper closes/removes/rethrows original error. No missing two new breaks without changing the existing helper's semantics. |
-| real saver preserves captured existence false through fsync fault and retry; true variant | Only temp-fsync is faulted before close/rename. Both variants preserve exact original bytes/existence and retry full validated legacy output. Existing catch path already correct; no saver rewrite or fabricated RED. |
-| real saver preserves captured existence false through close fault and retry; true variant | First temp-close fails, actual catch attempts it again (exactly2); descriptor ownership retained until actual close. Original error/temp cleanup/retry pass in both variants. Already-correct reused catch has no additional required missing algorithm. |
-| real saver preserves captured existence false through rename fault and retry; true variant | Actual temp-to-config rename fails precommit; original source unchanged, temp removed and retry succeeds. Two existence variants already green; postcommit rollback would be a false adversary. |
-| real saver preserves captured existence false through mkdir fault and retry; true variant; same two names with open | Extra precommit coverage: mkdir outside helper try propagates unchanged; exclusive temp-open failure cleans only temp candidate. Source/existence/retry assertions retained; unchanged mechanics already green. |
+| real saver preserves captured existence false through 'serialize' fault and retry; same name with true | Ordinary validated legacy candidate only; serializer spy activates on candidate identity inside actual saver after precheck, no cyclic/invalid accepted JSON. Original failure object/source absence or bytes/temp cleanup/retry asserted. Unchanged helper already catches serialization; other candidate shapes follow the same expression, not a new algorithm RED. |
+| real saver preserves captured existence false through 'write' fault and retry; true variant | Only tracked config-temp descriptor is faulted; parent/read descriptors are separate. Both existence variants already green because helper closes/removes/rethrows original error. No missing two new breaks without changing the existing helper's semantics. |
+| real saver preserves captured existence false through 'fsync' fault and retry; true variant | Only temp-fsync is faulted before close/rename. Both variants preserve exact original bytes/existence and retry full validated legacy output. Existing catch path already correct; no saver rewrite or fabricated RED. |
+| real saver preserves captured existence false through 'close' fault and retry; true variant | First temp-close fails, actual catch attempts it again (exactly2); descriptor ownership retained until actual close. Original error/temp cleanup/retry pass in both variants. Already-correct reused catch has no additional required missing algorithm. |
+| real saver preserves captured existence false through 'rename' fault and retry; true variant | Actual temp-to-config rename fails precommit; original source unchanged, temp removed and retry succeeds. Two existence variants already green; postcommit rollback would be a false adversary. |
+| real saver preserves captured existence false through 'mkdir' fault and retry; true variant; same two names with 'open' | Extra precommit coverage: mkdir outside helper try propagates unchanged; exclusive temp-open failure cleans only temp candidate. Source/existence/retry assertions retained; unchanged mechanics already green. |
 | real saver retains the original rename error when cleanup also fails; write variant | Rename+remove and write+close+remove failures preserve original failure identity, source bytes and one retained temp. Test-owned leaked descriptor explicitly released after spy restoration. Original cleanup errors are intentionally ignored; automatic clean-directory/retry guarantees are not invented. |
 | real saver commits at rename and suppresses only the later directory fsync fault | Actual descriptor-aware event sequence asserts temp-open→serialize→write→temp-fsync→close→rename→parent-open→parent-fsync→parent-close. Failure after rename is swallowed, new source committed; no false rollback expectation. Existing best-effort behavior has no missing second break. |
 | real storage reads once before invoking its injected saver | One bound read before saver, exact call order and saver1. All consistency/identity failures run before this call; no CAS promise for the later race window. |
@@ -93,6 +98,49 @@ Composition adversaries cannot expose two new breaks because S07B already pins a
 
 Fault-matrix implementation is a verification work unit for this same S09, not another PR/prefix. Rollback is its named helper/matrix/smoke test additions and corresponding result/plan evidence; the preceding verified capability remains intact. All filesystem/JSON spies restore per case. Full storage selector and all final commands follow below; S09 still owns zero old218 credits and D12 backup/retry integration stays mandatory later.
 `R` full storage exit0,51 pass; fresh body audit matches exact S08C and historical D git objects byte-for-byte, only signature union differs, same SHA256 below; M729 before native-capability fixture clarification/evidence. The directory-fsync characterization permits an explicitly recorded native directory-open-unsupported event instead of claiming an injected fsync was reached on platforms unable to open directories; Linux run reaches the actual injected parent fsync. No test skip or production fallback is added. Source semantics remain unchanged throughout this verification unit.
+Verbose final output exposed a fixture naming/data issue: Vitest treats a bare [] table row as zero arguments, repeating undefined instead of exercising the array flag. Replaced flag/view tables with named object rows so the actual array and distinguishable Uint8Array/Uint8ClampedArray/DataView inputs execute with unique selectors. This is a test-fixture correction, not new product RED; retained all assertions. Full final baseline reruns after this change. Actual Vitest stage selectors include quotes, e.g. `R` with `-t "real saver preserves captured existence true through 'serialize' fault and retry"`; table names above match them.
+
+### Final verification — produced after complete implementation
+
+All commands below use E as defined above; the runner only supplies that environment. Final suite rerun was justified by the corrected actual [] fixture; no production code changed after89e1ef1. Optional typescript.js.map ENOENT warning remains non-blocking, never counted as RED. Existing package-manager11.3 toolchain/workaround is local; no package-manager/repository configuration edit.
+
+| Exact command / evidence | Status | Actual result |
+| --- | --- | --- |
+| `E pnpm typecheck` → `E pnpm build` → `E pnpm run health:runtime` | produced | exit0 each;3 runtime entry imports, no telemetry |
+| `E node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')"` | produced | exit0 exact inherited reader import under isolated environment; also checked through pnpm exec node |
+| `E pnpm exec vitest run tests/model-profiles-storage.test.ts --no-file-parallelism -t 'storage accepts unchanged captured non-Buffer bytes in one bound read'` | produced | exit0,1 pass/50 selector skips |
+| `E pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism` | produced | exit0,394 pass; all original32 reader outcomes retained |
+| `E pnpm exec vitest run tests/model-profiles-use-cases.test.ts --no-file-parallelism` | produced | exit0,14 pass |
+| `E pnpm exec vitest run tests/model-profiles-storage.test.ts --no-file-parallelism --reporter=verbose` | produced | exit0,51 pass; final unique named flag/view rows and all fourteen fault tuples individually listed |
+| `E pnpm exec vitest run tests/model-profiles-storage.test.ts --no-file-parallelism -t "real saver preserves captured existence true through 'serialize' fault and retry"` | produced | exit0,1 pass/50 selector skips after fixture correction |
+| `E pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism` | produced | exit0,132 pass/3 inherited platform skips |
+| `E pnpm test` (300s timeout) | produced | exit0,843 pass/8 inherited skips;28 passed/3 skipped files;114.63s, mandatory rebuild included. Prior complete run114.47s had same counts; final corrected-fixture run is authoritative. |
+| Real emitted storage legacy persistence/private binding | produced | four isolated actual Node children: AFERGON override/XDG/HOME/cwd fallback, full candidate/text/byte identity, original location retained after cwd+caller-env mutation, no later-cwd files |
+| Zero-application-I/O emitted imports, full memory role/cold constructors and resolved inward graph | produced | actual emitted port/reader/preparer import probe forbids config/host/cwd calls; only dist-loader reads/opens exempt; domain/application graph includes new role; all storage types portable |
+| saveConfig complete body / only allowed signature union | produced | exact Git S08C777b902 and D8963d8e objects match actual unchanged committed source; SHA25679c929fed059901b1bd8e0ac19db30d309f1c7c7d714ff7c4cac95218869343d |
+| Parent fresh independent Review/current-head Test+Windows after authorized publication | outstanding | not delegated or claimed here; no source PR/push; ordinary external gates, not circular local blockers |
+| Native persistence-suite expansion and completed-backup D12 integration | outstanding for later full P1 | S13 must include tests/model-profiles-storage.test.ts alongside its planned focal/memory/architecture files; no CI change in S09 |
+| Installer parity/live host activation | not applicable | no installer/host/UI changes in this internal capability |
+
+Twelve genuine runnable assertion cycles total: original4 plus resumed8, with exact RED outcomes/minimal transformations retained above. All other new cases are explicit characterization, not fabricated failures. Count51 owned cases once; none substitutes for old218 allocation or D12's later completed-backup/retry integration.
+Final local scope/diff audit produced: only12 allowed source/test/docs paths against exact S08C; unchanged legacy body, previous domain/application implementations, source08 behavior and all live entrypoints. Full26 worktree topology/16 prunables and all prior accessible states rechecked unchanged, root32 paths and PROJECT-TASKS161+1 retained, other heads/metadata preserved. Operational node_modules symlink remains untracked/no stage; no missing-content hashes, pruning, recreation, dirty transfer, activation, source publication or own Review delegation.
+
+### Final all-layer measurement and review burden
+
+Against exact source C `777b9022bc06392e8c69b606a9a80fe6c4882ee3`, `git diff --numstat` counts all twelve owned paths: **795 additions +18 deletions =813 changed lines**, including this final evidence. No staged/untracked operational node_modules content is included; it is not part of delivery. This is the actual final measurement, not the earlier226/428 checkpoint or a new ceiling.
+
+| Layer | Additions + deletions |
+| --- | ---: |
+| Production source, complete port/classes/binding/sole legacy signature | 74 |
+| Tests, descriptor fixtures, subprocess proof, inherited constructor/graph churn | 512 |
+| README | 8 |
+| Sole P1 specification size amendment | 2 |
+| Current S09 plan + architecture index | 32 |
+| Complete result, cycle provenance, characterization and final evidence | 185 |
+| **Total** | **813** |
+
+Review burden is explicitly larger than the ordinary399-line unit: inspect the74 source lines first, then512 test/fixture lines (especially descriptor ownership and child binding), then227 documentation/evidence lines. Keep this authorized cohesive S09 boundary; no further prefix, evidence cuts, compression or claim of a proven≤60-minute review. Independent parent Review still decides acceptance; line exception is not review approval.
+Final worktree/commit identity is reproducible with `git rev-parse HEAD`, `git status --porcelain=v1 --untracked-files=all` and `git log --format='%H %s' 777b9022bc06392e8c69b606a9a80fe6c4882ee3..HEAD`. The final verification commit contains this status, the named fixture correction and current-plan completion; no circular self-hash or history rewrite. Tracked worktree/index must be clean after that commit, with only the operational node_modules symlink untracked.
 
 ### Produced checkpoint verification
 
@@ -106,7 +154,7 @@ Fault-matrix implementation is a verification work unit for this same S09, not a
 
 ## Blockers or Deviations
 
-**Resolved on resume2026-10-19:** the user grants the task-scoped exception above; no current budget blocker. The following worksheet and blocked-state prose record the original pre-authorization checkpoint, not current authority. Scope/architecture/sensitive-risk stops remain applicable.
+None currently blocking local Implement. **Resolved on resume2026-10-19:** the user grants the task-scoped exception above; no current budget blocker. The following worksheet and blocked-state prose record the original pre-authorization checkpoint, not current authority. Scope/architecture/sensitive-risk stops remain applicable; parent Review/native CI are outstanding external acceptance evidence, explicitly not claimed complete.
 
 The initial fixture forecast is unsupported by the actual readable cases. Best cohesive unit remains the approved full S09; the already-approved slicing pass is exhausted. No new prefix, A/B450 extension, compression or evidence deletion is applied. Source recheck is still a TDD checkpoint (present/deleted/byte/invalid-present handling unfinished), not a completed implementation; do not publish/use this tree as an accepted prefix.
 
@@ -130,8 +178,8 @@ Final measured checkpoint: **216 additions +10 deletions =226** across nine owne
 
 S09 owns zero original218 credits; all storage cases are additional. D12 completed-backup/retry integration remains required later. Constructors assign collaborators only; temporary compilable seams are TDD state, never accepted future-method stubs.
 Historical pre-authorization budget: STOP375/hard399; A/B450 exceptions did not apply. Current S09-only size:exception above resolves that stop, with no new numeric cap. No comment/spacing/evidence cuts or additional slicing. Source50–65/tests90–120/docs4–6/result55–65/plan8–12 were forecasts, not caps; count every layer and replacement deletion.
-Outstanding: remaining consistency/positive/byte/error cycles, actual legacy fault characterization, private binding subprocess proof, emitted storage real persist/zero-application-I/O import smoke, independent Review and native post-publication CI. No helper fault-matrix GREEN/RED is claimed: unchanged helper not yet wired to those real fault tests; future serialize/write/fsync/close/rename tests must be honest characterization, with per-unit reasons when two breaks cannot be found. No production atomicPersist caller before12; no unsafe update wrapper/activation before13. Rename is commit point, directory fsync best-effort; compare-to-rename gap remains.
+Historical checkpoint outstanding list (subsequently produced above): consistency/positive/byte/error cycles, legacy fault characterization, private binding subprocess proof and emitted storage/zero-application-I/O smoke. Only fresh parent Review and native post-publication CI remain external to local S09; full P1/native fault-suite expansion and D12 integration stay later scope. No production atomicPersist caller before12; no unsafe update wrapper/activation before13. Rename is commit point, directory fsync best-effort; compare-to-rename gap remains.
 
 ## Next Step
 
-Resume one runnable assertion RED at a time under the authorized S09-only size exception; complete the same capability and all evidence before parent Review. The earlier request for an exact numerical ceiling is superseded by explicit authorization without one. No S10 code, own Review delegation, source PR, merge, approval, force/history rewrite or activation.
+Parent runs fresh independent Review of this exact S09 diff against777b902, then handles separately authorized source publication/current-head CI. This task completes S09 locally only; do not start S10 or claim full P1 migration recovery/UI activation here. The earlier numerical-ceiling request is superseded by explicit S09-only authorization without a replacement ceiling; C/S10–S13 budgets remain unchanged.

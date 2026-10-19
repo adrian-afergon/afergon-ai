@@ -140,7 +140,11 @@ it("storage rejects non-boolean existence before reading or saving", () => {
   expect(save).not.toHaveBeenCalled();
 });
 
-it.each([undefined, null, 1, "true", {}, []])("storage characterizes non-boolean existence %j", (exists) => {
+it.each([
+  { kind: "undefined", exists: undefined }, { kind: "null", exists: null },
+  { kind: "number", exists: 1 }, { kind: "string", exists: "true" },
+  { kind: "object", exists: {} }, { kind: "array", exists: [] },
+])("storage characterizes non-boolean existence $kind", ({ exists }) => {
   const { storage, configPath } = fixture();
   const read = vi.spyOn(fs, "readFileSync");
   expect(() => storage.recheck({ sourceIdentity: configPath, exists } as ProfileDocumentObservation))
@@ -221,8 +225,12 @@ it("application accepts a complete memory storage capability without ambient I/O
   for (const spy of ambient) expect(spy).not.toHaveBeenCalled();
 });
 
-it.each([new Uint8Array(), new Uint8Array([1]), new Uint8ClampedArray([1]), new DataView(new ArrayBuffer(1))])
-  ("storage characterizes captured byte-view kind %j", (sourceBytes) => {
+it.each([
+  { kind: "empty Uint8Array", sourceBytes: new Uint8Array() },
+  { kind: "short Uint8Array", sourceBytes: new Uint8Array([1]) },
+  { kind: "Uint8ClampedArray", sourceBytes: new Uint8ClampedArray([1]) },
+  { kind: "DataView", sourceBytes: new DataView(new ArrayBuffer(1)) },
+])("storage characterizes captured byte-view kind $kind", ({ sourceBytes }) => {
     const { storage, configPath } = fixture();
     fs.writeFileSync(configPath, "{}");
     const source = { sourceIdentity: configPath, exists: true, sourceBytes } as ProfileDocumentObservation;
