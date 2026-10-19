@@ -89,7 +89,7 @@ Do not claim atomicPersist closes compare-to-rename gap or makes snapshots optio
 
 ## Completion Condition
 
-Plan is ready-with-assumptions on approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication and source implementation still require separate approvals. Completion requires source/fault/body/inward/inactive evidence, result/review/native checks and measured≤399; no product writer released by this prefix.
+Plan is ready-with-assumptions on approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication and source implementation still require separate approvals. Completion requires source/fault/body/inward/inactive evidence, result/review/native checks and actual all-layer measurement with review-burden disclosure under the explicit S09-only size:exception above, without a replacement numerical ceiling; no product writer released by this prefix.
 
 ## Historical pre-exception execution checkpoint — 2026-10-19
 
