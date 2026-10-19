@@ -138,6 +138,9 @@ The same policy's `prepare` applies only captured command fields to that indepen
 It retains legacy strings for model-only edits and reports prospective migration only for actual structured changes in effective version 1; it never promotes the raw version or writes files.
 These domain capabilities remain inactive in public workflows; application/compatibility composition and persistence follow in later corrective slices.
 
+The internal `PrepareProfileAssignmentUseCase` accepts the concrete domain preparation policy and delegates the exact input, result and errors.
+Its constructor only stores that collaborator; preparation rules remain owned by the domain policy.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
