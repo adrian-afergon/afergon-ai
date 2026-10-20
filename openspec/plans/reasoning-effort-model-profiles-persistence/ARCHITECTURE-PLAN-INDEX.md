@@ -167,6 +167,8 @@ These are local reversible readable-fixture reuse forecasts, not caps/proven fit
 
 **S09-only override, 2026-10-19:** user “Autorizo superar el techo de líneas para esta tarea” authorizes `size:exception` for the complete cohesive S09 after its226-actual/428-projected checkpoint. No new numerical limit was supplied;450 was only an earlier suggestion. Count full source/test/helper/README/spec/plan/index/result/review growth against exact S08C `777b9022bc06392e8c69b606a9a80fe6c4882ee3`; report measured final size and review burden, retain all evidence, no further slicing/compression. This changes only S09's size acceptance, not functional scope, architecture, Review or native CI. Separate A/B450 exceptions and C/S10–S13 STOP375/hard399 remain unchanged. [Plan09](plan-09-storage-recheck-atomic-adapter.md) and correction/S09/RESULT.md carry execution evidence.
 
+**S10-only override, 2026-10-20:** user “autorizo una excepcion”, in response to the S10-specific request, authorizes `size:exception` for the complete cohesive read-only inspection delivery. No new numerical ceiling was agreed;398 actual and421–434 complete forecast are historical checkpoint measurements/estimates, not caps. Before resumed source/test/docs completion, record this authority in the sole P1 spec, Plan10 and S10 result and commit those four documents together. Count every layer against published S09 `402722a1892f62dae621ac7bbe69adcdb38d3c8f`, including this amendment; report final actual size/review burden. Retain evidence, no compression, further slicing or functional expansion. S09 and A/B450 remain separate; S11–S13 retain STOP375/hard399. Review/publication/native CI gates remain required.
+
 ### Planning publication units — future authorization only
 
 All eleven corrective planning artifacts aggregate well above400 lines; parent already warned. Replace the old359-line P0 grouping with an index-only predecessor and separate exact owned pairs/ledger. Initial docs are fully charged before source delivery, never free overhead.
@@ -260,7 +262,7 @@ Snapshots retain exact present bytes, deterministic default bytes when absent, s
 - [ ] Policies/classes own real behavior; business sequencing is in injected application use cases, never cosmetic static wrappers around fs.
 - [ ] Domain/application have no legacy/Node/env imports; architecture tests inspect resolved inward graph and actual fake-driven class behavior.
 - [ ] All real Node fault/mode/conflict/retry contracts and native Windows baseline remain required; live entrypoints/host output stay unchanged.
-- [ ] Every source/publication unit is measured≤399, all expected evidence classified, and user gates respected.
+- [ ] Every source/publication unit is measured≤399 unless its explicit unit-scoped exception above applies; all expected evidence classified and user gates respected.
 
 ## Verification
 

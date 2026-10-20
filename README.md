@@ -149,6 +149,12 @@ The primitive's caller owns whole-document validation, version and migration/sna
 The unchanged legacy saver commits at rename, attempts directory fsync best-effort, and preserves original precommit errors even if cleanup fails and leaves a temporary file. Source comparison does not close the compare-to-rename race or promise CAS/crash durability.
 This storage capability does not complete P1 migration recovery or enable reasoning-effort writes in CLI, TUI or host registration; the later snapshot/update/composition slices remain required.
 
+The internal `NodeSnapshotInspectionAdapter(boundPath, filesystem, validator, defaults).inspect(input)` validates recovery against the captured source or canonical absent-source defaults, then reads only `${boundPath}.pre-v2.bak`.
+Recovery matching is structural, so object key order may differ. Existing-backup reuse instead requires exact bytes: present sources retain captured formatting/multibyte bytes, while absent sources use canonical default JSON with two-space indentation and a trailing newline.
+An exact valid backup returns `{ snapshotPath, disposition: "reused", complete: true }`; a missing backup returns `undefined`. Invalid/mismatched data is refused and other read errors propagate without modifying source or backup files.
+Its constructor only stores explicit collaborators. Inspection neither creates snapshots nor rechecks the current source, persists configuration, or activates public effort editing; acquisition and update orchestration remain later capabilities.
+Snapshot receipts prove verified backup completion, not a committed configuration update or a lock against concurrent source changes.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.
