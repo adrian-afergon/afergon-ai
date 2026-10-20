@@ -41,10 +41,12 @@ Future owned: application update case/contracts,10 real-adapter original D order
 
 ## Implementation Steps
 
-- [ ] Construct update using in-memory storage/snapshot capabilities; assert callable behavior with no ambient Node/env access.
-- [ ] Retain complete source/patch/candidate validation and future-version refusal before write-side port calls, including no-op>2.
-- [ ] Implement changed/migration sequencing: recheck, completed snapshot, version2, final validation, recheck, persist.
-- [ ] Prove injected failures stop later capabilities and preserve source/candidate flags; reconcile D order semantics and owned evidence.
+**S12-only exception, 2026-10-20:** user “autorizo” authorizes completing this cohesive unit beyond STOP375/hard399, with no replacement numerical cap. Historical125 checkpoint/677–883 forecast are not limits. Count every layer against published S11 `649b6032df695f064e77d3563b025aa34ad5811e`, retain all evidence, and report final actual size/review burden. No further prefix, compression, functional/API/architecture change or activation. S13 remains STOP375/hard399. Record spec/index/result authority and commit before resumed production code; exact order/recovery-input contracts below remain unchanged.
+
+- [x] Construct update using in-memory storage/snapshot capabilities; assert callable behavior with no ambient Node/env access.
+- [x] Retain complete source/patch/candidate validation and future-version refusal before write-side port calls, including no-op>2.
+- [x] Implement changed/migration sequencing: recheck, completed snapshot, version2, final validation, recheck, persist.
+- [x] Prove injected failures stop later capabilities and preserve source/candidate flags; reconcile D order semantics and owned evidence.
 
 ## Interfaces and Technical Contracts
 
@@ -62,15 +64,15 @@ The use case retains09's source identity and Uint8Array observation through all 
 
 ## Acceptance Criteria
 
-- [ ] In-memory injected storage/snapshot capabilities fully drive execution without real I/O or ambient env.
-- [ ] Observable call order exactly matches original migration/validation/recheck sequence, including snapshot before raw version promotion.
-- [ ] Invalid/future/no-op/legacy-only/v2 cases call only permitted capabilities and retain source/candidate invariants.
-- [ ] Every injected source/snapshot/persist failure prevents later calls; application has no Node/legacy/infra imports.
+- [x] In-memory injected storage/snapshot capabilities fully drive execution without real I/O or ambient env.
+- [x] Observable call order exactly matches original migration/validation/recheck sequence, including snapshot before raw version promotion.
+- [x] Invalid/future/no-op/legacy-only/v2 cases call only permitted capabilities and retain source/candidate invariants.
+- [x] Every injected source/snapshot/persist failure prevents later calls; application has no Node/legacy/infra imports.
 - [ ] Complete case/tests/docs/result reviewed together and budget measured; no source activation or P1 completion claim before13.
 
 ## Verification
 
-Initial assertion RED: fake snapshot observes candidate's raw version still1 and persist sees2 only after completed receipt. T1 after GREEN: fake snapshot throws and persist remains uncalled. T2 after GREEN: second recheck conflict preserves external memory bytes and prevents persist despite completed backup. Additional source-future no-op, invalid/future candidate, first recheck failure, v2/no-op exact preservation, absent bytes and real non-Buffer Uint8Array enter individually.
+Initial assertion RED: fake snapshot receives the original loaded source/document as recovery input, while observing the independent candidate through a test closure with raw version still1; persist sees2 only after completed receipt. T1 after GREEN: fake snapshot throws and persist remains uncalled. T2 after GREEN: second recheck conflict preserves external memory bytes and prevents persist despite completed backup. Additional source-future no-op, invalid/future candidate, first recheck failure, v2/no-op exact preservation, absent bytes and real non-Buffer Uint8Array enter individually.
 
 Use future exact index focal/single-name/regression/build/health/emitted/full commands; explicitly run new `tests/model-profiles-use-cases.test.ts` and `tests/model-profiles-architecture.test.ts` with Vitest/no-file-parallelism. Fake call logs assert collaborators/call order/error identity; guard real fs/env to demonstrate no ambient I/O. Import-graph tests resolve transitive inward violations and exercise methods with injected capabilities; names/folders alone are insufficient. Results retain strict lowest TPP/exact genuine RED and sequential adversaries, with passing old behavior labelled characterization.
 
@@ -95,3 +97,11 @@ Do not replace constructor injection with parameters defaulting to globals. Do n
 ## Completion Condition
 
 Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates. Publication/new source approval still pending. Completion requires injected use-case behavior/inward/no-I/O proof, preserved D sequencing, result/review/native checks and measured≤399; compatibility/fs integration remains13.
+
+## S12 execution checkpoint — 2026-10-20
+
+Approved S12 entered from published S11 `649b6032df695f064e77d3563b025aa34ad5811e`; [S12 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S12/RESULT.md) records a pre-source budget stop. The ten original D test bodies alone measure93 lines before composition/hook/import changes; the complete readable unit is forecast677–883 additions plus deletions. STOP375/hard399 remains binding. No source/TDD has begun; a separate S12-only size decision is required before continuation. The recovery-input clarification above restates spec requirement16 and existing S11 contracts, without changing snapshot inspection or policy.
+
+## S12 local completion — after scoped exception
+
+All four implementation steps are locally verified:50-line application orchestration, original10 real D cases,19 new memory cases,29 checker cases (23 negative/6 positive) and2 direct emitted real legacy/migration cases. Owned eight-suite command631 passes; typecheck/build/health/reader import exit0; original quartet132 passes/3 skips; isolated full `pnpm test`1015 passes/8 skips. The dated pre-source stop above is resolved by the explicit S12-only exception. [S12 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S12/RESULT.md) retains every cycle, correction, actual budget and preserved inventory. Fresh independent Review/publication/current-head CI remain external gates; S13's55 original D cases/compatibility/native target and full P1 acceptance remain outstanding. No further source approval, activation or S13 execution is inferred from local completion.
