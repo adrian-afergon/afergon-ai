@@ -41,6 +41,8 @@ Future owned: bounded composition/wrappers,55 original D integration cases/saver
 
 ## Implementation Steps
 
+**2026-10-20 execution checkpoint:** S12 PR133 exact `21923939b5b305ac2a829f67d08e1955355cd66c`, supplied canonical Review PASS and all four exact-head Test/Windows successes satisfy the predecessor gate. Fresh S13 isolation is created from that head. Complete source-grounded forecast is **605–855 additions + deletions**, exceeding S13 STOP375/hard399; implementation stops before source/tests/CI. The original278–364 estimate is superseded, not treated as a cap. [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md) records original55 group measurements, wrapper replacement costs, actual nine-suite Windows inventory, preservation and the required S13-only exception request. No exception or new prefix is inferred; implementation/acceptance checkboxes stay unverified.
+
 - [ ] Compose all actual classes from captured environment/bound source/fs/defaults/saver; original wrappers only map compatibility data and delegate.
 - [ ] Preserve Buffer-only legacy snapshot observation diagnostics and same-read text/Buffer loader return fields at edges, while application uses Uint8Array.
 - [ ] Verify targeted migration/reload/no-op/future/default/prototype/alias/conflict integration through original APIs with real Node fs.
