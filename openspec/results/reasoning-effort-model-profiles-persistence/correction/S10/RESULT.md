@@ -25,6 +25,7 @@ Historical checkpoint implemented read-only inspector with domain-owned admissib
 ## Updated Plan Artifacts
 
 Plan10 has a local verified budget checkpoint; approved technical contract retained.
+Resumed step-level evidence: owned inspection suite42 pass verifies implementation steps1–3 and the first three acceptance criteria; remaining documentation/final-verification step is not marked until its checks finish. The final joint Review/native acceptance checkbox remains external, not a claim of local independent Review.
 
 ## Commits Created
 
@@ -32,9 +33,12 @@ Checkpoint commit records the coherent inactive read-only inspector/contracts/te
 
 First resumed work unit: S10-only authority amendment in exactly the sole spec, architecture index, Plan10 and this result. Produced: full diff/format inspection; tests/runtime not applicable for this Markdown-only size authorization. Rollback boundary: those four authority deltas only, leaving checkpoint source/tests intact. Source/test completion follows only after this commit.
 
+Second resumed work unit: finish four standalone recovery/default characterizations and internal API documentation, with verified Plan10 step/acceptance deltas and contemporaneous result. `E pnpm typecheck` exit0 and R exit0,42 pass, including the durable emitted receipt/missing/original-error/cold-constructor/no-ambient-I/O probe. Rollback removes only the four added tests/README paragraph and their plan/result deltas; checkpoint behavior/source and authorization remain intact. Final approved baseline follows this commit.
+
 ## Files Changed
 
 Application `migration-snapshot-contracts.ts`, infrastructure `node-snapshot-inspection-adapter.ts`, `tests/model-profiles-snapshot-fixture.ts`, `tests/model-profiles-snapshot-inspection.test.ts`, Plan10 checkpoint and this result.
+Resumed changes also include README internal inspection semantics and the sole-spec/index/Plan10 S10-only size authority. No existing production source, domain policy, S09 role or shared application contract was altered after checkpointbc85ad3.
 
 ## Verification Results
 
@@ -78,6 +82,20 @@ Frozen-checkpoint verification (all commands E-prefixed except node; all exit0):
 | `pnpm test` (300s budget) | produced;881 pass/8 skipped,29 files pass/3 skipped,109.46s; optional TypeScript source-map ENOENT warning is nonfailing |
 
 Emitted child is durable in the owned test: actual compiled inspect returns full reused receipt, undefined for ENOENT and the identical EACCES object. Constructor/default factory calls0; global application filesystem calls forbidden; module-loader same-file read-only allowance only; all global guards restored in finally. Standalone tests restore spies after each case. Runtime proof is produced; independent Review/publication/native S10 CI outstanding. Installer/platform changes not applicable; inherited S09 CI is not S10 evidence.
+
+### Resumed characterizations — 2026-10-20
+
+Authorization commit `0654daffe94a08a76fd8f254f2fa5632b2553d20` preceded all resumed implementation. Use the same exact E and R(name) commands above. Measurements now use native `git diff 402722a1892f62dae621ac7bbe69adcdb38d3c8f --numstat`, not the historical Python measurement helper; all owned completion paths are already tracked.
+
+| Literal test name | Command / actual | Classification / current all-layer forecast |
+| --- | --- | --- |
+| inspection refuses malformed captured JSON before backup access | R(name), exit0,1 pass/38 skipped | Characterization: existing Node JSON.parse rejects the captured syntax before any backup read; no source change or artificial RED. Actual426 before this log (source57/tests258/docs111). Remaining source0/tests30–45/README6–8/plan20–25/result33–43 =515–547 projected; exception has no new cap. |
+| inspection refuses future captured state inconsistent with supported recovery | R(name), exit0,1 pass/39 skipped | Characterization: full domain validation permits readable future data, then structural recovery mismatch refuses before I/O; matching future recovery already refuses through domain snapshot guard. No new source-version rule. Actual444; remaining tests20–30/README6–8/plan20–25/result25–35 =515–542 projected. |
+| inspection refuses absent recovery that differs from canonical defaults | R(name), exit0,1 pass/40 skipped | Characterization: existing isDeepStrictEqual/default factory plus domain match refusal reject caller-added metadata before backup read. Actual457; remaining tests12–15/README6–8/plan20–25/result25–35 =520–540 projected. |
+| inspection refuses caller-ordered default backup bytes without rewriting them | R(name), exit0,1 pass/41 skipped; R exit0,42 pass | Characterization: canonical absent serialization already rejects structurally equal backup with noncanonical key order; original backup bytes and all write spies untouched. Actual472 before this log; remaining tests0/README6–8/plan20–25/result25–35 =523–540 projected. |
+
+The four resumed cases add47 readable test lines, retain all38 checkpoint cases, and require no production transformation. Two additional breaking scenarios could not be found for the already-correct codec/domain/default/equality delegation: the exact passing adversaries and reasons above are evidence, not waived TDD or artificial RED. All14 genuine checkpoint cycles and their command/exit/TPP history remain intact. No prepareExpected helper was exposed; all expected bytes/path mechanics remain private to this inspector, and S11 still owns acquisition plus all46 original acquire-entrypoint cases.
+After tests/README/step-level evidence: actual495 (source57/tests294/README6/spec2/index4/plan23/result109) before this three-line work-unit/evidence update. Remaining source/tests/README0, final plan4–8/result25–40 =527–546 projected. Above400 review burden is predominantly durable standalone tests and preserved TDD/runtime evidence, accepted only for S10; no numeric cap or evidence cut follows from these estimates.
 
 ## Blockers or Deviations
 

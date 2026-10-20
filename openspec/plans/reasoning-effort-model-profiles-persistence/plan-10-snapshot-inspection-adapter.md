@@ -41,9 +41,9 @@ Future owned: real inspector/shared application snapshot datatypes, shared snaps
 
 ## Implementation Steps
 
-- [ ] Encapsulate expected-recovery validation in a class using captured Uint8Array or canonical default state; reject malformed/future/nonmatching input before write-side operations.
-- [ ] Inspect existing backup through injected fs; ENOENT means missing, other read errors propagate.
-- [ ] Return complete reused receipt only after parse/known validation/exact expected byte equality; protect malformed/mismatched files.
+- [x] Encapsulate expected-recovery validation in a class using captured Uint8Array or canonical default state; reject malformed/future/nonmatching input before write-side operations.
+- [x] Inspect existing backup through injected fs; ENOENT means missing, other read errors propagate.
+- [x] Return complete reused receipt only after parse/known validation/exact expected byte equality; protect malformed/mismatched files.
 - [ ] Prove no write calls, exact default/key-order/formatting semantics and owned evidence before11.
 
 ## Interfaces and Technical Contracts
@@ -60,9 +60,9 @@ Default state/path/serialization remain adapter mechanics; domain match policy r
 
 ## Acceptance Criteria
 
-- [ ] Formatting/multibyte exact bytes and structurally reordered recovery behave exactly as C; absent defaults are deterministic.
-- [ ] Invalid/future/mismatching recovery refuses before any write call; existing malformed/mismatch/permission files remain untouched.
-- [ ] Exact existing valid backup returns completed reuse, missing returns no receipt, with no mkdir/write/delete/chmod.
+- [x] Formatting/multibyte exact bytes and structurally reordered recovery behave exactly as C; absent defaults are deterministic.
+- [x] Invalid/future/mismatching recovery refuses before any write call; existing malformed/mismatch/permission files remain untouched.
+- [x] Exact existing valid backup returns completed reuse, missing returns no receipt, with no mkdir/write/delete/chmod.
 - [ ] Class/collaborator ownership/tests/docs/result reviewed together and native parity remains explicit.
 
 ## Verification

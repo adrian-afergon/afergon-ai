@@ -117,6 +117,53 @@ it("inspection validates captured source before structural matching", () => {
   expect(f.read).not.toHaveBeenCalled();
 });
 
+it("inspection refuses malformed captured JSON before backup access", () => {
+  const f = snapshotFixture();
+  const captured = new Uint8Array(Buffer.from('{ "memo": "café ☕", broken }\n'));
+  f.input.source.sourceBytes = captured;
+  const before = captured.slice();
+  expect(() => f.inspector.inspect(f.input)).toThrow(SyntaxError);
+  expect(f.read).not.toHaveBeenCalled();
+  expect(captured).toEqual(before);
+  for (const write of f.writeSpies) expect(write).not.toHaveBeenCalled();
+});
+
+it("inspection refuses future captured state inconsistent with supported recovery", () => {
+  const f = snapshotFixture();
+  const future = new Uint8Array(Buffer.from(JSON.stringify({ ...f.raw, version: 3 })));
+  f.input.source.sourceBytes = future;
+  expect(() => f.inspector.inspect(f.input)).toThrow("Recovery document does not match captured source");
+  expect(f.read).not.toHaveBeenCalled();
+  expect(JSON.parse(Buffer.from(future).toString("utf8"))).toEqual({ ...f.raw, version: 3 });
+  for (const write of f.writeSpies) expect(write).not.toHaveBeenCalled();
+});
+
+it("inspection refuses absent recovery that differs from canonical defaults", () => {
+  const f = snapshotFixture();
+  f.input.source = { sourceIdentity: f.configPath, exists: false };
+  f.input.recoveryDocument = { ...createDefaultConfig(), memo: "caller-added state" };
+  const backup = Buffer.from(`${JSON.stringify(createDefaultConfig(), null, 2)}\n`);
+  f.read.mockReturnValue(backup);
+  expect(() => f.inspector.inspect(f.input)).toThrow("Recovery document does not match captured source");
+  expect(f.read).not.toHaveBeenCalled();
+  expect(backup.toString()).toBe(`${JSON.stringify(createDefaultConfig(), null, 2)}\n`);
+  for (const write of f.writeSpies) expect(write).not.toHaveBeenCalled();
+});
+
+it("inspection refuses caller-ordered default backup bytes without rewriting them", () => {
+  const f = snapshotFixture();
+  f.input.source = { sourceIdentity: f.configPath, exists: false };
+  f.input.recoveryDocument = { models: { profiles: {}, activeProfile: null }, version: 1 };
+  const backup = Buffer.from(`${JSON.stringify(f.input.recoveryDocument, null, 2)}\n`);
+  const before = Buffer.from(backup);
+  f.read.mockReturnValue(backup);
+  expect(() => f.inspector.inspect(f.input)).toThrow("Existing migration snapshot does not match captured source");
+  expect(f.read.mock.calls).toEqual([[f.snapshotPath]]);
+  expect(backup).toEqual(before);
+  expect(JSON.parse(backup.toString("utf8"))).toEqual(createDefaultConfig());
+  for (const write of f.writeSpies) expect(write).not.toHaveBeenCalled();
+});
+
 it.each(invalidReads)("inspection rejects full invalid recovery: %s", (_name, raw, diagnostic) => {
   const f = snapshotFixture();
   Object.assign(f.input, { recoveryDocument: raw });
