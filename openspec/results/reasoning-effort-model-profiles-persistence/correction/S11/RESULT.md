@@ -1,6 +1,6 @@
 ## Implementation Status
 
-in-progress
+completed-with-notes
 
 ## Plan Reference
 
@@ -9,13 +9,15 @@ in-progress
 
 ## Execution Summary
 
-Execute S11 only from published S10 `5d6d45bd2dbc5807413c4c8bfb9ab4f6d61098c0`; normal STOP375/hard399 applies. S10 Review ses_ea71aac85ffevlYG3T31ntHEWv corrected Overall PASS is supplied authority; PR131 independently verified exact head and four SUCCESS checks. Issue94 OPEN/status:approved.
+Initial checkpoint: execute S11 only from published S10 `5d6d45bd2dbc5807413c4c8bfb9ab4f6d61098c0`; normal STOP375/hard399 applied then. S10 Review ses_ea71aac85ffevlYG3T31ntHEWv corrected Overall PASS is supplied authority; PR131 independently verified exact head and four SUCCESS checks. Issue94 OPEN/status:approved.
 
 Later authorization, 2026-10-20: user “Autorizo” explicitly approves S11-only `size:exception` for the complete acquisition/cleanup/tests/evidence unit and resumption. No new numerical cap;183/423–457 below remain historical checkpoint measurements/forecasts, not caps. This supersedes the S11 numerical blocker only. Spec requirement19, Plan11 (including completion ceiling) and index amended BEFORE resumed source. Every layer/review fix counts against exact published S10; no code-golf/comment/spacing/docs/tests/evidence cuts, scope expansion or repeated slicing. S12/S13 keep STOP375/hard399; earlier exceptions remain independent.
 
+Local outcome: complete semantic acquisition, injected concrete class and thin legacy acquire/recheck compatibility are verified. All local steps/acceptance checks pass; Review/publication/current-head external CI remain subsequent gates. Original pre-migration source, not patched candidate, remains authoritative recovery input. No source12/13, user-config or public effort UI activation.
+
 ## Completed Steps
 
-- None
+- All five implementation steps and four acceptance criteria locally verified: full inspector preflight, immediate post-mkdir source recheck, complete exclusive create/reuse/fsync/close, independent owned cleanup and all fault/mode/conflict/default/retry/compatibility evidence with result ready for independent Review.
 
 ## Updated Plan Artifacts
 
@@ -23,16 +25,20 @@ Later authorization, 2026-10-20: user “Autorizo” explicitly approves S11-onl
 
 ## Commits Created
 
-- None
+- f3d458d docs(models): authorize scoped S11 size exception — only spec/plan/index/result; incomplete source/tests excluded.
+- Verified cohesive capability commit: pending Git identity; includes complete source, tests, README and result, never a partial writer prefix.
 
 ## Files Changed
 
 - Infrastructure inspector: bounded GREEN extraction of expected state; no new application types or duplicated serialization.
-- scripts/lib/model-profiles/application/snapshot-port.ts — shared-type semantic port, frozen untracked seam.
-- scripts/lib/model-profiles/infrastructure/node-migration-snapshot-adapter.ts — frozen untracked experimental seam, NOT complete acquisition; do not invoke against real filesystem. Writing/closing/owned cleanup are intentionally not implemented ahead of forcing tests or budget authorization.
+- scripts/lib/model-profiles/application/snapshot-port.ts — one semantic acquire method importing shared10 types; initially frozen untracked seam, now complete consuming class.
+- scripts/lib/model-profiles/infrastructure/node-migration-snapshot-adapter.ts — initially frozen experimental seam; resumed cycles now implement complete safe create/reuse/owned cleanup, no missing writer/close/cleanup stub.
 - tests/model-profiles-snapshot-fixture.ts — exposes its existing injected filesystem; no duplicate setup/serialization.
-- tests/model-profiles-snapshot-acquisition.test.ts — three genuine injected timing tests; original C46 remains outstanding.
-- This result and the two linked plan/index checkpoint deltas.
+- tests/model-profiles-snapshot-acquisition.test.ts — three original genuine timing cycles plus creation/order/preflight/offset/race/stale-source/constructor/recovery input evidence.
+- infrastructure/migration-snapshot.ts — thin original API/Buffer compatibility delegates; no config update API.
+- tests/_testModelSnapshotContract.ts / model-profiles-persistence.test.ts — all46 original C entrypoint cases, descriptor-aware real faults and fresh per-case recovery data; inherited raw14 definitions reused, assertions not deduplicated.
+- tests/model-profiles-snapshot-runtime.test.ts — resolved positive inward graph, one-method port, emitted quiet import/constructor and real complete acquisition/error proof.
+- README, this result, scoped spec amendment and plan/index deltas; no package/CI/live facade changes.
 
 ## Verification Results
 
@@ -55,7 +61,49 @@ Later authorization, 2026-10-20: user “Autorizo” explicitly approves S11-onl
 - Outstanding: all46 original acquire entrypoint cases, complete FD lifecycle/cleanup, legacy Buffer facade+both entrypoint guards, emitted complete acquire create/reuse/private0600/source/error proof, full application no-I/O import/constructor contract, completed independent Review and post-PR native CI. No complete-acquire emitted claim from reader/inspector import success.
 - Not applicable: installer changes/PowerShell parity changes (none); no live route/config persistence/host activation introduced. Native13 fault target remains future work.
 
+### Resumed cycles under S11-only exception
+
+The original three genuine cycles and GREEN same42 refactor above remain historical evidence. New cycle commands use `pnpm exec vitest run tests/model-profiles-snapshot-acquisition.test.ts --no-file-parallelism -t '<exact title>'` with the recorded isolated environment; whole-file GREEN drops `-t`. Measurements/projections remain reported, never S11 caps under the exception.
+
+- B RED `acquire writes the complete prepared bytes to its exclusive descriptor`: exit1,1fail/3filtered; expected configured created receipt/full bytes, actual empty path. GREEN uses returned exclusive descriptor/prepared bytes and configured path (TPP4 constant→scalar plus required write statement5), no fsync/close/cleanup ahead of tests.
+- B GREEN whole file exit0,4pass. B/T1 now requires durability ordering; no real descriptor is leaked by the fake creation fixture.
+- B/T1 RED `acquire fsyncs written bytes before returning a completed receipt`: exit1,1fail/4filtered, expected fsync(fd), actual0 calls. Minimum GREEN TPP5 adds only fsync after write; no close/cleanup yet.
+- B/T1 GREEN whole file exit0,5pass. B/T2 follows individually with a synced-descriptor close assertion.
+- B/T2 RED `acquire closes the synced descriptor before completing creation`: exit1,1fail/5filtered, expected close(fd), actual0 calls. Minimum GREEN TPP5 adds close after fsync, without anticipatory cleanup branches.
+- B/T2 GREEN whole file exit0,6pass. Real wrapper binding is direct reuse/observation mapping of09/10, not new acquisition policy; no fake RED for that composition. C3 write-fault original entrypoint case now forces owned cleanup before any capability commit. Fault fixture tracks descriptor closure and restores spies before teardown; no source ancestry copied, old code read only for behavior reference.
+- C RED focal command `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism -t 'C3 write failure cleans only its newly created partial'`: exit1,1fail/394filtered; original fault propagated but close attempts0, partial owned data remained. GREEN TPP5 introduces phase try/catch and minimum sequential close/remove/rethrow. No independent cleanup aggregation preimplemented.
+- C GREEN explicit focal+acquisition command with `-t 'C3 write failure cleans only its newly created partial|acquire'`: exit0,7pass/394filtered. Cleanup adversaries are original C02 cases, added individually rather than preimplementing their algorithm.
+- C/T1 RED focal exact title `C cleanup removal failure reports original and cleanup errors`: exit1,1fail/395filtered; expected AggregateError(original,cleanup), actual cleanup Error masking original. GREEN TPP5 wraps cleanup failure with original; independent close/removal not yet assumed.
+- C/T1 GREEN focal+acquisition `-t 'C cleanup|C3 write|acquire'`: exit0,8pass/394filtered. C/T2 next forces independent removal after close failure, retaining original/cleanup identities.
+- C/T2 RED focal `C cleanup T1 close failure still attempts owned removal`: exit1,1fail/396filtered; errors correctly wrapped but actual directory retained partial backup, expected config only. Minimum GREEN TPP5 adds finally-removal; simultaneous cleanup-cause retention is not yet implemented.
+- C/T2 GREEN focal+acquisition previous exact filter exit0,9pass/394filtered. C/T3 original both-failure case now independently forces preserving all cleanup causes rather than replacing the close cause.
+- C/T3 RED focal `C cleanup T2 retains simultaneous close and removal errors`: exit1,1fail/397filtered; expected nested AggregateError retaining close+remove identities, actual only last cleanup Error. GREEN TPP7 scalar→array now necessary; private owned-handle helper independently attempts both operations and retains one/all causes. Handle is created only after exclusive open succeeds, never from a receipt/caller delete path.
+- C/T3 GREEN previous focal+acquisition filter exit0,10pass/394filtered. Remaining C03 six stage faults, C01 three modes, C05 twenty-one refusals, C06 four completed snapshots and C07 five conflicts are characterization of already forced lifecycle plus inherited09/10 validation. No deliberate RED manufactured for existing policies/codecs/defaults; only C04 legacy Buffer guard remains new compatibility behavior to force separately.
+- Characterization focal `-t '^C'` exit0,43pass/394filtered; `pnpm typecheck` exit0. Current complete projection already exceeds the historical423–457 due to readable real FD fixtures, new forcing tests and full cycle evidence; exception applies without cap. No comments/spacing/evidence cut or second split.
+- D RED focal `C absent T2 refuses contradictory captured bytes`: exit1,1fail/437filtered; expected legacy Invalid source observation, actual inner Absent observation diagnostic. GREEN TPP6 adds the single original Buffer/presence compatibility guard in shared legacy binding, before any mkdir/delegation. Inner SnapshotPort is unchanged/genuine Uint8Array; no business policy duplicated.
+- D GREEN exact filter exit0,1pass/437filtered. D adversaries missing Buffer and genuine Uint8Array already satisfy the original single guard's two sides: characterization, not fake RED. Two new breaking cases cannot honestly be found without inventing a different legacy contract; both still assert acquire AND recheck Invalid source observation/mkdir0/source unchanged. Inner genuine/offset Uint8Array evidence is additional.
+- Full C46+six acquisition+same42 inspector run exit0,488pass; typecheck0. After adding existing-contract adversaries/resolved graph/emitted proof, `pnpm typecheck && pnpm build && pnpm exec vitest run tests/model-profiles-snapshot-acquisition.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles-snapshot-inspection.test.ts tests/model-profiles-persistence.test.ts --no-file-parallelism` each exit0,505pass =440 focal(inherited394+C46)+21 acquisition+2 runtime/graph+42 inspector.
+- New characterization passes reuse09/10 validators/codecs/source recheck and already forced lifecycle; no new production change or fabricated RED. Additional7 preflight boundaries, genuine offset bytes,3 actual EEXIST outcomes, disappearing competitor, stale source with completed backup, proxy-protected constructor and wrong candidate recovery all consume the actual class. Graph checker is a positive resolved import check; synthetic negative checker work remains12.
+- Native Git measurement before final docs/checks:780 =source125/tests542/docs-artifacts113, including all extraction deletions and new shared helpers/runtime tests. Remaining README/plan/result evidence forecast48–70 gives828–850, not a cap; actual final measurement supersedes this estimate. No helper definitions duplicated or unchanged inherited779/2705 suites charged.
+- Precommit full verification: emitted single-name smoke1pass/1filtered; exact C filter46pass/394filtered; explicit six-file focal/class/memory/runtime570pass; typecheck/build/health/emitted reader each0; legacy quartet132pass/3skip; full `pnpm test`300s exit0 in118.13s,954pass/8skip,31files pass/3skip. Subsequent compatibility correction below requires rerun because source changes, not because the optional TS map warning failed.
+- C05 diagnostic correction: the first characterization used inspector10's mismatch wording at the legacy facade. Restore the original C05 assertion instead; thin legacy error translation must retain original API diagnostics without changing inspector or duplication of comparison policy. Prior successful characterization remains honestly recorded, not presented as proof of the original wording.
+- E RED focal exact title `C2 T1 refuses valid but byte-different backup`: exit1,1fail/439filtered; expected original Migration snapshot bytes do not match, actual inspector wording. GREEN TPP6 adds diagnostic-only facade translation using infrastructure-local SnapshotBytesMismatchError identity (no APP/schema/product contract). Inspector keeps its exact message/read-only mechanics; ordinary read errors cannot be translated by text collision. All42 inspector assertions must remain unchanged. C02/C03 assertions additionally verify original/cleanup identities with toBe, retaining prior toThrow and aggregate assertions.
+- E GREEN exact title exit0,1pass/439filtered; three-file focal/acquisition/inspector exit0,504pass =440+22+42, same42 unchanged; typecheck/build0. New ordinary-read-error text-collision characterization passes and existing C05 malformed/known-field cases exercise nontranslation; no second/third honest break remains for this diagnostic-only classifier without inventing policy, so no fake triangulation RED. Total12 genuine cycles: original3 + creation3 + owned-write/cleanup4 + Bufferguard1 + legacydiagnostic1; no harness/compile errors counted.
+
+### Final verified evidence
+
+- `pnpm exec vitest run tests/model-profiles-snapshot-acquisition.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles-snapshot-inspection.test.ts tests/model-profiles-storage.test.ts tests/model-profiles-persistence.test.ts tests/model-profiles-use-cases.test.ts --no-file-parallelism`: exit0,571pass = inherited501 + originalC46 + new24(22 acquisition/2 graph+emitted). Same42 S10 cases unchanged; storage51/class/memory remain independently executed.
+- Final `pnpm typecheck`, `pnpm build`, `pnpm run health:runtime`, exact emitted-reader import above: each exit0. Final single-name `pnpm exec vitest run tests/model-profiles-snapshot-runtime.test.ts --no-file-parallelism -t 'emitted complete acquire imports quietly and creates reuses and refuses safely on real files'`: exit0,1pass/1filtered; actual emitted create/reuse/exact offset multibyte bytes/default bytes/private0600/source unchanged/source conflict/malformed prior/owned write-fault cleanup and quiet APP/adapter imports/constructors. This is real acquire proof, not reader/launcher substitution.
+- Final original quartet exact command above: exit0,132pass/3skip. Final `pnpm test`,300s timeout: exit0 in118.11s,955pass/8skip,31files pass/3skip, mandatory rebuild included. Optional missing TypeScript map warning remains non-failing. No remaining local verification failure.
+- Original C ledger: C01=3/C02=3/C03=7/C04=3/C05=21/C06=4/C07=5, all46 actual legacy acquire→class entrypoints; C04 additionally legacy recheck. Exact C filter ran46pass/394filtered before final diagnostic correction; final full focal reran all46 with restored original diagnostic and stronger exact error identities. Three mode cases alone skip Windows; other S11 cases are native-portable tests, not a claim they ran on Windows here.
+- Produced: all local behavior/tests/type/build/health/compiled/positive inward graph/constructor/docs/evidence. Not applicable: installer changes and new general graph checker (negative checker remains12). Outstanding external: independent source Review, authorized publication/current-head CI, human acceptance; actual native full persistence/fault target remains13. No Review delegation/source PR/push/merge/GH approving review performed.
+- Precommit Git checkpoint851 =source132/tests579/docs-artifacts140, all layers counted. Final documentation/commit records and completion-checkbox churn are charged in the final measurement below; no unknown review-fix size inferred. Review path: complete acquisition/ownership class and diagnostic-only facade first; original C46 descriptor-aware contract second; additional class/compiled evidence third; authority/history/result last. Large diff remains cohesive under explicit exception, no split/evidence reduction.
+- Rollback boundary: this S11 acquire port/class/legacy delegates and internal inspector expected-state/error-type extraction with their tests/docs/result; leave inherited reader/preparer/storage behavior and live facade untouched. No completed backup cleanup/deletion API is exposed.
+- Final base-relative measurement including this record:879 changed lines (864 additions +15 deletions),14 paths =source132 +tests579 +docs/artifacts168. Source includes inspector15+/4−, port5, concrete class57 and thin facade51. Tests include original C helper258/new acquisition199/runtime117 plus persistence3 and sharedfixture1+/1−. Docs include README7/spec3/index6/plan16+/10−/result126. This exceeds historical forecasts, not the authorized S11 acceptance; every added fixture/assertion/cycle/artifact remains charged. S12/S13 limits stay375/399.
+
 ## Blockers or Deviations
+
+Current numerical blocker is resolved by the explicit S11-only exception. The following paragraphs preserve the dated pre-authorization stop/projection evidence; they are not a second gate or a new ceiling. No architecture/spec/scope deviation is required.
 
 - Complete-capability projection exceeds S11 STOP375/hard399. Implementation frozen; no S11 exception exists. Experimental acquire is only a TDD seam, not a completed/committable snapshot writer.
 - Initial measured checkpoint162 = source52 (inspector13+/4−, port5, seam30) + tests53 (new51, shared fixture1+/1−) + result57. No duplicate shared input/receipt types, raw fixtures or default-byte serialization.
@@ -75,4 +123,4 @@ Later authorization, 2026-10-20: user “Autorizo” explicitly approves S11-onl
 
 ## Next Step
 
-Obtain an explicit S11-only size exception for complete acquire/fault/legacy compatibility/tests/docs/evidence before further implementation. Preserve the experimental unstaged seam; do not publish or commit it as a partial writer. Resume from the recorded GREEN, then force each lifecycle phase through individual behavioral tests. Review/PR/native gates remain outstanding.
+Independent source Review against exact published S10, then separately authorized publication/current-head external CI; no S12 continuation here. The earlier exception request/frozen seam is historical and resolved by the scoped authorization and complete verified implementation. Full P1 acceptance waits13; public effort UI and user configuration remain unchanged.

@@ -45,11 +45,11 @@ Future owned: acquire port importing10 datatypes, complete adapter/acquire+reche
 
 ## Implementation Steps
 
-- [ ] Bind semantic acquire to a class that validates expected bytes/recovery through10 before any write-side operation.
-- [ ] After validation create parent, immediately recheck09 source, then exclusive open0600/write/fsync/close and completed receipt.
-- [ ] Handle EEXIST via actual10 backup validation and exact reuse; never overwrite/delete prior data.
-- [ ] Own incomplete cleanup from successful exclusive open; preserve original plus all cleanup errors and protect completed backups.
-- [ ] Verify all real fault/mode/conflict/default/retry cases, direct callable port/no config save and owned result/review.
+- [x] Bind semantic acquire to a class that validates expected bytes/recovery through10 before any write-side operation.
+- [x] After validation create parent, immediately recheck09 source, then exclusive open0600/write/fsync/close and completed receipt.
+- [x] Handle EEXIST via actual10 backup validation and exact reuse; never overwrite/delete prior data.
+- [x] Own incomplete cleanup from successful exclusive open; preserve original plus all cleanup errors and protect completed backups.
+- [x] Verify all real fault/mode/conflict/default/retry cases, direct callable port/no config save and owned result prepared for independent Review.
 
 ## Interfaces and Technical Contracts
 
@@ -65,10 +65,10 @@ Compatibility facade preserves original Buffer-required observation failures; in
 
 ## Acceptance Criteria
 
-- [ ] Exact present/default backups, completed receipt, fsync/close/private creation and valid retry all preserve C behavior.
-- [ ] Source changed/deleted/appeared pre-open fails closed; permission faults propagate and source remains intact.
-- [ ] Every open/write/fsync/close and cleanup remove/close/both fault retains original/cleanup errors and correct ownership.
-- [ ] Existing/completed backup bytes/mode survive failures; no config saver/host/live route; complete capability/tests/docs/result stay together.
+- [x] Exact present/default backups, completed receipt, fsync/close/private creation and valid retry all preserve C behavior.
+- [x] Source changed/deleted/appeared pre-open fails closed; permission faults propagate and source remains intact.
+- [x] Every open/write/fsync/close and cleanup remove/close/both fault retains original/cleanup errors and correct ownership.
+- [x] Existing/completed backup bytes/mode survive failures; no config saver/host/live route; complete capability/tests/docs/result stay together.
 
 ## Verification
 
@@ -77,6 +77,8 @@ Initial seam RED: adapter's injected recheck failure prevents exclusive open. T1
 Use index future exact focal/single-name/regression/build/health/emitted/full commands and owned port/architecture tests. Restore fd-aware spies/umask per case, assert source/backup/temp byte/existence invariants, distinguish own partial/prior complete files and retain three POSIX-only permission cases with unchanged native Windows behavior. Result includes exact cycles/lowest TPP/all headings and evidence status. Linux text parity cannot replace native Windows checks.
 
 Produced: full lifecycle/source audit contracts and approved basis. Not applicable now: tests/build/installer changes. Outstanding: parent targeted re-review, separately authorized planning publication/renewed Implement gate and future fault/architecture/native/budget evidence.
+
+Local execution evidence, 2026-10-20: all46 original acquisition cases plus24 additional class/graph/emitted cases, same42 inspector and51 storage assertions, explicit six-file571pass, typecheck/build/health/emitted reader and actual emitted complete acquire pass, legacy quartet132pass/3skip, full955pass/8skip. S11 RESULT preserves12 genuine cycles, characterization reasons, all-layer measurements and original recovery integration. Local execution complete under S11-only exception; independent Review/publication/current-head CI remain external, full native persistence/fault target13 remains future. No S12 work or live activation.
 
 ## Open Questions
 

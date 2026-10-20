@@ -21,6 +21,9 @@ import { aliasCases, changingPatch, domainProgramPrefix, editCases, invalidPatch
 import { registerPreparationContract, type PreparationInvoker } from "./_testModelPreparationContract.js";
 import { prepareProfileAssignment, type PrepareAssignmentInput as LegacyPrepareInput, type PreparedAssignment as LegacyPreparedAssignment } from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
 import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
+import { registerSnapshotContract } from "./_testModelSnapshotContract.js";
+
+registerSnapshotContract();
 
 registerPreparationContract("compatibility preparation", (): PreparationInvoker => ({
   validate: vi.spyOn(ProfileDocumentPolicy.prototype, "validate"),

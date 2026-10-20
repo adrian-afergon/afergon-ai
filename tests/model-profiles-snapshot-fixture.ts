@@ -27,5 +27,5 @@ export function snapshotFixture() {
     source: { sourceIdentity: configPath, exists: true, sourceBytes: new Uint8Array(bytes) },
     recoveryDocument: raw,
   };
-  return { inspector, input, raw, bytes, read, writeSpies, validator, defaults, configPath, snapshotPath };
+  return { inspector, input, raw, bytes, read, writeSpies, validator, defaults, configPath, snapshotPath, filesystem };
 }
