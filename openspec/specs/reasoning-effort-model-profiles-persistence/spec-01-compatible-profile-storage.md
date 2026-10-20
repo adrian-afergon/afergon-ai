@@ -26,7 +26,10 @@ Defines directly callable profile persistence for legacy model-string and struct
 
   - User-approved S10-only `size:exception`, 2026-10-20: “autorizo una excepcion”, answering the S10-specific size request. The complete cohesive read-only S10 inspection delivery MAY exceed STOP375/hard399; no new numerical ceiling was agreed. Measure all source, tests, fixtures, README, specification, plan/index, result and review-fix additions plus deletions against published S09 `402722a1892f62dae621ac7bbe69adcdb38d3c8f`; report actual size and review burden. Preserve all meaningful code, spacing, comments and evidence; no further slicing or scope expansion. Functional Gherkin, types, architecture, Review and native CI obligations remain unchanged. This later S10 authorization is separate from S09 and S08A/B450; S11–S13 retain STOP375/hard399.
 
+  - User-approved S11-only `size:exception`, 2026-10-20: “Autorizo”, answering the S11 acquisition/cleanup/tests/evidence exception request. The complete cohesive S11 delivery MAY exceed STOP375/hard399 with no new numerical cap. The183 actual and423–457 forecast are historical checkpoints, not ceilings. Count all source, helper/extraction additions AND deletions, tests, README, this amendment, plans/index, result and review fixes against published S10 `5d6d45bd2dbc5807413c4c8bfb9ab4f6d61098c0`; report final measured size and review burden. Preserve code, comments, spacing, docs, tests and evidence; no further slicing or scope expansion. Functional Gherkin, types, architecture, Review and native CI obligations are unchanged. S09/S10 and S08A/B450 exceptions remain separate; S12/S13 retain STOP375/hard399 and the general rule.
+
 ## Acceptance Criteria
+
 
 ```gherkin
 Feature: Compatible and recoverable model profile persistence

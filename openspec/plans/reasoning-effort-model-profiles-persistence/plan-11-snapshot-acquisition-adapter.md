@@ -10,6 +10,10 @@
 
 Deliver `SnapshotPort.acquire` with a complete `NodeMigrationSnapshotAdapter` class using09 storage recheck and10 concrete inspection. Exclusive create, fsync/close, retry protection and owned partial cleanup ship together. No partial writer prefix is accepted.
 
+**Execution checkpoint, 2026-10-20: blocked by S11 size gate.** See [S11 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S11/RESULT.md) for source-grounded complete projection, genuine seam cycles and frozen unstaged work. No S11 exception, completed creator, review or publication is claimed; all completion checkboxes remain open.
+
+**Later S11-only authorization, 2026-10-20:** user “Autorizo” explicitly grants `size:exception` for complete acquisition/cleanup/tests/evidence and continuation from that checkpoint. No new numerical cap;183/423–457 remain historical, not bounds. This overrides only S11's STOP375/hard399, including the completion ceiling below. Amend spec/index/result before resumed code, count every layer against exact published S10, preserve meaningful code/spacing/comments/evidence, no further slicing or scope expansion. S12/S13 retain normal375/399; S09/S10 and A/B450 exceptions remain independent. Functional contracts, Review and native CI gates are unchanged; no extra docs PR is required for this approved revision.
+
 ## Planning Scope
 
 Snapshot wx/private0600 creation, immediate post-preflight source recheck, exact bytes/defaults, EEXIST validation/reuse, all stage faults and owned cleanup/AggregateErrors. No config persist, lock/CAS, host I/O or receipt-based arbitrary delete API.
@@ -88,4 +92,4 @@ Cleanup failure must never appear as successful receipt. Partial unknown existin
 
 ## Completion Condition
 
-Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates only. Publication/implementation still gated. Completion requires complete port/adapter/ownership semantics, all46 C cases, native/fault/class evidence, result/review and measured≤399; upper370 still triggers reforecast beforeSTOP375.
+Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates only. The later explicit S11-only authorization above satisfies the renewed Implement gate and overrides S11's old measured≤399/STOP375 completion ceiling without a new cap; report full measured size. Completion requires complete port/adapter/ownership semantics, all46 C cases, local fault/class/emitted evidence, tests/build and result. Independent Review and current-head external CI remain subsequent gates; native full persistence/fault target remains13, not inferred from baseline launcher CI. Other deliveries retain their own limits.
