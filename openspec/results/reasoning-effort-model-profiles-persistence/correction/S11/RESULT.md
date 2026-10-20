@@ -21,12 +21,13 @@ Local outcome: complete semantic acquisition, injected concrete class and thin l
 
 ## Updated Plan Artifacts
 
-- Plan11 and ARCHITECTURE-PLAN-INDEX: linked blocked execution checkpoint only; no scope, authority or completed checkbox change.
+- Sole spec requirement19, Plan11 and ARCHITECTURE-PLAN-INDEX: scoped S11 exception before resumed source, historical stop retained, local completion/evidence linked; no functional scope/type/architecture change or S12/S13 limit transfer.
 
 ## Commits Created
 
-- f3d458d docs(models): authorize scoped S11 size exception — only spec/plan/index/result; incomplete source/tests excluded.
-- Verified cohesive capability commit: pending Git identity; includes complete source, tests, README and result, never a partial writer prefix.
+- f3d458dbd4ecfbcb3bc1ba9bd31bff2d8f292042 docs(models): authorize scoped S11 size exception — only spec/plan/index/result; incomplete source/tests excluded.
+- 5af003e513d7592c7ac633a59ddbd1ca461b46c5 feat(models): complete owned migration snapshot acquisition — verified complete source/tests/README/result, never a partial writer prefix.
+- Final result-only handoff metadata is committed separately; its identity is this artifact's latest Git revision, with unchanged verified source/test tree.
 
 ## Files Changed
 
@@ -41,6 +42,8 @@ Local outcome: complete semantic acquisition, injected concrete class and thin l
 - README, this result, scoped spec amendment and plan/index deltas; no package/CI/live facade changes.
 
 ## Verification Results
+
+### Initial checkpoint (historical, before the S11 exception)
 
 - Environment: offline frozen install succeeded using pnpm11.3.0 with `pnpm_config_manage_package_manager_versions=false pnpm_config_pm_on_fail=ignore pnpm_config_verify_deps_before_run=false`; initial auto-switch to missing11.21.0 failed operationally, no package configuration changes.
 - All commands below use those three variables and isolated `HOME=/tmp/opencode/afergon-s11-home XDG_CONFIG_HOME=/tmp/opencode/afergon-s11-config XDG_STATE_HOME=/tmp/opencode/afergon-s11-state`.
@@ -99,7 +102,7 @@ The original three genuine cycles and GREEN same42 refactor above remain histori
 - Produced: all local behavior/tests/type/build/health/compiled/positive inward graph/constructor/docs/evidence. Not applicable: installer changes and new general graph checker (negative checker remains12). Outstanding external: independent source Review, authorized publication/current-head CI, human acceptance; actual native full persistence/fault target remains13. No Review delegation/source PR/push/merge/GH approving review performed.
 - Precommit Git checkpoint851 =source132/tests579/docs-artifacts140, all layers counted. Final documentation/commit records and completion-checkbox churn are charged in the final measurement below; no unknown review-fix size inferred. Review path: complete acquisition/ownership class and diagnostic-only facade first; original C46 descriptor-aware contract second; additional class/compiled evidence third; authority/history/result last. Large diff remains cohesive under explicit exception, no split/evidence reduction.
 - Rollback boundary: this S11 acquire port/class/legacy delegates and internal inspector expected-state/error-type extraction with their tests/docs/result; leave inherited reader/preparer/storage behavior and live facade untouched. No completed backup cleanup/deletion API is exposed.
-- Final base-relative measurement including this record:879 changed lines (864 additions +15 deletions),14 paths =source132 +tests579 +docs/artifacts168. Source includes inspector15+/4−, port5, concrete class57 and thin facade51. Tests include original C helper258/new acquisition199/runtime117 plus persistence3 and sharedfixture1+/1−. Docs include README7/spec3/index6/plan16+/10−/result126. This exceeds historical forecasts, not the authorized S11 acceptance; every added fixture/assertion/cycle/artifact remains charged. S12/S13 limits stay375/399.
+- Final base-relative measurement including this record:883 changed lines (868 additions +15 deletions),14 paths =source132 +tests579 +docs/artifacts172. Source includes inspector15+/4−, port5, concrete class57 and thin facade51. Tests include original C helper258/new acquisition199/runtime117 plus persistence3 and sharedfixture1+/1−. Docs include README7/spec3/index6/plan16+/10−/result130. This exceeds historical forecasts, not the authorized S11 acceptance; every added fixture/assertion/cycle/artifact remains charged. S12/S13 limits stay375/399.
 
 ## Blockers or Deviations
 
@@ -114,6 +117,7 @@ Current numerical blocker is resolved by the explicit S11-only exception. The fo
 
 ## Notes
 
+- Final preservation audit: all28 registrations/20 prunable retain prior branch/head metadata except authorized S11 advances; root32/index161+/1− and six other accessible publication/source statuses unchanged, old S08 four-plan partial retained. Unknown external missing-directory cause; no recreation/pruning/unavailable-content hashes claimed. S11 tracked/index/untracked clean after capability commit; remote S11 absent, remote S10 exact base unchanged. `git diff <S10> --exit-code` confirms entire legacy config/saver, Node storage, reader facade, live facade, original inspector42/storage51 test files and Windows workflow unchanged. Only final result metadata changes after verified5af003e; no Review delegation/push/source PR/merge/GH approval/force/history rewrite/activation.
 - Resume five-category audit: same28 registrations/20 prunable, S11 exact base0/0 with four tracked/four individual untracked paths as183 checkpoint; index empty. Root32/index161+/1− and six other accessible source/publication states unchanged; old S08 partial four plans preserved, missing-directory cause unknown, no unavailable-content hash claims/recreate/prune. Reuse current isolated S11 tree safely: preserve three genuine cycles/GREEN inspector extraction, transfer none; stage only the four authority documents first, leave incomplete source/tests untouched until lifecycle verified. Produced authority-text/diff checks; tests/runtime not applicable to this documentation-only amendment. Rollback boundary is those four authority documents, not source mechanics.
 
 - S11/S12 recovery integration clarification: `recoveryDocument` is the ORIGINAL pre-migration SOURCE document matching captured bytes, or canonical absent-source defaults. It is never the patched candidate. S12 keeps candidate.raw version1 until backup completion, but that candidate is not acquire's comparison input. This clarifies sole P1 requirement16 and changes no behavior/product decision.
