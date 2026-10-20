@@ -44,7 +44,7 @@ Future owned: real inspector/shared application snapshot datatypes, shared snaps
 - [x] Encapsulate expected-recovery validation in a class using captured Uint8Array or canonical default state; reject malformed/future/nonmatching input before write-side operations.
 - [x] Inspect existing backup through injected fs; ENOENT means missing, other read errors propagate.
 - [x] Return complete reused receipt only after parse/known validation/exact expected byte equality; protect malformed/mismatched files.
-- [ ] Prove no write calls, exact default/key-order/formatting semantics and owned evidence before11.
+- [x] Prove no write calls, exact default/key-order/formatting semantics and owned evidence before11.
 
 ## Interfaces and Technical Contracts
 
@@ -97,3 +97,9 @@ Budget STOP at380; frozen verification/result brings actual398 (source57/tests24
 ## S10-only size authorization — 2026-10-20
 
 User “autorizo una excepcion” explicitly approves exceeding the normal S10 budget for the complete cohesive read-only inspector. No new numerical ceiling was agreed; prior380/398 checkpoints and421–434 forecast remain historical facts/estimates. This supersedes S10's normal size acceptance only, not its functional contract, architecture, tests, evidence, Review or CI. Count every layer against published S09 `402722a1892f62dae621ac7bbe69adcdb38d3c8f`, retain meaningful code/comments/spacing/docs/tests/evidence, report actual size and review burden, and do not reslice. Separate S09/A/B450 exceptions remain separate; S11–S13 retain STOP375/hard399. Commit this authority with sole-spec/index/result amendments before resumed implementation.
+
+## Local completion — 2026-10-20
+
+Completed-with-notes: all four implementation steps and three local behavioral acceptance criteria verified. Authority commit0654daf preceded completion commit6cd619b; no production source changed after checkpointbc85ad3. Remaining four standalone characterizations pass without artificial RED, bringing owned inspection coverage to42; all14 original genuine cycles remain recorded. README documents internal structural recovery versus exact backup bytes and the inactive boundary.
+Final approved baseline produced: selected emitted inspector1, owned42, combined focal394/memory14/storage51/inspection42 =501, legacy132/3 skipped, full885/8 skipped in113.88s under300s with mandatory rebuild; typecheck/build/health/inherited emitted reader import all exit0. The unchecked final acceptance criterion is external joint Review/native evidence, not unfinished local implementation. No Review delegation, push, PR, acquisition or S11 code here; post-publication S10 native CI remains outstanding and inherited S09 CI is not its proof.
+Final all-layer measurement and review burden are recorded in correction/S10/RESULT.md against exact published S09, including exception/spec/index/plan/result churn. S10-only size:exception has no replacement cap; S11–S13 retain375/399. Full P1/public effort UI remain incomplete.

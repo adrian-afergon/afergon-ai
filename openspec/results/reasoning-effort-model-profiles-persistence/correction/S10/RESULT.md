@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-Resumed under explicit S10-only size:exception; local completion pending. The blocked398-line checkpoint below remains historical; no independent Review or publication claimed.
+completed-with-notes — complete local S10 read-only inspection under explicit S10-only size:exception; external joint Review/publication/current-head native CI remain handoff gates. The blocked398-line checkpoint below is historical; no independent Review or publication claimed.
 
 ## Plan Reference
 
@@ -20,16 +20,23 @@ Resume inventory: same branch/HEAD `bc85ad3f0aa6a5bc5c98b4283294cc039871b8e8`, b
 
 ## Completed Steps
 
-Historical checkpoint implemented read-only inspector with domain-owned admissibility and infrastructure-owned Node comparison/bytes/default mechanics; all38 standalone cases passed. Budget blocker is now resolved by S10-only authorization; remaining completion evidence is pending and plan checkboxes are not yet marked.
+- Encapsulated full recovery/captured validation and domain snapshot admissibility with infrastructure-owned comparison/default/byte mechanics.
+- Inspected only the configured sibling backup, distinguishing ENOENT from exact original read failures.
+- Returned a complete reused receipt only after parse/full known validation/exact byte equality, preserving all caller bytes and fields.
+- Proved cold constructors/no application I/O/no writes, canonical defaults/key-order/formatting/offset bytes, completed README and all local approved verification;42 standalone cases, zero old218 credits.
 
 ## Updated Plan Artifacts
 
-Plan10 has a local verified budget checkpoint; approved technical contract retained.
-Resumed step-level evidence: owned inspection suite42 pass verifies implementation steps1–3 and the first three acceptance criteria; remaining documentation/final-verification step is not marked until its checks finish. The final joint Review/native acceptance checkbox remains external, not a claim of local independent Review.
+Plan10 retains its historical checkpoint and approved technical contract, records S10-only authority, and marks all four implementation steps plus three local behavioral acceptance criteria verified. Its final joint Review/native acceptance checkbox remains external, not a claim of local independent Review. Sole-spec requirement19 and the architecture index record only the approved size exception, not functional changes.
 
 ## Commits Created
 
 Checkpoint commit records the coherent inactive read-only inspector/contracts/tests/plan/result. Resolve full identity with `git log --format='%H %s' 402722a1892f62dae621ac7bbe69adcdb38d3c8f..HEAD`; no self-hash rewrite.
+
+- `bc85ad3f0aa6a5bc5c98b4283294cc039871b8e8` feat(models): checkpoint read-only snapshot inspection — preserved predecessor.
+- `0654daffe94a08a76fd8f254f2fa5632b2553d20` docs(models): authorize scoped S10 size exception — before resumed implementation.
+- `6cd619b99ef0425932c255869b6649b37d608168` test(models): complete read-only snapshot characterizations — tests/README/plan/result together.
+- Final verification commit contains only Plan10 completion and this result; resolve its full identity with the command above, without circular amend/history rewrite.
 
 First resumed work unit: S10-only authority amendment in exactly the sole spec, architecture index, Plan10 and this result. Produced: full diff/format inspection; tests/runtime not applicable for this Markdown-only size authorization. Rollback boundary: those four authority deltas only, leaving checkpoint source/tests intact. Source/test completion follows only after this commit.
 
@@ -97,9 +104,47 @@ Authorization commit `0654daffe94a08a76fd8f254f2fa5632b2553d20` preceded all res
 The four resumed cases add47 readable test lines, retain all38 checkpoint cases, and require no production transformation. Two additional breaking scenarios could not be found for the already-correct codec/domain/default/equality delegation: the exact passing adversaries and reasons above are evidence, not waived TDD or artificial RED. All14 genuine checkpoint cycles and their command/exit/TPP history remain intact. No prepareExpected helper was exposed; all expected bytes/path mechanics remain private to this inspector, and S11 still owns acquisition plus all46 original acquire-entrypoint cases.
 After tests/README/step-level evidence: actual495 (source57/tests294/README6/spec2/index4/plan23/result109) before this three-line work-unit/evidence update. Remaining source/tests/README0, final plan4–8/result25–40 =527–546 projected. Above400 review burden is predominantly durable standalone tests and preserved TDD/runtime evidence, accepted only for S10; no numeric cap or evidence cut follows from these estimates.
 
+### Final approved baseline — 2026-10-20
+
+All commands ran from this worktree after completion commit6cd619b with the exact E isolation above. `bash /tmp/opencode/s10-pnpm.sh` is only the existing E+pnpm wrapper; no Bash/Python file operations or measurement scripts were used on resume. The inherited reader import below used the same HOME/XDG/config/state variables with node directly. Every command exited0.
+
+| Exact command after E | Actual result / evidence status |
+| --- | --- |
+| `pnpm build` | produced; rebuilt all generated runtime before final checks |
+| `pnpm typecheck` | produced; runtime and owned test types pass |
+| `pnpm run health:runtime` | produced; dispatcher/models/TUI emitted entries import |
+| `node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')"` | produced; inherited emitted reader imports |
+| `pnpm exec vitest run tests/model-profiles-snapshot-inspection.test.ts --no-file-parallelism -t "emitted inspector imports and constructs without I/O and returns all inspection outcomes"` | produced;1 selected pass/41 skipped; actual emitted receipt/undefined/exact EACCES, constructor reads/default calls0 and global write prohibition |
+| `pnpm exec vitest run tests/model-profiles-snapshot-inspection.test.ts --no-file-parallelism` | produced;42 pass, all38 checkpoint cases retained |
+| `pnpm exec vitest run tests/model-profiles-persistence.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles-storage.test.ts tests/model-profiles-snapshot-inspection.test.ts --no-file-parallelism` | produced;501 pass =394 focal+14 memory+51 storage+42 inspection |
+| `pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism` | produced;132 pass/3 skipped |
+| `pnpm test` | produced; mandatory rebuild then885 pass/8 skipped,29 files pass/3 skipped,113.88s with300s execution budget |
+
+Optional TypeScript source-map ENOENT appears in combined/full runs but is nonfailing and never counted as RED. Each fixture is fresh; vi.restoreAllMocks runs after every standalone case, and the emitted child restores global filesystem methods in finally. No production algorithm or source API changed during resume; no extra acquisition/source-reread guarantee was introduced.
+Local behavior/build/runtime/docs evidence is produced. Independent joint Review, publication and S10 current-head native Test/Windows CI are outstanding external gates; they do not make locally complete implementation budget-blocked. Installer/POSIX/PowerShell changes are not applicable, and S13's planned narrow persistence-native workflow remains future work. Parent130's green checks are dependency proof only, not S10-native evidence.
+
+### Final size and preservation
+
+Native Git numstat against exact published S09 counts the complete S10 once, including original checkpoint and every authority/completion delta. The earlier421–434 forecast did not include the final authority/evidence growth and is not a cap. Measured workload exceeds400 under the explicit S10-only exception; the review candidate is one cohesive read-only class with its tests, documentation and preserved14-cycle evidence.
+
+| Layer | Additions | Deletions | Total |
+| --- | ---: | ---: | ---: |
+| Source/contracts | 57 | 0 | 57 |
+| Tests/shared fixture | 294 | 0 | 294 |
+| README | 6 | 0 | 6 |
+| Sole P1 specification | 2 | 0 | 2 |
+| Architecture index | 3 | 1 | 4 |
+| Plan10 | 23 | 8 | 31 |
+| This result | 157 | 0 | 157 |
+| **Complete S10** | **542** | **9** | **551** |
+
+Final preservation inventory matches resume:27 registrations/20 prunables, prior refs/registration metadata retained, root32/index161+1 and all available old-tree states unchanged. Unavailable partial08/07A/07B/class07 planning contents remain unverified; no recreation/prune/hash claims. S10 stages only owned paths, excludes operational node_modules, and has no push/PR/upstream. Final evidence commit rolls back only Plan10 local completion and current result updates; no source/test behavior is changed and no extra runtime/test rerun is applicable to that documentation-only commit.
+
 ## Blockers or Deviations
 
-Historical STOP375 reached at380 before frozen verification, which ended398. User's2026-10-20 S10-only size:exception resolves that budget blocker without retroactively changing the timing. Remaining characterizations/README/completion evidence are authorized now; no functional expansion, further slicing, publication or S11 code.
+None
+
+Historical STOP375 reached at380 before frozen verification, which ended398; this timing is retained, not reinterpreted as an earlier stop. User's2026-10-20 S10-only size:exception resolved the blocker without a new numeric cap. All remaining local cases/docs/evidence are now complete; no functional expansion, further slicing, publication or S11 code. External Review/CI are listed as outstanding handoff notes above.
 
 ## Notes
 
@@ -109,4 +154,4 @@ Rollback boundary: remove exactly the two new application/infrastructure files a
 
 ## Next Step
 
-Commit the four-document size authority before resumed implementation, complete remaining cases/docs/evidence, then hand off for external Review and ordinary post-publication CI. Full P1/public effort UI remains incomplete.
+Hand off this exact completed local S10 candidate and result for external joint Review. Publish and obtain ordinary current-head Test/Windows CI only through the subsequent authorized workflow. S11 may proceed only after its own required gates, with all46 original acquisition cases and normal375/399 limits retained; full P1/public effort UI remain incomplete.
