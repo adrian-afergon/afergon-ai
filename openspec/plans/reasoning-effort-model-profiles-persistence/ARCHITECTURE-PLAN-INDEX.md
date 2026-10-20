@@ -177,6 +177,8 @@ These are local reversible readable-fixture reuse forecasts, not caps/proven fit
 
 ### Planning publication units — future authorization only
 
+**S12-only override, 2026-10-20:** user “autorizo” accepts the complete cohesive update/use-case, ten real D cases, memory capabilities and pure test-owned graph/syntax checker above normal375/399, without a new numerical ceiling. Historical125 checkpoint/677–883 forecast are not caps. Amend spec requirement19, Plan12 and S12 result and commit these four documents before production work. Count all source/test/helper/fixture/emitted/README/spec/plan/index/result/review deltas against exact published S11 `649b6032df695f064e77d3563b025aa34ad5811e`; retain evidence/readability and report actual size/review burden. No new prefix or functional/architecture/API expansion. S09/S10/S11 exceptions remain separate; S13 retains STOP375/hard399. Review/publication/current-head CI remain external gates.
+
 All eleven corrective planning artifacts aggregate well above400 lines; parent already warned. Replace the old359-line P0 grouping with an index-only predecessor and separate exact owned pairs/ledger. Initial docs are fully charged before source delivery, never free overhead.
 
 | Publication | Exact owned artifacts | Predecessor | Artifact count | Forecast including index delta |

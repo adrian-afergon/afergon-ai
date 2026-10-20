@@ -1,8 +1,8 @@
-# S12 checkpoint: complete-capability forecast exceeds the normal budget
+# S12 execution: authorized cohesive update and architecture unit
 
 ## Implementation Status
 
-blocked
+In progress under explicit S12-only exception; not yet a completed implementation.
 
 ## Plan Reference
 
@@ -10,6 +10,10 @@ blocked
 - Execution Mode: sequential, fresh isolated worktree; S12 only.
 
 ## Execution Summary
+
+**Resumption authority, 2026-10-20:** user “autorizo” explicitly accepts S12-only `size:exception`, no new numeric cap. Preserve the dated checkpoint/provenance below;677–883 is a forecast, not a ceiling. Spec requirement19/Plan12/current architecture index/this result are amended and committed together before production. No functional Gherkin, API or architecture changes. S13 remains STOP375/hard399. Every layer/review fix counts against published S11 `649b6032df695f064e77d3563b025aa34ad5811e`.
+
+Resume inventory produced: S12 HEAD `ad5af861b15d90b069772d0cdba8711ad07a6b4e`, staged/unstaged/untracked empty, base divergence0/1; all29 registrations/same20 prunables and accessible predecessor states preserved. Root32/index161+1 unchanged; S09/S10 operational node_modules preserved. Remote S11 still exact649b603, PR132 four SUCCESS, issue94approved; all inspection commands exit0. Reuse current isolated S12; only owned paths may be staged, all other roots/refs/partial directories preserve/no transfer/no stage. Root-only registry remains the known gap, no missing-content hashes claimed. This authority bookkeeping is Markdown-only: tests/runtime N/A, review external; source verification remains outstanding.
 
 Stopped before source implementation at the required complete-projection gate. The original279–365 forecast is not a proven fit: the ten allocated real D test bodies already measure93 lines, before explicit Node composition and semantic-hook changes. Memory capability tests and the required scope-aware graph/syntax checker are additional. Complete forecast677–883 exceeds STOP375 by302–508 and hard399 by278–484. No size exception is inferred from S09/S10/S11.
 
