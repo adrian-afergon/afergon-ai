@@ -10,6 +10,10 @@
 
 Deliver `SnapshotPort.acquire` with a complete `NodeMigrationSnapshotAdapter` class using09 storage recheck and10 concrete inspection. Exclusive create, fsync/close, retry protection and owned partial cleanup ship together. No partial writer prefix is accepted.
 
+**Execution checkpoint, 2026-10-20: blocked by S11 size gate.** See [S11 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S11/RESULT.md) for source-grounded complete projection, genuine seam cycles and frozen unstaged work. No S11 exception, completed creator, review or publication is claimed; all completion checkboxes remain open.
+
+**Later S11-only authorization, 2026-10-20:** user “Autorizo” explicitly grants `size:exception` for complete acquisition/cleanup/tests/evidence and continuation from that checkpoint. No new numerical cap;183/423–457 remain historical, not bounds. This overrides only S11's STOP375/hard399, including the completion ceiling below. Amend spec/index/result before resumed code, count every layer against exact published S10, preserve meaningful code/spacing/comments/evidence, no further slicing or scope expansion. S12/S13 retain normal375/399; S09/S10 and A/B450 exceptions remain independent. Functional contracts, Review and native CI gates are unchanged; no extra docs PR is required for this approved revision.
+
 ## Planning Scope
 
 Snapshot wx/private0600 creation, immediate post-preflight source recheck, exact bytes/defaults, EEXIST validation/reuse, all stage faults and owned cleanup/AggregateErrors. No config persist, lock/CAS, host I/O or receipt-based arbitrary delete API.
@@ -41,11 +45,11 @@ Future owned: acquire port importing10 datatypes, complete adapter/acquire+reche
 
 ## Implementation Steps
 
-- [ ] Bind semantic acquire to a class that validates expected bytes/recovery through10 before any write-side operation.
-- [ ] After validation create parent, immediately recheck09 source, then exclusive open0600/write/fsync/close and completed receipt.
-- [ ] Handle EEXIST via actual10 backup validation and exact reuse; never overwrite/delete prior data.
-- [ ] Own incomplete cleanup from successful exclusive open; preserve original plus all cleanup errors and protect completed backups.
-- [ ] Verify all real fault/mode/conflict/default/retry cases, direct callable port/no config save and owned result/review.
+- [x] Bind semantic acquire to a class that validates expected bytes/recovery through10 before any write-side operation.
+- [x] After validation create parent, immediately recheck09 source, then exclusive open0600/write/fsync/close and completed receipt.
+- [x] Handle EEXIST via actual10 backup validation and exact reuse; never overwrite/delete prior data.
+- [x] Own incomplete cleanup from successful exclusive open; preserve original plus all cleanup errors and protect completed backups.
+- [x] Verify all real fault/mode/conflict/default/retry cases, direct callable port/no config save and owned result prepared for independent Review.
 
 ## Interfaces and Technical Contracts
 
@@ -61,10 +65,10 @@ Compatibility facade preserves original Buffer-required observation failures; in
 
 ## Acceptance Criteria
 
-- [ ] Exact present/default backups, completed receipt, fsync/close/private creation and valid retry all preserve C behavior.
-- [ ] Source changed/deleted/appeared pre-open fails closed; permission faults propagate and source remains intact.
-- [ ] Every open/write/fsync/close and cleanup remove/close/both fault retains original/cleanup errors and correct ownership.
-- [ ] Existing/completed backup bytes/mode survive failures; no config saver/host/live route; complete capability/tests/docs/result stay together.
+- [x] Exact present/default backups, completed receipt, fsync/close/private creation and valid retry all preserve C behavior.
+- [x] Source changed/deleted/appeared pre-open fails closed; permission faults propagate and source remains intact.
+- [x] Every open/write/fsync/close and cleanup remove/close/both fault retains original/cleanup errors and correct ownership.
+- [x] Existing/completed backup bytes/mode survive failures; no config saver/host/live route; complete capability/tests/docs/result stay together.
 
 ## Verification
 
@@ -73,6 +77,8 @@ Initial seam RED: adapter's injected recheck failure prevents exclusive open. T1
 Use index future exact focal/single-name/regression/build/health/emitted/full commands and owned port/architecture tests. Restore fd-aware spies/umask per case, assert source/backup/temp byte/existence invariants, distinguish own partial/prior complete files and retain three POSIX-only permission cases with unchanged native Windows behavior. Result includes exact cycles/lowest TPP/all headings and evidence status. Linux text parity cannot replace native Windows checks.
 
 Produced: full lifecycle/source audit contracts and approved basis. Not applicable now: tests/build/installer changes. Outstanding: parent targeted re-review, separately authorized planning publication/renewed Implement gate and future fault/architecture/native/budget evidence.
+
+Local execution evidence, 2026-10-20: all46 original acquisition cases plus24 additional class/graph/emitted cases, same42 inspector and51 storage assertions, explicit six-file571pass, typecheck/build/health/emitted reader and actual emitted complete acquire pass, legacy quartet132pass/3skip, full955pass/8skip. S11 RESULT preserves12 genuine cycles, characterization reasons, all-layer measurements and original recovery integration. Local execution complete under S11-only exception; independent Review/publication/current-head CI remain external, full native persistence/fault target13 remains future. No S12 work or live activation.
 
 ## Open Questions
 
@@ -88,4 +94,4 @@ Cleanup failure must never appear as successful receipt. Partial unknown existin
 
 ## Completion Condition
 
-Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates only. Publication/implementation still gated. Completion requires complete port/adapter/ownership semantics, all46 C cases, native/fault/class evidence, result/review and measured≤399; upper370 still triggers reforecast beforeSTOP375.
+Plan is ready-with-assumptions: approved replacement basis, no questions/tensions, local reversible fixture estimates only. The later explicit S11-only authorization above satisfies the renewed Implement gate and overrides S11's old measured≤399/STOP375 completion ceiling without a new cap; report full measured size. Completion requires complete port/adapter/ownership semantics, all46 C cases, local fault/class/emitted evidence, tests/build and result. Independent Review and current-head external CI remain subsequent gates; native full persistence/fault target remains13, not inferred from baseline launcher CI. Other deliveries retain their own limits.

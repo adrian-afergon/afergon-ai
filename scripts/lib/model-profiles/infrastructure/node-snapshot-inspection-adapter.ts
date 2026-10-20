@@ -4,6 +4,13 @@ import type { AcquireMigrationSnapshotInput, SnapshotReceipt } from "../applicat
 import type { ProfileDocumentPolicy } from "../domain/profile-document-policy.js";
 import type { LegacyProfileDefaultsAdapter } from "./legacy-profile-defaults-adapter.js";
 
+export interface ExpectedSnapshot {
+  snapshotPath: string;
+  bytes: Buffer;
+}
+
+export class SnapshotBytesMismatchError extends Error {}
+
 export class NodeSnapshotInspectionAdapter {
   constructor(
     private readonly boundPath: string,
@@ -12,7 +19,7 @@ export class NodeSnapshotInspectionAdapter {
     private readonly defaults: LegacyProfileDefaultsAdapter,
   ) {}
 
-  inspect(input: AcquireMigrationSnapshotInput): SnapshotReceipt | undefined {
+  prepareExpected(input: AcquireMigrationSnapshotInput): ExpectedSnapshot {
     if (input.source.sourceIdentity !== this.boundPath) throw new Error("Profile source changed");
     if (typeof input.source.exists !== "boolean") throw new Error("Observation exists must be a boolean");
     if (input.source.exists && !(input.source.sourceBytes instanceof Uint8Array && ArrayBuffer.isView(input.source.sourceBytes))) {
@@ -26,10 +33,14 @@ export class NodeSnapshotInspectionAdapter {
       : this.defaults.create();
     this.validator.validate(captured, this.boundPath);
     this.validator.requireRecoveryMatch(isDeepStrictEqual(input.recoveryDocument, captured));
-    const expected = input.source.exists
+    const bytes = input.source.exists
       ? Buffer.from(input.source.sourceBytes!)
       : Buffer.from(`${JSON.stringify(captured, null, 2)}\n`);
-    const snapshotPath = `${this.boundPath}.pre-v2.bak`;
+    return { snapshotPath: `${this.boundPath}.pre-v2.bak`, bytes };
+  }
+
+  inspect(input: AcquireMigrationSnapshotInput): SnapshotReceipt | undefined {
+    const { snapshotPath, bytes } = this.prepareExpected(input);
     let existing: Buffer;
     try {
       existing = this.filesystem.readFileSync(snapshotPath);
@@ -38,7 +49,7 @@ export class NodeSnapshotInspectionAdapter {
       throw error;
     }
     this.validator.validate(JSON.parse(existing.toString("utf8")), snapshotPath);
-    if (!existing.equals(expected)) throw new Error("Existing migration snapshot does not match captured source");
+    if (!existing.equals(bytes)) throw new SnapshotBytesMismatchError("Existing migration snapshot does not match captured source");
     return { snapshotPath, disposition: "reused", complete: true };
   }
 }
