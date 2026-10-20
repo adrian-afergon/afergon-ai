@@ -166,6 +166,7 @@ It validates complete source/candidate documents, refuses future-schema updates,
 Migration acquisition receives the original pre-migration document and captured observation; only a completed receipt permits candidate version2. Legacy-only writes retain an omitted raw version, and v2 writes do not snapshot again.
 The result contains a diagnostic `configPath`, effective `version`, and only this invocation's completed migration `snapshotPath`. A completed backup remains after later failure; recheck-to-rename is not CAS.
 This directly callable capability is inactive in live CLI/TUI/host workflows. Original public update composition and native full persistence fault verification remain plan13 work.
+Architecture evidence uses a pure test-owned graph/syntax checker with synthetic forbidden dependencies, scope-aware ambient/alias checks and a separate real-source AST loader; runtime memory tests independently guard constructor and execution I/O.
 Snapshot receipts prove verified backup completion, not a committed configuration update or a lock against concurrent source changes.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
