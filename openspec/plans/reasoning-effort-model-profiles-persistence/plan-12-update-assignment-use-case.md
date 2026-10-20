@@ -43,9 +43,9 @@ Future owned: application update case/contracts,10 real-adapter original D order
 
 **S12-only exception, 2026-10-20:** user “autorizo” authorizes completing this cohesive unit beyond STOP375/hard399, with no replacement numerical cap. Historical125 checkpoint/677–883 forecast are not limits. Count every layer against published S11 `649b6032df695f064e77d3563b025aa34ad5811e`, retain all evidence, and report final actual size/review burden. No further prefix, compression, functional/API/architecture change or activation. S13 remains STOP375/hard399. Record spec/index/result authority and commit before resumed production code; exact order/recovery-input contracts below remain unchanged.
 
-- [ ] Construct update using in-memory storage/snapshot capabilities; assert callable behavior with no ambient Node/env access.
-- [ ] Retain complete source/patch/candidate validation and future-version refusal before write-side port calls, including no-op>2.
-- [ ] Implement changed/migration sequencing: recheck, completed snapshot, version2, final validation, recheck, persist.
+- [x] Construct update using in-memory storage/snapshot capabilities; assert callable behavior with no ambient Node/env access.
+- [x] Retain complete source/patch/candidate validation and future-version refusal before write-side port calls, including no-op>2.
+- [x] Implement changed/migration sequencing: recheck, completed snapshot, version2, final validation, recheck, persist.
 - [ ] Prove injected failures stop later capabilities and preserve source/candidate flags; reconcile D order semantics and owned evidence.
 
 ## Interfaces and Technical Contracts

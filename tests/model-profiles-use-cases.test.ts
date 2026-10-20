@@ -1,5 +1,7 @@
 import fs from "node:fs";
-import { expect, it, vi } from "vitest";
+import os from "node:os";
+import childProcess from "node:child_process";
+import { afterEach, expect, it, vi } from "vitest";
 import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 import type { ObservedProfile } from "../scripts/lib/model-profiles/application/profile-document-observation.js";
@@ -7,6 +9,10 @@ import { ReadProfileDocumentUseCase } from "../scripts/lib/model-profiles/applic
 import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
 import { ProfileAssignmentPolicy, type PreparedAssignment } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
+import { MemorySnapshots, updateMemory } from "./model-profiles-update-memory.js";
+import { UpdateProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/update-profile-assignment-use-case.js";
+
+afterEach(() => vi.restoreAllMocks());
 
 it("preparer delegates exact input and result without constructor activity", () => {
   const agents = new AgentTargetPolicy();
@@ -30,6 +36,26 @@ it("preparer delegates exact input and result without constructor activity", () 
 });
 
 const validator = new ProfileDocumentPolicy(new AgentTargetPolicy());
+it("S12 migration snapshots original source before candidate promotion", () => {
+  const f = updateMemory();
+  f.acquire.mockImplementation(input => {
+    const loaded = f.read.mock.results[0].value;
+    const candidate = f.prepare.mock.results[0].value.document;
+    expect(input).toEqual({ source: loaded.source, recoveryDocument: f.document });
+    expect(input.source).toBe(loaded.source);
+    expect(input.recoveryDocument).toBe(f.document);
+    expect(candidate).not.toBe(input.recoveryDocument);
+    expect(candidate.version).toBe(1);
+    return { snapshotPath: "memory:backup", disposition: "created", complete: true };
+  });
+  expect(f.useCase.execute(f.input)).toEqual({ configPath: "configured:memory", version: 2, snapshotPath: "memory:backup" });
+  expect(f.acquire).toHaveBeenCalledOnce();
+  expect(f.persist).toHaveBeenCalledOnce();
+  expect(f.persist.mock.calls[0][0].version).toBe(2);
+  expect(f.persist.mock.calls[0][1]).toBe(f.read.mock.results[0].value.source);
+  expect(f.document.version).toBe(1);
+});
+
 it("preparer varies supplied input without caching or rewriting results", () => {
   const policy = new ProfileAssignmentPolicy(validator, new AgentTargetPolicy(), new RawProfileDocumentCloner());
   const prepare = vi.spyOn(policy, "prepare");
@@ -44,6 +70,157 @@ it("preparer varies supplied input without caching or rewriting results", () => 
     expect(prepare.mock.calls[0][0]).toBe(first);
     expect(prepare.mock.calls[1][0]).toBe(second);
   } finally { prepare.mockRestore(); }
+});
+it("S12 T1 snapshot failure prevents promotion and persistence", () => {
+  const f = updateMemory();
+  const failure = new Error("snapshot refused");
+  f.acquire.mockImplementation(() => { throw failure; });
+  try {
+    expect(() => f.useCase.execute(f.input)).toThrow(failure);
+    expect(f.persist).not.toHaveBeenCalled();
+    expect(f.prepare.mock.results[0].value.document.version).toBe(1);
+    expect(f.storage.currentBytes).toBe(f.bytes);
+  } finally { vi.restoreAllMocks(); }
+});
+it("S12 T2 second recheck protects external bytes after completed backup", () => {
+  const f = updateMemory();
+  const external = new Uint8Array([9, 8]);
+  f.acquire.mockImplementation(input => {
+    const receipt = MemorySnapshots.prototype.acquire.call(f.snapshots, input);
+    f.storage.currentBytes = external;
+    return receipt;
+  });
+  try {
+    expect(() => f.useCase.execute(f.input)).toThrow("Profile source changed");
+    expect(f.recheck).toHaveBeenCalledTimes(2);
+    expect(f.persist).not.toHaveBeenCalled();
+    expect(f.storage.currentBytes).toBe(external);
+    expect(f.snapshots.backup).toEqual(f.bytes);
+  } finally { vi.restoreAllMocks(); }
+});
+it("S12 refuses incomplete receipt before promotion", () => {
+  const f = updateMemory();
+  f.acquire.mockReturnValue({ snapshotPath: "incomplete", complete: false } as never);
+  expect(() => f.useCase.execute(f.input)).toThrow("Migration snapshot is incomplete");
+  expect(f.prepare.mock.results[0].value.document.version).toBe(1);
+  expect(f.persist).not.toHaveBeenCalled();
+});
+it("S12 future source no-op uses update eligibility before preparation", () => {
+  const f = updateMemory({ version: 3 });
+  expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow("Cannot update unsupported profile version 3");
+  expect(f.prepare).not.toHaveBeenCalled();
+  expect(f.recheck).not.toHaveBeenCalled();
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.persist).not.toHaveBeenCalled();
+});
+it("S12 rejects whole invalid prepared candidate before recheck", () => {
+  const f = updateMemory();
+  f.prepare.mockReturnValue({ document: { models: null }, changed: true, migrationRequired: true, version: 2 });
+  expect(() => f.useCase.execute(f.input)).toThrow("models must be an object");
+  expect(f.recheck).not.toHaveBeenCalled();
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.persist).not.toHaveBeenCalled();
+});
+it("S12 refuses future prepared no-op before recheck or downgrade", () => {
+  const f = updateMemory();
+  f.prepare.mockReturnValue({ document: { version: 3 }, changed: false, migrationRequired: false, version: 3 });
+  expect(() => f.useCase.execute(f.input)).toThrow("Cannot update unsupported profile version 3");
+  expect(f.recheck).not.toHaveBeenCalled();
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.persist).not.toHaveBeenCalled();
+});
+it("S12 no-op returns effective version without write-side calls", () => {
+  const f = updateMemory();
+  f.snapshots.backup = new Uint8Array([77]);
+  expect(f.useCase.execute({ ...f.input, patch: {} })).toEqual({ configPath: "configured:memory", version: 1 });
+  expect(f.recheck).not.toHaveBeenCalled();
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.storage.currentBytes).toBe(f.bytes);
+  expect(f.snapshots.backup).toEqual(new Uint8Array([77]));
+});
+it("S12 no-op keeps existing version two", () => {
+  const f = updateMemory({ version: 2 });
+  expect(f.useCase.execute({ ...f.input, patch: {} })).toEqual({ configPath: "configured:memory", version: 2 });
+  expect(f.recheck).not.toHaveBeenCalled();
+});
+it("S12 legacy edit preserves absent raw version and prior backup", () => {
+  const f = updateMemory({ models: { profiles: { work: { review: "old", "afg-specify": { reasoningEffort: "low" } } } } });
+  f.snapshots.backup = new Uint8Array([77]);
+  expect(f.useCase.execute({ ...f.input, patch: { model: "new" } })).toEqual({ configPath: "configured:memory", version: 1 });
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.storage.saved).not.toHaveProperty("version");
+  expect(f.storage.saved?.models).toEqual({ profiles: { work: { review: "new", "afg-specify": { reasoningEffort: "low" } } } });
+  expect(f.snapshots.backup).toEqual(new Uint8Array([77]));
+});
+it("S12 final whole validation immediately precedes last recheck and persist", () => {
+  const f = updateMemory();
+  const validate = f.validator.validate.bind(f.validator);
+  vi.spyOn(f.validator, "validate").mockImplementation((raw, identity) => {
+    const document = validate(raw, identity);
+    f.storage.log.push(`validate:${document.version ?? 1}`);
+    return document;
+  });
+  f.useCase.execute(f.input);
+  expect(f.storage.log.slice(-3)).toEqual(["validate:2", "recheck", "persist"]);
+  expect(f.recheck.mock.calls.every(([source]) => source === f.read.mock.results[0].value.source)).toBe(true);
+});
+it.each(["read", "first recheck", "persist"])("S12 propagates exact %s failure without later capabilities", stage => {
+  const f = updateMemory();
+  const failure = new Error(stage);
+  if (stage === "read") vi.spyOn(f.storage, "observe").mockImplementation(() => { throw failure; });
+  if (stage === "first recheck") f.recheck.mockImplementation(() => { throw failure; });
+  if (stage === "persist") f.persist.mockImplementation(() => { throw failure; });
+  let caught: unknown;
+  try { f.useCase.execute(f.input); } catch (error) { caught = error; }
+  expect(caught).toBe(failure);
+  expect(f.storage.currentBytes).toBe(f.bytes);
+  if (stage !== "persist") {
+    expect(f.acquire).not.toHaveBeenCalled();
+    expect(f.persist).not.toHaveBeenCalled();
+  } else expect(f.snapshots.backup).toEqual(f.bytes);
+});
+
+it.each(["source", "patch", "final candidate"])("S12 validates %s before later capabilities", stage => {
+  const f = updateMemory(stage === "source" ? { models: null } : undefined);
+  const validate = f.validator.validate.bind(f.validator);
+  if (stage === "final candidate") vi.spyOn(f.validator, "validate").mockImplementation((raw, identity) => {
+    if ((raw as { version?: number }).version === 2) throw new Error("final candidate refused");
+    return validate(raw, identity);
+  });
+  const patch = stage === "patch" ? { reasoningEffort: "inherit" } : f.input.patch;
+  expect(() => f.useCase.execute({ ...f.input, patch })).toThrow();
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.recheck).toHaveBeenCalledTimes(stage === "final candidate" ? 1 : 0);
+  expect(f.acquire).toHaveBeenCalledTimes(stage === "final candidate" ? 1 : 0);
+});
+
+it("S12 v2 change never snapshots and absent capture remains absent", () => {
+  const f = updateMemory({ version: 2, models: { profiles: {} } }, false);
+  expect(f.useCase.execute(f.input)).toEqual({ configPath: "configured:memory", version: 2 });
+  expect(f.acquire).not.toHaveBeenCalled();
+  expect(f.storage.saved?.version).toBe(2);
+  expect(f.persist.mock.calls[0][1]).toBe(f.read.mock.results[0].value.source);
+  expect(f.persist.mock.calls[0][1].sourceBytes).toBeUndefined();
+});
+
+it("S12 constructors are cold and real memory execution has no ambient authority", () => {
+  const f = updateMemory();
+  expect(f.storage.log).toEqual([]);
+  expect(f.read).not.toHaveBeenCalled();
+  expect(f.prepare).not.toHaveBeenCalled();
+  const spies = [vi.spyOn(fs, "readFileSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "mkdirSync"),
+    vi.spyOn(fs, "openSync"), vi.spyOn(fs, "renameSync"), vi.spyOn(os, "homedir"),
+    vi.spyOn(childProcess, "spawnSync"), vi.spyOn(childProcess, "execFileSync")];
+  const env = Object.getOwnPropertyDescriptor(process, "env")!;
+  let result: unknown;
+  try {
+    Object.defineProperty(process, "env", { configurable: true, get() { throw new Error("Ambient environment access"); } });
+    const useCase = new UpdateProfileAssignmentUseCase(f.reader, f.preparer, f.validator, f.storage, f.snapshots);
+    result = useCase.execute(f.input);
+  } finally { Object.defineProperty(process, "env", env); }
+  expect(result).toEqual({ configPath: "configured:memory", version: 2, snapshotPath: "memory:backup" });
+  for (const spy of spies) expect(spy).not.toHaveBeenCalled();
 });
 it("preparer propagates the exact policy failure without retry", () => {
   const policy = new ProfileAssignmentPolicy(validator, new AgentTargetPolicy(), new RawProfileDocumentCloner());

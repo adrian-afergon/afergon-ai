@@ -145,7 +145,7 @@ It returns the domain's complete prepared result without resolving paths, select
 
 The internal `ProfileStoragePort` extends observation with exact source recheck and trusted atomic persistence. `NodeProfileStorageAdapter` receives its filesystem, defaults and concrete `LegacyAtomicProfileSaverAdapter`; constructors perform no I/O.
 The composition privately pins the initial absolute config path and saver environment despite later cwd or caller-environment changes. A mismatched identity is refused, never used as a caller-selected path; present observations accept genuine Uint8Array bytes.
-The primitive's caller owns whole-document validation, version and migration/snapshot policy. Before the update use case is delivered it has no production caller; direct mechanical tests use validated legacy documents only.
+The primitive's caller owns whole-document validation, version and migration/snapshot policy. Its sole production caller is the injected update use case; direct mechanical tests use validated legacy documents only.
 The unchanged legacy saver commits at rename, attempts directory fsync best-effort, and preserves original precommit errors even if cleanup fails and leaves a temporary file. Source comparison does not close the compare-to-rename race or promise CAS/crash durability.
 This storage capability does not complete P1 migration recovery or enable reasoning-effort writes in CLI, TUI or host registration; the later snapshot/update/composition slices remain required.
 
@@ -160,6 +160,12 @@ On EEXIST it inspects the actual competing backup and reuses only parsed, known-
 The internal legacy `infrastructure/migration-snapshot` acquire/recheck exports are thin delegates and retain Buffer-required observation diagnostics. The inner semantic port accepts genuine `Uint8Array`, including offset views.
 `recoveryDocument` must be the ORIGINAL pre-migration source matching captured bytes, or canonical missing-source defaults, never a patched update candidate. Future update orchestration keeps its candidate's old version until backup completion but does not compare that candidate as recovery input.
 This provides file fsync/close, not universal crash durability, CAS/locking, hostile concurrent backup replacement protection, arbitrary backup deletion, or a completed config transaction. Update orchestration/composition and native full persistence fault verification remain later work; public effort editing and host output are unchanged.
+
+The internal `application/update-profile-assignment-use-case` now exposes `UpdateProfileAssignmentUseCase(reader, preparer, validator, storage, snapshots).execute({ profileName, agentName, patch })`.
+It validates complete source/candidate documents, refuses future-schema updates, and returns no-ops without write-side calls. Changed data is source-rechecked before migration and immediately after final validation before atomic persistence.
+Migration acquisition receives the original pre-migration document and captured observation; only a completed receipt permits candidate version2. Legacy-only writes retain an omitted raw version, and v2 writes do not snapshot again.
+The result contains a diagnostic `configPath`, effective `version`, and only this invocation's completed migration `snapshotPath`. A completed backup remains after later failure; recheck-to-rename is not CAS.
+This directly callable capability is inactive in live CLI/TUI/host workflows. Original public update composition and native full persistence fault verification remain plan13 work.
 Snapshot receipts prove verified backup completion, not a committed configuration update or a lock against concurrent source changes.
 
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.

@@ -22,8 +22,10 @@ import { registerPreparationContract, type PreparationInvoker } from "./_testMod
 import { prepareProfileAssignment, type PrepareAssignmentInput as LegacyPrepareInput, type PreparedAssignment as LegacyPreparedAssignment } from "../scripts/lib/model-profiles/infrastructure/prepare-assignment.js";
 import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
 import { registerSnapshotContract } from "./_testModelSnapshotContract.js";
+import { registerUpdateOrderContract } from "./_testModelUpdateContract.js";
 
 registerSnapshotContract();
+registerUpdateOrderContract();
 
 registerPreparationContract("compatibility preparation", (): PreparationInvoker => ({
   validate: vi.spyOn(ProfileDocumentPolicy.prototype, "validate"),
