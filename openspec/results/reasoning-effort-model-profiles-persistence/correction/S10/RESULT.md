@@ -2,12 +2,12 @@
 
 ## Implementation Status
 
-blocked — normal S10 budget checkpoint; no independent Review or publication claimed.
+Resumed under explicit S10-only size:exception; local completion pending. The blocked398-line checkpoint below remains historical; no independent Review or publication claimed.
 
 ## Plan Reference
 
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-10-snapshot-inspection-adapter.md` (ready-with-assumptions).
-- Execution Mode: sequential; user-approved S10 only, normal STOP375/hard399.
+- Execution Mode: sequential; user-approved S10 only, task-scoped size:exception authorized2026-10-20; no new numerical ceiling.
 
 ## Execution Summary
 
@@ -15,9 +15,12 @@ Base: published PR130 `402722a1892f62dae621ac7bbe69adcdb38d3c8f`; all four curre
 Fresh branch `feat/reasoning-effort-p1-class-10`, worktree `/tmp/opencode/afergon-ai-reasoning-effort-p1-class-10`; local/remote/disk collisions absent after parent listing. Initial base divergence0/0, no upstream, staged/unstaged/untracked empty. Five categories rechecked at implementation entry; topology26→27 registrations,16 prunables preserved, unknown disappearance cause, no unavailable-content hashes claimed.
 Preserve/no transfer/no stage: root32 paths individually enumerated in architecture index and PROJECT-TASKS161+1; S08 partial four tracked/eight untracked paths; S09 operational node_modules; all old tree metadata/refs. Only own application contracts, inspector, shared snapshot fixture/new tests, README, plan-local deltas and this result may be staged after coherent verification. Root registry is canonical (not copied into this worktree); exact registered implement/work-unit-commits/chained-pr/cognitive-doc-design read before work.
 
+Resume authority2026-10-20: user “autorizo una excepcion” answers the S10-specific request. Complete cohesive S10 may exceed375/399 without a new cap;421–434 remains a forecast, not permission to cut evidence. Amend sole P1 requirement19, Plan10 completion/authority, architecture index and this result before further implementation; first resumed commit stages only those four documents. No functional Gherkin/type/architecture change, slicing, S09 exception transfer or S11–S13 budget change.
+Resume inventory: same branch/HEAD `bc85ad3f0aa6a5bc5c98b4283294cc039871b8e8`, base divergence1/0, no upstream; staged/unstaged sets empty, only untracked operational node_modules symlink (preserve/no stage). Reuse intact isolated S10 tree; transfer none. Parent130 OPEN/exact402722/four SUCCESS and issue94 OPEN reverified. All local branch refs and old source remote heads retained. Git reports27 registrations/**20 prunables**, four more than historical16: class07 split-plan publication,07A,07B and partial08 now unavailable, unknown cause. Preserve metadata/refs; do not recreate/prune or claim unavailable dirty contents/hashes verified. Available08 split publication/08A/08B/08C clean;09 only its operational symlink; root32/index161+1 unchanged. Stage only explicitly owned resumed S10 paths after verification.
+
 ## Completed Steps
 
-Implemented read-only inspector with domain-owned admissibility and infrastructure-owned Node comparison/bytes/default mechanics; all38 standalone cases pass. Complete final delivery remains budget-blocked; plan checkboxes intentionally unmarked.
+Historical checkpoint implemented read-only inspector with domain-owned admissibility and infrastructure-owned Node comparison/bytes/default mechanics; all38 standalone cases passed. Budget blocker is now resolved by S10-only authorization; remaining completion evidence is pending and plan checkboxes are not yet marked.
 
 ## Updated Plan Artifacts
 
@@ -26,6 +29,8 @@ Plan10 has a local verified budget checkpoint; approved technical contract retai
 ## Commits Created
 
 Checkpoint commit records the coherent inactive read-only inspector/contracts/tests/plan/result. Resolve full identity with `git log --format='%H %s' 402722a1892f62dae621ac7bbe69adcdb38d3c8f..HEAD`; no self-hash rewrite.
+
+First resumed work unit: S10-only authority amendment in exactly the sole spec, architecture index, Plan10 and this result. Produced: full diff/format inspection; tests/runtime not applicable for this Markdown-only size authorization. Rollback boundary: those four authority deltas only, leaving checkpoint source/tests intact. Source/test completion follows only after this commit.
 
 ## Files Changed
 
@@ -76,7 +81,7 @@ Emitted child is durable in the owned test: actual compiled inspect returns full
 
 ## Blockers or Deviations
 
-STOP375 reached at380 before frozen verification; hard399 still applies. Remaining additional characterizations/README/completion artifacts cannot fit the complete cohesive projection. User size decision outstanding; no further slicing, production expansion, publication, S11 code or inherited exception.
+Historical STOP375 reached at380 before frozen verification, which ended398. User's2026-10-20 S10-only size:exception resolves that budget blocker without retroactively changing the timing. Remaining characterizations/README/completion evidence are authorized now; no functional expansion, further slicing, publication or S11 code.
 
 ## Notes
 
@@ -86,4 +91,4 @@ Rollback boundary: remove exactly the two new application/infrastructure files a
 
 ## Next Step
 
-Human decision on measured complete S10 budget; preserve this checkpoint. After authorization, retain all evidence, finish remaining cases/docs, then obtain external Review and ordinary post-publication CI. Full P1/public effort UI remains incomplete.
+Commit the four-document size authority before resumed implementation, complete remaining cases/docs/evidence, then hand off for external Review and ordinary post-publication CI. Full P1/public effort UI remains incomplete.
