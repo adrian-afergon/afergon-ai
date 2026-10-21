@@ -105,9 +105,9 @@ it("S12 refuses incomplete receipt before promotion", () => {
   expect(f.prepare.mock.results[0].value.document.version).toBe(1);
   expect(f.persist).not.toHaveBeenCalled();
 });
-it("S12 future source no-op uses update eligibility before preparation", () => {
+it("S12 future source no-op uses preparation eligibility before preparation", () => {
   const f = updateMemory({ version: 3 });
-  expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow("Cannot update unsupported profile version 3");
+  expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
   expect(f.prepare).not.toHaveBeenCalled();
   expect(f.recheck).not.toHaveBeenCalled();
   expect(f.acquire).not.toHaveBeenCalled();

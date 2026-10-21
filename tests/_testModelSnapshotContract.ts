@@ -30,7 +30,7 @@ export function realSnapshotFixture(contents = "{}", absent = false) {
 }
 
 type SnapshotFaultStage = "write" | "fsync" | "close" | "open" | "read" | "sourceRead";
-function snapshotFault(backup: string, stage: SnapshotFaultStage) {
+export function snapshotFault(backup: string, stage: SnapshotFaultStage) {
   const failure = new Error(`backup ${stage} fault`);
   const open = fs.openSync.bind(fs), close = fs.closeSync.bind(fs);
   let descriptor: number | undefined, closes = 0, closed = false;

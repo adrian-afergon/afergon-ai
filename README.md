@@ -169,6 +169,19 @@ This directly callable capability is inactive in live CLI/TUI/host workflows. Or
 Architecture evidence uses a pure test-owned graph/syntax checker with synthetic forbidden dependencies, scope-aware ambient/alias checks and a separate real-source AST loader; runtime memory tests independently guard constructor and execution I/O.
 Snapshot receipts prove verified backup completion, not a committed configuration update or a lock against concurrent source changes.
 
+#### Internal persistence composition (S13)
+
+`infrastructure/profile-composition.createProfileCapabilities(env)` binds read, prepare, snapshot, storage and update to one captured absolute `config.json` path and private saver environment.
+The original internal `profile-store` API includes `updateProfileAssignment(profileName, agentName, patch, { env })`; it delegates to the injected application use case and returns `{ configPath, version, snapshotPath? }`.
+Validation and preparation facades remain pure; they do not select environment or filesystem capabilities. Snapshot compatibility edges retain Buffer-only diagnostics and reject custom source basenames rather than retargeting another file.
+This completes internal wiring described as future work in the staged capability notes above. Full P1 acceptance still requires fresh Review and exact-head native Windows persistence/fault CI.
+Reads and identical updates preserve raw bytes/representation/version; only changed structured v1 data requires the completed sibling `config.json.pre-v2.bak` before promotion to v2.
+The backup contains the original document, never the patched candidate. Missing-source recovery uses canonical defaults; failed saves retain completed backups for exact verified retry.
+No CLI/TUI reasoning-effort control, host registration or provider activation is added by this internal capability. Existing live commands remain legacy-only.
+Before rollback, freeze writes and retain the complete current extended document and its snapshot. Remove dependent changes in reverse order; never run an old writer over the extended state.
+Restoring a pre-v2 snapshot requires explicit consent to lose subsequent edits and a separately retained current copy. P1 provides no downgrade exporter.
+Rename remains the commit point; source comparisons do not eliminate the concurrent-writer race, and directory fsync remains best effort.
+
 Use `afergon-ai models` or `afergon-ai models show` to inspect the active profile, and `afergon-ai models show <name>` or `afergon-ai models profile show <name>` to inspect any saved profile without switching the active one.
 
 Concrete model strings should use `provider/model` format, for example `openai/gpt-5.5`; `inherit` remains accepted for inheritance. When `opencode` is available, `models set` validates concrete `provider/model` IDs against `opencode models <provider>`. Unknown listed models and malformed concrete strings are rejected by default. If `opencode` is unavailable or provider listing fails, afergon-ai keeps the change and warns that availability could not be verified. Use `--allow-unknown` to explicitly save an unlisted or custom concrete model anyway.

@@ -30,6 +30,8 @@ Defines directly callable profile persistence for legacy model-string and struct
 
   - User-approved S12-only `size:exception`, 2026-10-20: “autorizo”, answering the S12-specific request. The complete cohesive UpdateProfileAssignmentUseCase, ten allocated real D order cases, memory-port evidence and pure test-owned architecture checker MAY exceed STOP375/hard399 with no new numerical cap. The125-line checkpoint and677–883 forecast are dated measurements/estimates, not limits. Count all source, tests, helpers, fixtures, emitted programs, README, specification, plan/index, result and review-fix additions plus deletions against published S11 `649b6032df695f064e77d3563b025aa34ad5811e`; report actual size and review burden. Retain comments, spacing, docs, tests and evidence; no compression, additional prefix or functional expansion. Gherkin, API/architecture and verification/review/CI obligations remain unchanged. This exception is S12-only; S13 retains STOP375/hard399.
 
+  - User-approved S13-only `size:exception`, 2026-10-21: “Acepto la excepcion” authorizes the complete cohesive S13 compatibility composition, original APIs, remaining55 real integration cases, ten-case wrapper retarget, full218 reconciliation, runtime/architecture/binding evidence and targeted native Windows step above STOP375/hard399, without a new numerical cap. The605–855 forecast is an estimate, not a ceiling or proof. Count and disclose every source/test/helper/CI/README/spec/plan/index/result/review delta against published S12 `21923939b5b305ac2a829f67d08e1955355cd66c`, including the checkpoint and this authority amendment. Preserve tests, evidence, comments and spacing; no code golf, additional prefix or functional expansion. All Gherkin/types/layers and Review/native CI obligations remain unchanged. Previous exceptions remain separately scoped. Resume needs no additional documentation-publication gate.
+
 ## Acceptance Criteria
 
 
@@ -80,6 +82,8 @@ Feature: Compatible and recoverable model profile persistence
 ```
 
 ## Technical Dependencies
+
+Local evidence, 2026-10-21: all eight Gherkin scenarios map to runnable original-API/domain/preparation/snapshot/update assertions in [TEST-ALLOCATION](../../plans/reasoning-effort-model-profiles-persistence/TEST-ALLOCATION.md); [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md) records full1084/8skip, all218 original-case mapping, unchanged live regressions and emitted/no-I/O proof. Functional Gherkin above is unchanged. Full P1 acceptance still awaits canonical Review and current published source-head native Windows targeted fault execution.
 
 - None; this is P1 and the task declares `Dependencies.Requires: None`. Tasks 002 and 003 depend on this capability and are not prerequisites.
 

@@ -20,6 +20,19 @@ jobs:
       - run: pnpm run build
       - run: pnpm run typecheck
       - run: pnpm run health:runtime
+      - name: Verify model profile persistence and real fault contracts
+        run: >-
+          pnpm exec vitest run
+          tests/model-profiles-architecture.test.ts
+          tests/model-profiles-persistence.test.ts
+          tests/model-profiles-snapshot-acquisition.test.ts
+          tests/model-profiles-snapshot-inspection.test.ts
+          tests/model-profiles-snapshot-runtime.test.ts
+          tests/model-profiles-storage.test.ts
+          tests/model-profiles-update-runtime.test.ts
+          tests/model-profiles-use-cases.test.ts
+          tests/model-profiles.test.ts
+          --no-file-parallelism
       - name: Verify Windows CMD argv contract
         shell: bash
         run: pnpm exec vitest run tests/windows-launcher-argv.test.ts --no-file-parallelism

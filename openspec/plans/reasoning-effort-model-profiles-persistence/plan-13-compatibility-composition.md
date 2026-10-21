@@ -41,9 +41,13 @@ Future owned: bounded composition/wrappers,55 original D integration cases/saver
 
 ## Implementation Steps
 
-- [ ] Compose all actual classes from captured environment/bound source/fs/defaults/saver; original wrappers only map compatibility data and delegate.
-- [ ] Preserve Buffer-only legacy snapshot observation diagnostics and same-read text/Buffer loader return fields at edges, while application uses Uint8Array.
-- [ ] Verify targeted migration/reload/no-op/future/default/prototype/alias/conflict integration through original APIs with real Node fs.
+**2026-10-21 S13-only exception and resume:** user “Acepto la excepcion” authorizes the complete cohesive S13 above375/399 without a new numeric ceiling.605–855 remains a forecast, not a cap/proof. Count all layers, checkpoint and authority churn against exact S12 `21923939b5b305ac2a829f67d08e1955355cd66c` and report final actual size. Retain full tests/evidence/readability; no new prefix, functional expansion or inherited exception. All functional contracts, types, layers, Review/native CI and inactive boundaries remain unchanged; no further docs publication gate. Commit spec/plan/index/result authority before production, then reuse the clean isolated S13 tree after all-five-category inspection. The dated checkpoint below remains provenance.
+
+**2026-10-20 execution checkpoint:** S12 PR133 exact `21923939b5b305ac2a829f67d08e1955355cd66c`, supplied canonical Review PASS and all four exact-head Test/Windows successes satisfy the predecessor gate. Fresh S13 isolation is created from that head. Complete source-grounded forecast is **605–855 additions + deletions**, exceeding S13 STOP375/hard399; implementation stops before source/tests/CI. The original278–364 estimate is superseded, not treated as a cap. [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md) records original55 group measurements, wrapper replacement costs, actual nine-suite Windows inventory, preservation and the required S13-only exception request. No exception or new prefix is inferred; implementation/acceptance checkboxes stay unverified.
+
+- [x] Compose all actual classes from captured environment/bound source/fs/defaults/saver; original wrappers only map compatibility data and delegate.
+- [x] Preserve Buffer-only legacy snapshot observation diagnostics and same-read text/Buffer loader return fields at edges, while application uses Uint8Array.
+- [x] Verify targeted migration/reload/no-op/future/default/prototype/alias/conflict integration through original APIs with real Node fs.
 - [ ] Reconcile all218 old behavioral cases/assertions across owned units plus new seams; run exact full original commands and native checks.
 - [ ] Record complete task/spec/old PLAN traceability, internal rollback/recovery docs, required review/evidence and actual final budgets before releasing P2/P3.
 
@@ -63,10 +67,10 @@ Full preservation: exact/no-op byte and version retention, all alias/own-profile
 
 ## Acceptance Criteria
 
-- [ ] All original task/spec/PLAN behavior and218 cases are mapped to runnable evidence; historical counts alone are not proof.
-- [ ] Original APIs/signatures/errors/representations work by thin delegation with no ambient constructor/import I/O.
+- [x] All original task/spec/PLAN behavior and218 cases are mapped to runnable evidence; historical counts alone are not proof.
+- [x] Original APIs/signatures/errors/representations work by thin delegation with no ambient constructor/import I/O.
 - [ ] All source/snapshot/save real fault matrices and native Windows regression checks retain their contracts.
-- [ ] Architecture tests prove resolved inward imports, class-owned policy, injected capabilities and no Node/env in inner layers.
+- [x] Architecture tests prove resolved inward imports, class-owned policy, injected capabilities and no Node/env in inner layers.
 - [ ] Live output/routes/barrels remain unchanged; docs/results/review/CI/full checks and actual≤399 delivery complete before task001 acceptance.
 
 ## Verification
@@ -89,7 +93,7 @@ pnpm test
 
 Retain compiler include/emitted module and import-no-I/O evidence; source tests alone do not prove emission. Ubuntu Test/native Windows launcher baseline is required; only POSIX mode checks skip on Windows. Isolate HOME/XDG/config/state; restore spies/umask. `pnpm test` includes required build; expected602 historical passes/8 skips must be reconciled with newly added seam tests, never forced to exact stale count. Keep every old semantic assertion even if tests are partitioned.
 
-Actual Windows workflow currently runs bootstrap/argv/OpenCode suites, not persistence faults. Old SUCCESS is not native validation of this correction.13 alone adds a targeted Vitest step after existing build/typecheck/health, leaving launchers/baseline steps unchanged: `pnpm exec vitest run tests/model-profiles-persistence.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles-architecture.test.ts --no-file-parallelism`. Domain/read/prepare/storage/snapshot/compat groups live in focal suite, injected use cases in use-case suite, checker negatives in architecture suite. Only original C01's3 POSIX mode cases skip Windows; every other applicable real adapter/integration fault runs natively. Workflow addition/churn3–5 is budgeted, execution and current native success remain outstanding. No unrelated CI changes.
+Actual Windows workflow currently runs bootstrap/argv/OpenCode suites, not persistence faults. Old SUCCESS is not native validation of this correction.13 alone adds a targeted Vitest step after existing build/typecheck/health, leaving launchers/baseline steps unchanged. **2026-10-21 correction:** the three-file command forecast below was superseded during implementation by the actual nine-file workflow step, which is the authoritative targeted command: `pnpm exec vitest run tests/model-profiles-architecture.test.ts tests/model-profiles-persistence.test.ts tests/model-profiles-snapshot-acquisition.test.ts tests/model-profiles-snapshot-inspection.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles-storage.test.ts tests/model-profiles-update-runtime.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles.test.ts --no-file-parallelism`. The superseded planning assumption read: `pnpm exec vitest run tests/model-profiles-persistence.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles-architecture.test.ts --no-file-parallelism`. Domain/read/prepare/storage/snapshot/compat groups live in focal suite, injected use cases in use-case suite, checker negatives in architecture suite. Only original C01's3 POSIX mode cases skip Windows; every other applicable real adapter/integration fault runs natively. Workflow addition/churn3–5 is budgeted, execution and current native success remain outstanding. No unrelated CI changes.
 
 Original-case reconciliation is already concretely planned in TEST-ALLOCATION: A35/B72/C46/D65,55 groups,218 total; destinations06=3/07=32/08=72/11=46/12=10/13=55. Retarget12's shared update-entry binding to this compatibility wrapper for final full218 original API coverage; new checker/memory/relative-binding tests are additional, not replacements. Focal779 lines is absent PR104; inherited2705-line global regression stays unchanged/free of re-additions, but must be rerun.
 
@@ -108,5 +112,7 @@ Accepted complete05–12, corrective planning publications and renewed gate. Ful
 Do not introduce a new live export or host callback to demonstrate capability. Full snapshot remains after failed config save; no rollback after rename. Old writers can discard extended state despite schema bump: freeze writes, retain full extended documents/backups, reverse dependent suffix, restore pre-v2 only with consent accepting loss of subsequent edits. No downgrade export is available at P1.
 
 ## Completion Condition
+
+**2026-10-21 local completion:** complete S13 composition and original APIs, D55+retargeted10, full55-group218 runnable ledger, additional binding/runtime/graph/error tests and owned native nine-file workflow step are implemented. Focal513, memory+architecture64, standalone123, legacy132/3skip and full1084/8skip pass; typecheck/build/health/emitted import pass. [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md) contains exact evidence and measured all-layer size under the explicit S13-only exception above. Local implementation is completed-with-notes; canonical Review and actual published exact-head Windows persistence/fault execution remain external acceptance gates. Composite checkboxes requiring native/review remain unchecked; task001/P1 and P2/P3 release are not accepted. No additional docs-publication gate, source publication or live activation is inferred.
 
 Plan is ready-with-assumptions: approved replacement basis/deprecation, no questions/tensions, local reversible fixture estimates only. Planning publication and new source implementation remain separately unauthorized. Full correction completes only with class composition/compatibility, preserved/new behavior, inward/no-I/O proof, baseline/native/review evidence, results/docs and measured budgets; no task implementation acceptance claimed now.

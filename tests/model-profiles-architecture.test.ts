@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { createHash } from "node:crypto";
 import { inspectArchitecture, type ArchitectureModule } from "./model-profiles-architecture-checker.js";
 
 function module(id: string, layer: ArchitectureModule["layer"], dependencies: string[] = [], text = ""): ArchitectureModule {
@@ -11,6 +12,39 @@ function module(id: string, layer: ArchitectureModule["layer"], dependencies: st
 it("S12 checker rejects domain to application despite compliant names", () => {
   const modules = [module("Policy.ts", "domain", ["Value.ts"]), module("Value.ts", "application")];
   expect(inspectArchitecture({ modules, compositionRoots: [] })).toContain("Policy.ts -> Value.ts");
+});
+
+it("S13 original wrappers delegate without owning policy or atomic persistence", () => {
+  const directory = path.resolve("scripts/lib/model-profiles/infrastructure");
+  for (const name of ["profile-store.ts", "document-validation.ts", "prepare-assignment.ts", "migration-snapshot.ts", "profile-read-composition.ts"]) {
+    const text = fs.readFileSync(path.join(directory, name), "utf8");
+    const ast = ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true);
+    const calls: string[] = [];
+    function inspect(node: ts.Node) {
+      expect(ts.isForStatement(node) || ts.isForOfStatement(node) || ts.isWhileStatement(node) || ts.isDoStatement(node)).toBe(false);
+      if (ts.isNewExpression(node)) expect(node.expression.getText(ast)).toMatch(/^(Error|ProfileReadComposition)$/);
+      if (ts.isCallExpression(node)) calls.push(node.expression.getText(ast));
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+        expect(node.left.getText(ast)).not.toMatch(/\.(version|document|models|profiles)\b/);
+      }
+      ts.forEachChild(node, inspect);
+    }
+    inspect(ast);
+    expect(calls.some(call => /\.(atomicPersist|prepareContext|clone|requireSupportedVersion)$/.test(call))).toBe(false);
+    expect(calls.some(call => /^(JSON\.|fs\.|process\.|getConfigPath$|saveConfig$|createDefaultConfig$)/.test(call))).toBe(false);
+  }
+  const application = fs.readFileSync(path.resolve("scripts/lib/model-profiles/application/update-profile-assignment-use-case.ts"), "utf8");
+  expect(application).toContain("this.storage.atomicPersist(prepared.document, loaded.source)");
+  const directoryFiles = fs.readdirSync(directory).filter(name => name.endsWith(".ts"));
+  for (const name of directoryFiles) expect(fs.readFileSync(path.join(directory, name), "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+});
+
+it("S13 composition retains the exact legacy saver body", () => {
+  const text = fs.readFileSync(path.resolve("scripts/lib/model-profiles-config.ts"), "utf8").replaceAll("\r\n", "\n");
+  const ast = ts.createSourceFile("config.ts", text, ts.ScriptTarget.Latest, true);
+  const declaration = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "saveConfig")!;
+  const body = text.slice(text.indexOf("\n", declaration.getStart(ast)) + 1, declaration.end + 1);
+  expect(createHash("sha256").update(body).digest("hex")).toBe("79c929fed059901b1bd8e0ac19db30d309f1c7c7d714ff7c4cac95218869343d");
 });
 it("S12 checker T1 rejects infrastructure with different identities", () => {
   const modules = [module("A.ts", "domain", ["B.ts"]), module("B.ts", "infrastructure")];
@@ -111,7 +145,7 @@ it("S12 actual repository graph retains all domain and application boundaries", 
   const options = { module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext };
   for (const layer of ["domain", "application", "infrastructure"] as const) {
     for (const name of fs.readdirSync(path.join(vertical, layer)).filter(name => name.endsWith(".ts"))) {
-      const id = path.join(vertical, layer, name);
+      const id = path.join(vertical, layer, name).split(path.sep).join("/");
       const text = fs.readFileSync(id, "utf8");
       const ast = ts.createSourceFile(id, text, ts.ScriptTarget.Latest, true);
       const dependencies: string[] = [];
@@ -129,5 +163,8 @@ it("S12 actual repository graph retains all domain and application boundaries", 
   expect(modules.filter(item => item.layer === "domain")).toHaveLength(7);
   expect(modules.filter(item => item.layer === "application")).toHaveLength(8);
   expect(modules.some(item => item.id.endsWith("update-profile-assignment-use-case.ts"))).toBe(true);
-  expect(inspectArchitecture({ modules, compositionRoots: [path.join(vertical, "infrastructure/profile-read-composition.ts")] })).toEqual([]);
+   const roots = ["profile-read-composition.ts", "profile-composition.ts", "profile-store.ts", "document-validation.ts", "prepare-assignment.ts", "migration-snapshot.ts"]
+     .map(name => path.join(vertical, "infrastructure", name).split(path.sep).join("/"));
+   expect(roots.every(root => modules.some(item => item.id === root && item.layer === "infrastructure"))).toBe(true);
+   expect(inspectArchitecture({ modules, compositionRoots: roots })).toEqual([]);
 });

@@ -29,7 +29,7 @@ export class UpdateProfileAssignmentUseCase {
 
   execute(input: UpdateAssignmentInput): UpdateResult {
     const loaded = this.reader.execute();
-    this.validator.requireSupportedVersion(loaded.document, "update");
+    this.validator.requireSupportedVersion(loaded.document, "prepare");
     const prepared = this.preparer.execute({ ...input, document: loaded.document, sourceIdentity: loaded.source.sourceIdentity });
     this.validator.validate(prepared.document, loaded.source.sourceIdentity);
     this.validator.requireSupportedVersion(prepared.document, "update");
