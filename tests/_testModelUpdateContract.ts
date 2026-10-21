@@ -67,6 +67,18 @@ export function registerUpdateOrderContract() {
     f.unchanged(false);
   });
 
+  it("D3 T3 future candidate keeps the exact update diagnostic", () => {
+    const f = realUpdate('{}');
+    const prepare = f.preparer.execute;
+    vi.spyOn(f.preparer, "execute").mockImplementation(function (this: PrepareProfileAssignmentUseCase, input) {
+      const candidate = prepare.call(this, input);
+      candidate.document.version = 3;
+      return candidate;
+    });
+    expect(() => f.useCase.execute(f.input)).toThrow(new Error("Cannot update unsupported profile version 3"));
+    f.unchanged(false);
+  });
+
   it("D3 T1 invalid candidate prevents backup stage and save", () => {
     const f = realUpdate('{}');
     const prepare = f.preparer.execute;
@@ -140,6 +152,29 @@ export function registerUpdateOrderContract() {
     const f = realUpdate('{"version":3}');
     const mkdir = vi.spyOn(fs, "mkdirSync"), open = vi.spyOn(fs, "openSync");
     expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow("unsupported profile version 3");
+    for (const spy of [f.save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    expect(open.mock.calls.every(([, flags]) => flags === "r")).toBe(true);
+    f.unchanged(false);
+  });
+
+  it("D1 T2 future source keeps the exact historical preparation diagnostic", () => {
+    const f = realUpdate('{"version":3}');
+    const mkdir = vi.spyOn(fs, "mkdirSync");
+    expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
+    for (const spy of [f.save, mkdir]) expect(spy).not.toHaveBeenCalled();
+    f.unchanged(false);
+  });
+
+  it("D1 T3 future source interpolates the actual unsupported version", () => {
+    const f = realUpdate('{"version":7}');
+    expect(() => f.useCase.execute({ ...f.input, patch: {} })).toThrow(new Error("Cannot prepare assignment for unsupported profile version 7."));
+    f.unchanged(false);
+  });
+
+  it("D1 T4 future source refusal precedes every write attempt for real patches", () => {
+    const f = realUpdate('{"version":3}');
+    const mkdir = vi.spyOn(fs, "mkdirSync"), open = vi.spyOn(fs, "openSync");
+    expect(() => f.useCase.execute(f.input)).toThrow(new Error("Cannot prepare assignment for unsupported profile version 3."));
     for (const spy of [f.save, mkdir]) expect(spy).not.toHaveBeenCalled();
     expect(open.mock.calls.every(([, flags]) => flags === "r")).toBe(true);
     f.unchanged(false);
