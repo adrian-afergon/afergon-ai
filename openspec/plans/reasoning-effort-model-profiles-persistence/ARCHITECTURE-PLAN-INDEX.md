@@ -213,6 +213,8 @@ These subtotals do not prove future publication diffs: review corrections and la
 
 ## Implementation Steps
 
+**2026-10-21 S13-only authority:** user “Acepto la excepcion” accepts the complete cohesive compatibility/original55/full218/runtime/native delivery above375/399, with no new numeric cap.605–855 is a forecast, not permission to cut evidence or another ceiling. Commit sole spec/Plan13/S13 RESULT/this notice before resumed source; count every layer including checkpoint/authority against S12 exact21923939b5b305ac2a829f67d08e1955355cd66c and disclose actual size. No new prefix, code golf or scope expansion. Earlier exceptions remain separate; all architecture/behavior/Review/native/inactive gates remain. No extra documentation-publication gate is required for this approved resume.
+
 - [x] Record user-approved replacement basis and parent-authorized obsolete closures; verify retained heads/branches read-only.
 - [ ] Complete independent planning review and user acceptance; publish measured owned documentation units when separately authorized.
 - [ ] Obtain renewed Plan-to-Implement gate; reinspect all five Git categories and exact remote heads. Stop if disposition/isolation changed.

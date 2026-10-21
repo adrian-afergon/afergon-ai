@@ -4,6 +4,8 @@
 
 blocked
 
+Resume authorized, 2026-10-21; implementation and local verification pending. The blocked status and checkpoint evidence below describe the pre-source stop, not a new size blocker.
+
 ## Plan Reference
 
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-13-compatibility-composition.md` (ready-with-assumptions, 112-line inherited version).
@@ -11,6 +13,8 @@ blocked
 - Authority: task001, sole ready P1 spec, ARCHITECTURE-PLAN-INDEX, current S07/S08 dispatch and TEST-ALLOCATION. User authorizes S13 after S12's gates, with STOP375/hard399; no inherited exception.
 
 ## Execution Summary
+
+**2026-10-21 authority, before production:** user “Acepto la excepcion” approves complete cohesive S13 above375/399 with no new numeric cap;605–855 is a forecast, not a ceiling/proof. All source/test/helper/CI/README/spec/plan/index/result/review changes including checkpoint164 and this amendment count against published S12 exact21923939b5b305ac2a829f67d08e1955355cd66c. Earlier exceptions remain separate. No evidence/readability cuts, new prefix or functional expansion; all Gherkin/types/layers/Review/native and inactive boundaries unchanged. No extra docs-publication gate. Fresh Git audit confirms clean S13 e7f6381, parent0/1, no upstream, full30 registrations/20prunables and preserved root32/PROJECT-TASKS161+1/accessible statuses. S12 PR133 exact head/four successes and issue94approved reverified; supplied canonical Review provenance unchanged. Stage only these four authority Markdown files before production. Dated checkpoint follows unchanged.
 
 Stopped before production, tests, helpers or CI edits because the complete cohesive S13 forecasts **605–855 changed lines** against exact published S12 `21923939b5b305ac2a829f67d08e1955355cd66c`. This is a documentation-only checkpoint, not a partial compatibility delivery. The old278–364 forecast does not cover the actual wrapper/spying replacement and full emitted/native evidence workload. No compression, assertion removal or additional prefix is proposed.
 
