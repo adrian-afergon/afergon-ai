@@ -138,6 +138,8 @@ Count reconciliation: inherited full1015+55newly restored original D cases+14add
 
 ### Historical pre-source measurement: complete forecast
 
+The historical worksheet below is superseded by the final measured delivery table; its lower estimates never authorized evidence cuts.
+
 All figures below count additions **and** deletions against21923939, including this checkpoint in eventual final artifact contents. They are estimates, not caps or measured implementation. Existing inherited code/tests are free only when unchanged.
 
 | Layer | Complete forecast | Grounding / retained work |
@@ -244,6 +246,26 @@ Unavailable tree contents, including old partial plans, are not hash-verified or
 Historical blocker: complete605–855 forecast exceeded375/399 before source. User subsequently approved the S13-only exception and25e41fd recorded it before code; that size blocker is resolved without a new cap. No additional prefix/repeated slicing. Current local blockers: None. Canonical Review/publication/current-head native checks remain external release/acceptance gates; no approval or Windows execution is claimed locally.
 
 ## Notes
+
+### Final measured delivery and handoff
+
+Verified compatibility/fault/native-target work unit: `2fb40e3a8aa9a1f3363c6eee53b9edbb362435ba`, `fix(models): preserve persistence compatibility and native fault coverage`. All source/tests were verified before that commit; this closure adds only final Markdown measurement/preservation evidence.
+
+| Layer, additions + deletions against exact S12 | Actual changed lines |
+| --- | ---: |
+| Production infrastructure (6 files) | 136 |
+| Tests/helpers (6 files; retarget deletions included) | 546 |
+| Windows workflow (one added targeted step) | 13 |
+| README | 13 |
+| Sole P1 specification | 4 |
+| Original task001 local-evidence notice | 2 |
+| Plan13 + architecture index + full218 ledger | 91 |
+| Complete RESULT, including checkpoint/authority/cycles/traceability | 276 |
+| **Total (20 owned files)** | **1081** |
+
+The final measured unit exceeds the original605–855 forecast; the explicit S13-only exception has no new numeric cap. Source/test/docs evidence stays complete. Review path: composition/binding → thin wrappers/error mapping → actual D55+D10/218 ledger → emitted/graph/native target → traceability and pending gates. No inherited S12 lines are recharged; no source ancestry or unrelated changes are included.
+
+Final preservation audit rechecked full30 registrations/20prunables and every accessible pre-existing tree's status/staged/unstaged/head; states match entry, including root32 untracked originals/PROJECT-TASKS161+1, S09/S10/S12 operational node_modules and all other accessible clean trees. Unavailable contents were not hash-verified/recreated/pruned. Four GitHub run queries again return SUCCESS at exact21923939. Final S13 index/tracked state is clean after evidence commit, with only operational node_modules untracked; full final SHA is returned in handoff rather than embedded circularly. No push/PR/Review delegation/GitHub approval/merge/history rewrite or activation.
 
 Historical checkpoint rollback boundary was only this RESULT and its two linked planning notices; source/tests/CI/README/spec/task were unchanged then. Current S13 rollback removes its original-wrapper composition/compatibility/native-test unit and dependent suffix together, retaining extended documents/backups and leaving prior classes available; no old writer over extended state. Checkpoint and authorization churn are charged; forecast is not a ceiling. Static self-review is not canonical Review.
 
