@@ -46,6 +46,31 @@ All four completed runs independently report SUCCESS and that exact S12 head: Te
 
 ## Verification Results
 
+### Resume execution log — 2026-10-21
+
+Authority commit `25e41fd` precedes every production edit. Existing S13 isolation is reused; no transfers from other trees. The root registry is canonical (the worktree does not carry its ignored copy). Operational untracked `node_modules` links the existing S12 dependency directory; no package/config changes or installation. Fresh initial `pnpm build` passed (exit0) before tests needing emitted artifacts.
+
+Every command in this log runs from `/tmp/opencode/afergon-ai-reasoning-effort-p1-class-13` with the exact prefix:
+
+```text
+env HOME=/tmp/opencode/afergon-s13-isolated XDG_CONFIG_HOME=/tmp/opencode/afergon-s13-isolated/config XDG_STATE_HOME=/tmp/opencode/afergon-s13-isolated/state AFERGON_AI_CONFIG_DIR=/tmp/opencode/afergon-s13-isolated/profiles pnpm_config_pm_on_fail=ignore pnpm_config_verify_deps_before_run=false
+```
+
+`F` below expands to `pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism`; selectors are exact `-t "<title>"`, not reconstructed historical cycles. Optional dependency TypeScript source-map ENOENT warning is unrelated to assertions and is never RED evidence.
+
+| Sequential cycle / exact selector after F | Actual RED / expected behavior | Minimum GREEN / result |
+| --- | --- | --- |
+| S13 original update delegates exact command and raw result to the actual class | Exit1,1failed/450filtered; compiled throwing seam reports `Profile update is not composed`; expected actual class delegation/raw result and real legacy save | TPP5 statements to construct already-complete collaborators plus direct result expression; no new algorithm. Constants/nil cannot satisfy spy call, reference equality and real FS outcome. Same command exit0,1pass/450filtered |
+| S13 T1 independent captured environments cannot cross-write | Characterization, first run exit0,1pass/451filtered after initial GREEN | No production change: existing bound adapters + actual update already preserve two environments, two agents/model+effort and ORIGINAL backup. No invented RED |
+| S13 T2 snapshot failure prevents actual saver and preserves original source | Characterization, first run exit0,1pass/452filtered after T1 | No production change: existing Update/Node acquisition prevents saver and retains exact bytes. Cannot find two genuine breaks in already-complete collaborators without falsifying behavior; both adversaries retained |
+| S13 validation facade delegates once and returns the identical raw domain result | Exit1,1failed/453filtered, `Profile validation is not composed`; expected one domain call/raw object identity/no ambient calls | TPP4 scalar delegated result; constants cannot satisfy reference/call input. Exit0,1pass/453filtered |
+| rejects own undefined recognized fields before cloning | Wrapper T1 characterization, exit0,1pass/453filtered | Existing concrete validator already rejects own undefined; no new policy/clone or fabricated failure |
+| validates malformed recognized assignments in inactive profiles | Wrapper T2 characterization, exit0,1pass/453filtered after T1 | Existing concrete validator already rejects inactive recognized data; original A08 assertions now invoke original facade |
+
+Green-only refactor centralizes collaborator selection in profile-composition, preserves pure policy construction for validation/preparation, and makes old read/snapshot composition delegate. Inner domain/application code is untouched. Current complete scope remains the authorized605–855 forecast with risk of evidence/test growth; checkpoint/authority and every source/helper/replacement count, with actual measurement recorded at each command checkpoint and final verification. No scope or evidence cuts follow from growth.
+
+First coherent wiring checkpoint: prefixed `pnpm build`, `F` without selector and `pnpm typecheck` all exit0; focal454pass (450 inherited +4 new). The typecheck invocation used the same HOME/tool flags; no runtime I/O is performed by tsc. Rollback this work unit's composition/wrapper changes together with its focal tests, README and execution log; previous inactive classes remain usable. Remaining D55/full218/emitted/native/Review obligations are not yet verified.
+
 ### Produced: source-grounded complete forecast
 
 All figures below count additions **and** deletions against21923939, including this checkpoint in eventual final artifact contents. They are estimates, not caps or measured implementation. Existing inherited code/tests are free only when unchanged.

@@ -10,7 +10,11 @@ import { LegacyProfileDefaultsAdapter } from "../scripts/lib/model-profiles/infr
 import { LegacyAtomicProfileSaverAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-atomic-profile-saver-adapter.js";
 import os from "node:os";
 import path from "node:path";
-import { loadProfileDocument } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
+import { loadProfileDocument, updateProfileAssignment } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
+import { UpdateProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/update-profile-assignment-use-case.js";
+import { createProfileCapabilities } from "../scripts/lib/model-profiles/infrastructure/profile-composition.js";
+import * as profileConfig from "../scripts/lib/model-profiles-config.js";
+import { validateProfileDocument } from "../scripts/lib/model-profiles/infrastructure/document-validation.js";
 import { invalidReads, readableDocuments } from "./_testModelRawFixtures.js";
 import { bindProfileRead } from "../scripts/lib/model-profiles/infrastructure/profile-read-composition.js";
 import { getConfigPath } from "../scripts/lib/model-profiles-config.js";
@@ -110,6 +114,62 @@ function expectExactFailure(action: () => unknown, failure: Error) {
   try { action(); throw new Error("Expected failure"); }
   catch (error) { expect(error).toBe(failure); }
 }
+
+it("S13 original update delegates exact command and raw result to the actual class", () => {
+  const { root, configPath } = createConfig({ models: { profiles: { work: { review: "old" } } } });
+  const execute = vi.spyOn(UpdateProfileAssignmentUseCase.prototype, "execute");
+  const patch = { model: "new" };
+  const result = updateProfileAssignment("work", "review", patch, { env: { AFERGON_AI_CONFIG_DIR: root } });
+  expect(execute.mock.calls).toEqual([[{ profileName: "work", agentName: "review", patch }]]);
+  expect(execute.mock.calls[0][0].patch).toBe(patch);
+  expect(result).toBe(execute.mock.results[0].value);
+  expect(result).toEqual({ configPath, version: 1 });
+  expect(loadProfileDocument({ AFERGON_AI_CONFIG_DIR: root }).document).toEqual({ models: { profiles: { work: { review: "new" } } } });
+  expect(fs.readdirSync(root)).toEqual(["config.json"]);
+});
+
+it("S13 T1 independent captured environments cannot cross-write", () => {
+  const a = createConfig({ models: { profiles: { work: { review: "one", design: "design-one" } } } });
+  const b = createConfig({ models: { profiles: { work: { review: "two" } } } });
+  const env = { AFERGON_AI_CONFIG_DIR: a.root };
+  const first = createProfileCapabilities(env);
+  env.AFERGON_AI_CONFIG_DIR = b.root;
+  const second = createProfileCapabilities(env);
+  first.update.execute({ profileName: "work", agentName: "review", patch: { model: "one-new", reasoningEffort: "high" } });
+  first.update.execute({ profileName: "work", agentName: "design", patch: { reasoningEffort: "low" } });
+  second.update.execute({ profileName: "work", agentName: "review", patch: { model: "two-new" } });
+  expect(first.reader.execute().document.models).toEqual({ profiles: { work: {
+    review: { model: "one-new", reasoningEffort: "high" }, design: { model: "design-one", reasoningEffort: "low" },
+  } } });
+  expect(second.reader.execute().document.models).toEqual({ profiles: { work: { review: "two-new" } } });
+  expect(JSON.parse(fs.readFileSync(`${a.configPath}.pre-v2.bak`, "utf8"))).toEqual({ models: { profiles: { work: { review: "one", design: "design-one" } } } });
+  expect(fs.existsSync(`${b.configPath}.pre-v2.bak`)).toBe(false);
+});
+
+it("S13 T2 snapshot failure prevents actual saver and preserves original source", () => {
+  const contents = '{\n "version": 1, "memo": "café ☕"\n}\n';
+  const { root, configPath } = createConfig({}, contents);
+  const failure = new Error("snapshot open refused");
+  const open = fs.openSync.bind(fs);
+  vi.spyOn(fs, "openSync").mockImplementation((file, flags, ...args) => {
+    if (file === `${configPath}.pre-v2.bak` && flags === "wx") throw failure;
+    return open(file, flags, ...args);
+  });
+  const save = vi.spyOn(profileConfig, "saveConfig");
+  expectExactFailure(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: { AFERGON_AI_CONFIG_DIR: root } }), failure);
+  expect(save).not.toHaveBeenCalled();
+  expect(fs.readFileSync(configPath, "utf8")).toBe(contents);
+  expect(fs.readdirSync(root)).toEqual(["config.json"]);
+});
+
+it("S13 validation facade delegates once and returns the identical raw domain result", () => {
+  const raw = { version: 3, foreign: { model: null } };
+  const validate = vi.spyOn(ProfileDocumentPolicy.prototype, "validate");
+  const ambient = [vi.spyOn(fs, "readFileSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "mkdirSync"), vi.spyOn(process, "cwd")];
+  expect(validateProfileDocument(raw, "legacy:raw/☕")).toBe(raw);
+  expect(validate.mock.calls).toEqual([[raw, "legacy:raw/☕"]]);
+  for (const spy of ambient) expect(spy).not.toHaveBeenCalled();
+});
 
 it("captures exact UTF-8 bytes and original formatting", () => {
   const contents = '{\n  "version": 1,\n  "memo": "café ☕",\n  "models": {"profiles": {}}\n}\n';
@@ -517,7 +577,7 @@ it.each(["inherit", " InHerit ", "\tINHERIT\n"])("retained factory rejects effor
 
 it("validates malformed recognized assignments in inactive profiles", () => {
   const raw = { models: { activeProfile: "active", profiles: { active: {}, archived: { "afg-review": { model: " " } } } } };
-  expect(() => documents.validate(raw, "source")).toThrow('models.profiles.archived["afg-review"].model must be a nonempty model string.');
+  expect(() => validateProfileDocument(raw, "source")).toThrow('models.profiles.archived["afg-review"].model must be a nonempty model string.');
 });
 it("escaped stored profile and alias spelling retain the original error path", () => {
   const name = 'bad.name"\\folder';
@@ -526,10 +586,10 @@ it("escaped stored profile and alias spelling retain the original error path", (
 });
 it("returns the original object and leaves opaque foreign fields untouched", () => {
   const raw = { version: 3, foreign: { keep: true }, models: { profiles: { work: { foreign: { reasoningEffort: null }, "afg-review": "inherit" } } } };
-  expect(documents.validate(raw, "source")).toBe(raw);
+  expect(validateProfileDocument(raw, "source")).toBe(raw);
 });
 it("rejects own undefined recognized fields before cloning", () => {
-  expect(() => documents.validate({ models: { profiles: { work: { "afg-review": { reasoningEffort: undefined } } } } }, "source"))
+  expect(() => validateProfileDocument({ models: { profiles: { work: { "afg-review": { reasoningEffort: undefined } } } } }, "source"))
     .toThrow('models.profiles.work["afg-review"].reasoningEffort');
 });
 it.each([undefined, null, [], 4, "", " \t"])("domain preserves container diagnostics for %j", (value) => {
