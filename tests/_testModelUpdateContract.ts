@@ -2,33 +2,25 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, it, vi } from "vitest";
 import * as profileConfig from "../scripts/lib/model-profiles-config.js";
-import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
-import { ProfileAssignmentPolicy } from "../scripts/lib/model-profiles/domain/profile-assignment-policy.js";
-import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
-import { ReadProfileDocumentUseCase } from "../scripts/lib/model-profiles/application/read-profile-document-use-case.js";
 import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
-import { UpdateProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/update-profile-assignment-use-case.js";
+import type { UpdateAssignmentInput } from "../scripts/lib/model-profiles/application/update-profile-assignment-use-case.js";
 import { NodeProfileStorageAdapter } from "../scripts/lib/model-profiles/infrastructure/node-profile-storage-adapter.js";
-import { LegacyProfileDefaultsAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-profile-defaults-adapter.js";
-import { LegacyAtomicProfileSaverAdapter } from "../scripts/lib/model-profiles/infrastructure/legacy-atomic-profile-saver-adapter.js";
-import { NodeSnapshotInspectionAdapter } from "../scripts/lib/model-profiles/infrastructure/node-snapshot-inspection-adapter.js";
 import { NodeMigrationSnapshotAdapter } from "../scripts/lib/model-profiles/infrastructure/node-migration-snapshot-adapter.js";
+import { updateProfileAssignment } from "../scripts/lib/model-profiles/infrastructure/profile-store.js";
 import { realSnapshotFixture } from "./_testModelSnapshotContract.js";
 
-// S13 can retarget this shared invocation to the compatibility wrapper. These
-// S12 cases deliberately construct every real adapter and the actual saver.
+// The original S12 disk/order assertions now enter through the original API.
+// Restored prototype spies reach its real semantic collaborators, without hooks.
 function realUpdate(contents: string) {
   const fixture = realSnapshotFixture(contents);
   const env = { HOME: fixture.root, XDG_CONFIG_HOME: fixture.root, AFERGON_AI_CONFIG_DIR: path.dirname(fixture.source.configPath) };
-  const agents = new AgentTargetPolicy();
-  const validator = new ProfileDocumentPolicy(agents);
-  const defaults = new LegacyProfileDefaultsAdapter(profileConfig.createDefaultConfig);
   const save = vi.spyOn(profileConfig, "saveConfig");
-  const storage = new NodeProfileStorageAdapter(fixture.source.configPath, fs, defaults, new LegacyAtomicProfileSaverAdapter(profileConfig.saveConfig, env));
-  const snapshots = new NodeMigrationSnapshotAdapter(fs, new NodeSnapshotInspectionAdapter(fixture.source.configPath, fs, validator, defaults), storage);
-  const preparer = new PrepareProfileAssignmentUseCase(new ProfileAssignmentPolicy(validator, agents, new RawProfileDocumentCloner()));
-  const useCase = new UpdateProfileAssignmentUseCase(new ReadProfileDocumentUseCase(storage, validator), preparer, validator, storage, snapshots);
+  const validator = ProfileDocumentPolicy.prototype;
+  const storage = NodeProfileStorageAdapter.prototype;
+  const snapshots = NodeMigrationSnapshotAdapter.prototype;
+  const preparer = PrepareProfileAssignmentUseCase.prototype;
+  const useCase = { execute: (command: UpdateAssignmentInput) => updateProfileAssignment(command.profileName, command.agentName, command.patch, { env }) };
   const input = { profileName: "work", agentName: "review", patch: { reasoningEffort: "high" } };
   return { ...fixture, env, validator, storage, snapshots, preparer, useCase, input, save };
 }
@@ -44,13 +36,14 @@ export function registerUpdateOrderContract() {
   it("D2 v2 rechecks after pure final validation before actual saver", () => {
     const f = realUpdate('{"version":2}');
     let preflightCompleted = false;
-    vi.spyOn(f.storage, "recheck").mockImplementation(source => {
-      NodeProfileStorageAdapter.prototype.recheck.call(f.storage, source);
+    const recheck = f.storage.recheck;
+    vi.spyOn(f.storage, "recheck").mockImplementation(function (this: NodeProfileStorageAdapter, source) {
+      recheck.call(this, source);
       preflightCompleted = true;
     });
-    const validate = f.validator.validate.bind(f.validator);
-    vi.spyOn(f.validator, "validate").mockImplementation((raw, identity) => {
-      const result = validate(raw, identity);
+    const validate = f.validator.validate;
+    vi.spyOn(f.validator, "validate").mockImplementation(function (this: ProfileDocumentPolicy, raw, identity) {
+      const result = validate.call(this, raw, identity);
       if (preflightCompleted) fs.writeFileSync(f.source.configPath, '{"external":true}');
       return result;
     });
@@ -62,9 +55,9 @@ export function registerUpdateOrderContract() {
 
   it("D3 T2 future candidate refuses before backup or downgrade", () => {
     const f = realUpdate('{}');
-    const prepare = f.preparer.execute.bind(f.preparer);
-    vi.spyOn(f.preparer, "execute").mockImplementation(input => {
-      const candidate = prepare(input);
+    const prepare = f.preparer.execute;
+    vi.spyOn(f.preparer, "execute").mockImplementation(function (this: PrepareProfileAssignmentUseCase, input) {
+      const candidate = prepare.call(this, input);
       candidate.document.version = 3;
       return candidate;
     });
@@ -76,8 +69,8 @@ export function registerUpdateOrderContract() {
 
   it("D3 T1 invalid candidate prevents backup stage and save", () => {
     const f = realUpdate('{}');
-    const prepare = f.preparer.execute.bind(f.preparer);
-    vi.spyOn(f.preparer, "execute").mockImplementation(input => ({ ...prepare(input), document: { models: null } }));
+    const prepare = f.preparer.execute;
+    vi.spyOn(f.preparer, "execute").mockImplementation(function (this: PrepareProfileAssignmentUseCase, input) { return { ...prepare.call(this, input), document: { models: null } }; });
     const mkdir = vi.spyOn(fs, "mkdirSync");
     expect(() => f.useCase.execute(f.input)).toThrow("models must be an object");
     for (const spy of [f.save, mkdir]) expect(spy).not.toHaveBeenCalled();
@@ -87,10 +80,10 @@ export function registerUpdateOrderContract() {
   it("D3 validates versioned candidate before actual save", () => {
     const f = realUpdate('{}');
     const versions: unknown[] = [];
-    const validate = f.validator.validate.bind(f.validator);
-    vi.spyOn(f.validator, "validate").mockImplementation((raw, identity) => {
+    const validate = f.validator.validate;
+    vi.spyOn(f.validator, "validate").mockImplementation(function (this: ProfileDocumentPolicy, raw, identity) {
       versions.push((raw as Record<string, unknown>).version);
-      return validate(raw, identity);
+      return validate.call(this, raw, identity);
     });
     f.save.mockImplementation((candidate, env) => {
       expect(versions.at(-1)).toBe(2);
@@ -104,9 +97,9 @@ export function registerUpdateOrderContract() {
 
   it("D2 T2 rejects stale source before invoking snapshot stage", () => {
     const f = realUpdate('{"models":{"profiles":{"work":{"review":"old"}}}}');
-    const prepare = f.preparer.execute.bind(f.preparer);
-    vi.spyOn(f.preparer, "execute").mockImplementation(input => {
-      const candidate = prepare(input);
+    const prepare = f.preparer.execute;
+    vi.spyOn(f.preparer, "execute").mockImplementation(function (this: PrepareProfileAssignmentUseCase, input) {
+      const candidate = prepare.call(this, input);
       fs.unlinkSync(f.source.configPath);
       return candidate;
     });
@@ -118,9 +111,9 @@ export function registerUpdateOrderContract() {
 
   it("D2 T1 rejects source changed after completed snapshot before save", () => {
     const f = realUpdate('{"models":{"profiles":{"work":{"review":"old"}}}}');
-    const acquire = f.snapshots.acquire.bind(f.snapshots);
-    vi.spyOn(f.snapshots, "acquire").mockImplementation(input => {
-      const receipt = acquire(input);
+    const acquire = f.snapshots.acquire;
+    vi.spyOn(f.snapshots, "acquire").mockImplementation(function (this: NodeMigrationSnapshotAdapter, input) {
+      const receipt = acquire.call(this, input);
       fs.writeFileSync(f.source.configPath, '{"external":true}');
       return receipt;
     });

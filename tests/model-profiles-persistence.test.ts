@@ -27,9 +27,12 @@ import { prepareProfileAssignment, type PrepareAssignmentInput as LegacyPrepareI
 import { PrepareProfileAssignmentUseCase } from "../scripts/lib/model-profiles/application/prepare-profile-assignment-use-case.js";
 import { registerSnapshotContract } from "./_testModelSnapshotContract.js";
 import { registerUpdateOrderContract } from "./_testModelUpdateContract.js";
+import { registerPersistenceContract } from "./_testModelPersistenceContract.js";
+import { acquireMigrationSnapshot, assertProfileSourceUnchanged } from "../scripts/lib/model-profiles/infrastructure/migration-snapshot.js";
 
 registerSnapshotContract();
 registerUpdateOrderContract();
+registerPersistenceContract();
 
 registerPreparationContract("compatibility preparation", (): PreparationInvoker => ({
   validate: vi.spyOn(ProfileDocumentPolicy.prototype, "validate"),
@@ -169,6 +172,49 @@ it("S13 validation facade delegates once and returns the identical raw domain re
   expect(validateProfileDocument(raw, "legacy:raw/☕")).toBe(raw);
   expect(validate.mock.calls).toEqual([[raw, "legacy:raw/☕"]]);
   for (const spy of ambient) expect(spy).not.toHaveBeenCalled();
+});
+
+it("S13 original update retains the legacy byte-mismatch diagnostic", () => {
+  const { root, configPath } = createConfig({});
+  fs.writeFileSync(`${configPath}.pre-v2.bak`, "{ }");
+  expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: { AFERGON_AI_CONFIG_DIR: root } }))
+    .toThrow("Migration snapshot bytes do not match");
+  expect(fs.readFileSync(configPath, "utf8")).toBe("{}");
+  expect(fs.readFileSync(`${configPath}.pre-v2.bak`, "utf8")).toBe("{ }");
+});
+
+it("S13 error T1 preserves a read failure resembling the mismatch diagnostic", () => {
+  const { root, configPath } = createConfig({});
+  fs.writeFileSync(`${configPath}.pre-v2.bak`, "{}");
+  const failure = new Error("Existing migration snapshot does not match captured source");
+  const read = fs.readFileSync.bind(fs);
+  vi.spyOn(fs, "readFileSync").mockImplementation((file, ...args) => {
+    if (file === `${configPath}.pre-v2.bak`) throw failure;
+    return read(file, ...args);
+  });
+  expectExactFailure(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: { AFERGON_AI_CONFIG_DIR: root } }), failure);
+  expect(read(configPath, "utf8")).toBe("{}");
+  expect(read(`${configPath}.pre-v2.bak`, "utf8")).toBe("{}");
+});
+
+it("S13 error T2 preserves malformed backup SyntaxError without replacing its bytes", () => {
+  const { root, configPath } = createConfig({});
+  fs.writeFileSync(`${configPath}.pre-v2.bak`, "{");
+  expect(() => updateProfileAssignment("work", "review", { reasoningEffort: "high" }, { env: { AFERGON_AI_CONFIG_DIR: root } })).toThrow(SyntaxError);
+  expect(fs.readFileSync(configPath, "utf8")).toBe("{}");
+  expect(fs.readFileSync(`${configPath}.pre-v2.bak`, "utf8")).toBe("{");
+});
+
+it("S13 source compatibility remains fail-closed for a custom basename", () => {
+  const { root, configPath } = createConfig({});
+  const custom = path.join(root, "custom.json");
+  fs.writeFileSync(custom, "{}");
+  const source = { configPath: custom, exists: true, sourceBytes: Buffer.from("{}") };
+  expect(() => assertProfileSourceUnchanged(source)).toThrow("Profile source changed");
+  expect(() => acquireMigrationSnapshot({ source, recoveryDocument: {} })).toThrow("Profile source changed");
+  expect(fs.readFileSync(custom, "utf8")).toBe("{}");
+  expect(fs.readFileSync(configPath, "utf8")).toBe("{}");
+  expect(fs.readdirSync(root)).toEqual(["config.json", "custom.json"]);
 });
 
 it("captures exact UTF-8 bytes and original formatting", () => {

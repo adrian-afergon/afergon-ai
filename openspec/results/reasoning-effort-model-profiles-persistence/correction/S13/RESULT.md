@@ -1,22 +1,27 @@
-# S13: Complete compatibility composition — pre-source budget checkpoint
+# S13: Complete compatibility composition — local verification and checkpoint history
 
 ## Implementation Status
 
-blocked
+completed-with-notes
 
-Resume authorized, 2026-10-21; implementation and local verification pending. The blocked status and checkpoint evidence below describe the pre-source stop, not a new size blocker.
+Local implementation and all declared local checks completed, 2026-10-21. Fresh canonical Review and actual published exact-head native Windows persistence/fault CI remain external acceptance gates. The dated blocked checkpoint below is retained as provenance, not current status or permission to start P2/P3.
 
 ## Plan Reference
 
 - Plan: `openspec/plans/reasoning-effort-model-profiles-persistence/plan-13-compatibility-composition.md` (ready-with-assumptions, 112-line inherited version).
 - Execution Mode: sequential, direct execution; registered implement, work-unit-commits, chained-pr and cognitive-doc-design loaded from the exact current root registry paths.
 - Authority: task001, sole ready P1 spec, ARCHITECTURE-PLAN-INDEX, current S07/S08 dispatch and TEST-ALLOCATION. User authorizes S13 after S12's gates, with STOP375/hard399; no inherited exception.
+- Current authority is the later S13-only explicit exception recorded below and committed before source. The preceding budget statement describes checkpoint entry, not the current ceiling.
 
 ## Execution Summary
 
+Completed actual class wiring in `profile-composition.ts` and thin original read/validate/prepare/recheck/acquire/update APIs, preserving original errors/representations and source→snapshot→version→save sequencing in existing classes. One private absolute source/saver binding survives caller-env/cwd mutation. Pure validation/preparation never select fs/env. Only UpdateUseCase calls production atomicPersist; original SOURCE is snapshot recovery. No inner source, saver body, live facade, CLI/TUI/installer/host/provider routing changed.
+
+Produced: all original55 D integrations plus ten S12 order cases through the original wrapper; explicit55-group218 runnable ledger;14 additional assertions/cases; focal513, memory+architecture64, standalone123, full1084/8skip; typecheck/build/health/emitted import and legacy132/3skip. Added one Windows targeted nine-file step, keeping baseline steps. Local tests include four new emitted original-API/cold-import/cwd-precedence cases and all real FD/snapshot/save faults. Native success and canonical Review are outstanding, not a circular local implementation blocker.
+
 **2026-10-21 authority, before production:** user “Acepto la excepcion” approves complete cohesive S13 above375/399 with no new numeric cap;605–855 is a forecast, not a ceiling/proof. All source/test/helper/CI/README/spec/plan/index/result/review changes including checkpoint164 and this amendment count against published S12 exact21923939b5b305ac2a829f67d08e1955355cd66c. Earlier exceptions remain separate. No evidence/readability cuts, new prefix or functional expansion; all Gherkin/types/layers/Review/native and inactive boundaries unchanged. No extra docs-publication gate. Fresh Git audit confirms clean S13 e7f6381, parent0/1, no upstream, full30 registrations/20prunables and preserved root32/PROJECT-TASKS161+1/accessible statuses. S12 PR133 exact head/four successes and issue94approved reverified; supplied canonical Review provenance unchanged. Stage only these four authority Markdown files before production. Dated checkpoint follows unchanged.
 
-Stopped before production, tests, helpers or CI edits because the complete cohesive S13 forecasts **605–855 changed lines** against exact published S12 `21923939b5b305ac2a829f67d08e1955355cd66c`. This is a documentation-only checkpoint, not a partial compatibility delivery. The old278–364 forecast does not cover the actual wrapper/spying replacement and full emitted/native evidence workload. No compression, assertion removal or additional prefix is proposed.
+Historical pre-source stop: stopped before production, tests, helpers or CI edits because the complete cohesive S13 forecast **605–855 changed lines** against exact published S12 `21923939b5b305ac2a829f67d08e1955355cd66c`. That was a documentation-only checkpoint, not a partial compatibility delivery. The old278–364 forecast did not cover actual wrapper/spying replacement and full emitted/native evidence workload. No compression, assertion removal or additional prefix was proposed.
 
 S12 [PR133](https://github.com/adrian-afergon/afergon-ai/pull/133) is OPEN, source `feat/reasoning-effort-p1-class-12`, exact remote HEAD21923939b5b305ac2a829f67d08e1955355cd66c. User supplies canonical Review `ses_ea5a13fdbffe1TTDjYtc5xcrr9`, PASS all seven; this is supplied Review provenance, not a new independent review. GitHub's approving-review array is empty, and no GitHub approval is inferred. Issue94 is OPEN with `status:approved`.
 
@@ -28,21 +33,28 @@ All four completed runs independently report SUCCESS and that exact S12 head: Te
 - Inspected all five Git categories, all29 prior registrations/20 prunables, and every accessible tree's individual status paths before isolated creation; repeated S13 categories/topology before checkpoint edits.
 - Verified `/tmp/opencode` parent, absent local branch, absent remote branch and absent on-disk path/symlink before creating `feat/reasoning-effort-p1-class-13` at `/tmp/opencode/afergon-ai-reasoning-effort-p1-class-13` from the exact S12 head; initial parent divergence0/0, staged/unstaged/untracked sets empty, no upstream.
 - Read actual class/adapters/wrappers, original D source via Git, shared fixtures, checker/actual graph loader, emitted update test and current Windows workflow; measured the remaining obligations below.
-- No implementation or acceptance checkbox is marked complete. Task/spec/historical PLAN and blocked historical ROOT RESULT are preserved.
+- At the historical checkpoint no implementation or acceptance checkbox was marked complete. Current verified implementation/behavior/architecture boxes are marked in Plan13; composite native/review/task acceptance remains unchecked. Historical PLAN and blocked historical ROOT RESULT are preserved.
+- Completed original API composition, source/error/Buffer mapping, all D55 and ten-case retarget, actual inward graph/sole-caller/saver-body evidence, four emitted all-API environment/cwd cases and complete local verification. TEST-ALLOCATION maps every original group/tuple to current runnable declarations; domain/application source remains unchanged.
 
 ## Updated Plan Artifacts
 
 - `openspec/plans/reasoning-effort-model-profiles-persistence/plan-13-compatibility-composition.md`: execution/budget checkpoint only.
 - `openspec/plans/reasoning-effort-model-profiles-persistence/ARCHITECTURE-PLAN-INDEX.md`: predecessor gate and S13 stop only.
+- Current updates additionally record explicit exception, locally verified Plan13 checkboxes,55-group218 runnable mapping, task/spec local behavioral traceability and pending external acceptance. Old planning facts remain dated history, not rewritten architecture authority.
 
 ## Commits Created
 
-- This checkpoint is one coherent documentation work unit; its commit identity is reported in the handoff, avoiding a self-referential SHA.
+- `e7f6381e4ba77b1869b05444fecb19452ca2ba2e` docs(models): record blocked S13 budget checkpoint.
+- `25e41fd` docs(models): authorize scoped S13 size exception (before all production).
+- `45ef90e` feat(models): compose original persistence APIs through injected classes (code/tests/README/contemporary cycles).
+- The subsequent compatibility/fault/native-evidence work unit and final evidence closure identities are reported by `git log --format='%H %s' 21923939..HEAD` and handoff; no circular self-SHA or amend.
 
 ## Files Changed
 
-- The two planning artifacts above and this `openspec/results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md` only.
-- Source0; tests/helpers0; workflow0; README0; specification0; task0. No source PR or push.
+- Historical checkpoint touched only the two planning artifacts above and this RESULT; source/tests/workflow/README/spec/task were0 then.
+- Current source: infrastructure/{profile-composition,profile-read-composition,profile-store,document-validation,prepare-assignment,migration-snapshot}.ts.
+- Current tests: tests/{_testModelPersistenceContract,_testModelSnapshotContract,_testModelUpdateContract,model-profiles-architecture.test,model-profiles-persistence.test,model-profiles-update-runtime.test}.ts; existing files retain assertions, with only bounded setup/entrypoint adaptations.
+- CI: `.github/workflows/windows-launcher.yml`; README; sole P1 spec; task001; Plan13/ARCHITECTURE-PLAN-INDEX/TEST-ALLOCATION; this RESULT. No source PR or push.
 
 ## Verification Results
 
@@ -71,7 +83,60 @@ Green-only refactor centralizes collaborator selection in profile-composition, p
 
 First coherent wiring checkpoint: prefixed `pnpm build`, `F` without selector and `pnpm typecheck` all exit0; focal454pass (450 inherited +4 new). The typecheck invocation used the same HOME/tool flags; no runtime I/O is performed by tsc. Rollback this work unit's composition/wrapper changes together with its focal tests, README and execution log; previous inactive classes remain usable. Remaining D55/full218/emitted/native/Review obligations are not yet verified.
 
-### Produced: source-grounded complete forecast
+Second compatibility unit, same prefix/F:
+
+| Exact selector / command | Actual result / interpretation |
+| --- | --- |
+| F -t "S13 original update retains the legacy byte-mismatch diagnostic" | RED exit1,1failed/454filtered: expected `Migration snapshot bytes do not match`, actual `Existing migration snapshot does not match captured source`. Minimum TPP6 typed-error conditional at compatibility edge, no policy/orchestration move. GREEN same command exit0,1pass/454filtered |
+| F -t "S13 error T1 preserves a read failure resembling the mismatch diagnostic" | First run exit0,1pass/455filtered; typed-error discrimination already propagates exact original read error (characterization, no fake RED) |
+| F -t "S13 error T2 preserves malformed backup SyntaxError without replacing its bytes" | First run exit0,1pass/456filtered after T1; malformed backup/error/source bytes preserved; characterization, no extra rule needed |
+| F -t "original D remaining55 real integrations" | Exit0,55pass/457filtered, all original12 groups/55 expanded cases through original wrapper + real fs/saver, no memory replacements |
+| F -t "D[123]" | Exit0,65pass/447filtered: original55 plus ten retargeted S12 order cases, all original disk/backup/saver assertions |
+| pnpm build; pnpm exec vitest run tests/model-profiles-architecture.test.ts tests/model-profiles-persistence.test.ts tests/model-profiles-snapshot-acquisition.test.ts tests/model-profiles-snapshot-inspection.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles-storage.test.ts tests/model-profiles-update-runtime.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles.test.ts --no-file-parallelism | Exit0 build and784pass/9files on Linux, including four new emitted all-API/cold import/cwd/relative-env precedence cases. This is the exact added Windows command, not native Windows evidence |
+| pnpm exec vitest run tests/model-profiles-architecture.test.ts --no-file-parallelism | After two supplementary wrapper/saver-body assertions: exit0,31pass. All original checker negatives retained; actual graph includes every vertical module plus six infrastructure root/compatibility entries, normalized Node paths for native resolution |
+
+Old D authoritative Git object reread at8963d8e; new `_testModelPersistenceContract.ts` retains all55 cases, with readable setup/FD helpers and original save-stage serialization guard only inside valid actual saver. Snapshot fault helper is exported/reused, not duplicated or replaced by mocks. New diagnostic3/custom-basename1/final binding4 checks are additional. Full original55-group/218 runnable declaration/tuple mapping is appended to TEST-ALLOCATION, linking current registrars and original assertions; B72 compatibility reruns receive no duplicate credit. Windows workflow adds only one explicit folded nine-file command after build/typecheck/health, with all prior steps unchanged. Three original C01 mode cases alone skip Windows; no new blanket skips.
+
+Measured intermediate before ledger/architecture additions: tracked570adds+92deletes plus new D helper211 =873 lines, already above the old605–855 estimate. Complete scope now forecasts1000–1200 after full evidence/traceability/architecture rows. This remains authorized S13-only growth, not a new cap, reason to cut evidence or change prefix. Actual final counts supersede forecasts. Saver complete LF body matches SHA256 `79c929fed059901b1bd8e0ac19db30d309f1c7c7d714ff7c4cac95218869343d`; supplementary test proves the body, while Git unchanged-config evidence remains the primary preservation check.
+
+### Final local verification — produced
+
+Same exact isolation/tool prefix above; commands below are literal executed commands (not future recommendations). Node26.2.0/pnpm11.21.0 locally; Windows workflow retains Node24.18.0. Initial fresh build and mandatory full-suite rebuild are distinct required checks.
+
+| Command | Exit / outcome |
+| --- | --- |
+| pnpm typecheck (first final attempt) | Exit2: nine TS2683 implicit-this errors in new/retargeted prototype spies. This is a verification failure, not behavioral RED. Added explicit real collaborator receiver types; no casts/suppression or production change |
+| pnpm typecheck (after receiver fix) | Exit0 |
+| pnpm build | Exit0 |
+| pnpm run health:runtime | Exit0; dispatcher/models/TUI generated entry imports succeed; local-only/no remote telemetry |
+| node --input-type=module -e "import('./dist/scripts/lib/model-profiles/infrastructure/profile-store.js')" | Exit0, silent import |
+| pnpm exec vitest run tests/model-profiles-persistence.test.ts --no-file-parallelism | Exit0,513pass; all218 mapped original assertions included,72 preparation compatibility reruns additional |
+| pnpm exec vitest run tests/model-profiles-use-cases.test.ts tests/model-profiles-architecture.test.ts --no-file-parallelism | Exit0,64pass (33usecase+31architecture); bounded checker negatives unchanged |
+| pnpm exec vitest run tests/model-profiles-snapshot-acquisition.test.ts tests/model-profiles-snapshot-inspection.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles-storage.test.ts tests/model-profiles-update-runtime.test.ts --no-file-parallelism | Exit0,123pass/5files; includes actual storage/snapshot faults plus six emitted update/runtime cases (two inherited +four new) |
+| pnpm exec vitest run tests/model-profiles.test.ts tests/tui-model-profiles.test.ts tests/tui-model-profiles-controller.test.ts tests/windows-opencode-scripts.test.ts --no-file-parallelism | Exit0,132pass/3skip,3passedfiles/1skippedfile; inherited Linux-inapplicable Windows script skips preserved |
+| pnpm test (300000ms timeout) | Exit0,1084pass/8skip,33passedfiles/3skippedfiles,89.35s; mandatory rebuild passed |
+| git diff --check | Exit0; no whitespace errors |
+| git diff --exit-code 21923939b5b305ac2a829f67d08e1955355cd66c -- scripts/lib/model-profiles-config.ts scripts/lib/model-profiles/domain scripts/lib/model-profiles/application scripts/lib/model-profiles-core.ts scripts/lib/model-profiles.ts scripts/models.ts scripts/tui.ts adapters bin package.json pnpm-lock.yaml pnpm-workspace.yaml | Exit0; exact inherited implementations/saver/live contracts/configuration preserved |
+
+Count reconciliation: inherited full1015+55newly restored original D cases+14additional S13 passes=1084; inherited8skips unchanged on Linux. Owned persistence/class/runtime700=513+64+123; adding legacy model-profiles86 gives nine-file Linux target786 after the two final architecture checks (earlier target784 was before them). The69-pass increment includes55 old cases, not69 invented new scenarios. Original218 ledger credit remains218; shared domain/compatibility reruns are not double-credit. No fixture/command is selected just to force602 or955 historical totals.
+
+### Original contract traceability — locally produced, acceptance pending
+
+| Sole P1 Gherkin / original task or PLAN contract | Runnable evidence |
+| --- | --- |
+| Mixed round-trip / task38 / PLAN194 | A03/A05, B07/B10, D03/D06/D16/D22: string/object/optional representation, raw version, exact no-op bytes and subsequent v2 reloads |
+| Omitted effort / task39 / PLAN167–178 | StoredAssignment/direct domain matrices, B07/B10 and D06; no implicit effort/default/provider validation introduced |
+| Targeted metadata / task40 / PLAN176–178 | B03/B09–B12, D06 work/prototype keys, original source/independent candidate and foreign data both directions |
+| First recoverable extended write / task41 / PLAN181–188 | C01–C07, D07/D15/D19; actual SOURCE recovery, complete receipt before raw version2, recoverable canonical absent defaults |
+| Invalid recognized effort / task39 / PLAN168–169 | A04/A06/A08, B15/B16, C05, D01/D08/D20; all own/raw14 and15 patch tuples kept at each required entrypoint |
+| Malformed recognized assignment / task40 / PLAN171–173 | Full read/prepare/acquire/update invalid source matrices; inactive/nontarget fields diagnosed without normalization; future-source/candidate refusal D13/D21 |
+| Snapshot/atomic failure / task41 / PLAN183–190 | C02/C03/C07, D04/D05/D09–D14/D17/D18: real descriptor faults/owned cleanup/all causes/external source changes/exact backup/retry |
+| Inactive live workflows / task43 / PLAN18–19,198 | Full unchanged facade/legacy quartet, compiled cold-import/constructor/no-create reader and original APIs; Git live-path diff0. No public effort/host/projection change |
+| Clone independence / task42 / PLAN177,196 | B03's three actual clone directions plus direct cloner and B07 metadata assertions; pure wrappers do not clone/validate twice |
+| Corrective ownership vs historical PLAN24/no-application | Approved architecture index supersedes the old structural statement; actual inward graph/memory behavior/sole atomic caller tests prove existing classes own policy/orchestration; historical PLAN/ROOT RESULT are not rewritten |
+| Native/checks/rollback / PLAN199–224,258–265 | Local baseline and README recovery evidence produced; targeted Windows workflow owned, actual source-head execution and canonical Review outstanding. Consent/loss/race/fsync limitations retained |
+
+### Historical pre-source measurement: complete forecast
 
 All figures below count additions **and** deletions against21923939, including this checkpoint in eventual final artifact contents. They are estimates, not caps or measured implementation. Existing inherited code/tests are free only when unchanged.
 
@@ -176,14 +241,14 @@ Unavailable tree contents, including old partial plans, are not hash-verified or
 
 ## Blockers or Deviations
 
-Complete605–855 forecast exceeds375/399 before any code is written. A human **S13-only size exception** is required for complete composition/wrappers, all55 preserved real integrations, ten-case retarget, new runtime/architecture/binding proofs, targeted native CI and full evidence. This is not an accepted exception; functional scope/architecture and Review/CI obligations remain unchanged. No additional prefix or repeated slicing.
+Historical blocker: complete605–855 forecast exceeded375/399 before source. User subsequently approved the S13-only exception and25e41fd recorded it before code; that size blocker is resolved without a new cap. No additional prefix/repeated slicing. Current local blockers: None. Canonical Review/publication/current-head native checks remain external release/acceptance gates; no approval or Windows execution is claimed locally.
 
 ## Notes
 
-Checkpoint rollback boundary is only this RESULT and its two linked planning notices. Source/tests/CI/README/spec/task and historical results are unchanged. Final source delivery, if authorized, must count checkpoint and authorization amendment churn; the forecast is not a new ceiling. Independent checkpoint review remains outstanding; static self-review is not canonical Review.
+Historical checkpoint rollback boundary was only this RESULT and its two linked planning notices; source/tests/CI/README/spec/task were unchanged then. Current S13 rollback removes its original-wrapper composition/compatibility/native-test unit and dependent suffix together, retaining extended documents/backups and leaving prior classes available; no old writer over extended state. Checkpoint and authorization churn are charged; forecast is not a ceiling. Static self-review is not canonical Review.
 
 Full P1 acceptance remains outstanding, including Review and exact-head native fault CI. CLI/TUI effort controls remain unavailable. P2/P3 and all activation remain downstream.
 
 ## Next Step
 
-Request the S13-only exception and stop. If authorized, amend the governing sole spec/plan/index/result before source work, recheck all Git categories/predecessor gates, then execute the existing complete S13 without evidence cuts or new prefixes. Do not create a source PR before fresh Review.
+Hand this exact committed S13 tree/RESULT to a fresh canonical Review. Publication requires later authorization and Review; actual published exact-head Windows targeted persistence/fault success precedes P1 acceptance. No own Review delegation, PR/push/merge, P2/P3 behavior or live activation is performed here.

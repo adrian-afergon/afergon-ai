@@ -1,6 +1,7 @@
 import type { AssignmentPatch } from "../domain/assignment-patch.js";
 import type { UpdateResult } from "../application/update-profile-assignment-use-case.js";
 import { createProfileCapabilities } from "./profile-composition.js";
+import { SnapshotBytesMismatchError } from "./node-snapshot-inspection-adapter.js";
 
 export interface LoadedProfileDocument {
   document: Record<string, unknown>;
@@ -13,7 +14,12 @@ export interface LoadedProfileDocument {
 export function updateProfileAssignment(
   profileName: string, agentName: string, patch: AssignmentPatch, options?: { env?: NodeJS.ProcessEnv },
 ): UpdateResult {
-  return createProfileCapabilities(options?.env).update.execute({ profileName, agentName, patch });
+  try {
+    return createProfileCapabilities(options?.env).update.execute({ profileName, agentName, patch });
+  } catch (error) {
+    if (error instanceof SnapshotBytesMismatchError) throw new Error("Migration snapshot bytes do not match", { cause: error });
+    throw error;
+  }
 }
 
 export function loadProfileDocument(env?: NodeJS.ProcessEnv): LoadedProfileDocument {

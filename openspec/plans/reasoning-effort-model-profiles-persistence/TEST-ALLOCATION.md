@@ -121,3 +121,70 @@ Source helpers are fixtures, not extra cases: createConfig/loadDocument/assertio
 ## Evidence and acceptance
 
 Produced: static55-group/218-case ledger, approved split permission and parent docs review; eight original read groups dispatch07→07B (32 cases),07A zero,06 direct3 unchanged, other183 destinations unchanged. Not applicable now: local application tests/build. Outstanding: reviewed publication/current-head CI and future exact assertions/seam TDD/native persistence evidence. All plans ready-with-assumptions for local fixture/source estimates only; no source tuple/assertion changed, counts not budget caps/proof. No delegation here.
+
+## S13 runnable reconciliation — 2026-10-21
+
+The dated planning evidence above is preserved. Current source declarations below retain each original tuple/assertion, not just its count. All are registered by `tests/model-profiles-persistence.test.ts` (`F`); B also executes the same contract under `compatibility preparation`, separately from domain credit. Full F runs every row. Exact original title/tuple definitions remain in the tables above; the selectors here identify their current declaration groups. No new graph/fake/runtime/path test is credited against218.
+
+Files relative to `tests/`: **F**=`model-profiles-persistence.test.ts`; **B**=`_testModelPreparationContract.ts`; **C**=`_testModelSnapshotContract.ts`; **D10**=`_testModelUpdateContract.ts`; **D55**=`_testModelPersistenceContract.ts`. B/C/D registrars actually invoke original APIs from F; D10's semantic class prototype spies are restored and preserve original filesystem/backup/saver assertions. F's three A08 cases now call `validateProfileDocument`, not only the domain policy.
+
+| ID | Expanded credit | Current file / exact title or declaration selector |
+| --- | ---: | --- |
+| A01 | 1 | F: captures exact UTF-8 bytes and original formatting |
+| A02 | 1 | F: propagates a permission read fault instead of returning missing-file defaults |
+| A03 | 1 | F: retains mixed raw assignments and does not rewrite or migrate |
+| A04 | 6 | F: rejects invalid effort %j at its source path |
+| A05 | 5 | F: preserves %s on read, readableDocuments tuples unchanged |
+| A06 | 14 | F: rejects %s with the original path, invalidReads unchanged |
+| A07 | 1 | F: returns absent-source defaults without creating a file |
+| A08 | 3 | F: rejects own undefined recognized fields before cloning; validates malformed recognized assignments in inactive profiles; returns the original object and leaves opaque foreign fields untouched |
+| A09 | 3 | F: emits a directly importable reader module; keeps a built missing-file read side-effect free; does not export the standalone reader through the live facade |
+| B01 | 1 | B: B2 rejects a string masquerading as a patch object |
+| B02 | 1 | B: B2 validates the complete independent candidate after preparation |
+| B03 | 3 | B: B3 characterization isolates foreign metadata and no-op clones both ways; B3 characterization isolates source from nested candidate mutation; B3 isolates nested candidate data from later source mutations |
+| B04 | 3 | B: B2 materialization T2 does not migrate a changed v2 assignment; B2 materialization T1 leaves absent containers absent for an empty patch; B2 materializes a missing profile only for a real patch |
+| B05 | 3 | B: B2 source T2 ignores inherited and unknown patch fields; B2 source T1 refuses future version even for an empty patch before clone; B2 source rejects malformed inactive nontarget before clone |
+| B06 | 3 | B: B2 T2 refuses ambiguous aliases without an exact key; B2 T1 diagnoses the sole alias using the actual stored review key; B2 rejects invalid patch at the exact noncanonical stored target |
+| B07 | 4 | B: B1 varies the patch and preserves foreign fields and raw version; B1 T2 adds effort to legacy while retaining its model; B1 T1 keeps a model-only legacy edit as a string; B1 preserves omitted effort in a structured model edit |
+| B08 | 4 | B: keeps missing-target empty patch raw: %j |
+| B09 | 2 | B: edits existing own profile %s retaining active selection |
+| B10 | 8 | B: preserves representation and flags: %s, original editCases tuples |
+| B11 | 2 | B: materializes safe own profile %s without selecting it |
+| B12 | 3 | B: selects %s without rewriting unrelated slots, original aliasCases tuples |
+| B13 | 1 | B: rejects unsupported agents before clone |
+| B14 | 1 | B: performs no filesystem environment-path or host calls, all eight spies |
+| B15 | 15 | B: rejects own %s before clone, all original invalidPatchFields plus both source/patch assertions |
+| B16 | 14 | B: validates whole raw source: %s, invalidReads |
+| B17 | 4 | B: rejects non-object patch %j before clone |
+| C01 | 3 | C: C mode / C mode T1 / C mode T2, only original POSIX tuple skips on Windows |
+| C02 | 3 | C: C cleanup removal failure reports original and cleanup errors; C cleanup T1 close failure still attempts owned removal; C cleanup T2 retains simultaneous close and removal errors |
+| C03 | 7 | C: C3 write failure cleans only its newly created partial; six fsync/close/open/open-prior/read-prior/sourceRead tuples at acquire |
+| C04 | 3 | C: C absent T2 refuses contradictory captured bytes; two C observation Buffer-boundary tuples, both acquire/recheck |
+| C05 | 21 | C: refusals table contains seven recovery/backup refusals plus every invalidReads tuple |
+| C06 | 4 | C: C1 creates exact snapshot; C1 formatted multibyte; C absent defaults; C2 completed reuse, original completedSnapshots tuples |
+| C07 | 5 | C: source conflict table covers change/appear/delete and two mkdir-time races with standalone recheck assertions |
+| D01 | 15 | D55: D1 integrated invalid patch %s never writes or calls host |
+| D02 | 2 | D55: D1 corrupt or nontarget invalid source %s never writes |
+| D03 | 1 | D10: D1 explicit mixed v1 identical effort preserves exact schema and bytes |
+| D04 | 1 | D10: D2 v2 rechecks after pure final validation before actual saver |
+| D05 | 1 | D55: D3 cleanup failure keeps original precommit error without false temp guarantee |
+| D06 | 3 | D55: D2 round-trips own profile %s with metadata and subsequent v2 representations |
+| D07 | 1 | D55: D2 absent source structured model-only write snapshots recoverable defaults |
+| D08 | 14 | D55: D1 integrated invalid source %s never saves |
+| D09 | 6 | D55: D2 %s detects source %s and prevents saver |
+| D10 | 4 | D55: D3 backup %s failure prevents actual saver |
+| D11 | 2 | D55: D2 refuses prior malformed or mismatched snapshot %s without save |
+| D12 | 5 | D55: D3 saver %s failure preserves source and completed snapshot for retry |
+| D13 | 1 | D10: D3 T2 future candidate refuses before backup or downgrade |
+| D14 | 1 | D10: D3 T1 invalid candidate prevents backup stage and save |
+| D15 | 1 | D10: D3 validates versioned candidate before actual save |
+| D16 | 1 | D55: D2 legacy-only change preserves absent version despite unrelated structured slot |
+| D17 | 1 | D10: D2 T2 rejects stale source before invoking snapshot stage |
+| D18 | 1 | D10: D2 T1 rejects source changed after completed snapshot before save |
+| D19 | 1 | D10: D2 first structured change snapshots before real v2 save |
+| D20 | 1 | D55: D1 T2 rejects own undefined patch before save or snapshot |
+| D21 | 1 | D10: D1 T1 refuses future nominal no-op before write I/O |
+| D22 | 1 | D10: D1 no-op preserves exact mixed v1 source and prior snapshot |
+| **55 groups** | **218** | **A35+B72+C46+D65; domain3/read32/preparation72/acquire46/update10+55** |
+
+Local execution produced: exact `F -t "original D remaining55 real integrations"`55passes; `F -t "D[123]"`65passes (including retargeted ten); whole native-target nine-file command784passes on Linux. These commands execute all218 mapped rows as part of the focal suite, with additional preparation compatibility/new-class evidence counted separately. Full final command/count records are in [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md). Current-head native Windows execution and fresh canonical Review remain outstanding acceptance gates; local Linux results are not native proof.

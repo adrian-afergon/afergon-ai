@@ -123,3 +123,116 @@ it.each(["legacy", "migration"])("S12 emitted Update executes isolated real %s o
     expect(child.stdout).toContain(`emitted ${mode}: exact order`);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+it.each([
+  ["AFERGON", { AFERGON_AI_CONFIG_DIR: "relative-config", XDG_CONFIG_HOME: "relative-xdg", HOME: "relative-home" }],
+  ["XDG", { XDG_CONFIG_HOME: "relative-xdg", HOME: "relative-home" }],
+  ["HOME", { HOME: "relative-home" }],
+  ["cwd", {}],
+])("S13 emitted original APIs and whole capabilities retain %s binding across cwd mutation", (_name, initialEnv) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-s13-emitted-"));
+  const vertical = new URL("../dist/scripts/lib/model-profiles/", import.meta.url).href;
+  const dist = path.resolve("dist");
+  try {
+    const child = spawnSync(process.execPath, ["--input-type=module", "-e", `
+      import assert from "node:assert/strict";
+      import fs from "node:fs";
+      import path from "node:path";
+      import childProcess from "node:child_process";
+      import { fileURLToPath } from "node:url";
+      const vertical = ${JSON.stringify(vertical)};
+      const originals = [];
+      const dist = ${JSON.stringify(dist)};
+      function guard() {
+        for (const [object, methods] of [[fs, ["readFileSync", "openSync", "writeFileSync", "mkdirSync", "renameSync", "rmSync"]],
+          [childProcess, ["spawnSync", "execSync", "execFileSync"]]]) {
+          for (const method of methods) {
+            const original = object[method];
+            originals.push([object, method, original]);
+            object[method] = (...args) => {
+              const file = args[0] instanceof URL ? fileURLToPath(args[0]) : String(args[0]);
+              if ((method === "readFileSync" || (method === "openSync" && args[1] === "r")) &&
+                file.startsWith(dist + path.sep)) return original(...args);
+              throw new Error("Unexpected config/host I/O: " + method + ":" + file);
+            };
+          }
+        }
+      }
+      function restore() { for (const [object, method, original] of originals.splice(0)) object[method] = original; }
+      let api, validation, preparation, snapshot, composition;
+      guard();
+      try {
+        api = await import(vertical + "infrastructure/profile-store.js");
+        validation = await import(vertical + "infrastructure/document-validation.js");
+        preparation = await import(vertical + "infrastructure/prepare-assignment.js");
+        snapshot = await import(vertical + "infrastructure/migration-snapshot.js");
+        composition = await import(vertical + "infrastructure/profile-composition.js");
+        for (const name of ["read-profile-document-use-case", "prepare-profile-assignment-use-case", "update-profile-assignment-use-case"])
+          await import(vertical + "application/" + name + ".js");
+      } finally { restore(); }
+      const env = ${JSON.stringify(initialEnv)};
+      const environment = Object.getOwnPropertyDescriptor(process, "env");
+      let capabilities;
+      guard();
+      try {
+        Object.defineProperty(process, "env", { configurable: true, get() { throw new Error("Ambient constructor environment"); } });
+        capabilities = composition.createProfileCapabilities(env);
+        const raw = { version: 1, foreign: ["café ☕"] };
+        assert.equal(validation.validateProfileDocument(raw, "unresolved:diagnostic"), raw);
+        assert.equal(preparation.prepareProfileAssignment({ document: raw, configPath: "unresolved:diagnostic",
+          profileName: "work", agentName: "review", patch: {} }).changed, false);
+      } finally { Object.defineProperty(process, "env", environment); restore(); }
+      const expected = capabilities.configPath;
+      assert.equal(path.isAbsolute(expected), true);
+      assert.equal(path.basename(expected), "config.json");
+      const missing = api.loadProfileDocument(env);
+      assert.deepEqual(missing, { configPath: expected, exists: false,
+        document: { version: 1, models: { activeProfile: null, profiles: {} } } });
+      assert.equal(fs.existsSync(path.dirname(expected)), false);
+      const defaults = { version: 1, models: { activeProfile: null, profiles: {} } };
+      const backup = expected + ".pre-v2.bak";
+      const receipt = snapshot.acquireMigrationSnapshot({ source: missing, recoveryDocument: defaults });
+      assert.deepEqual(receipt, { snapshotPath: backup, disposition: "created", complete: true });
+      assert.equal(snapshot.acquireMigrationSnapshot({ source: missing, recoveryDocument: defaults }).disposition, "reused");
+      assert.equal(fs.existsSync(expected), false);
+      const later = path.resolve("later");
+      fs.mkdirSync(later);
+      process.chdir(later);
+      env.AFERGON_AI_CONFIG_DIR = "retarget"; env.XDG_CONFIG_HOME = "new-xdg"; env.HOME = "new-home";
+      const before = capabilities.reader.execute();
+      assert.equal(before.source.sourceIdentity, expected);
+      assert.equal(before.source.exists, false);
+      const result = capabilities.update.execute({ profileName: "work", agentName: "review",
+        patch: { model: "one/model", reasoningEffort: " High " } });
+      assert.deepEqual(result, { configPath: expected, version: 2, snapshotPath: backup });
+      assert.deepEqual(JSON.parse(fs.readFileSync(backup, "utf8")), defaults);
+      const boundEnv = { AFERGON_AI_CONFIG_DIR: path.dirname(expected) };
+      const loaded = api.loadProfileDocument(boundEnv);
+      assert.equal(Buffer.isBuffer(loaded.sourceBytes), true);
+      assert.equal(loaded.originalBytes, fs.readFileSync(expected, "utf8"));
+      assert.deepEqual(loaded.sourceBytes, fs.readFileSync(expected));
+      snapshot.assertProfileSourceUnchanged(loaded);
+      const prepared = preparation.prepareProfileAssignment({ document: loaded.document, configPath: expected,
+        profileName: "work", agentName: "design", patch: { model: "two/model", reasoningEffort: "low" } });
+      assert.equal(prepared.version, 2); assert.equal(prepared.migrationRequired, false);
+      assert.equal(Object.hasOwn(loaded.document.models.profiles.work, "afg-design"), false);
+      const second = api.updateProfileAssignment("work", "design", { model: "two/model", reasoningEffort: "low" }, { env: boundEnv });
+      assert.deepEqual(second, { configPath: expected, version: 2 });
+      const final = api.loadProfileDocument(boundEnv);
+      assert.deepEqual(final.document, prepared.document);
+      assert.deepEqual(final.document.models.profiles.work, {
+        "afg-review": { model: "one/model", reasoningEffort: " High " },
+        "afg-design": { model: "two/model", reasoningEffort: "low" },
+      });
+      assert.deepEqual(api.updateProfileAssignment("work", "design", { reasoningEffort: "low" }, { env: boundEnv }), { configPath: expected, version: 2 });
+      assert.deepEqual(fs.readFileSync(expected), final.sourceBytes);
+      assert.deepEqual(JSON.parse(fs.readFileSync(backup, "utf8")), defaults);
+      capabilities.storage.recheck(capabilities.reader.execute().source);
+      assert.throws(() => snapshot.assertProfileSourceUnchanged(loaded), /Profile source changed/);
+      assert.deepEqual(fs.readdirSync(later), []);
+      console.log("S13 emitted original APIs: quiet imports/pure edges, pinned binding, defaults snapshot, read/prepare/update/no-op, two agents");
+    `], { cwd: root, encoding: "utf8", env: { ...process.env, HOME: root, XDG_CONFIG_HOME: root, XDG_STATE_HOME: root, AFERGON_AI_CONFIG_DIR: root } });
+    expect(child.status, child.stderr).toBe(0);
+    expect(child.stdout).toContain("S13 emitted original APIs: quiet imports/pure edges");
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

@@ -83,6 +83,8 @@ Feature: Compatible and recoverable model profile persistence
 
 ## Technical Dependencies
 
+Local evidence, 2026-10-21: all eight Gherkin scenarios map to runnable original-API/domain/preparation/snapshot/update assertions in [TEST-ALLOCATION](../../plans/reasoning-effort-model-profiles-persistence/TEST-ALLOCATION.md); [S13 RESULT](../../results/reasoning-effort-model-profiles-persistence/correction/S13/RESULT.md) records full1084/8skip, all218 original-case mapping, unchanged live regressions and emitted/no-I/O proof. Functional Gherkin above is unchanged. Full P1 acceptance still awaits canonical Review and current published source-head native Windows targeted fault execution.
+
 - None; this is P1 and the task declares `Dependencies.Requires: None`. Tasks 002 and 003 depend on this capability and are not prerequisites.
 
 ## Unresolved Questions
