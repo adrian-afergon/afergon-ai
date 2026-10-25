@@ -56,7 +56,6 @@ it("emitted export writes exact raw backup and model-only output, refuses collis
       const application = await import("./dist/scripts/lib/model-profiles/application/profile-export-port.js");
       assert.deepEqual(Object.keys(application), []);
       composition = await import("./dist/scripts/lib/model-profiles/infrastructure/profile-composition.js");
-      const inaccessible = new Proxy({}, { get() { throw new Error("Constructor I/O"); } });
       await import("./dist/scripts/lib/model-profiles/application/export-model-profiles-use-case.js");
       await import("./dist/scripts/lib/model-profiles/domain/model-only-export-policy.js");
       await import("./dist/scripts/lib/model-profiles/infrastructure/node-export-destination-adapter.js");
@@ -95,8 +94,10 @@ it("emitted export writes exact raw backup and model-only output, refuses collis
       assert.equal(Object.hasOwn(exported.models.profiles.archive, "afg-design"), false);
       assert.equal(exported.version, 2);
       assert.deepEqual(fs.readFileSync(source), sourceBytes);
-      assert.equal(fs.statSync(backupPath).mode & 0o777, 0o600);
-      assert.equal(fs.statSync(exportPath).mode & 0o777, 0o600);
+      if (process.platform !== "win32") {
+        assert.equal(fs.statSync(backupPath).mode & 0o777, 0o600);
+        assert.equal(fs.statSync(exportPath).mode & 0o777, 0o600);
+      }
       assert.equal(fs.readFileSync(snapshotPath, "utf8"), '{"version":1,"older":true}\\n');
       const { ExportModelProfilesError } = await import("./dist/scripts/lib/model-profiles/application/export-model-profiles-use-case.js");
       const existingBackup = (() => { try { capabilities.exportProfiles.execute({ currentBackupPath: backupPath, destinationPath: path.join(root, "other.json") }); } catch (error) { return error; } })();

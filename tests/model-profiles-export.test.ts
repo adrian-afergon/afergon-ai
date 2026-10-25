@@ -6,7 +6,7 @@ import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-ta
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
 import { ModelOnlyExportPolicy } from "../scripts/lib/model-profiles/domain/model-only-export-policy.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
-import { NodeExportDestinationAdapter } from "../scripts/lib/model-profiles/infrastructure/node-export-destination-adapter.js";
+import { NodeExportDestinationAdapter, sameProtectedIdentity } from "../scripts/lib/model-profiles/infrastructure/node-export-destination-adapter.js";
 import { ExportModelProfilesUseCase } from "../scripts/lib/model-profiles/application/export-model-profiles-use-case.js";
 import { ExportModelProfilesError } from "../scripts/lib/model-profiles/application/export-model-profiles-use-case.js";
 import { ReadProfileDocumentUseCase } from "../scripts/lib/model-profiles/application/read-profile-document-use-case.js";
@@ -47,7 +47,7 @@ class MemoryExportDestinations implements ProfileExportPort {
 function exportMemory(document: RawProfileDocument, exists = true) {
   const bytes = exists ? new TextEncoder().encode(JSON.stringify(document, null, 2) + "\n") : undefined;
   const observation: ObservedProfile = {
-    document, originalText: bytes?.toString(),
+    document, originalText: bytes === undefined ? undefined : new TextDecoder().decode(bytes),
     source: { sourceIdentity: "/memory/config.json", exists, sourceBytes: bytes },
   };
   const storage = new MemoryExportStorage(observation);
@@ -77,7 +77,7 @@ it("writes string contents exclusively with parent creation and private mode", (
   const destination = path.join(root, "nested", "dir", "export.json");
   new NodeExportDestinationAdapter(fs).writeExclusive(destination, "{\n  \"exported\": true\n}\n", []);
   expect(fs.readFileSync(destination, "utf8")).toBe("{\n  \"exported\": true\n}\n");
-  expect(fs.statSync(destination).mode & 0o777).toBe(0o600);
+  if (process.platform !== "win32") expect(fs.statSync(destination).mode & 0o777).toBe(0o600);
 });
 
 it("refuses an output path that resolves onto a protected path", () => {
@@ -86,6 +86,23 @@ it("refuses an output path that resolves onto a protected path", () => {
   fs.writeFileSync(source, "original");
   const adapter = new NodeExportDestinationAdapter(fs);
   expect(() => adapter.writeExclusive(path.join(root, ".", "config.json"), "x", [source])).toThrow(/protected path/);
+  expect(fs.readFileSync(source, "utf8")).toBe("original");
+});
+
+it("matches protected identities case-insensitively only when the filesystem is case-insensitive", () => {
+  expect(sameProtectedIdentity("/dir/Config.json", "/dir/config.JSON", true)).toBe(true);
+  expect(sameProtectedIdentity("/dir/Config.json", "/dir/config.JSON", false)).toBe(false);
+  expect(sameProtectedIdentity("/dir/config.json", "/dir/config.json", false)).toBe(true);
+  expect(sameProtectedIdentity("/dir/config.json", "/dir/other.json", true)).toBe(false);
+});
+
+it("keeps case-variant paths distinct on case-sensitive filesystems", () => {
+  const root = tempRoot();
+  const source = path.join(root, "config.json");
+  fs.writeFileSync(source, "original");
+  const caseVariant = path.join(root, "Config.JSON");
+  new NodeExportDestinationAdapter(fs).writeExclusive(caseVariant, "x", [source]);
+  expect(fs.readFileSync(caseVariant, "utf8")).toBe("x");
   expect(fs.readFileSync(source, "utf8")).toBe("original");
 });
 
@@ -126,6 +143,40 @@ it("combines original and removal causes when cleanup removal fails", () => {
   } catch (error) {
     expect(error).toBeInstanceOf(AggregateError);
     expect([...(error as AggregateError).errors]).toEqual([fault, removeFault]);
+  }
+});
+
+it("removes an owned partial on fsync failure and preserves the original cause", () => {
+  const root = tempRoot();
+  const destination = path.join(root, "export.json");
+  const fault = new Error("emitted fsync failure");
+  const faultyFs = { ...fs, fsyncSync() { throw fault; } };
+  expect(() => new NodeExportDestinationAdapter(faultyFs).writeExclusive(destination, "x", [])).toThrow(fault);
+  expect(fs.existsSync(destination)).toBe(false);
+});
+
+it("propagates a non-EEXIST open failure without creating the destination", () => {
+  const root = tempRoot();
+  const destination = path.join(root, "export.json");
+  const refusal = Object.assign(new Error("emitted open refusal"), { code: "EACCES" });
+  const faultyFs = { ...fs, openSync() { throw refusal; } };
+  expect(() => new NodeExportDestinationAdapter(faultyFs).writeExclusive(destination, "x", [])).toThrow(refusal);
+  expect(fs.existsSync(destination)).toBe(false);
+});
+
+it("preserves the original and both cleanup causes when close and removal both fail", () => {
+  const root = tempRoot();
+  const destination = path.join(root, "export.json");
+  const fault = new Error("emitted write failure");
+  const closeFault = new Error("emitted close failure");
+  const removeFault = new Error("emitted removal failure");
+  const faultyFs = { ...fs, writeFileSync() { throw fault; }, closeSync() { throw closeFault; }, rmSync() { throw removeFault; } };
+  try {
+    new NodeExportDestinationAdapter(faultyFs).writeExclusive(destination, "x", []);
+    expect.unreachable();
+  } catch (error) {
+    expect(error).toBeInstanceOf(AggregateError);
+    expect([...(error as AggregateError).errors]).toEqual([fault, closeFault, removeFault]);
   }
 });
 
@@ -282,6 +333,22 @@ it("propagates a corrupt-source read failure without creating outputs", () => {
   expect(storage.log).toEqual(["observe"]);
 });
 
+it("refuses an unreadable source without substituting defaults or creating outputs", () => {
+  const observation: ObservedProfile = { document: {}, source: { sourceIdentity: "/memory/config.json", exists: true } };
+  const storage = new MemoryExportStorage(observation);
+  const refusal = Object.assign(new Error("emitted read refusal"), { code: "EACCES" });
+  storage.observe = () => { storage.log.push("observe"); throw refusal; };
+  const destinations = new MemoryExportDestinations();
+  const agents = new AgentTargetPolicy();
+  const useCase = new ExportModelProfilesUseCase(
+    new ReadProfileDocumentUseCase(storage, new ProfileDocumentPolicy(agents)),
+    new ProfileDocumentPolicy(agents), policy(), destinations, storage, undefined,
+  );
+  expect(() => useCase.execute({ currentBackupPath: "/memory/bak", destinationPath: "/memory/exp" })).toThrow(refusal);
+  expect(destinations.log).toEqual([]);
+  expect(storage.log).toEqual(["observe"]);
+});
+
 it("refuses on a source recheck conflict after transformation and writes nothing", () => {
   const f = exportMemory({ version: 2, models: { profiles: { work: { "afg-review": "openai/gpt-5.5" } } } });
   f.storage.recheck = () => { throw new Error("Profile source changed"); };
@@ -352,4 +419,87 @@ it("composes an export capability bound to the captured config path and snapshot
   expect(fs.readFileSync(path.join(root, "current.bak"))).toEqual(fs.readFileSync(source));
   expect(fs.readFileSync(source, "utf8")).toContain("reasoningEffort");
   expect(receipt.warnings).toHaveLength(1);
+});
+
+it("refuses a real unreadable source without defaults or outputs", async () => {
+  const root = tempRoot();
+  const configDir = path.join(root, "cfg");
+  fs.mkdirSync(configDir, { recursive: true });
+  const source = path.join(configDir, "config.json");
+  fs.writeFileSync(source, '{"version":2,"models":{"profiles":{}}}\n');
+  const { createProfileCapabilities } = await import("../scripts/lib/model-profiles/infrastructure/profile-composition.js");
+  const capabilities = createProfileCapabilities({ AFERGON_AI_CONFIG_DIR: configDir });
+  const originalRead = fs.readFileSync;
+  const refusal = Object.assign(new Error("emitted read refusal"), { code: "EACCES" });
+  fs.readFileSync = ((...args: Parameters<typeof originalRead>) => {
+    if (String(args[0]) === source) throw refusal;
+    return originalRead(...args);
+  }) as typeof fs.readFileSync;
+  try {
+    expect(() => capabilities.exportProfiles.execute({
+      currentBackupPath: path.join(root, "current.bak"),
+      destinationPath: path.join(root, "export.legacy.json"),
+    })).toThrow(refusal);
+  } finally {
+    fs.readFileSync = originalRead;
+  }
+  expect(fs.existsSync(path.join(root, "current.bak"))).toBe(false);
+  expect(fs.existsSync(path.join(root, "export.legacy.json"))).toBe(false);
+  expect(fs.readFileSync(source, "utf8")).toBe('{"version":2,"models":{"profiles":{}}}\n');
+});
+
+it("refuses a real malformed source without defaults or outputs", async () => {
+  const root = tempRoot();
+  const configDir = path.join(root, "cfg");
+  fs.mkdirSync(configDir, { recursive: true });
+  const source = path.join(configDir, "config.json");
+  const malformed = '{"version":2,"models":{';
+  fs.writeFileSync(source, malformed);
+  const { createProfileCapabilities } = await import("../scripts/lib/model-profiles/infrastructure/profile-composition.js");
+  const capabilities = createProfileCapabilities({ AFERGON_AI_CONFIG_DIR: configDir });
+  expect(() => capabilities.exportProfiles.execute({
+    currentBackupPath: path.join(root, "current.bak"),
+    destinationPath: path.join(root, "export.legacy.json"),
+  })).toThrow(SyntaxError);
+  expect(fs.existsSync(path.join(root, "current.bak"))).toBe(false);
+  expect(fs.existsSync(path.join(root, "export.legacy.json"))).toBe(false);
+  expect(fs.readFileSync(source, "utf8")).toBe(malformed);
+});
+
+it("preserves the real source and snapshot with no export when the current-backup write fails", async () => {
+  const root = tempRoot();
+  const configDir = path.join(root, "cfg");
+  fs.mkdirSync(configDir, { recursive: true });
+  const source = path.join(configDir, "config.json");
+  const sourceBytes = Buffer.from(JSON.stringify({ version: 2, models: { profiles: { work: { "afg-review": "openai/gpt-5.5" } } } }, null, 2) + "\n");
+  fs.writeFileSync(source, sourceBytes);
+  const snapshotPath = `${source}.pre-v2.bak`;
+  fs.writeFileSync(snapshotPath, '{"version":1,"older":true}\n');
+  const { createProfileCapabilities } = await import("../scripts/lib/model-profiles/infrastructure/profile-composition.js");
+  const capabilities = createProfileCapabilities({ AFERGON_AI_CONFIG_DIR: configDir });
+  const backupPath = path.join(root, "current.bak");
+  const exportPath = path.join(root, "export.legacy.json");
+  const fault = new Error("emitted backup write failure");
+  const originalWrite = fs.writeFileSync;
+  const originalOpen = fs.openSync;
+  let faultFd: number | undefined;
+  fs.openSync = ((...args: Parameters<typeof originalOpen>) => {
+    const fd = originalOpen(...args);
+    if (String(args[0]) === backupPath) faultFd = fd;
+    return fd;
+  }) as typeof fs.openSync;
+  fs.writeFileSync = ((...args: Parameters<typeof originalWrite>) => {
+    if (args[0] === faultFd) throw fault;
+    return originalWrite(...args);
+  }) as typeof fs.writeFileSync;
+  try {
+    expect(() => capabilities.exportProfiles.execute({ currentBackupPath: backupPath, destinationPath: exportPath })).toThrow(fault);
+  } finally {
+    fs.writeFileSync = originalWrite;
+    fs.openSync = originalOpen;
+  }
+  expect(fs.existsSync(backupPath)).toBe(false);
+  expect(fs.existsSync(exportPath)).toBe(false);
+  expect(fs.readFileSync(source)).toEqual(sourceBytes);
+  expect(fs.readFileSync(snapshotPath, "utf8")).toBe('{"version":1,"older":true}\n');
 });
