@@ -120,9 +120,17 @@ Exact verbatim commands with outcomes (contemporaneous):
 
 ## Measured Size (P2-only cohesive exception; forecast 775–900 was a forecast, not a cap; no evidence cuts)
 
-Measured with `git diff --numstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..HEAD` at re-entry commit `45e2575` (before this RESULT commit): **1033 additions, 15 deletions, 1048 combined**. This RESULT commit adds its own lines (final tip measured at publication; the RESULT+checkbox commit is 2 files, roughly 170 additions/12 deletions, giving an implementation total near 1200 combined — exact figure recorded by the orchestrator from the tip if needed).
+All figures measured with `git diff --numstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..<sha>`; every number below is exact at its named SHA, with no approximations.
 
-Planning artifacts (ancestors of this branch, reported separately per plan): A = 255 lines, B = 199 lines, **454 combined**. Whole-change accounting (planning + implementation): **454 + ~1200 ≈ 1650+ combined changed lines** — reported honestly under the authorized P2-only exception; no numeric cap applied and no content compressed to fit an estimate. Code formatting is readable; nothing was compacted to approach the forecast band.
+| Measurement point | Additions | Deletions | Combined |
+| --- | ---: | ---: | ---: |
+| Initial implementation tip `9c3b356` (pre-re-entry) | 872 | 15 | 887 |
+| Re-entry tip `79aa6c6` (includes corrected RESULT; net-line-neutral rewrite) | 1033 | 15 | 1048 |
+
+- Implementation total at `79aa6c6`: **1033 additions, 15 deletions, 1048 combined changed lines vs B**.
+- Planning artifacts (ancestors of this branch, reported separately per plan): A = 255 lines, B = 199 lines, **454 combined**.
+- Whole-change accounting (planning + implementation at `79aa6c6`): **1502 combined changed lines**. The only commit after `79aa6c6` is this figure-correction edit itself; its exact delta is visible in its own commit stat and the tip-inclusive figure is reproducible with the same numstat command at publication.
+- Reported honestly under the authorized P2-only exception; no numeric cap applied and no content compressed to fit an estimate. Code formatting is readable; nothing was compacted to approach the forecast band.
 
 ## Acceptance Criteria Mapping
 
