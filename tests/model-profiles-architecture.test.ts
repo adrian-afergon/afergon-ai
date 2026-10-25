@@ -160,9 +160,11 @@ it("S12 actual repository graph retains all domain and application boundaries", 
       modules.push(module(id, layer, dependencies, text));
     }
   }
-  expect(modules.filter(item => item.layer === "domain")).toHaveLength(7);
-  expect(modules.filter(item => item.layer === "application")).toHaveLength(8);
+  expect(modules.filter(item => item.layer === "domain")).toHaveLength(8);
+  expect(modules.filter(item => item.layer === "application")).toHaveLength(10);
   expect(modules.some(item => item.id.endsWith("update-profile-assignment-use-case.ts"))).toBe(true);
+  expect(modules.some(item => item.id.endsWith("export-model-profiles-use-case.ts"))).toBe(true);
+  expect(modules.some(item => item.id.endsWith("model-only-export-policy.ts"))).toBe(true);
    const roots = ["profile-read-composition.ts", "profile-composition.ts", "profile-store.ts", "document-validation.ts", "prepare-assignment.ts", "migration-snapshot.ts"]
      .map(name => path.join(vertical, "infrastructure", name).split(path.sep).join("/"));
    expect(roots.every(root => modules.some(item => item.id === root && item.layer === "infrastructure"))).toBe(true);

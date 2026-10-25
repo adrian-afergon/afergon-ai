@@ -8,11 +8,14 @@ import { RawProfileDocumentCloner } from "../domain/raw-profile-document-cloner.
 import { ReadProfileDocumentUseCase } from "../application/read-profile-document-use-case.js";
 import { PrepareProfileAssignmentUseCase } from "../application/prepare-profile-assignment-use-case.js";
 import { UpdateProfileAssignmentUseCase } from "../application/update-profile-assignment-use-case.js";
+import { ExportModelProfilesUseCase } from "../application/export-model-profiles-use-case.js";
+import { ModelOnlyExportPolicy } from "../domain/model-only-export-policy.js";
 import { LegacyProfileDefaultsAdapter } from "./legacy-profile-defaults-adapter.js";
 import { LegacyAtomicProfileSaverAdapter } from "./legacy-atomic-profile-saver-adapter.js";
 import { NodeProfileStorageAdapter } from "./node-profile-storage-adapter.js";
 import { NodeSnapshotInspectionAdapter } from "./node-snapshot-inspection-adapter.js";
 import { NodeMigrationSnapshotAdapter } from "./node-migration-snapshot-adapter.js";
+import { NodeExportDestinationAdapter } from "./node-export-destination-adapter.js";
 
 // Pure policy composition remains usable by validation/preparation edges without
 // selecting an environment, path, defaults or filesystem capability.
@@ -36,7 +39,11 @@ export function createProfileCapabilities(initialEnv: NodeJS.ProcessEnv = proces
   const inspector = new NodeSnapshotInspectionAdapter(configPath, fs, validator, defaults);
   const snapshots = new NodeMigrationSnapshotAdapter(fs, inspector, storage);
   const update = new UpdateProfileAssignmentUseCase(reader, preparer, validator, storage, snapshots);
-  return { configPath, reader, preparer, validator, storage, inspector, snapshots, update };
+  const exportProfiles = new ExportModelProfilesUseCase(
+    reader, validator, new ModelOnlyExportPolicy(new AgentTargetPolicy(), new RawProfileDocumentCloner()),
+    new NodeExportDestinationAdapter(fs), storage, `${configPath}.pre-v2.bak`,
+  );
+  return { configPath, reader, preparer, validator, storage, inspector, snapshots, update, exportProfiles };
 }
 
 export function createProfileSourceCapabilities(sourcePath: string) {
