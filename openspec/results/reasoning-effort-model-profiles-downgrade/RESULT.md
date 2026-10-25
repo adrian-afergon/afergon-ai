@@ -34,14 +34,17 @@ Implemented the P2 internal export capability per the approved plan: `ModelOnlyE
 
 ## Commits Created
 
-Non-circular strategy: this RESULT file is authored before its own commit; the five predecessor commits are enumerated by exact SHA, and the RESULT commit itself is the branch tip created immediately after this file was written (identifiable as HEAD at publication; not self-referenced by SHA).
+All seven predecessor commits, enumerated by exact SHA with their purpose:
 
-- `2dbc213` feat(model-profiles): add model-only export with complete current backup
-- `61652b0` docs(readme): document model-only export and recovery guidance
-- `9c3b356` docs(model-profiles): record P2 export implementation result
-- `c62bd4f` fix(model-profiles): compare protected paths by filesystem identity
-- `45e2575` test(model-profiles): guard POSIX mode assertions and add review evidence coverage
-- *(this RESULT + plan checkbox commit — branch tip at publication)*
+- `2dbc213b72e07cedd56e1050729a6c799e53c6b8` feat(model-profiles): add model-only export with complete current backup — the cohesive implementation unit (4 new modules, composition wiring, version-union extension, both test files, architecture counts, Windows suite list)
+- `61652b053553a65b578fe01d49f18ca87ef12bf2` docs(readme): document model-only export and recovery guidance — user-facing capability and recovery-boundary documentation
+- `9c3b3566dd4c121e9eb0c286d247336723cafaf6` docs(model-profiles): record P2 export implementation result — first RESULT and plan checkbox state (superseded by later corrections)
+- `c62bd4f1dbd79844ae54d865157bff7876a9b427` fix(model-profiles): compare protected paths by filesystem identity — first-review production fix (case-insensitive filesystems) plus cleanup-cause branch simplification
+- `45e25756eaa2c3bfbb0339708c1a76f80ec669ee` test(model-profiles): guard POSIX mode assertions and add review evidence coverage — first-review portability guards, 9 evidence tests, harness nits
+- `79aa6c644d0eaaa684f6d92a821e8dec49ddb2bc` docs(model-profiles): correct P2 result audit and evidence accounting — audit 32/33 correction, RED classification, selector relabeling
+- `4e177dba793be6a8d8e02a21d508c141967ddbb1` docs(model-profiles): record exact measured size at named commits — replaced approximate sizes with SHA-anchored figures
+
+The additional correction/evidence-closure commit is HEAD at handoff; its own SHA is intentionally not embedded. Complete executable range: `git log --format="%H %s" d3dca9b..HEAD`; review `git diff d3dca9b HEAD`.
 
 ## Files Changed
 
@@ -122,14 +125,16 @@ Exact verbatim commands with outcomes (contemporaneous):
 
 All figures measured with `git diff --numstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..<sha>`; every number below is exact at its named SHA, with no approximations.
 
+Historical anchors (superseded as final figures; kept for traceability):
+
 | Measurement point | Additions | Deletions | Combined |
 | --- | ---: | ---: | ---: |
 | Initial implementation tip `9c3b356` (pre-re-entry) | 872 | 15 | 887 |
-| Re-entry tip `79aa6c6` (includes corrected RESULT; net-line-neutral rewrite) | 1033 | 15 | 1048 |
+| First re-entry tip `79aa6c6` (net-line-neutral RESULT rewrite) | 1033 | 15 | 1048 |
+| Second re-entry anchor `4e177db` (last known anchor before this ledger fix) | 1041 | 15 | 1056 |
 
-- Implementation total at `79aa6c6`: **1033 additions, 15 deletions, 1048 combined changed lines vs B**.
-- Planning artifacts (ancestors of this branch, reported separately per plan): A = 255 lines, B = 199 lines, **454 combined**.
-- Whole-change accounting (planning + implementation at `79aa6c6`): **1502 combined changed lines**. The only commit after `79aa6c6` is this figure-correction edit itself; its exact delta is visible in its own commit stat and the tip-inclusive figure is reproducible with the same numstat command at publication.
+- Implementation total at historical anchor `4e177db`: **1041 additions, 15 deletions, 1056 combined changed lines vs B**; whole change with planning artifacts (A 255 + B 199 = 454): **1510 combined**.
+- Current final measurement: the correction/evidence-closure commit that is HEAD at handoff adds the case-sensitivity probe, guarded POSIX test, win32 companion, policy combined-case test, README qualification, and this ledger fix. Its tip-inclusive size is measured — not unknown — with the same commands at handoff: `git diff --numstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..HEAD | awk '{add+=$1; del+=$2} END {print add, del, add+del}'` and `git log --format="%H %s" d3dca9b..HEAD`. The handoff message reports the resulting exact HEAD and tip-inclusive totals; the orchestrator can record them in the PR body without further source changes.
 - Reported honestly under the authorized P2-only exception; no numeric cap applied and no content compressed to fit an estimate. Code formatting is readable; nothing was compacted to approach the forecast band.
 
 ## Acceptance Criteria Mapping

@@ -72,6 +72,25 @@ const tempRoot = () => {
   return root;
 };
 
+// Probes the actual temp filesystem: on case-insensitive filesystems the
+// case-variant write targets the same file, so only one entry remains.
+function filesystemCaseSensitive(): boolean {
+  const probe = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-case-probe-"));
+  try {
+    fs.writeFileSync(path.join(probe, "probe"), "a");
+    try {
+      fs.writeFileSync(path.join(probe, "PROBE"), "b");
+    } catch {
+      return false;
+    }
+    return fs.readdirSync(probe).length === 2;
+  } finally {
+    fs.rmSync(probe, { recursive: true, force: true });
+  }
+}
+
+const caseSensitiveFilesystem = filesystemCaseSensitive();
+
 it("writes string contents exclusively with parent creation and private mode", () => {
   const root = tempRoot();
   const destination = path.join(root, "nested", "dir", "export.json");
@@ -96,7 +115,7 @@ it("matches protected identities case-insensitively only when the filesystem is 
   expect(sameProtectedIdentity("/dir/config.json", "/dir/other.json", true)).toBe(false);
 });
 
-it("keeps case-variant paths distinct on case-sensitive filesystems", () => {
+it.runIf(caseSensitiveFilesystem)("keeps case-variant paths distinct on case-sensitive filesystems", () => {
   const root = tempRoot();
   const source = path.join(root, "config.json");
   fs.writeFileSync(source, "original");
@@ -104,6 +123,14 @@ it("keeps case-variant paths distinct on case-sensitive filesystems", () => {
   new NodeExportDestinationAdapter(fs).writeExclusive(caseVariant, "x", [source]);
   expect(fs.readFileSync(caseVariant, "utf8")).toBe("x");
   expect(fs.readFileSync(source, "utf8")).toBe("original");
+});
+
+it.runIf(process.platform === "win32")("refuses a case-variant of an absent protected path on Windows", () => {
+  const root = tempRoot();
+  const absentSnapshot = path.join(root, "config.json.pre-v2.bak");
+  const caseVariant = path.join(root, "Config.JSON.PRE-V2.BAK");
+  expect(() => new NodeExportDestinationAdapter(fs).writeExclusive(caseVariant, "x", [absentSnapshot])).toThrow(/protected path/);
+  expect(fs.existsSync(caseVariant)).toBe(false);
 });
 
 it("removes an owned partial on write failure and preserves the original cause", () => {
@@ -232,6 +259,13 @@ it("preserves an explicit inherit model as the exact legacy string", () => {
   const result = policy().export(document);
   expect(profilesOf(result).work["afg-review"]).toBe("inherit");
   expect(result.losses).toEqual([]);
+});
+
+it("exports inherit with effort as the exact inherit string while recording the effort loss", () => {
+  const document = { version: 2, models: { profiles: { work: { "afg-review": { model: "inherit", reasoningEffort: "high" } } } } };
+  const result = policy().export(document);
+  expect(profilesOf(result).work["afg-review"]).toBe("inherit");
+  expect(result.losses).toEqual([{ profileName: "work", agentKey: "afg-review", omittedKeys: ["reasoningEffort"] }]);
 });
 
 it("preserves foreign agent state verbatim without validation or loss records", () => {
