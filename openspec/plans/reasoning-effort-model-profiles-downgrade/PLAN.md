@@ -133,17 +133,17 @@ Stage only explicit task-owned paths in the NEW isolation after reviewing status
 
 ## Implementation Steps
 
-- [ ] Reinspect all five Git categories and exact remote base; verify branch/path availability; create new isolation only after authorization.
-- [ ] Transfer only the five planning files, review and publish focused artifacts A then B, each below400 and reviewed before consuming implementation. Keep all original root dirty state and existing PRs untouched.
-- [ ] Start every behavior with ONE meaningful failing test, run real RED, implement minimum TPP GREEN, then at least two sequential adversarial tests/characterizations and refactor green. Never manufacture RED for already-correct reused behavior.
-- [ ] Policy tests: exact strings/model/inherit values, effort-only and metadata-only assignments, mixed profiles, unrepresentable-member warning, foreign metadata, prototype-like keys, deep-clone/input independence; then implement `ModelOnlyExportPolicy`.
-- [ ] Adapter real-FS tests: raw bytes and strings, protected-path aliases, existing export/backup files, parent creation, open/write/fsync/close faults, owned-partial cleanup and combined failures; then implement semantic port and adapter without EEXIST reuse.
-- [ ] Use-case tests: refuse missing/unreadable/corrupt/future sources with no outputs, recheck conflict, same-observation raw backup, post-migration edits, backup-before-export, no success until both writes, all output-path collisions, backup failure, and surviving complete backup on later failure.
-- [ ] Implement `ExportModelProfilesUseCase`, wire constructor-injected dependencies in composition, and extend only the supported-version operation union with `export`. Keep source/old snapshot and legacy saver untouched.
-- [ ] Update architecture assertions in the same unit as new modules without weakening negative fixtures; add both export test files to the explicit Windows workflow list, preserving all existing steps.
-- [ ] Add emitted-runtime API verification and recovery guidance with honest snapshot/current-backup distinction and future006/008 cleanup prerequisites. Review guidance content; no Markdown string-match tests.
-- [ ] Author RESULT during implementation before independent review, with exact TDD/TPP evidence, commands/exits, preservation audit, measured size and outstanding native evidence honestly marked.
-- [ ] Run full local verification; independent canonical review exact head; publish only after PASS/explicit routing and applicable authorization. Obtain actual native Windows exact-head evidence before acceptance. Never merge.
+- [x] Reinspect all five Git categories and exact remote base; verify branch/path availability; create new isolation only after authorization. (2026-10-25, corrected at review re-entry: 32 registrations before P2 creation = root + A + B + 29 prunable preserved; 33 after; staged empty; PROJECT-TASKS 161+/1- unstaged; 35 untracked preserved; no branch/path collision; worktree created at exact B head d3dca9b. The original 30 figure was the plan-audit-time snapshot before A/B existed.)
+- [x] Transfer only the five planning files, review and publish focused artifacts A then B, each below400 and reviewed before consuming implementation. Keep all original root dirty state and existing PRs untouched. (Completed upstream before implementation: PR135 A 5876470 255 lines, PR136 B d3dca9b 199 lines, both 4/4 CI green; implementation starts from accepted B head.)
+- [x] Start every behavior with ONE meaningful failing test, run real RED, implement minimum TPP GREEN, then at least two sequential adversarial tests/characterizations and refactor green. Never manufacture RED for already-correct reused behavior. (Honest classification in RESULT.md: 9 behavioral REDs across policy/adapter/use-case/composition; 3 first-tests failed as module-absent scaffolding, not behavioral proof; TPP deviations disclosed; reused-correct behavior characterized honestly.)
+- [x] Policy tests: exact strings/model/inherit values, effort-only and metadata-only assignments, mixed profiles, unrepresentable-member warning, foreign metadata, prototype-like keys, deep-clone/input independence; then implement `ModelOnlyExportPolicy`.
+- [x] Adapter real-FS tests: raw bytes and strings, protected-path aliases, existing export/backup files, parent creation, open/write/fsync/close faults, owned-partial cleanup and combined failures; then implement semantic port and adapter without EEXIST reuse.
+- [x] Use-case tests: refuse missing/unreadable/corrupt/future sources with no outputs, recheck conflict, same-observation raw backup, post-migration edits, backup-before-export, no success until both writes, all output-path collisions, backup failure, and surviving complete backup on later failure.
+- [x] Implement `ExportModelProfilesUseCase`, wire constructor-injected dependencies in composition, and extend only the supported-version operation union with `export`. Keep source/old snapshot and legacy saver untouched.
+- [x] Update architecture assertions in the same unit as new modules without weakening negative fixtures; add both export test files to the explicit Windows workflow list, preserving all existing steps.
+- [x] Add emitted-runtime API verification and recovery guidance with honest snapshot/current-backup distinction and future006/008 cleanup prerequisites. Review guidance content; no Markdown string-match tests.
+- [x] Author RESULT during implementation before independent review, with exact TDD/TPP evidence, commands/exits, preservation audit, measured size and outstanding native evidence honestly marked.
+- [ ] Run full local verification; independent canonical review exact head; publish only after PASS/explicit routing and applicable authorization. Obtain actual native Windows exact-head evidence before acceptance. Never merge. (Local verification produced; independent review, publication, and native Windows evidence remain external gates.)
 
 ## Interfaces and Technical Contracts
 
@@ -159,13 +159,13 @@ Proposed names, not delivered code:
 
 ## Acceptance Criteria
 
-- [ ] Active spec's happy path, inheritance/metadata edges, source-refusal outline, both destination-collision cases, backup/export failure cases, and guidance-only recovery covered with artifact-appropriate evidence.
-- [ ] Exact raw current-state backup and model-only output reflect the same capture, including post-migration edits. Source and existing snapshot remain byte-identical; all prior destinations intact.
-- [ ] Effort/unrepresentable assignment loss is explicit and recoverable from raw current backup; no substitution of defaults on invalid/missing source.
-- [ ] Success requires both completed outputs; partial/compound failures retain causes and identify surviving complete backup. No false atomicity/durability claim.
-- [ ] No callable/automatic restore, CLI/TUI controls, or host effects. Future cleanup006/activation008 are clearly not released.
-- [ ] Architecture, legacy saver, dependency direction, full baseline, emitted import/API, and native Windows evidence pass; size fully reported under P2-only exception.
-- [ ] Rollback withdraws export and dependent suffix without deleting saved source/current backups/old snapshots. No merge or existing PR mutation.
+- [x] Active spec's happy path, inheritance/metadata edges, source-refusal outline, both destination-collision cases, backup/export failure cases, and guidance-only recovery covered with artifact-appropriate evidence. (Produced locally: 38 unit + 2 emitted-runtime tests incl. real composed unreadable/malformed/backup-failure evidence.)
+- [x] Exact raw current-state backup and model-only output reflect the same capture, including post-migration edits. Source and existing snapshot remain byte-identical; all prior destinations intact. (Produced locally with on-disk byte equality.)
+- [x] Effort/unrepresentable assignment loss is explicit and recoverable from raw current backup; no substitution of defaults on invalid/missing source. (Produced locally.)
+- [x] Success requires both completed outputs; partial/compound failures retain causes and identify surviving complete backup. No false atomicity/durability claim. (Produced locally.)
+- [x] No callable/automatic restore, CLI/TUI controls, or host effects. Future cleanup006/activation008 are clearly not released. (Produced locally: surface assertion + README guidance.)
+- [ ] Architecture, legacy saver, dependency direction, full baseline, emitted import/API, and native Windows evidence pass; size fully reported under P2-only exception. (Locally produced: architecture/saver/baseline/emitted/size. Native Windows exact-head evidence remains OUTSTANDING external gate; POSIX mode assertions guarded and win32 case-variant companion executes only natively.)
+- [x] Rollback withdraws export and dependent suffix without deleting saved source/current backups/old snapshots. No merge or existing PR mutation. (Produced by construction: nothing pushed/merged; no existing PR mutated.)
 
 ## Verification
 
