@@ -4,11 +4,11 @@
 - **Plan**: `openspec/plans/reasoning-effort-model-profiles-downgrade/PLAN.md` (ready-with-assumptions)
 - **Spec**: `openspec/specs/reasoning-effort-model-profiles-downgrade/spec-01-non-destructive-export-and-recovery.md` (active; historical `-old-20261025-194903` files excluded)
 - **Branch**: `feat/reasoning-effort-p2-export` (isolated worktree `/tmp/opencode/afergon-ai-reasoning-effort-p2-export`, created from exact accepted B head `d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2`)
-- **Dates**: initial implementation 2026-10-25; review-correction re-entry 2026-10-25 (canonical review FAIL at `9c3b356`, bounded fixes applied)
+- **Dates**: initial implementation and two review-correction re-entries 2026-10-25 (review FAILs at `9c3b356` and `4e177db`); user-approved documentation-only evidence correction 2026-10-27 following review WARN at `c72df07`.
 
 ## Implementation Status
 
-`completed-with-notes` — all local engineering gates produced and green after the bounded review-correction re-entry; independent canonical re-review, publication, and native Windows exact-head evidence remain external gates (outstanding, not circular blockers).
+`completed-with-notes` — all local engineering gates produced and green after both bounded review-correction re-entries. At `c72df07`, the reviewer independently reproduced 1128 passed / 9 skipped and found no local code blockers; its remaining warning concerned this report's stale counts/summary. This documentation-only correction changes no code or tests. Exact-tip canonical re-review, publication, and native Windows evidence remain outstanding external gates.
 
 ## Plan Reference
 
@@ -17,7 +17,7 @@
 
 ## Execution Summary
 
-Implemented the P2 internal export capability per the approved plan: `ModelOnlyExportPolicy` (domain), `ProfileExportPort` + `ExportModelProfilesUseCase` (application), `NodeExportDestinationAdapter` (infrastructure), composition wiring (`createProfileCapabilities(env).exportProfiles`), `export` added to the supported-version operation union, architecture assertion updates (domain 8, application 10), both export test files in the explicit Windows suite list, README recovery guidance, and this RESULT. After the canonical review FAIL at `9c3b356`, a bounded re-entry applied: Windows-portable mode assertions, the review-required evidence tests, the filesystem-identity protected-path fix, test-harness nits, and the artifact corrections in this RESULT. No new scope; no evidence removed.
+Implemented the P2 internal export capability per the approved plan: domain policy, application use case and port, infrastructure writer, composition wiring, export-version guard, architecture assertions, explicit Windows suite entries, recovery guidance, and this RESULT. The first correction fixed POSIX permission assertions, added fault coverage, and strengthened protected-path identity handling. The second correction gated the POSIX case-variant test by filesystem sensitivity, added a real Windows companion and the combined inherit-plus-effort case, and qualified cleanup guidance. Final local evidence at `c72df07`: 38 unit tests executed / 1 platform-skipped plus 2 runtime tests; full suite 1128 passed / 9 skipped. This final evidence correction is documentation-only. No new scope; no evidence removed.
 
 ## Completed Steps
 
@@ -26,6 +26,8 @@ Implemented the P2 internal export capability per the approved plan: `ModelOnlyE
 - Architecture assertions updated in the same unit; Windows suite list extended (11 files).
 - Emitted-runtime verification and README guidance.
 - Review-correction re-entry: portability guards, evidence coverage, identity-based protection, RESULT corrections.
+- Second re-entry: filesystem-sensitivity gate, Windows protected-path companion, combined inheritance/effort test, and cleanup guidance precision.
+- Final documentation-only correction: align counts, summary, and commit provenance with the independently reviewed code at `c72df07`.
 - RESULT authored before its own commit; plan checkboxes updated to evidence-produced state only.
 
 ## Updated Plan Artifacts
@@ -34,7 +36,7 @@ Implemented the P2 internal export capability per the approved plan: `ModelOnlyE
 
 ## Commits Created
 
-All seven predecessor commits, enumerated by exact SHA with their purpose:
+All eight predecessor commits, enumerated by exact SHA with their purpose:
 
 - `2dbc213b72e07cedd56e1050729a6c799e53c6b8` feat(model-profiles): add model-only export with complete current backup — the cohesive implementation unit (4 new modules, composition wiring, version-union extension, both test files, architecture counts, Windows suite list)
 - `61652b053553a65b578fe01d49f18ca87ef12bf2` docs(readme): document model-only export and recovery guidance — user-facing capability and recovery-boundary documentation
@@ -43,8 +45,9 @@ All seven predecessor commits, enumerated by exact SHA with their purpose:
 - `45e25756eaa2c3bfbb0339708c1a76f80ec669ee` test(model-profiles): guard POSIX mode assertions and add review evidence coverage — first-review portability guards, 9 evidence tests, harness nits
 - `79aa6c644d0eaaa684f6d92a821e8dec49ddb2bc` docs(model-profiles): correct P2 result audit and evidence accounting — audit 32/33 correction, RED classification, selector relabeling
 - `4e177dba793be6a8d8e02a21d508c141967ddbb1` docs(model-profiles): record exact measured size at named commits — replaced approximate sizes with SHA-anchored figures
+- `c72df079ed5ddfdd7c27980be7f422270c1cb929` test(model-profiles): gate case-variant coverage by filesystem case sensitivity — second-review portability correction, native Windows companion, combined inheritance/effort case, README qualification, and ledger corrections
 
-The additional correction/evidence-closure commit is HEAD at handoff; its own SHA is intentionally not embedded. Complete executable range: `git log --format="%H %s" d3dca9b..HEAD`; review `git diff d3dca9b HEAD`.
+The additional documentation-only evidence correction is HEAD at handoff; its own SHA is intentionally not embedded. Its sole changed file is this RESULT; all production code and tests remain identical to `c72df07`. Complete executable range: `git log --format="%H %s" d3dca9b..HEAD`; review `git diff d3dca9b HEAD`. The handoff and PR metadata record the exact tip and tip-inclusive size without a circular self-SHA edit.
 
 ## Files Changed
 
@@ -54,7 +57,7 @@ The additional correction/evidence-closure commit is HEAD at handoff; its own SH
 - `scripts/lib/model-profiles/infrastructure/node-export-destination-adapter.ts` (new — exclusive write, owned-partial cleanup, identity-based protection)
 - `scripts/lib/model-profiles/domain/profile-document-policy.ts` (operation union + `export`)
 - `scripts/lib/model-profiles/infrastructure/profile-composition.ts` (`exportProfiles` wiring)
-- `tests/model-profiles-export.test.ts` (new — 37 tests)
+- `tests/model-profiles-export.test.ts` (new — 39 test definitions: 38 executed and 1 Windows-only companion skipped on the reviewed Linux filesystem)
 - `tests/model-profiles-export-runtime.test.ts` (new — 2 tests)
 - `tests/model-profiles-architecture.test.ts` (counts + presence; fixtures intact)
 - `.github/workflows/windows-launcher.yml` (+2 suite lines)
@@ -93,7 +96,7 @@ Environment: Node v26.2.0, pnpm 11.21.0. `pnpm install --frozen-lockfile` in the
 
 Per-cycle TDD commands were run as repeated invocations of the two selectors below; individual cycle counts and timings were not transcribed contemporaneously and are NOT invented here. Outcomes per cycle are summarized in the tables above and were observed at run time.
 
-- Selector 1: `pnpm exec vitest run tests/model-profiles-export.test.ts --no-file-parallelism` — cycled RED→GREEN through policy, adapter, use-case, composition units; final at re-entry: exit 0, 37 passed.
+- Selector 1: `pnpm exec vitest run tests/model-profiles-export.test.ts --no-file-parallelism` — cycled RED→GREEN through policy, adapter, use-case, composition units; first re-entry: exit 0, 37 passed. After the second re-entry: 38 passed / 1 skipped on Linux.
 - Selector 2: `pnpm build && pnpm exec vitest run tests/model-profiles-export-runtime.test.ts --no-file-parallelism` — emitted-runtime iterations to green; final: exit 0, 2 passed.
 
 Exact verbatim commands with outcomes (contemporaneous):
@@ -107,7 +110,9 @@ Exact verbatim commands with outcomes (contemporaneous):
 | `pnpm exec vitest run tests/model-profiles-export.test.ts tests/model-profiles-export-runtime.test.ts tests/model-profiles-architecture.test.ts tests/model-profiles-persistence.test.ts tests/model-profiles-use-cases.test.ts tests/model-profiles-snapshot-runtime.test.ts tests/model-profiles.test.ts --no-file-parallelism` (re-entry) | 0 | 708 passed |
 | `pnpm typecheck` | 2→0 | 3 test-side strictness fixes initially; re-entry patch-site casts; final exit 0 |
 | `pnpm test` (initial completion) | 0 | 1118 passed \| 8 skipped (1126) |
-| `pnpm test` (re-entry full baseline) | 0 | **1127 passed \| 8 skipped (1135)** |
+| `pnpm test` (first re-entry baseline; historical) | 0 | 1127 passed \| 8 skipped (1135) |
+| `pnpm exec vitest run tests/model-profiles-export.test.ts tests/model-profiles-export-runtime.test.ts --no-file-parallelism` (second re-entry, independently reproduced by reviewer at `c72df07`) | 0 | **40 passed \| 1 skipped (41)** |
+| `pnpm test` (second re-entry full baseline, independently reproduced by reviewer at `c72df07`) | 0 | **1128 passed \| 9 skipped (1137)** |
 | `pnpm run health:runtime` | 0 | local dist runtime health passed |
 | `pnpm run doctor:runtime` | 0 | no recorded local-only health failures |
 
@@ -132,14 +137,15 @@ Historical anchors (superseded as final figures; kept for traceability):
 | Initial implementation tip `9c3b356` (pre-re-entry) | 872 | 15 | 887 |
 | First re-entry tip `79aa6c6` (net-line-neutral RESULT rewrite) | 1033 | 15 | 1048 |
 | Second re-entry anchor `4e177db` (last known anchor before this ledger fix) | 1041 | 15 | 1056 |
+| Final code/test anchor `c72df07` (before documentation-only evidence correction) | 1087 | 22 | 1109 |
 
 - Implementation total at historical anchor `4e177db`: **1041 additions, 15 deletions, 1056 combined changed lines vs B**; whole change with planning artifacts (A 255 + B 199 = 454): **1510 combined**.
-- Current final measurement: the correction/evidence-closure commit that is HEAD at handoff adds the case-sensitivity probe, guarded POSIX test, win32 companion, policy combined-case test, README qualification, and this ledger fix. Its tip-inclusive size is measured — not unknown — with the same commands at handoff: `git diff --numstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..HEAD | awk '{add+=$1; del+=$2} END {print add, del, add+del}'` and `git log --format="%H %s" d3dca9b..HEAD`. The handoff message reports the resulting exact HEAD and tip-inclusive totals; the orchestrator can record them in the PR body without further source changes.
+- Final code/test anchor `c72df07`: implementation1109 plus planning454 = **1563 combined changed lines**. The final documentation-only correction adds only the delta of this RESULT. Measure the publication tip with `git diff --shortstat d3dca9b7f3c59a221a9b251e9c1f28a3579de6c2..HEAD` and enumerate commits with `git log --format="%H %s" d3dca9b..HEAD`. Handoff/PR metadata record exact tip-inclusive totals; the anchors here are deliberately not mislabeled as the final publication size.
 - Reported honestly under the authorized P2-only exception; no numeric cap applied and no content compressed to fit an estimate. Code formatting is readable; nothing was compacted to approach the forecast band.
 
 ## Acceptance Criteria Mapping
 
-- Happy path, inheritance/metadata edges, source-refusal outline (absent/unreadable/corrupt/future — fake AND real composed), both destination-collision cases, backup/export failure cases, guidance-only recovery: **produced** (37 unit + 2 runtime tests).
+- Happy path, inheritance/metadata edges, source-refusal outline (absent/unreadable/corrupt/future — fake AND real composed), both destination-collision cases, backup/export failure cases, guidance-only recovery: **produced** (38 unit + 2 runtime tests executed on Linux; 1 additional unit definition is the native Windows companion).
 - Exact raw backup + model-only output from same capture incl. post-migration edits; source/snapshot byte-identical: **produced**.
 - Effort/unrepresentable loss explicit and recoverable from raw backup; no defaults on invalid/missing source: **produced**.
 - Success requires both outputs; compound failures retain causes and identify surviving backup; no false atomicity: **produced**.
@@ -150,7 +156,8 @@ Historical anchors (superseded as final figures; kept for traceability):
 ## Verification Results
 
 - Step-level checks: all TDD cycles and targeted suites **passed** (selectors and exact commands above).
-- Final checks (re-entry): Tests **passed** (1127 | 8 skip); Build **passed**; Typecheck **passed**; health:runtime **passed**; doctor:runtime **passed**; legacy + architecture negative fixtures and saver hash **passed** within the full run.
+- Final local checks at code/test anchor `c72df07`, independently reproduced by reviewer: Tests **passed** (1128 | 9 skipped); focused export tests **passed** (40 | 1 skipped); Build **passed**; Typecheck **passed**; health:runtime **passed**; doctor:runtime **passed**; legacy + architecture negative fixtures and saver hash **passed** within the full run. The Windows companion is skipped on Linux; the case-sensitive-filesystem test executes there. Native Windows counts must come from actual CI logs.
+- Documentation-only correction verification: content review and `git diff --check` are applicable; fresh application tests/build are **not applicable** to this one-file correction. No new application execution is implied by updating the report.
 - Additional evidence: emitted internal API + byte equality + fault outcomes **produced**; native Windows exact-head logs **outstanding**; independent canonical re-review **outstanding**.
 
 ## Blockers or Deviations
@@ -165,4 +172,4 @@ Historical anchors (superseded as final figures; kept for traceability):
 
 ## Next Step
 
-Orchestrator: independent canonical re-review at the branch tip (HEAD at publication, at or after `45e2575` + this RESULT commit); obtain native Windows exact-head CI evidence through the updated suite list; handle publication/PR. No merge. S13 human async review remains OPEN and untouched.
+Orchestrator: independent canonical re-review at the new documentation-only tip after `c72df07`; if PASS, publish the exact reviewed head and obtain native Windows evidence through the updated suite list. Record exact head, tip-inclusive size, platform counts and companion-test execution in PR metadata. No merge. S13 human async review remains OPEN and untouched.
