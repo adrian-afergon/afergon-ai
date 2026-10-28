@@ -26,7 +26,9 @@ jobs:
           tests/model-profiles-architecture.test.ts
           tests/model-profiles-export.test.ts
           tests/model-profiles-export-runtime.test.ts
+          tests/model-profiles-lifecycle.test.ts
           tests/model-profiles-persistence.test.ts
+          tests/model-profiles-resolution.test.ts
           tests/model-profiles-snapshot-acquisition.test.ts
           tests/model-profiles-snapshot-inspection.test.ts
           tests/model-profiles-snapshot-runtime.test.ts

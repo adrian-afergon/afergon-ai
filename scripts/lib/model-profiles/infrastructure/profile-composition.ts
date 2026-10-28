@@ -8,6 +8,8 @@ import { RawProfileDocumentCloner } from "../domain/raw-profile-document-cloner.
 import { ReadProfileDocumentUseCase } from "../application/read-profile-document-use-case.js";
 import { PrepareProfileAssignmentUseCase } from "../application/prepare-profile-assignment-use-case.js";
 import { UpdateProfileAssignmentUseCase } from "../application/update-profile-assignment-use-case.js";
+import { ProfileLifecycleUseCase } from "../application/profile-lifecycle-use-case.js";
+import type { ValidateAffectedPairs } from "../application/profile-lifecycle-use-case.js";
 import { ExportModelProfilesUseCase } from "../application/export-model-profiles-use-case.js";
 import { ModelOnlyExportPolicy } from "../domain/model-only-export-policy.js";
 import { LegacyProfileDefaultsAdapter } from "./legacy-profile-defaults-adapter.js";
@@ -52,4 +54,25 @@ export function createProfileSourceCapabilities(sourcePath: string) {
   // capability was bound to config.json. Preserve that boundary explicitly.
   if (path.basename(configPath) !== "config.json") throw new Error("Profile source changed");
   return createProfileCapabilities({ AFERGON_AI_CONFIG_DIR: path.dirname(configPath) });
+}
+
+// Additive P3 composition: the inactive resolution/lifecycle capability. It
+// reuses the original capability wiring, requires the downstream affected-pair
+// validator, performs no lifecycle mutation at import or construction, and
+// leaves the original capability keyset and live routing untouched.
+export function createProfileLifecycleCapabilities(
+  initialEnv: NodeJS.ProcessEnv = process.env,
+  validateAffectedPairs: ValidateAffectedPairs,
+) {
+  const capabilities = createProfileCapabilities(initialEnv);
+  const lifecycle = new ProfileLifecycleUseCase(
+    capabilities.reader,
+    capabilities.validator,
+    new RawProfileDocumentCloner(),
+    capabilities.storage,
+    capabilities.snapshots,
+    validateAffectedPairs,
+    new AgentTargetPolicy(),
+  );
+  return { ...capabilities, lifecycle };
 }

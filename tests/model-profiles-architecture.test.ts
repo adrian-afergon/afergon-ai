@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import ts from "typescript";
 import { createHash } from "node:crypto";
@@ -160,8 +161,8 @@ it("S12 actual repository graph retains all domain and application boundaries", 
       modules.push(module(id, layer, dependencies, text));
     }
   }
-  expect(modules.filter(item => item.layer === "domain")).toHaveLength(8);
-  expect(modules.filter(item => item.layer === "application")).toHaveLength(10);
+  expect(modules.filter(item => item.layer === "domain")).toHaveLength(9);
+  expect(modules.filter(item => item.layer === "application")).toHaveLength(11);
   expect(modules.some(item => item.id.endsWith("update-profile-assignment-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("export-model-profiles-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("model-only-export-policy.ts"))).toBe(true);
@@ -169,4 +170,82 @@ it("S12 actual repository graph retains all domain and application boundaries", 
      .map(name => path.join(vertical, "infrastructure", name).split(path.sep).join("/"));
    expect(roots.every(root => modules.some(item => item.id === root && item.layer === "infrastructure"))).toBe(true);
    expect(inspectArchitecture({ modules, compositionRoots: roots })).toEqual([]);
+});
+
+it("S13 lifecycle composition is additive with unchanged original keyset and no construction mutation", async () => {
+  const composition = await import("../scripts/lib/model-profiles/infrastructure/profile-composition.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-p3-composition-"));
+  const env = { AFERGON_AI_CONFIG_DIR: root } as NodeJS.ProcessEnv;
+  const original = composition.createProfileCapabilities(env);
+  const originalKeys = Object.keys(original).sort();
+  expect(originalKeys).toEqual([
+    "configPath", "exportProfiles", "inspector", "preparer", "reader", "snapshots", "storage", "update", "validator",
+  ]);
+  const lifecycleCapabilities = composition.createProfileLifecycleCapabilities(env, { validateAffectedPairs: async () => {} });
+  expect(Object.keys(lifecycleCapabilities).sort()).toEqual([...originalKeys, "lifecycle"].sort());
+  for (const operation of ["saveAssignment", "clearEffort", "saveAssignments", "cloneProfile", "switchProfile", "deleteProfile"]) {
+    expect(typeof lifecycleCapabilities.lifecycle[operation]).toBe("function");
+  }
+  expect(fs.existsSync(path.join(root, "config.json"))).toBe(false);
+});
+
+it("S13 atomicPersist commit callers remain exactly the update and lifecycle use cases", () => {
+  const applicationDir = path.resolve("scripts/lib/model-profiles/application");
+  const callers = fs.readdirSync(applicationDir)
+    .filter(name => name.endsWith(".ts"))
+    .filter(name => /\.atomicPersist\s*\(/.test(fs.readFileSync(path.join(applicationDir, name), "utf8")))
+    .sort();
+  expect(callers).toEqual(["profile-lifecycle-use-case.ts", "update-profile-assignment-use-case.ts"]);
+  const update = fs.readFileSync(path.join(applicationDir, "update-profile-assignment-use-case.ts"), "utf8");
+  expect(update).toContain("this.storage.atomicPersist(prepared.document, loaded.source)");
+  const lifecycle = fs.readFileSync(path.join(applicationDir, "profile-lifecycle-use-case.ts"), "utf8");
+  expect(lifecycle).toContain("this.storage.atomicPersist(candidate, loaded.source)");
+  // The commit boundary is application-only: domain, infrastructure, and the
+  // (absent) legacy layer must never call atomicPersist. The vertical has no
+  // legacy directory today; the scan covers every layer that exists.
+  const vertical = path.resolve("scripts/lib/model-profiles");
+  for (const layer of ["domain", "infrastructure", "legacy"]) {
+    const layerDir = path.join(vertical, layer);
+    if (!fs.existsSync(layerDir)) continue;
+    for (const name of fs.readdirSync(layerDir).filter(name => name.endsWith(".ts"))) {
+      expect(fs.readFileSync(path.join(layerDir, name), "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+    }
+  }
+  // The same prohibition extends to every other TypeScript source under
+  // scripts/ (read-only walk; generated dist/ lives outside scripts/ and test
+  // fixtures live under tests/, so neither is scanned here).
+  const scriptsDir = path.resolve("scripts");
+  const outside: string[] = [];
+  function walkScripts(dir: string): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (path.resolve(full) === vertical) continue;
+        walkScripts(full);
+      } else if (entry.name.endsWith(".ts")) {
+        outside.push(full);
+      }
+    }
+  }
+  walkScripts(scriptsDir);
+  for (const file of outside) {
+    expect(fs.readFileSync(file, "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+  }
+});
+
+it("S13 live entry routes never reach the lifecycle capability", () => {
+  const liveRoutes = [
+    "scripts/lib/model-profiles.ts",
+    "scripts/models.ts",
+    "scripts/cli-dispatch.ts",
+    "scripts/tui.ts",
+    "scripts/lib/tui/model-profiles-adapter.ts",
+    "scripts/lib/tui/model-profiles-controller.ts",
+  ];
+  for (const route of liveRoutes) {
+    const text = fs.readFileSync(path.resolve(route), "utf8");
+    expect(text).not.toContain("createProfileLifecycleCapabilities");
+    expect(text).not.toContain("profile-lifecycle-use-case");
+    expect(text).not.toContain("profile-resolution");
+  }
 });

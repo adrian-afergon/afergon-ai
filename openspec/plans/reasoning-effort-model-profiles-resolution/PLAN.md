@@ -152,20 +152,20 @@ Implementation stage allowlist: new domain/application modules; additive `profil
 
 ## Implementation Steps
 
-- [ ] Publish and review focused artifact units A then B after authorization; accepted Plan→Implement gate; fresh Git audit and isolated worktree from the published unit-B head. Size-only contract alignment is already produced.
-- [ ] Per behavior: establish a compilable surface, write ONE assertion, observe behavioral RED, minimum TPP GREEN, then at least two sequential adversarial cases. Module absence/type errors are scaffolding, not RED. Preserve contemporaneous exact commands/outcomes; no invented logs.
-- [ ] U1–U4 domain classes: independent configured/resolved values/sources, local effort, legacy inheritance, model-only effort preservation, combined edits, affected-parent/children collection and explicit effort clear. Gherkin1–7,16.
-- [ ] U5–U6 desired state: active/empty/effort-free/null and complete supported-plus-prior cleanup coverage; strict source/malformed/dangling failures never reset. Gherkin10–12,15,17.
-- [ ] U7–U11 lifecycle: single/bulk save, clear, clone, switch, delete; async injected validation awaited, rejection leaves prior bytes/caller state intact; inactive refresh intent false; active/final deletion retains lexicographic selection policy. Gherkin5–9,13–14.
-- [ ] Shared commit sequence: retain original source/document → version gate → independent candidate → mutate/resolve/collect → await validation → validate/recheck → if migration required acquire snapshot of ORIGINAL source and require complete receipt → only then promote candidate to2 → final validation/recheck → exactly ONE application-layer `atomicPersist` → committed result/intent. Failures produce no success intent; retained complete snapshots are recovery artifacts, not rollback garbage.
-- [ ] Wire additive lifecycle composition export. Deliberately update architecture counts domain8→9/application10→11 and commit-caller allowlist; preserve other architecture constraints. Add both test files to Windows list.
-- [ ] Add internal guidance, source/emitted parity, no-live-route/host-sentinel proofs, and implementation RESULT. Full local verification, independent review, exact-head native CI before acceptance; no merges.
+- [x] Publish and review focused artifact units A then B after authorization; accepted Plan→Implement gate; fresh Git audit and isolated worktree from the published unit-B head. Size-only contract alignment is already produced.
+- [x] Per behavior: establish a compilable surface, write ONE assertion, observe behavioral RED, minimum TPP GREEN, then at least two sequential adversarial cases. Module absence/type errors are scaffolding, not RED. Preserve contemporaneous exact commands/outcomes; no invented logs.
+- [x] U1–U4 domain classes: independent configured/resolved values/sources, local effort, legacy inheritance, model-only effort preservation, combined edits, affected-parent/children collection and explicit effort clear. Gherkin1–7,16.
+- [x] U5–U6 desired state: active/empty/effort-free/null and complete supported-plus-prior cleanup coverage; strict source/malformed/dangling failures never reset. Gherkin10–12,15,17.
+- [x] U7–U11 lifecycle: single/bulk save, clear, clone, switch, delete; async injected validation awaited, rejection leaves prior bytes/caller state intact; inactive refresh intent false; active/final deletion retains lexicographic selection policy. Gherkin5–9,13–14.
+- [x] Shared commit sequence: retain original source/document → version gate → independent candidate → mutate/resolve/collect → await validation → validate/recheck → if migration required acquire snapshot of ORIGINAL source and require complete receipt → only then promote candidate to2 → final validation/recheck → exactly ONE application-layer `atomicPersist` → committed result/intent. Failures produce no success intent; retained complete snapshots are recovery artifacts, not rollback garbage.
+- [x] Wire additive lifecycle composition export. Deliberately update architecture counts domain8→9/application10→11 and commit-caller allowlist; preserve other architecture constraints. Add both test files to Windows list.
+- [ ] Add internal guidance, source/emitted parity, no-live-route/host-sentinel proofs, and implementation RESULT. Full local verification, independent review, exact-head native CI before acceptance; no merges. *(Local guidance, parity, sentinels, RESULT, and full local verification are produced; independent review and exact-head native Windows CI remain outstanding external gates. A bounded review→Implement re-entry (canonical review corrections, user-approved 2026-10-28) applied empty-patch data-loss guards, complete supported-union-prior-verbatim cleanup coverage for active/empty/no-active states, first-class resolvedEffort, supported-only desired assignments, prototype-safe cloning, bulk item type clarification with agent-policy injection, a strengthened atomicPersist caller scan, and caller-mutation/rename-fault/corrupt-JSON evidence; task/spec functional scope unchanged.)*
 
 ## Interfaces and Technical Contracts
 
 - `ProfileAssignments`: independent validated assignments, resolve, model-only/combined immutable edit, clear effort, clone and affected-pair collection. Edited agent plus changed inheriting children are included; explicit unchanged children excluded; compare model AND effort, deduplicate, retain nullable runtime-default model.
 - `ProfileResolution`: configured and profile-resolved model/effort with separate sources; distinguish explicit model, explicit inherit, implicit inherit, runtime default; explicit/no-override effort. Parent effort never propagates.
-- `ProfileDesiredState`: active/no-active/error discrimination; active and no-active carry cleanup coverage over supported agents and prior verbatim string identities. Never encode missing/error as intentional null.
+- `ProfileDesiredState`: valid active/no-active results; invalid state throws preserving the failure, never an empty reset (engineering representation of the error discrimination — no third value variant). Active and no-active carry cleanup coverage over supported agents and prior verbatim string identities. Never encode missing/error as intentional null.
 - `ProfileLifecycleUseCase`: constructor-injected reader, validator, cloner, storage, snapshots and required `ValidateAffectedPairs` port. `saveAssignment`, `clearEffort`, `saveAssignments`, `cloneProfile`, `switchProfile`, `deleteProfile` return `Promise<LifecycleResult>`. No default validation acceptance. Result carries desired state, refresh intent, path and optional migration receipt/path after commit.
 - Composition adds `createProfileLifecycleCapabilities(env, validateAffectedPairs)` in the existing root. It performs no lifecycle mutation at import/construction and does not change the original capability keyset or live routing.
 - Architecture update is explicit: retain the pinned update-use-case call assertion and permit the new lifecycle application use case as the second named commit caller; prohibit calls from infrastructure and all other files. Retain wrapper negatives, saver hash, inward import rules and existing composition-root list.
@@ -192,12 +192,12 @@ These allocations are estimates, not caps or evidence. Record actual totals even
 
 ## Acceptance Criteria
 
-- [ ]17Gherkin scenarios covered with happy/edge/failure behavior and genuine sequential TDD/TPP evidence.
-- [ ] Independent sources/local effort, legacy inheritance, absent-effort meaning, nullable models and caller independence proven.
-- [ ] Combined/bulk one-commit behavior, clear, metadata preservation, affected-child rejection, clone independence and atomic failure preserve previous state.
-- [ ] Complete supported-plus-prior cleanup coverage including explicit no-active state; errors/dangling never reset; active/final selection policy and inactive refresh intent unchanged.
-- [ ] Source/emitted parity and direct internal APIs; no live entry-route reachability, host changes, or original capability-keyset change.
-- [ ] Full tests/build, architecture/saver protection, exact-head native Windows, independent review, measured size and provenance accurately recorded.
+- [x]17Gherkin scenarios covered with happy/edge/failure behavior and genuine sequential TDD/TPP evidence.
+- [x] Independent sources/local effort, legacy inheritance, absent-effort meaning, nullable models and caller independence proven.
+- [x] Combined/bulk one-commit behavior, clear, metadata preservation, affected-child rejection, clone independence and atomic failure preserve previous state.
+- [x] Complete supported-plus-prior cleanup coverage including explicit no-active state; errors/dangling never reset; active/final selection policy and inactive refresh intent unchanged.
+- [x] Source/emitted parity and direct internal APIs; no live entry-route reachability, host changes, or original capability-keyset change.
+- [ ] Full tests/build, architecture/saver protection, exact-head native Windows, independent review, measured size and provenance accurately recorded. *(Full tests/build, architecture/saver protection, and measured size/provenance are recorded locally; exact-head native Windows logs and independent review remain outstanding.)*
 
 ## Verification
 
