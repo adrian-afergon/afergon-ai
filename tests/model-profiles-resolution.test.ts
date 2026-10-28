@@ -17,10 +17,12 @@ it("agents sharing a model resolve their own effort and source independently", (
   const review = assignments.resolve("review");
   const implement = assignments.resolve("implement");
   expect(review.configuredEffort).toBe("low");
+  expect(review.resolvedEffort).toBe("low");
   expect(review.effortSource).toBe("explicit");
   expect(review.resolvedModel).toBe("openai/gpt-5.5");
   expect(review.modelSource).toBe("explicit-model");
   expect(implement.configuredEffort).toBe("high");
+  expect(implement.resolvedEffort).toBe("high");
   expect(implement.effortSource).toBe("explicit");
   expect(implement.resolvedModel).toBe("openai/gpt-5.5");
   expect(implement.modelSource).toBe("explicit-model");
@@ -281,19 +283,56 @@ it("child model edits never propagate to siblings or the main agent", () => {
   expect(pairs).toEqual([{ agent: "afg-review", model: "anthropic/claude-opus", effort: "low" }]);
 });
 
-it("cleanup coverage names every previously assigned agent the desired state stops covering", () => {
+it("cleanup coverage satisfies alias keys and keeps desired effort overrides covering previous ones", () => {
   const previous = ProfileAssignments.create(
+    { review: { model: "openai/gpt-5.5", reasoningEffort: "high" }, debate: "legacy/model" },
+    "models.profiles[work]",
+    agents,
+  );
+  const desired = ProfileAssignments.create(
+    { "afg-review": { model: "openai/gpt-5.5", reasoningEffort: "high" }, debate: "legacy/model" },
+    "models.profiles[next]",
+    agents,
+  );
+  const coverage = previous.cleanupCoverageFor(desired);
+  expect(coverage).toEqual([
+    "afergon-ai",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
+});
+
+it("model-only edits on inherited models preserve explicit effort and its provenance", () => {
+  const assignments = ProfileAssignments.create(
     {
-      review: { model: "openai/gpt-5.5", reasoningEffort: "high" },
-      debate: "legacy/model",
-      "legacy-agent": { reasoningEffort: "low" },
+      "afergon-ai": { model: "openai/gpt-5.5" },
+      review: { reasoningEffort: "low" },
+      implement: "inherit",
     },
     "models.profiles[work]",
     agents,
   );
-  const desired = ProfileAssignments.create({ review: { model: "openai/gpt-5.5" } }, "models.profiles[next]", agents);
-  expect(previous.cleanupCoverageFor(desired)).toEqual(["review", "debate", "legacy-agent"]);
-  expect(previous.cleanupCoverageFor(previous)).toEqual([]);
+  const next = assignments.withModel("review", "anthropic/claude-opus");
+  expect(next.raw().review).toEqual({ reasoningEffort: "low", model: "anthropic/claude-opus" });
+  const review = next.resolve("review");
+  expect(review.modelSource).toBe("explicit-model");
+  expect(review.resolvedModel).toBe("anthropic/claude-opus");
+  expect(review.configuredEffort).toBe("low");
+  expect(review.effortSource).toBe("explicit");
+  const legacyInherit = next.withModel("implement", "anthropic/claude-opus");
+  expect(legacyInherit.raw().implement).toBe("anthropic/claude-opus");
+  expect(legacyInherit.resolve("implement").modelSource).toBe("explicit-model");
+});
+
+it("null effort aliases are rejected with the exact field path", () => {
+  const assignments = ProfileAssignments.create({ review: "openai/gpt-5.5" }, "models.profiles[work]", agents);
+  expect(() => assignments.withAssignment("review", { reasoningEffort: null as unknown as string })).toThrow(
+    "models.profiles[work][\"review\"].reasoningEffort must be a nonempty explicit effort string",
+  );
+  expect(assignments.raw().review).toBe("openai/gpt-5.5");
 });
 
 it("desired states distinguish active selections from intentional no-active emptiness", () => {
@@ -310,8 +349,7 @@ it("desired states distinguish active selections from intentional no-active empt
   expect(assignments.resolve("review").resolvedModel).toBe("openai/gpt-5.5");
 });
 
-it("malformed recognized assignments are refused with a field path while foreign keys stay verbatim", () => {
-  expect(() =>
+it("malformed recognized assignments are refused with a field path while foreign keys stay verbatim", () => {  expect(() =>
     ProfileAssignments.create({ review: { reasoningEffort: "inherit" } }, "models.profiles[work]", agents),
   ).toThrow("models.profiles[work][\"review\"].reasoningEffort must be a nonempty explicit effort string");
   expect(() => ProfileAssignments.create({ review: 42 }, "models.profiles[work]", agents)).toThrow(
@@ -367,6 +405,11 @@ it("emitted resolution domain cold-imports without IO and resolves identically t
     assert.equal(review.modelSource, "implicit-inherit");
     assert.equal(review.resolvedModel, "openai/gpt-5.5");
     assert.equal(review.configuredEffort, "low");
+    assert.equal(review.resolvedEffort, "low");
+    assert.equal(review.effortSource, "explicit");
+    const main = assignments.resolve("afergon-ai");
+    assert.equal(main.configuredEffort, "high");
+    assert.equal(main.resolvedEffort, "high");
     const pairs = assignments.affectedPairsForModel("afergon-ai", "anthropic/claude-opus");
     assert.equal(pairs.length, 8);
     assert.deepEqual(pairs[0], { agent: "afergon-ai", model: "anthropic/claude-opus", effort: "high" });
@@ -379,4 +422,89 @@ it("emitted resolution domain cold-imports without IO and resolves identically t
   } catch (error) {
     throw new Error(`emitted resolution child failed: ${child.stderr || error}`);
   }
+});
+
+it("empty assignment patches preserve legacy strings without data loss", () => {
+  const assignments = ProfileAssignments.create(
+    { review: "openai/gpt-5.5", implement: { model: "other/model", reasoningEffort: "low" } },
+    "models.profiles[work]",
+    agents,
+  );
+  const next = assignments.withAssignment("review", {});
+  expect(next.raw().review).toBe("openai/gpt-5.5");
+  expect(next.resolve("review").resolvedModel).toBe("openai/gpt-5.5");
+  const structured = assignments.withAssignment("implement", {});
+  expect(structured.raw().implement).toEqual({ model: "other/model", reasoningEffort: "low" });
+});
+
+it("empty patches on absent agents create nothing and unknown-only patches edit nothing", () => {
+  const assignments = ProfileAssignments.create({ review: "openai/gpt-5.5" }, "models.profiles[work]", agents);
+  const untouched = assignments.withAssignment("debate", {});
+  expect(untouched.raw()).toEqual({ review: "openai/gpt-5.5" });
+  expect(untouched).toBe(assignments);
+  const unknownOnly = assignments.withAssignment("review", { foreign: "x" } as unknown as { model?: string });
+  expect(unknownOnly.raw().review).toBe("openai/gpt-5.5");
+  expect(() => assignments.withAssignment("review", { model: undefined } as unknown as { model?: string })).toThrow(
+    "models.profiles[work][\"review\"].model must be a nonempty model string",
+  );
+});
+
+it("same-value model patches are no-ops that preserve legacy and structured bytes", () => {
+  const assignments = ProfileAssignments.create(
+    { review: "openai/gpt-5.5", implement: { model: "other/model", reasoningEffort: "low" } },
+    "models.profiles[work]",
+    agents,
+  );
+  const legacySame = assignments.withModel("review", "openai/gpt-5.5");
+  expect(legacySame.raw().review).toBe("openai/gpt-5.5");
+  const structuredSame = assignments.withAssignment("implement", { model: "other/model" });
+  expect(structuredSame.raw().implement).toEqual({ model: "other/model", reasoningEffort: "low" });
+});
+
+it("cleanup coverage spans every supported agent plus prior verbatim identities", () => {
+  const empty = ProfileAssignments.create({}, "models.profiles[empty]", agents);
+  expect(empty.cleanupCoverageFor(ProfileAssignments.create({}, "models.profiles[next]", agents))).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-review",
+    "afg-design",
+  ]);
+  const previous = ProfileAssignments.create(
+    {
+      review: { model: "openai/gpt-5.5", reasoningEffort: "high" },
+      debate: "legacy/model",
+      "legacy-agent": { reasoningEffort: "low" },
+    },
+    "models.profiles[work]",
+    agents,
+  );
+  const desired = ProfileAssignments.create({ review: { model: "openai/gpt-5.5" } }, "models.profiles[next]", agents);
+  expect(previous.cleanupCoverageFor(desired)).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-review",
+    "afg-design",
+    "legacy-agent",
+  ]);
+  const satisfied = ProfileAssignments.create(
+    { review: { model: "openai/gpt-5.5", reasoningEffort: "high" }, debate: "legacy/model" },
+    "models.profiles[work]",
+    agents,
+  );
+  expect(satisfied.cleanupCoverageFor(satisfied)).toEqual([
+    "afergon-ai",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
 });

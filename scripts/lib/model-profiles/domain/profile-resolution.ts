@@ -18,6 +18,7 @@ export class ProfileResolution {
     readonly resolvedModel: string | null,
     readonly configuredEffort: string | null,
     readonly effortSource: EffortSource,
+    readonly resolvedEffort: string | null,
   ) {}
 
   static of(
@@ -27,8 +28,9 @@ export class ProfileResolution {
     resolvedModel: string | null,
     configuredEffort: string | null,
     effortSource: EffortSource,
+    resolvedEffort: string | null,
   ): ProfileResolution {
-    return new ProfileResolution(agent, configuredModel, modelSource, resolvedModel, configuredEffort, effortSource);
+    return new ProfileResolution(agent, configuredModel, modelSource, resolvedModel, configuredEffort, effortSource, resolvedEffort);
   }
 }
 
@@ -87,30 +89,44 @@ export class ProfileAssignments {
     return JSON.parse(JSON.stringify(this.entries)) as Record<string, unknown>;
   }
 
+  /**
+   * Complete cleanup coverage per the accepted P3 contract: every supported
+   * agent the desired assignments do not satisfy (satisfied = desired carries a
+   * same-canonical entry AND the previous entry had no effort override or the
+   * desired entry carries one), unioned with prior verbatim identities (foreign
+   * keys) from both sides. Prior-only strings stay opaque and are never forced
+   * into assignments.
+   */
   cleanupCoverageFor(desired: ProfileAssignments): string[] {
     const desiredEntries = desired.raw();
     const coverage: string[] = [];
+    for (const agent of SUPPORTED_AGENTS) {
+      const previousKey = this.ownKeyFor(agent);
+      const desiredKey = desired.ownKeyFor(agent);
+      const previousEntry = previousKey === undefined ? undefined : this.entries[previousKey];
+      const desiredEntry = desiredKey === undefined ? undefined : desiredEntries[desiredKey];
+      const satisfied =
+        desiredEntry !== undefined && (!hasEffortOverride(previousEntry) || hasEffortOverride(desiredEntry));
+      if (!satisfied) coverage.push(agent);
+    }
+    const seen = new Set<string>(coverage);
     for (const [key, value] of Object.entries(this.entries)) {
-      let canonical = key;
-      try {
-        canonical = this.agents.normalize(key);
-      } catch {
-        // Prior identities stay verbatim in coverage instead of being dropped.
-      }
-      const desiredKey = Object.keys(desiredEntries).find((candidate) => {
-        try {
-          return this.agents.normalize(candidate) === canonical;
-        } catch {
-          return candidate === canonical;
-        }
-      });
-      if (desiredKey === undefined) {
-        coverage.push(key);
-        continue;
-      }
-      if (hasEffortOverride(value) && !hasEffortOverride(desiredEntries[desiredKey])) coverage.push(key);
+      if (seen.has(key) || !isForeignIdentity(key, this.agents)) continue;
+      seen.add(key);
+      coverage.push(key);
+      void value;
+    }
+    for (const key of Object.keys(desiredEntries)) {
+      if (seen.has(key) || !isForeignIdentity(key, this.agents)) continue;
+      seen.add(key);
+      coverage.push(key);
     }
     return coverage;
+  }
+
+  private ownKeyFor(canonical: string): string | undefined {
+    const key = this.agents.select(this.entries, canonical);
+    return Object.hasOwn(this.entries, key) ? key : undefined;
   }
 
   affectedPairs(next: ProfileAssignments): AffectedPair[] {
@@ -157,6 +173,9 @@ export class ProfileAssignments {
 
   private edit(agentName: string, patch: { model?: string; reasoningEffort?: string }): ProfileAssignments {
     this.agents.normalize(agentName);
+    // P1 own-known-patch guard: a patch carrying neither its own model nor its
+    // own reasoningEffort is a no-op. It must never replace or create entries.
+    if (!Object.hasOwn(patch, "model") && !Object.hasOwn(patch, "reasoningEffort")) return this;
     const key = this.agents.select(this.entries, agentName);
     StoredAssignment.create(patch, `${this.path}[${JSON.stringify(key)}]`);
     const previous = Object.hasOwn(this.entries, key) ? this.entries[key] : undefined;
@@ -179,20 +198,20 @@ export class ProfileAssignments {
     const effort = Object.hasOwn(assignment, "reasoningEffort") ? (assignment.reasoningEffort as string) : null;
     const effortSource: EffortSource = effort === null ? "no-override" : "explicit";
     if (ownModel.model !== null) {
-      return ProfileResolution.of(canonical, ownModel.model, "explicit-model", ownModel.model, effort, effortSource);
+      return ProfileResolution.of(canonical, ownModel.model, "explicit-model", ownModel.model, effort, effortSource, effort);
     }
     if (ownModel.inherit) {
       const resolved = canonical === "afergon-ai" ? null : this.resolve("afergon-ai").resolvedModel;
-      return ProfileResolution.of(canonical, "inherit", "explicit-inherit", resolved, effort, effortSource);
+      return ProfileResolution.of(canonical, "inherit", "explicit-inherit", resolved, effort, effortSource, effort);
     }
     if (canonical === "afergon-ai") {
-      return ProfileResolution.of(canonical, null, "runtime-default", null, effort, effortSource);
+      return ProfileResolution.of(canonical, null, "runtime-default", null, effort, effortSource, effort);
     }
     const main = this.resolve("afergon-ai");
     if (main.resolvedModel !== null) {
-      return ProfileResolution.of(canonical, null, "implicit-inherit", main.resolvedModel, effort, effortSource);
+      return ProfileResolution.of(canonical, null, "implicit-inherit", main.resolvedModel, effort, effortSource, effort);
     }
-    return ProfileResolution.of(canonical, null, "runtime-default", null, effort, effortSource);
+    return ProfileResolution.of(canonical, null, "runtime-default", null, effort, effortSource, effort);
   }
 }
 
@@ -205,4 +224,13 @@ function normalizeModel(value: unknown): { inherit: boolean; model: string | nul
 
 function hasEffortOverride(value: unknown): boolean {
   return typeof value === "object" && value !== null && !Array.isArray(value) && Object.hasOwn(value, "reasoningEffort");
+}
+
+function isForeignIdentity(key: string, agents: AgentTargetPolicy): boolean {
+  try {
+    agents.normalize(key);
+    return false;
+  } catch {
+    return true;
+  }
 }

@@ -72,6 +72,7 @@ export function createProfileLifecycleCapabilities(
     capabilities.storage,
     capabilities.snapshots,
     validateAffectedPairs,
+    new AgentTargetPolicy(),
   );
   return { ...capabilities, lifecycle };
 }

@@ -200,9 +200,16 @@ it("S13 atomicPersist commit callers remain exactly the update and lifecycle use
   expect(update).toContain("this.storage.atomicPersist(prepared.document, loaded.source)");
   const lifecycle = fs.readFileSync(path.join(applicationDir, "profile-lifecycle-use-case.ts"), "utf8");
   expect(lifecycle).toContain("this.storage.atomicPersist(candidate, loaded.source)");
-  const infrastructureDir = path.resolve("scripts/lib/model-profiles/infrastructure");
-  for (const name of fs.readdirSync(infrastructureDir).filter(name => name.endsWith(".ts"))) {
-    expect(fs.readFileSync(path.join(infrastructureDir, name), "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+  // The commit boundary is application-only: domain, infrastructure, and the
+  // (absent) legacy layer must never call atomicPersist. The vertical has no
+  // legacy directory today; the scan covers every layer that exists.
+  const vertical = path.resolve("scripts/lib/model-profiles");
+  for (const layer of ["domain", "infrastructure", "legacy"]) {
+    const layerDir = path.join(vertical, layer);
+    if (!fs.existsSync(layerDir)) continue;
+    for (const name of fs.readdirSync(layerDir).filter(name => name.endsWith(".ts"))) {
+      expect(fs.readFileSync(path.join(layerDir, name), "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+    }
   }
 });
 

@@ -19,6 +19,12 @@ export interface LifecycleAssignmentInput {
   patch: AssignmentPatch;
 }
 
+/** Per-item shape for bulk saves: one outer profile target, items carry only agent and patch. */
+export interface LifecycleAssignmentItem {
+  agentName: string;
+  patch: AssignmentPatch;
+}
+
 export interface LifecycleProfileInput {
   profileName: string;
 }
@@ -55,8 +61,6 @@ interface PreparedEdit {
 }
 
 export class ProfileLifecycleUseCase {
-  private readonly agents = new AgentTargetPolicy();
-
   constructor(
     private readonly reader: ReadProfileDocumentUseCase,
     private readonly validator: ProfileDocumentPolicy,
@@ -64,6 +68,7 @@ export class ProfileLifecycleUseCase {
     private readonly storage: ProfileStoragePort,
     private readonly snapshots: SnapshotPort,
     private readonly validateAffectedPairs: ValidateAffectedPairs,
+    private readonly agents: AgentTargetPolicy,
   ) {}
 
   async saveAssignment(input: LifecycleAssignmentInput): Promise<LifecycleResult> {
@@ -72,13 +77,17 @@ export class ProfileLifecycleUseCase {
         assignments.withAssignment(input.agentName, input.patch));
       const writtenKey = this.agents.select(edit.previous.raw(), input.agentName);
       const written = edit.next.raw()[writtenKey];
+      const editedIsActive = edit.activeName === input.profileName;
       return {
         changed: edit.changed,
         version: edit.version,
         pairs: edit.changed ? edit.previous.affectedPairs(edit.next) : [],
         migrationRequired: edit.changed && edit.version === 1 && typeof written === "object" && written !== null,
-        desiredState: this.desiredStateFor(edit.models, []),
-        refreshIntent: edit.activeName === input.profileName,
+        desiredState: this.desiredStateFor(
+          edit.models,
+          editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
+        ),
+        refreshIntent: editedIsActive,
       };
     });
   }
@@ -172,7 +181,19 @@ export class ProfileLifecycleUseCase {
   }
 
   private activeEntries(models: { activeProfile?: string | null; profiles?: Record<string, Record<string, unknown>> }): { agent: string; value: unknown }[] {
-    return Object.entries(models.profiles?.[models.activeProfile as string] ?? {}).map(([agent, value]) => ({ agent, value }));
+    const profile = models.profiles?.[models.activeProfile as string] ?? {};
+    return Object.entries(profile)
+      .filter(([key]) => {
+        try {
+          this.agents.normalize(key);
+          return true;
+        } catch {
+          // Foreign opaque keys stay in the raw document and cleanup coverage,
+          // never in the supported desired assignments.
+          return false;
+        }
+      })
+      .map(([agent, value]) => ({ agent, value }));
   }
 
   private desiredStateFor(
@@ -184,7 +205,13 @@ export class ProfileLifecycleUseCase {
     return ProfileDesiredState.active(activeName, this.activeEntries(models), cleanupCoverage);
   }
 
-  async saveAssignments(input: LifecycleProfileInput & { assignments: LifecycleAssignmentInput[] }): Promise<LifecycleResult> {
+  async saveAssignments(input: LifecycleProfileInput & { assignments: LifecycleAssignmentItem[] }): Promise<LifecycleResult> {
+    for (const item of input.assignments) {
+      const raw = item as unknown as Record<string, unknown>;
+      if (Object.hasOwn(raw, "profileName") && raw.profileName !== input.profileName) {
+        throw new Error(`Bulk assignment item targets profile '${String(raw.profileName)}' but the operation targets '${input.profileName}'.`);
+      }
+    }
     return this.commit((candidate) => {
       const edit = this.prepareEdit(candidate, input.profileName, (assignments) =>
         input.assignments.reduce((current, item) => current.withAssignment(item.agentName, item.patch), assignments));
@@ -197,7 +224,10 @@ export class ProfileLifecycleUseCase {
         version: edit.version,
         pairs: edit.changed ? edit.previous.affectedPairs(edit.next) : [],
         migrationRequired,
-        desiredState: this.desiredStateFor(edit.models, []),
+        desiredState: this.desiredStateFor(
+          edit.models,
+          edit.activeName === input.profileName ? edit.previous.cleanupCoverageFor(edit.next) : [],
+        ),
         refreshIntent: edit.activeName === input.profileName,
       };
     });
@@ -215,7 +245,14 @@ export class ProfileLifecycleUseCase {
       }
       const sourcePath = `models.profiles[${JSON.stringify(input.sourceProfileName)}]`;
       const source = ProfileAssignments.create(profiles[input.sourceProfileName], sourcePath, this.agents);
-      profiles[input.targetProfileName] = source.raw();
+      // Prototype-safe own-property write (mirrors the P1 prepare pattern):
+      // plain assignment would mutate Object.prototype for "__proto__".
+      Object.defineProperty(profiles, input.targetProfileName, {
+        value: source.raw(),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
       const version = (candidate.version as number | undefined) ?? 1;
       return {
         changed: true,
@@ -231,8 +268,11 @@ export class ProfileLifecycleUseCase {
   }
 
   private resolvedPairsOf(assignments: ProfileAssignments): readonly AffectedPair[] {
-    const empty = ProfileAssignments.create({}, "models.profiles[resolved]", this.agents);
-    return empty.affectedPairs(assignments);
+    return this.emptyAssignments().affectedPairs(assignments);
+  }
+
+  private emptyAssignments(): ProfileAssignments {
+    return ProfileAssignments.create({}, "models.profiles[resolved]", this.agents);
   }
 
   async switchProfile(input: LifecycleProfileInput): Promise<LifecycleResult> {
@@ -299,12 +339,8 @@ export class ProfileLifecycleUseCase {
             )
           : undefined;
       const desiredState = selected
-        ? ProfileDesiredState.active(
-            selectedName as string,
-            Object.entries(profiles[selectedName as string]).map(([agent, value]) => ({ agent, value })),
-            wasActive ? deleted.cleanupCoverageFor(selected) : [],
-          )
-        : ProfileDesiredState.noActive(wasActive ? Object.keys(deleted.raw()) : []);
+        ? this.desiredStateFor(models, wasActive ? deleted.cleanupCoverageFor(selected) : [])
+        : ProfileDesiredState.noActive(wasActive ? deleted.cleanupCoverageFor(this.emptyAssignments()) : []);
       return {
         changed: true,
         version,
