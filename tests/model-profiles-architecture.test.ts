@@ -161,7 +161,7 @@ it("S12 actual repository graph retains all domain and application boundaries", 
     }
   }
   expect(modules.filter(item => item.layer === "domain")).toHaveLength(9);
-  expect(modules.filter(item => item.layer === "application")).toHaveLength(10);
+  expect(modules.filter(item => item.layer === "application")).toHaveLength(11);
   expect(modules.some(item => item.id.endsWith("update-profile-assignment-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("export-model-profiles-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("model-only-export-policy.ts"))).toBe(true);
