@@ -373,6 +373,82 @@ it("bulk items carrying a different own profile name are rejected instead of sil
   expect(f.persist).not.toHaveBeenCalled();
 });
 
+it("active no-op operations carry no cleanup coverage and request no refresh", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.5" } } },
+  });
+  const result = await f.lifecycle.saveAssignment({ profileName: "work", agentName: "review", patch: {} });
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.pairs.calls).toEqual([]);
+  expect(result.refreshIntent).toBe(false);
+  expect(result.desiredState.cleanupCoverage).toEqual([]);
+  const cleared = await f.lifecycle.clearEffort({ profileName: "work", agentName: "review" });
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(cleared.refreshIntent).toBe(false);
+  expect(cleared.desiredState.cleanupCoverage).toEqual([]);
+});
+
+it("active no-op saves on absent agents and version 1 documents stay inert", async () => {
+  const f = lifecycleMemory({
+    version: 1,
+    models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.5" } } },
+  });
+  const result = await f.lifecycle.saveAssignment({ profileName: "work", agentName: "debate", patch: {} });
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.snapshots.input).toBeUndefined();
+  expect(result.version).toBe(1);
+  expect(result.refreshIntent).toBe(false);
+  expect(result.desiredState.cleanupCoverage).toEqual([]);
+  const savedProfiles = (f.storage.saved?.models as { profiles?: Record<string, unknown> } | undefined)?.profiles;
+  expect(savedProfiles).toBeUndefined();
+});
+
+it("active no-op bulk saves and same-value patches carry no coverage without writes", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.5" } } },
+  });
+  const emptyList = await f.lifecycle.saveAssignments({ profileName: "work", assignments: [] });
+  expect(emptyList.desiredState.cleanupCoverage).toEqual([]);
+  expect(f.persist).not.toHaveBeenCalled();
+  const bulkEmpty = await f.lifecycle.saveAssignments({
+    profileName: "work",
+    assignments: [{ agentName: "review", patch: {} }],
+  });
+  expect(bulkEmpty.desiredState.cleanupCoverage).toEqual([]);
+  expect(f.persist).not.toHaveBeenCalled();
+  const sameValue = await f.lifecycle.saveAssignment({ profileName: "work", agentName: "review", patch: { model: "openai/gpt-5.5" } });
+  expect(sameValue.desiredState.cleanupCoverage).toEqual([]);
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.pairs.calls).toEqual([]);
+});
+
+it("mixed bulk saves with a real edit and empty patches commit once with active coverage", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.5", debate: "other/model" } } },
+  });
+  const result = await f.lifecycle.saveAssignments({
+    profileName: "work",
+    assignments: [
+      { agentName: "review", patch: { reasoningEffort: "low" } },
+      { agentName: "debate", patch: {} },
+    ],
+  });
+  expect(f.persist).toHaveBeenCalledOnce();
+  expect(result.refreshIntent).toBe(true);
+  expect(result.desiredState.cleanupCoverage).toEqual([
+    "afergon-ai",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
+  expect(f.pairs.calls.length).toBe(1);
+});
+
 it("dangling active references surface as errors instead of empty desired state", async () => {
   const f = lifecycleMemory({
     version: 2,
@@ -551,6 +627,80 @@ it("switching between empty profiles still carries full supported cleanup covera
   const result = await f.lifecycle.switchProfile({ profileName: "alsoEmpty" });
   expect(result.refreshIntent).toBe(true);
   expect(result.desiredState.cleanupCoverage).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-review",
+    "afg-design",
+  ]);
+});
+
+it("switching from a valid null active profile computes complete cleanup for absent target agents", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { activeProfile: null, profiles: { work: { review: "legacy/model" }, other: {} } },
+  });
+  const result = await f.lifecycle.switchProfile({ profileName: "work" });
+  expect(f.persist).toHaveBeenCalledOnce();
+  expect(result.refreshIntent).toBe(true);
+  expect(result.desiredState.kind).toBe("active");
+  expect(result.desiredState.profileName).toBe("work");
+  expect(result.desiredState.cleanupCoverage).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
+  expect(f.pairs.calls[0]).toEqual([{ agent: "afg-review", model: "legacy/model", effort: null }]);
+});
+
+it("switching from a valid null active profile to an empty target covers every supported agent", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { activeProfile: null, profiles: { work: { review: "legacy/model" }, blank: {} } },
+  });
+  const result = await f.lifecycle.switchProfile({ profileName: "blank" });
+  expect(result.refreshIntent).toBe(true);
+  expect(result.desiredState.cleanupCoverage).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-review",
+    "afg-design",
+  ]);
+});
+
+it("switching from an absent active profile computes complete cleanup independently", async () => {
+  const f = lifecycleMemory({
+    version: 2,
+    models: { profiles: { work: { review: "legacy/model" }, blank: {} } },
+  });
+  const populated = await f.lifecycle.switchProfile({ profileName: "work" });
+  expect(populated.refreshIntent).toBe(true);
+  expect(populated.desiredState.cleanupCoverage).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
+  const f2 = lifecycleMemory({
+    version: 2,
+    models: { profiles: { work: { review: "legacy/model" }, blank: {} } },
+  });
+  const empty = await f2.lifecycle.switchProfile({ profileName: "blank" });
+  expect(empty.desiredState.cleanupCoverage).toEqual([
     "afergon-ai",
     "afg-debate",
     "afg-breakdown",
@@ -811,6 +961,39 @@ it("cloning to prototype-dangerous names creates own profiles without touching p
   await expect(f.lifecycle.cloneProfile({ sourceProfileName: "work", targetProfileName: "__proto__" })).rejects.toThrow(
     "Profile '__proto__' already exists",
   );
+});
+
+it("clone migration detects only recognized supported structured assignments", async () => {
+  const f = lifecycleMemory({
+    version: 1,
+    models: {
+      activeProfile: "work",
+      profiles: { work: { review: "legacy/model", "legacy-agent": { metadata: "opaque" } } },
+    },
+  });
+  const result = await f.lifecycle.cloneProfile({ sourceProfileName: "work", targetProfileName: "copy" });
+  expect(f.snapshots.input).toBeUndefined();
+  expect(f.storage.saved?.version).toBe(1);
+  expect(result.version).toBe(1);
+  expect(result.snapshotPath).toBeUndefined();
+  const savedProfiles = (f.storage.saved?.models as { profiles: Record<string, Record<string, unknown>> }).profiles;
+  expect(savedProfiles.copy).toEqual({ review: "legacy/model", "legacy-agent": { metadata: "opaque" } });
+  expect(f.persist).toHaveBeenCalledOnce();
+});
+
+it("clone migration still snapshots original source for supported structured assignments", async () => {
+  const f = lifecycleMemory({
+    version: 1,
+    models: { activeProfile: "work", profiles: { work: { review: { model: "openai/gpt-5.5", reasoningEffort: "low" } } } },
+  });
+  const result = await f.lifecycle.cloneProfile({ sourceProfileName: "work", targetProfileName: "copy" });
+  expect(f.snapshots.input?.source).toBe(f.read.mock.results[0].value.source);
+  expect(f.snapshots.input?.recoveryDocument).toBe(f.document);
+  expect(f.snapshots.input?.recoveryDocument.version).toBe(1);
+  expect(f.storage.saved?.version).toBe(2);
+  expect(result.version).toBe(2);
+  expect(result.snapshotPath).toBe("memory:backup");
+  expect(f.persist).toHaveBeenCalledOnce();
 });
 
 it("caller mutations during pending validation never reach the committed snapshot", async () => {

@@ -93,9 +93,10 @@ export class ProfileAssignments {
    * Complete cleanup coverage per the accepted P3 contract: every supported
    * agent the desired assignments do not satisfy (satisfied = desired carries a
    * same-canonical entry AND the previous entry had no effort override or the
-   * desired entry carries one), unioned with prior verbatim identities (foreign
-   * keys) from both sides. Prior-only strings stay opaque and are never forced
-   * into assignments.
+   * desired entry carries one), unioned with PRIOR verbatim identities
+   * (previous-side foreign keys only). Destination-only foreign keys are not
+   * cleanup targets: they stay raw in the desired document and are never
+   * managed assignments.
    */
   cleanupCoverageFor(desired: ProfileAssignments): string[] {
     const desiredEntries = desired.raw();
@@ -110,13 +111,7 @@ export class ProfileAssignments {
       if (!satisfied) coverage.push(agent);
     }
     const seen = new Set<string>(coverage);
-    for (const [key, value] of Object.entries(this.entries)) {
-      if (seen.has(key) || !isForeignIdentity(key, this.agents)) continue;
-      seen.add(key);
-      coverage.push(key);
-      void value;
-    }
-    for (const key of Object.keys(desiredEntries)) {
+    for (const key of Object.keys(this.entries)) {
       if (seen.has(key) || !isForeignIdentity(key, this.agents)) continue;
       seen.add(key);
       coverage.push(key);

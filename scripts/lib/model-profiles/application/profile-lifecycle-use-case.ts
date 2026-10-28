@@ -85,7 +85,9 @@ export class ProfileLifecycleUseCase {
         migrationRequired: edit.changed && edit.version === 1 && typeof written === "object" && written !== null,
         desiredState: this.desiredStateFor(
           edit.models,
-          editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
+          // Coverage requests host action: only a changed active-profile edit
+          // carries it; no-ops keep [] with refreshIntent false.
+          edit.changed && editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
         ),
         refreshIntent: editedIsActive,
       };
@@ -149,7 +151,10 @@ export class ProfileLifecycleUseCase {
         version: edit.version,
         pairs: edit.changed ? edit.previous.affectedPairs(edit.next) : [],
         migrationRequired: edit.changed && edit.version === 1 && typeof written === "object" && written !== null,
-        desiredState: this.desiredStateFor(edit.models, editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : []),
+        desiredState: this.desiredStateFor(
+          edit.models,
+          edit.changed && editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
+        ),
         refreshIntent: editedIsActive,
       };
     });
@@ -226,7 +231,9 @@ export class ProfileLifecycleUseCase {
         migrationRequired,
         desiredState: this.desiredStateFor(
           edit.models,
-          edit.activeName === input.profileName ? edit.previous.cleanupCoverageFor(edit.next) : [],
+          edit.changed && edit.activeName === input.profileName
+            ? edit.previous.cleanupCoverageFor(edit.next)
+            : [],
         ),
         refreshIntent: edit.activeName === input.profileName,
       };
@@ -258,9 +265,19 @@ export class ProfileLifecycleUseCase {
         changed: true,
         version,
         pairs: this.resolvedPairsOf(source),
+        // Migration protects recognized supported structured assignments only;
+        // foreign opaque object metadata is preserved verbatim without
+        // triggering a version upgrade.
         migrationRequired:
           version === 1 &&
-          Object.values(source.raw()).some((value) => typeof value === "object" && value !== null),
+          Object.entries(source.raw()).some(([key, value]) => {
+            try {
+              this.agents.normalize(key);
+            } catch {
+              return false;
+            }
+            return typeof value === "object" && value !== null;
+          }),
         desiredState: this.desiredStateFor(models, []),
         refreshIntent: false,
       };
@@ -303,7 +320,10 @@ export class ProfileLifecycleUseCase {
         migrationRequired: false,
         desiredState: this.desiredStateFor(
           models,
-          changed && previousActive ? previousActive.cleanupCoverageFor(target) : [],
+          // A null or absent active profile has no previous assignments; the
+          // empty fallback still yields complete cleanup for absent target
+          // agents whenever the selection changes.
+          changed ? (previousActive ?? this.emptyAssignments()).cleanupCoverageFor(target) : [],
         ),
         refreshIntent: changed,
       };

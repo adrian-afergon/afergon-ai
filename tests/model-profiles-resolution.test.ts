@@ -508,3 +508,32 @@ it("cleanup coverage spans every supported agent plus prior verbatim identities"
     "afg-design",
   ]);
 });
+
+it("cleanup coverage never adopts destination-only foreign identities", () => {
+  const previous = ProfileAssignments.create({}, "models.profiles[empty]", agents);
+  const desired = ProfileAssignments.create(
+    { review: { model: "openai/gpt-5.5" }, "new-foreign": { metadata: "x" } },
+    "models.profiles[next]",
+    agents,
+  );
+  expect(previous.cleanupCoverageFor(desired)).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+  ]);
+  const withPrior = ProfileAssignments.create({ "old-foreign": "x/model" }, "models.profiles[work]", agents);
+  expect(withPrior.cleanupCoverageFor(desired)).toEqual([
+    "afergon-ai",
+    "afg-debate",
+    "afg-breakdown",
+    "afg-specify",
+    "afg-plannify",
+    "afg-implement",
+    "afg-design",
+    "old-foreign",
+  ]);
+});

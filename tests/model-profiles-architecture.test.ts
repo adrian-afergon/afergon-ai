@@ -211,6 +211,26 @@ it("S13 atomicPersist commit callers remain exactly the update and lifecycle use
       expect(fs.readFileSync(path.join(layerDir, name), "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
     }
   }
+  // The same prohibition extends to every other TypeScript source under
+  // scripts/ (read-only walk; generated dist/ lives outside scripts/ and test
+  // fixtures live under tests/, so neither is scanned here).
+  const scriptsDir = path.resolve("scripts");
+  const outside: string[] = [];
+  function walkScripts(dir: string): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (path.resolve(full) === vertical) continue;
+        walkScripts(full);
+      } else if (entry.name.endsWith(".ts")) {
+        outside.push(full);
+      }
+    }
+  }
+  walkScripts(scriptsDir);
+  for (const file of outside) {
+    expect(fs.readFileSync(file, "utf8")).not.toMatch(/\.atomicPersist\s*\(/);
+  }
 });
 
 it("S13 live entry routes never reach the lifecycle capability", () => {
