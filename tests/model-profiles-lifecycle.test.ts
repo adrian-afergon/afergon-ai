@@ -1,4 +1,8 @@
 import { expect, it, vi } from "vitest";
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { ProfileDocumentPolicy } from "../scripts/lib/model-profiles/domain/profile-document-policy.js";
 import { RawProfileDocumentCloner } from "../scripts/lib/model-profiles/domain/raw-profile-document-cloner.js";
@@ -548,6 +552,70 @@ it("editing a profile in a valid null-active document reports intentional no-act
   expect(result.desiredState.kind).toBe("no-active");
   expect(result.desiredState.profileName).toBeNull();
   expect(result.desiredState.assignments).toEqual([]);
+});
+
+it("emitted lifecycle cold-imports without IO and executes real saves and refusals", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-p3-emitted-"));
+  const vertical = new URL("../dist/scripts/lib/model-profiles/", import.meta.url).href;
+  const child = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import assert from "node:assert/strict";
+    import fs from "node:fs";
+    const vertical = ${JSON.stringify(vertical)};
+    const root = ${JSON.stringify(root)};
+    const originals = [];
+    const moduleReads = [
+      vertical + "application/profile-lifecycle-use-case.js",
+      vertical + "domain/profile-resolution.js",
+      vertical + "domain/agent-target-policy.js",
+      vertical + "domain/stored-assignment.js",
+    ];
+    function guard() {
+      for (const [object, method] of [[fs, "readFileSync"], [fs, "writeFileSync"], [fs, "renameSync"], [fs, "mkdirSync"]]) {
+        const original = object[method];
+        originals.push([object, method, original]);
+        object[method] = (...args) => {
+          const file = String(args[0]);
+          if (method === "readFileSync" && moduleReads.includes(file)) return original(...args);
+          throw new Error("Unexpected ambient " + method);
+        };
+      }
+    }
+    function restore() { for (const [object, method, original] of originals.splice(0)) object[method] = original; }
+    let lifecycleModule;
+    guard();
+    try {
+      lifecycleModule = await import(vertical + "application/profile-lifecycle-use-case.js");
+    } finally { restore(); }
+    assert.equal(typeof lifecycleModule.ProfileLifecycleUseCase, "function");
+    const { createProfileLifecycleCapabilities } = await import(vertical + "infrastructure/profile-composition.js");
+    const configPath = root + "/config.json";
+    const document = { version: 2, models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.5" } } } };
+    fs.writeFileSync(configPath, JSON.stringify(document), { mode: 0o600 });
+    let validationCalls = 0;
+    const capabilities = createProfileLifecycleCapabilities({ AFERGON_AI_CONFIG_DIR: root }, {
+      validateAffectedPairs: async () => {
+        validationCalls += 1;
+        if (validationCalls === 2) throw new Error("unsupported pair");
+      },
+    });
+    const result = await capabilities.lifecycle.saveAssignment({ profileName: "work", agentName: "review", patch: { reasoningEffort: "low" } });
+    assert.equal(result.refreshIntent, true);
+    assert.equal(result.desiredState.kind, "active");
+    const saved = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    assert.deepEqual(saved.models.profiles.work.review, { model: "openai/gpt-5.5", reasoningEffort: "low" });
+    const before = fs.readFileSync(configPath);
+    await assert.rejects(
+      capabilities.lifecycle.saveAssignment({ profileName: "work", agentName: "review", patch: { reasoningEffort: "high" } }),
+      /unsupported pair/,
+    );
+    assert.deepEqual(fs.readFileSync(configPath), before);
+  `], { encoding: "utf8" });
+  try {
+    expect(child.status).toBe(0);
+    expect(child.stderr).toBe("");
+  } catch (error) {
+    throw new Error(`emitted lifecycle child failed: ${child.stderr || error}`);
+  }
 });
 
 it("cloning onto an existing profile is refused without writes", async () => {

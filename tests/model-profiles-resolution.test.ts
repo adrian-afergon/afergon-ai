@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { AgentTargetPolicy } from "../scripts/lib/model-profiles/domain/agent-target-policy.js";
 import { ProfileAssignments, ProfileDesiredState } from "../scripts/lib/model-profiles/domain/profile-resolution.js";
 
@@ -323,4 +324,59 @@ it("malformed recognized assignments are refused with a field path while foreign
   );
   expect(foreign.raw()["legacy-agent"]).toEqual({ anything: "goes", reasoningEffort: "" });
   expect(foreign.resolve("review").resolvedModel).toBe("openai/gpt-5.5");
+});
+
+it("emitted resolution domain cold-imports without IO and resolves identically to source", () => {
+  const vertical = new URL("../dist/scripts/lib/model-profiles/", import.meta.url).href;
+  const child = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import assert from "node:assert/strict";
+    import fs from "node:fs";
+    const vertical = ${JSON.stringify(vertical)};
+    const originals = [];
+    const moduleReads = [
+      vertical + "domain/profile-resolution.js",
+      vertical + "domain/agent-target-policy.js",
+      vertical + "domain/stored-assignment.js",
+    ];
+    function guard() {
+      for (const [object, method] of [[fs, "readFileSync"], [fs, "writeFileSync"], [fs, "statSync"]]) {
+        const original = object[method];
+        originals.push([object, method, original]);
+        object[method] = (...args) => {
+          const file = String(args[0]);
+          if (method === "readFileSync" && moduleReads.includes(file)) return original(...args);
+          throw new Error("Unexpected ambient " + method);
+        };
+      }
+    }
+    function restore() { for (const [object, method, original] of originals.splice(0)) object[method] = original; }
+    let module;
+    guard();
+    try {
+      module = await import(vertical + "domain/profile-resolution.js");
+    } finally { restore(); }
+    assert.equal(typeof module.ProfileAssignments.create, "function");
+    assert.equal(typeof module.ProfileDesiredState.noActive, "function");
+    const { AgentTargetPolicy } = await import(vertical + "domain/agent-target-policy.js");
+    const assignments = module.ProfileAssignments.create(
+      { "afergon-ai": { model: "openai/gpt-5.5", reasoningEffort: "high" }, review: { reasoningEffort: "low" } },
+      "models.profiles[work]",
+      new AgentTargetPolicy(),
+    );
+    const review = assignments.resolve("review");
+    assert.equal(review.modelSource, "implicit-inherit");
+    assert.equal(review.resolvedModel, "openai/gpt-5.5");
+    assert.equal(review.configuredEffort, "low");
+    const pairs = assignments.affectedPairsForModel("afergon-ai", "anthropic/claude-opus");
+    assert.equal(pairs.length, 8);
+    assert.deepEqual(pairs[0], { agent: "afergon-ai", model: "anthropic/claude-opus", effort: "high" });
+    assert.deepEqual(pairs[1], { agent: "afg-debate", model: "anthropic/claude-opus", effort: null });
+    assert.deepEqual(pairs[6], { agent: "afg-review", model: "anthropic/claude-opus", effort: "low" });
+  `], { encoding: "utf8" });
+  try {
+    expect(child.status).toBe(0);
+    expect(child.stderr).toBe("");
+  } catch (error) {
+    throw new Error(`emitted resolution child failed: ${child.stderr || error}`);
+  }
 });
