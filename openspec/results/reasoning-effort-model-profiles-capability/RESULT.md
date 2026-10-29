@@ -4,7 +4,7 @@
 
 completed-with-notes
 
-All plan checkboxes that could be produced locally are produced; the full local verification battery passes at the source/test tip. Independent canonical review, actual native Windows CI, and publication are OUTSTANDING external gates — none is claimed as produced here.
+All plan checkboxes that could be produced locally are produced, including the user-authorized bounded review-correction round at `1178a7c` (bulk acknowledgement intent made an explicit top-level operation, verdict provenance copy-hardened, validator constants deduplicated, reviewer behavior pins added, emitted-test stderr check made warning-tolerant). The full local verification battery passes at the current source/test tip. Independent canonical review, actual native Windows CI, and publication are OUTSTANDING external gates — none is claimed as produced here.
 
 ## Plan Reference
 
@@ -16,7 +16,7 @@ All plan checkboxes that could be produced locally are produced; the full local 
 
 ## Execution Summary
 
-P4 delivered the inactive capability-validation vertical over reviewed P3: two domain classes (`CapabilityVerdict`; `UnknownEffortAcknowledgement` + `UnknownEffortAcknowledgementPolicy`), application ports plus one strict shared validator (`ValidateProfileCapabilityUseCase`), an additive lifecycle bridge (capture-before-await, whole-receipt verification against the candidate's actual post-resolution pairs, collision-refusing acknowledgement application, ack-only intent with fresh validation and idempotent no-write, ORIGINAL-source snapshot before v2, exactly one atomic commit, P3 void-callback compatibility), the pinned OpenCode 1.18.34 evidence seed with exact-tuple adapter and source-evidence compatibility report, an immutable DATA fixture, an additive composition factory injecting exactly one strict validator, two new behavior suites (43 tests), the Windows list extension 13→15, live-route inactivity assertions, limitations guidance in the vertical README, and this RESULT. All 16 active Gherkin scenarios are mapped to passing tests. No Effect, no new dependencies, manifest/lockfile byte-identical to base, no copied executable upstream code, no OpenCode/provider execution, no network, no live CLI/TUI/install/update activation.
+P4 delivered the inactive capability-validation vertical over reviewed P3: two domain classes (`CapabilityVerdict`; `UnknownEffortAcknowledgement` + `UnknownEffortAcknowledgementPolicy`), application ports plus one strict shared validator (`ValidateProfileCapabilityUseCase`), an additive lifecycle bridge (capture-before-await, whole-receipt verification against the candidate's actual post-resolution pairs, collision-refusing acknowledgement application, ack-only intent with fresh validation and idempotent no-write, ORIGINAL-source snapshot before v2, exactly one atomic commit, P3 void-callback compatibility), the pinned OpenCode 1.18.34 evidence seed with exact-tuple adapter and source-evidence compatibility report, an immutable DATA fixture, an additive composition factory injecting exactly one strict validator, two new behavior suites, the Windows list extension 13→15, live-route inactivity assertions, limitations guidance in the vertical README, and this RESULT. All 16 active Gherkin scenarios are mapped to passing tests. The user-authorized review-correction round then made bulk acknowledgement intent an explicit OPERATION-WIDE top-level flag (per-item flags fail closed with a diagnostic), froze an independent copy of verdict provenance instead of the caller's object, deduplicated validator constants, and added the reviewer-recommended behavior pins. No Effect, no new dependencies, manifest/lockfile byte-identical to base, no copied executable upstream code, no OpenCode/provider execution, no network, no live CLI/TUI/install/update activation.
 
 ## Completed Steps
 
@@ -30,6 +30,7 @@ P4 delivered the inactive capability-validation vertical over reviewed P3: two d
 - Capability and acknowledgement suites plus P3 callback/source/emitted regressions, pending-input mutation, forged/incomplete/duplicate/unrequested receipts, parent-change staleness, known-negative precedence, collisions, ack-only migration, atomic-failure preservation. (Produced.)
 - Both new test files appended to the explicit native Windows list (13→15, nothing removed); cold-import no-IO; direct source/emitted parity; no whole fault-suite skips. (Produced; native EXECUTION not produced.)
 - Limitations guidance in the existing vertical README; RESULT authored during implementation. (Produced.) Exact-head independent review and actual native CI: OUTSTANDING.
+- Review-correction round (user `Autorizo` at `1178a7c`, same tree/base): bulk ACK intent moved to the top-level operation with per-item flags failing closed; verdict provenance frozen as an independent deep copy; validator marker/version constants deduplicated; reviewer behavior pins added (wrong-profile receipt atomic reject, stored runtime-default replay exactness, supported-pair intent no-write); emitted-test stderr check made warning-tolerant without silencing genuine failures. (Produced.)
 
 ## Updated Plan Artifacts
 
@@ -38,7 +39,7 @@ P4 delivered the inactive capability-validation vertical over reviewed P3: two d
 
 ## Commits Created
 
-All seven known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs from `git log`:
+All nine known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs from `git log`:
 
 1. `519ba0e7e198796ec2d620fe1fb4f6b7a68697fa` — feat(model-profiles): add capability verdict and pair-bound acknowledgement domain classes
 2. `658a306317fa9a867b3b2e07a1e7f1a6f7d497b7` — feat(model-profiles): add shared capability validation port and strict validator use case
@@ -47,21 +48,23 @@ All seven known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs
 5. `ee1846ce37e8ce922379536d2e19ef3a923bf441` — docs(model-profiles): record P4 capability limitations guidance and implementation result
 6. `d2577920eb6362911d358ad6c52af7babe622f7f` — docs(models): mark produced P4 plan steps and acceptance criteria
 7. `0dbab37c01b308ef0e4f07374042699ca3a75ee4` — docs(model-profiles): record final measured P4 implementation size and closure commits
+8. `1178a7c498468f3f461d4fe999b8444aa6cdee0f` — docs(model-profiles): align implementation result with the 11-section handoff contract
+9. `917aa7d642721a5f0973471fb8574b20461e19d2` — fix(model-profiles): make bulk acknowledgement intent a top-level operation and harden verdict provenance
 
-The final documentation-closure commit (this docs-only contract fix) is the branch HEAD at handoff time; its exact SHA is returned in the implementation handoff and is deliberately NOT embedded self-referentially here. No amend, no force, no history rewrite.
+The final documentation-closure commit (this RESULT evidence update) is the branch HEAD at handoff time; its exact SHA is returned in the implementation handoff and is deliberately NOT embedded self-referentially here. No amend, no force, no history rewrite.
 
 ## Files Changed
 
-20 files vs base B at anchor `0dbab37` (authoritative per-file table in `## Measured Size` supplementary section): 2 new domain modules, 2 new application modules, 3 new infrastructure modules, additive edits to `profile-lifecycle-use-case.ts` / `profile-resolution.ts` / `profile-composition.ts`, 2 new test suites, 1 new DATA fixture, updates to `model-profiles-architecture.test.ts` / `model-profiles-lifecycle.test.ts` / `model-profiles-resolution.test.ts`, `.github/workflows/windows-launcher.yml`, `scripts/lib/model-profiles/README.md`, PLAN.md, RESULT.md. Source, tests, package.json and pnpm-lock.yaml remain byte-identical to `0dbab37` in this docs-only closure (verified with `git diff --quiet` before handoff).
+20 files vs base B at the current code/test anchor `917aa7d` (authoritative per-file table in `## Measured Size` supplementary section): 2 new domain modules, 2 new application modules, 3 new infrastructure modules, additive edits to `profile-lifecycle-use-case.ts` / `profile-resolution.ts` / `profile-composition.ts`, 2 new test suites, 1 new DATA fixture, updates to `model-profiles-architecture.test.ts` / `model-profiles-lifecycle.test.ts` / `model-profiles-resolution.test.ts`, `.github/workflows/windows-launcher.yml`, `scripts/lib/model-profiles/README.md`, PLAN.md, RESULT.md. Source, tests, package.json and pnpm-lock.yaml remain byte-identical to `917aa7d` in this docs-only closure (verified with `git diff --quiet` before handoff).
 
 ## Verification Results
 
-- Step-level checks: passed — focused suites 43 passed (exit 0); P3 regression set 665 passed | 1 skipped (exit 0); per-unit RED/GREEN exits recorded contemporaneously in the supplementary TDD Log.
-- Final checks at the source/test tip (content of anchor `0dbab37`; these are verified source anchors, NOT re-claimed as fresh runs of the docs-only closure commit):
-  - Tests: passed — full `pnpm test` → **1250 passed | 9 skipped (1259)**, 39 files passed | 3 skipped (42), exit 0 (baseline before changes in this tree: 1205 passed | 9 skipped, 37 files → +45 tests, +2 files).
+- Step-level checks: passed — focused suites **50 passed** (exit 0) at the current tip; P3 regression set **665 passed | 1 skipped** (exit 0); per-unit RED/GREEN exits recorded contemporaneously in the supplementary TDD Log (including the correction round's Units G–K).
+- Final checks at the current source/test tip (commit `917aa7d` content; the docs-only closure commit changes no source/test bytes — proven by `git diff --quiet 917aa7d..HEAD -- scripts tests package.json pnpm-lock.yaml`):
+  - Tests: passed — full `pnpm test` → **1257 passed | 9 skipped (1266)**, 40 files passed | 3 skipped (43), exit 0 (154.43s). Historical anchors, clearly labeled: baseline before any P4 change in this tree 1205 passed | 9 skipped (37 files); after the initial P4 round 1250 passed | 9 skipped (39 files); the correction round adds **+7 tests** (bulk top-level intent ×3, verdict provenance copy ×1, reviewer pins ×3).
   - Build: passed — `pnpm build` exit 0; `pnpm typecheck` exit 0.
-  - Additional Evidence: passed — `pnpm run health:runtime` (no remote telemetry), `pnpm run doctor:runtime` (no recorded failures), emitted/source parity cold-import with fs guard, saver-hash and two-callers guards intact, manifest/lockfile diff vs base empty, no `effect` references.
-- Docs-only closure commit: tests/build **not applicable** (no source/test/manifest bytes change — proven by `git diff --quiet 0dbab37..HEAD -- scripts tests package.json pnpm-lock.yaml`); diff check and content review apply and are the applicable evidence for this commit.
+  - Additional Evidence: passed — `pnpm run health:runtime` (no remote telemetry), `pnpm run doctor:runtime` (no recorded failures), emitted/source API parity re-verified after the bulk-operation signature change (`tests/typescript-build.test.ts` 12 passed, including the emitted capability cold-import), saver-hash and two-callers guards intact, manifest/lockfile diff vs base empty, no `effect` references.
+- Docs-only closure commit: tests/build **not applicable** (no source/test/manifest bytes change — proven by `git diff --quiet`); diff check and content review apply and are the applicable evidence for this commit.
 
 ## Blockers or Deviations
 
@@ -69,7 +72,8 @@ The final documentation-closure commit (this docs-only contract fix) is the bran
   - **Batch RED authoring** (more than one failing test authored in one cycle, contrary to the one-behavior-at-a-time rule): Unit A triangulation 3 (2 tests: unknown factory + immutability); Unit B B3+B4 (characterization + RED in one edit); Unit D D7–D9 (3 tests), D10–D12 (3 tests), D13–G13 (4 tests, one failing for a scaffold reason); Unit E E3 (2 tests). Each batch still went GREEN before the next batch was authored.
   - **Scaffold-vs-behavioral RED classification**: Unit B B7's first failure was a missing test import (`ReferenceError`) — scaffolding, not a behavioral RED; the behavioral assertions passed immediately after the import fix. Unit D D13–G13's single failure was likewise a missing helper import (scaffolding). Module-absence failures for F1 (`createProfileCapabilityLifecycleCapabilities` is not a function) are scaffolding-adjacent: the module existed, the factory behavior did not.
   - **TPP overstep (bounded)**: Unit C3's GREEN implemented the whole unknown-decision branch (policy → intent → reject) in one step because the single test asserted both the rejection and the intent-acknowledgement outcomes; Unit F1's GREEN built the complete factory because the test asserted the full additive keyset. Lower-index transformations were used everywhere else as logged.
-  - **Size growth**: measured 2,210 adds+dels at anchor `0dbab37` vs the 1,150–1,350 provisional forecast. The plan states forecasts are not measured implementation and the approved exception has no numeric cap; no evidence was compressed or cut. Largest deltas: the two behavior suites (1,126 lines vs 430 forecast — adversarial depth: forged/incomplete/duplicate/unrequested receipts, pending-input mutation, collision refusal, parent/child staleness, void compatibility, ack-only idempotence, atomic failure preservation) and the lifecycle bridge (257 changed lines vs 106 forecast — whole-receipt verification plus ack-only/migration accounting).
+  - **Size growth**: measured 2,210 adds+dels at anchor `0dbab37` (2,479 at the post-correction anchor `917aa7d`) vs the 1,150–1,350 provisional forecast. The plan states forecasts are not measured implementation and the approved exception has no numeric cap; no evidence was compressed or cut. Largest deltas: the two behavior suites (1,297 lines at `917aa7d` vs 430 forecast — adversarial depth: forged/incomplete/duplicate/unrequested receipts, pending-input mutation, collision refusal, parent/child staleness, void compatibility, ack-only idempotence, atomic failure preservation, plus the correction round's top-level-intent and pin tests) and the lifecycle bridge (262 changed lines vs 106 forecast — whole-receipt verification plus ack-only/migration accounting).
+  - **Correction-round honest labels**: G3 (absent/false flag rejects before snapshot), J-1 (wrong-profile receipt atomic reject), and J-3 (supported-pair intent writes nothing) passed immediately after authoring — honest characterizations of already-correct behavior, not fabricated REDs. J-2 needed one test-side message-regex alignment (the concrete-model rejection surfaces the missing-context feedback in that test's empty-resolver setup; the rejection itself was correct). G1's GREEN intentionally broke the two prior bulk tests that encoded the removed per-item contract; they were updated to the approved top-level shape with their forged/incomplete/duplicate semantics unchanged — a contract-driven test update, not a workaround.
 
 ## Notes
 
@@ -179,6 +183,31 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
 - Windows explicit list extended 13→15 (`tests/model-profiles-acknowledgement.test.ts`, `tests/model-profiles-capability.test.ts` appended; nothing removed).
 - Step verification: `pnpm typecheck` → exit 0; focused capability+acknowledgement+architecture → 79 passed, exit 0; `pnpm build` → exit 0.
 
+### Unit G — Correction round: top-level bulk acknowledgement intent (`application/profile-lifecycle-use-case.ts`)
+
+- RED G1: misplaced per-item `acknowledgeUnknownEffort` flag silently broadened permission via OR-of-item-flags; test asserted fail-closed rejection with a diagnostic, no write, no snapshot → 1 failed. GREEN: runtime diagnostic rejection only (minimal) → 24 passed. Two prior bulk tests (D5/D6) encoded the removed per-item contract and were updated to the approved top-level shape with unchanged forged/incomplete/duplicate semantics.
+- RED G2: top-level `saveAssignments({ acknowledgeUnknownEffort: true })` ignored (flag not yet wired) → unknown rejected; test asserted both unknown affected pairs receipted exactly with per-pair persisted metadata → 1 failed. GREEN: top-level input flag wired, per-item flag removed from `LifecycleAssignmentItem`, OR-of-item-flags and dead `ackAgentNames` field removed, ack-only scope = all item agents (operation-wide) → 25 passed.
+- G3 absent/false top-level flag rejects unknown before ANY snapshot commit (v1 document, `snapshots.acquired` empty, no persist) → passed immediately; honest characterization of the commit sequence (validation precedes the snapshot stage), labeled as such → 26 passed.
+- Parent/inheriting-children coverage under the operation-wide intent remains the existing D10 test (parent change + intent writes the child's NEW exact pair); unchanged and passing.
+
+### Unit H — Correction round: verdict provenance copy (`domain/capability-verdict.ts`)
+
+- RED H1: the constructor froze the CALLER's provenance object (input side effect); test asserted the caller object stays unfrozen/mutable, the verdict carries an independent frozen copy, and post-factory caller mutation cannot change the verdict → 1 failed. GREEN: `freezeProvenanceCopy` deep-copies the known layout (flat identity fields + nested pin) and the constructor stores the frozen copy → 21 passed (suite total). One intermediate failure (copy frozen but original still assigned) was fixed before green; recorded honestly.
+
+### Unit I — Correction round: validator constants (pure green refactor)
+
+- Replaced the repeated `"afergon-ai.unknown-effort-acknowledgement"` / `ackVersion: 1` literals in the strict validator with the exported `UNKNOWN_EFFORT_ACK_MARKER` / `UNKNOWN_EFFORT_ACK_VERSION` constants. Same behavior; no fake RED — proven by the existing read/matching tests staying green: focused suites 47 passed, exit 0.
+
+### Unit J — Correction round: reviewer behavior pins (sequential, honest labels)
+
+- J-1 receipt naming a different profile rejects atomically (no metadata, no snapshot, no write) → passed immediately; honest characterization (the profile check is the first verification step) → 27 passed.
+- J-2 stored runtime-default acknowledgement replay in the pure validator: accepts the exact null model state + effort, never a later concrete model → RED on the assertion message only (the empty-resolver setup surfaces the missing-context feedback; the rejection itself was correct) → aligned to the actual contract message → 22 passed (suite total).
+- J-3 acknowledgement intent on an already-SUPPORTED unchanged pair: fresh validation runs, no metadata, no write, no refresh → passed immediately; honest characterization of the supported-outcome/no-ack path → 28 passed.
+
+### Unit K — Correction round: emitted-test stderr check (test-harness only)
+
+- The emitted capability child asserted `stderr === ""`, brittle against incidental Node diagnostics. Simple meaningful fix: non-zero status remains the genuine failure gate and stderr must not carry real error markers (`AssertionError|Error:|Cannot find module`), while incidental warnings no longer fail the check. No production change, no broad harness remediation; P3 emitted tests untouched.
+
 ## Gherkin → Test Mapping (16 active scenarios)
 
 | # | Scenario | Proving test(s) |
@@ -224,34 +253,36 @@ Boundary evidence:
 - Live-route inactivity (G16) asserted for the capability surface; existing P3 live-route guard untouched and passing.
 - No network or provider credentials used; all tests offline by construction.
 
-## Measured Size (supplementary; exact at named anchor `0dbab37c01b308ef0e4f07374042699ca3a75ee4`, vs base B `80e3974d0a290060aca7c0d19a3e85b6f13f8022`)
+## Measured Size (supplementary; exact at named anchors, vs base B `80e3974d0a290060aca7c0d19a3e85b6f13f8022`)
 
-| Component | Adds | Dels |
+Named anchors: `0dbab37c01b308ef0e4f07374042699ca3a75ee4` (initial implementation tip, historical) and `917aa7d642721a5f0973471fb8574b20461e19d2` (post-correction code/test tip, current). Component rows are exact at the named anchor shown; they are historical anchors and do not substitute for the reproducible `git diff --shortstat <base>..<tip>` returned in the handoff.
+
+| Component | @`0dbab37` | @`917aa7d` |
 | --- | ---: | ---: |
-| `tests/model-profiles-acknowledgement.test.ts` | 695 | 0 |
-| `tests/model-profiles-capability.test.ts` | 431 | 0 |
-| `application/profile-lifecycle-use-case.ts` (bridge) | 245 | 12 |
-| `openspec/results/.../RESULT.md` (this file, at the named anchor) | 186 | 0 |
-| `domain/unknown-effort-acknowledgement.ts` | 137 | 0 |
-| `application/validate-profile-capability-use-case.ts` | 105 | 0 |
-| `infrastructure/opencode-capability-evidence.ts` | 59 | 0 |
-| `domain/capability-verdict.ts` | 52 | 0 |
-| `application/capability-validation-port.ts` | 48 | 0 |
-| `infrastructure/opencode-capability-adapter.ts` | 47 | 0 |
-| `tests/model-profiles-architecture.test.ts` | 39 | 2 |
-| `tests/fixtures/opencode-pin-catalog/gpt-5.1.json` | 36 | 0 |
-| `infrastructure/opencode-compatibility-report.ts` | 35 | 0 |
-| `infrastructure/profile-composition.ts` | 29 | 0 |
-| `scripts/lib/model-profiles/README.md` | 15 | 0 |
-| `openspec/plans/.../PLAN.md` (checkbox updates) | 14 | 14 |
-| `domain/profile-resolution.ts` | 5 | 0 |
-| `.github/workflows/windows-launcher.yml` (13→15) | 2 | 0 |
-| emitted-test module-read allowlists (lifecycle, resolution) | 2 | 0 |
-| **Total at named anchor `0dbab37` (20 files, `git diff --shortstat`)** | **2182** | **28** |
+| `tests/model-profiles-acknowledgement.test.ts` | 695 | 818 |
+| `tests/model-profiles-capability.test.ts` | 431 | 479 |
+| `application/profile-lifecycle-use-case.ts` (bridge) | 245/12 | 249/13 |
+| `openspec/results/.../RESULT.md` (this file) | 186 | measured at closure tip in handoff |
+| `domain/unknown-effort-acknowledgement.ts` | 137 | 137 |
+| `application/validate-profile-capability-use-case.ts` | 105 | 105 |
+| `infrastructure/opencode-capability-evidence.ts` | 59 | 59 |
+| `domain/capability-verdict.ts` | 52 | 68 |
+| `application/capability-validation-port.ts` | 48 | 48 |
+| `infrastructure/opencode-capability-adapter.ts` | 47 | 47 |
+| `tests/model-profiles-architecture.test.ts` | 39/2 | 39/2 |
+| `tests/fixtures/opencode-pin-catalog/gpt-5.1.json` | 36 | 36 |
+| `infrastructure/opencode-compatibility-report.ts` | 35 | 35 |
+| `infrastructure/profile-composition.ts` | 29 | 29 |
+| `scripts/lib/model-profiles/README.md` | 15 | 30 |
+| `openspec/plans/.../PLAN.md` | 14/14 | 15/14 |
+| `domain/profile-resolution.ts` | 5 | 5 |
+| `.github/workflows/windows-launcher.yml` (13→15) | 2 | 2 |
+| emitted-test module-read allowlists (lifecycle, resolution) | 2 | 2 |
+| **Total (`git diff --shortstat`)** | **2182/28 = 2210** | **2450/29 = 2479** |
 
-Authoritative totals: implementation at the named code/test tip `0dbab37` = **2182 adds + 28 dels = 2210**; initial planning publication reported separately = 287 (unit A, PR141) + 226 (unit B, PR142) = **513**; planning + implementation combined = **2723**. The docs-only contract-fix closure tip is measured reproducibly via `git diff --shortstat <base>..<HEAD>` in the handoff (no recursive fix commits, no self-embedded SHA). Component rows are exact at the named anchor and are historical anchors — they are not re-measured per later docs commit and do not substitute for the diff short-stat.
+Authoritative totals: implementation at the current code/test tip `917aa7d` = **2450 adds + 29 dels = 2479**; initial planning publication reported separately = 287 (unit A, PR141) + 226 (unit B, PR142) = **513**; planning + implementation combined = **2992**. The docs-only closure tip is measured reproducibly via `git diff --shortstat <base>..<HEAD>` in the handoff (no recursive fix commits, no self-embedded SHA).
 
-Honest growth report: the measured implementation total (2,210 adds+dels) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,126 lines vs 430 forecast — the adversarial triangulation depth the plan requires) and the lifecycle bridge (257 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting).
+Honest growth report: the measured implementation total (2,479 adds+dels) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,297 lines vs 430 forecast — the adversarial triangulation depth the plan requires plus the correction round) and the lifecycle bridge (262 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting).
 
 ## Known Limits and Outstanding Gates
 
