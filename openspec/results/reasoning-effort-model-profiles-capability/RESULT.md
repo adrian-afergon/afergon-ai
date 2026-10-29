@@ -59,6 +59,27 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
   7. C10 pending-input mutation safety (mutating the caller array after invocation) + frozen receipt/outcomes — characterization of the entry snapshot + freeze built in C1 → 13 passed.
 - Step verification: `pnpm typecheck` → exit 0 (after typing test stored-ack fixtures); focused suites 20 passed.
 
+### Unit D — Additive lifecycle bridge (`application/profile-lifecycle-use-case.ts`, `domain/profile-resolution.ts`)
+
+- RED D1: `withClearedEffort` kept acknowledgement metadata → 1 failed. GREEN: owned-only removal via `readOwn` (foreign preserved) → 8 passed.
+- RED D2: intent save rejected by the strict validator (no bridge) → GREEN: evolved `ValidateAffectedPairs` (optional immutable context, `Promise<void | receipt>`), `CommitMutation.profileName/ackAgentNames`, capture-before-await, whole-receipt verification against actual post-resolution pairs, collision-refusing application, effectiveChanged/migration accounting → 9 passed.
+- Triangulation:
+  1. D3 unknown without intent rejects before write, state preserved (G10) — characterization of the strict path → 10 passed.
+  2. D4 stored ack authorizes switch; unacknowledged switch rejects preserving host state (G11) → 11 passed (test-harness `saved` reset fix).
+  3. D5 forged receipt (wrong post-pair identity) rejects the batch without partial apply → 12 passed (test data: `review` is an alias of `afg-review`; switched to distinct canonical agents).
+  4. D6 incomplete/duplicate/unrequested receipts reject atomically → 13 passed.
+  5. D7 void P3 validators: no acknowledgement effects, existing behavior unchanged → 16 passed (harness storage now updates its observation after persist, mirroring the P3 memory storage).
+  6. D8 ack-only intent: fresh validation, v1→v2 with ORIGINAL snapshot, identical ack afterwards → no write/no refresh → 16 passed.
+  7. D9 ordinary unchanged patches stay P3 no-ops with zero validation calls → 16 passed.
+  8. D10 parent (`afergon-ai`) model change revalidates the inheriting child before commit (G12); stale child ack cannot authorize the new pair; explicit intent writes the child's NEW exact pair → exposed a real validator bug: concrete-model pairs with missing context forged runtime-default metadata; fixed to honest resolved-pair acks with null context provenance (matching stays model+effort only) → 32 passed across both suites.
+  9. D11 foreign payload at the acknowledgement key refuses overwrite, bytes preserved → green.
+  10. D12 separate model-ID allowance never authorizes effort (changed effort without ack/intent rejects) → green.
+  11. D13 clone preserves metadata; replay still requires the exact resolved pair → green.
+  12. D14 atomic save failure after acknowledgement application preserves the original observation → green.
+  13. D15 known-unsupported through the lifecycle rejects even with matching ack + intent → green.
+  14. G13 projection equivalence: pure use-case call and lifecycle save accept/reject identically → green.
+- Regression: architecture count guard updated to the new actuals (domain 11, application 13 — planned edit); `pnpm exec vitest run tests/model-profiles-{lifecycle,resolution,architecture,persistence,export}.test.ts --no-file-parallelism` → 663 passed | 1 skipped, exit 0. `pnpm typecheck` → exit 0.
+
 ## Gherkin → Test Mapping (16 active scenarios)
 
 (pending — filled as suites land)

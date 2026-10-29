@@ -33,18 +33,25 @@ export class UnknownEffortAcknowledgement {
       throw new Error(`${path} is not a valid versioned unknown-effort acknowledgement.`);
     }
     if (scope === "resolved-pair") {
-      if (typeof value.model !== "string" || !value.model.trim() ||
-        typeof value.provider !== "string" || !value.provider ||
-        typeof value.transport !== "string" || !value.transport) {
-        throw new Error(`${path} must bind the exact resolved model identity, provider and transport.`);
+      if (typeof value.model !== "string" || !value.model.trim()) {
+        throw new Error(`${path} must bind the exact resolved model identity.`);
+      }
+      // Provider/transport provenance is optional: null records that the
+      // context was absent when the pair was acknowledged.
+      const provider = value.provider;
+      const transport = value.transport;
+      const validProvider = provider === null || (typeof provider === "string" && provider.trim() !== "");
+      const validTransport = transport === null || (typeof transport === "string" && transport.trim() !== "");
+      if (!validProvider || !validTransport) {
+        throw new Error(`${path} provider and transport must be strings or null when context was absent.`);
       }
       return new UnknownEffortAcknowledgement({
         ackKind: UNKNOWN_EFFORT_ACK_MARKER,
         ackVersion: UNKNOWN_EFFORT_ACK_VERSION,
         scope,
-        provider: value.provider,
+        provider: typeof provider === "string" ? provider : null,
         model: value.model,
-        transport: value.transport,
+        transport: typeof transport === "string" ? transport : null,
         effort: value.effort,
       });
     }

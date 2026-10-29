@@ -75,31 +75,22 @@ export class ValidateProfileCapabilityUseCase {
       });
     }
     if (operation.acknowledgeUnknownEffort) {
-      const acknowledgement = resolvedContext
-        ? UnknownEffortAcknowledgement.create(
-            {
-              ackKind: "afergon-ai.unknown-effort-acknowledgement",
-              ackVersion: 1,
-              scope: "resolved-pair",
-              provider: resolvedContext.provider,
-              model: pair.model,
-              transport: resolvedContext.transport,
-              effort: pair.effort,
-            },
-            `${operation.profileName}.${pair.agent}.unknownEffortAck`,
-          ).toData()
-        : UnknownEffortAcknowledgement.create(
-            {
-              ackKind: "afergon-ai.unknown-effort-acknowledgement",
-              ackVersion: 1,
-              scope: "runtime-default",
-              provider: null,
-              model: null,
-              transport: null,
-              effort: pair.effort,
-            },
-            `${operation.profileName}.${pair.agent}.unknownEffortAck`,
-          ).toData();
+      // The acknowledgement binds the exact resolved pair (model + effort).
+      // Provider/transport provenance is recorded when the context exists and
+      // stays null when it was absent; runtime-default pairs bind the exact
+      // null model state.
+      const acknowledgement = UnknownEffortAcknowledgement.create(
+        {
+          ackKind: "afergon-ai.unknown-effort-acknowledgement",
+          ackVersion: 1,
+          scope: pair.model === null ? "runtime-default" : "resolved-pair",
+          provider: resolvedContext?.provider ?? null,
+          model: pair.model,
+          transport: resolvedContext?.transport ?? null,
+          effort: pair.effort,
+        },
+        `${operation.profileName}.${pair.agent}.unknownEffortAck`,
+      ).toData();
       return Object.freeze({
         agent: pair.agent, model: pair.model, effort: pair.effort,
         outcome: "acknowledged-unknown", feedback: verdict.feedback, provenance: null, acknowledgement,
