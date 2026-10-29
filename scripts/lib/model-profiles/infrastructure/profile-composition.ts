@@ -10,6 +10,13 @@ import { PrepareProfileAssignmentUseCase } from "../application/prepare-profile-
 import { UpdateProfileAssignmentUseCase } from "../application/update-profile-assignment-use-case.js";
 import { ProfileLifecycleUseCase } from "../application/profile-lifecycle-use-case.js";
 import type { ValidateAffectedPairs } from "../application/profile-lifecycle-use-case.js";
+import { ValidateProfileCapabilityUseCase } from "../application/validate-profile-capability-use-case.js";
+import type { CapabilityContextResolver } from "../application/capability-validation-port.js";
+import { OpencodeCapabilityAdapter } from "./opencode-capability-adapter.js";
+import { OPENCODE_PIN_CATALOG_EVIDENCE } from "./opencode-capability-evidence.js";
+import { OpencodeCompatibilityReport } from "./opencode-compatibility-report.js";
+
+export { OpencodeCapabilityAdapter, OPENCODE_PIN_CATALOG_EVIDENCE, OpencodeCompatibilityReport };
 import { ExportModelProfilesUseCase } from "../application/export-model-profiles-use-case.js";
 import { ModelOnlyExportPolicy } from "../domain/model-only-export-policy.js";
 import { LegacyProfileDefaultsAdapter } from "./legacy-profile-defaults-adapter.js";
@@ -75,4 +82,26 @@ export function createProfileLifecycleCapabilities(
     new AgentTargetPolicy(),
   );
   return { ...capabilities, lifecycle };
+}
+
+// Additive P4 composition: the inactive capability-validation lifecycle. It
+// injects exactly ONE strict validator (the shared capability use case backed
+// by the real evidence adapter and the caller-supplied per-pair resolver) into
+// the P3 lifecycle factory. No default/no-op acceptance exists; real routes and
+// context are supplied by callers, never inferred. Nothing is activated in live
+// CLI/TUI/install/update routes.
+export function createProfileCapabilityLifecycleCapabilities(
+  initialEnv: NodeJS.ProcessEnv = process.env,
+  resolver: CapabilityContextResolver,
+) {
+  const query = new OpencodeCapabilityAdapter();
+  const capabilityValidator = new ValidateProfileCapabilityUseCase(query, resolver);
+  const capabilities = createProfileLifecycleCapabilities(initialEnv, capabilityValidator);
+  return {
+    ...capabilities,
+    capabilityValidator,
+    capabilityQuery: query,
+    capabilityReport: new OpencodeCompatibilityReport(),
+    capabilityEvidence: OPENCODE_PIN_CATALOG_EVIDENCE,
+  };
 }

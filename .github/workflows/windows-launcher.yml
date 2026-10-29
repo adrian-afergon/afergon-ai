@@ -23,7 +23,9 @@ jobs:
       - name: Verify model profile persistence and real fault contracts
         run: >-
           pnpm exec vitest run
+          tests/model-profiles-acknowledgement.test.ts
           tests/model-profiles-architecture.test.ts
+          tests/model-profiles-capability.test.ts
           tests/model-profiles-export.test.ts
           tests/model-profiles-export-runtime.test.ts
           tests/model-profiles-lifecycle.test.ts

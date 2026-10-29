@@ -80,6 +80,22 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
   14. G13 projection equivalence: pure use-case call and lifecycle save accept/reject identically → green.
 - Regression: architecture count guard updated to the new actuals (domain 11, application 13 — planned edit); `pnpm exec vitest run tests/model-profiles-{lifecycle,resolution,architecture,persistence,export}.test.ts --no-file-parallelism` → 663 passed | 1 skipped, exit 0. `pnpm typecheck` → exit 0.
 
+### Unit E — Infrastructure evidence, adapter, report, DATA fixture
+
+- RED E1: adapter stub threw `not implemented`; pinned pair classified supported with scoped provenance → 1 failed. GREEN: materialized the real production seed (pinned 1.18.34/e9f8a210 record with catalog/npm pointers, blob IDs, explicit `resolvedModelIdentity` construction) + exact-tuple classification → 14 passed.
+- Triangulation:
+  1. E2 transport/provider variance, name resemblance (G9), out-of-menu effort → unknown with "menu absence is not negative evidence" feedback; clearly labeled unit-negative record → known-unsupported mechanism without forging upstream claims; out-of-menu on a negative record still unknown → 16 passed (characterizations of the exact-tuple semantics from E1's GREEN).
+  2. E3 report (G14): pin + provenance identified as source evidence; claims executedSchemaAcceptance/providerRequestAcceptance/otherVersionCompatibility all false. (G15): untested version → `unverified`, pin → `source-inspected` → RED → GREEN → 18 passed.
+  3. E4 DATA fixture `tests/fixtures/opencode-pin-catalog/gpt-5.1.json` with full provenance; production seed asserted in exact agreement (pin, blobs, reasoning, effort options, transport, override, npm) and nonempty → 19 passed.
+  4. Emitted/source parity: dist cold-import with fs guard (module-read allowlist, mirroring the P3 pattern) — no IO during import; strict validator executes supported + rejection against the emitted adapter → 20 passed (one test-side effort fix: `low` is in the pinned menu; used out-of-menu `extreme` for the rejection probe).
+
+### Unit F — Composition wiring, live-route inactivity, Windows list
+
+- RED F1: `createProfileCapabilityLifecycleCapabilities` absent → GREEN: additive factory injecting exactly ONE strict validator (asserted `lifecycle["validateAffectedPairs"] === capabilityValidator`), returning validator + adapter + report + evidence; original keyset unchanged → 35 passed (composition re-exports added for instanceof assertions).
+- G16: new architecture assertion — live routes (`model-profiles.ts`, `models.ts`, `cli-dispatch.ts`, `tui.ts`, TUI adapter/controller) reference neither the capability factory, ports, use case, adapter, `unknownEffortAck`, nor `acknowledgeUnknownEffort` → 36 passed.
+- Windows explicit list extended 13→15 (`tests/model-profiles-acknowledgement.test.ts`, `tests/model-profiles-capability.test.ts` appended; nothing removed).
+- Step verification: `pnpm typecheck` → exit 0; focused capability+acknowledgement+architecture → 79 passed, exit 0; `pnpm build` → exit 0.
+
 ## Gherkin → Test Mapping (16 active scenarios)
 
 (pending — filled as suites land)
