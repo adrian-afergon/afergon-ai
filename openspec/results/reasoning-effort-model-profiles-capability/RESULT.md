@@ -4,7 +4,7 @@
 
 completed-with-notes
 
-All plan checkboxes that could be produced locally are produced, including the user-authorized bounded review-correction round at `1178a7c` (bulk acknowledgement intent made an explicit top-level operation, verdict provenance copy-hardened, validator constants deduplicated, reviewer behavior pins added, emitted-test stderr check made warning-tolerant). The full local verification battery passes at the current source/test tip. Independent canonical review, actual native Windows CI, and publication are OUTSTANDING external gates — none is claimed as produced here.
+All locally producible implementation gates are green. The bounded correction round produced explicit top-level bulk acknowledgement intent, independent verdict provenance, shared constants and regression pins. Canonical review at `88facf1` independently reproduced the passing code/test gates and found no functional defect, but returned WARN for inaccurate counts and size presentation in this report. This user-authorized correction changes ONLY this RESULT, not code or tests. Exact-tip canonical re-review, publication and native Windows CI remain OUTSTANDING external gates.
 
 ## Plan Reference
 
@@ -31,6 +31,7 @@ P4 delivered the inactive capability-validation vertical over reviewed P3: two d
 - Both new test files appended to the explicit native Windows list (13→15, nothing removed); cold-import no-IO; direct source/emitted parity; no whole fault-suite skips. (Produced; native EXECUTION not produced.)
 - Limitations guidance in the existing vertical README; RESULT authored during implementation. (Produced.) Exact-head independent review and actual native CI: OUTSTANDING.
 - Review-correction round (user `Autorizo` at `1178a7c`, same tree/base): bulk ACK intent moved to the top-level operation with per-item flags failing closed; verdict provenance frozen as an independent deep copy; validator marker/version constants deduplicated; reviewer behavior pins added (wrong-profile receipt atomic reject, stored runtime-default replay exactness, supported-pair intent no-write); emitted-test stderr check made warning-tolerant without silencing genuine failures. (Produced.)
+- Final user-authorized documentation-only correction2026-10-29: align file/test counts, label the initial verification table historical, correct the README size cell, and distinguish named size anchors from the publication tree. No application behavior or test content changed.
 
 ## Updated Plan Artifacts
 
@@ -39,7 +40,7 @@ P4 delivered the inactive capability-validation vertical over reviewed P3: two d
 
 ## Commits Created
 
-All nine known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs from `git log`:
+All ten known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs from `git log`:
 
 1. `519ba0e7e198796ec2d620fe1fb4f6b7a68697fa` — feat(model-profiles): add capability verdict and pair-bound acknowledgement domain classes
 2. `658a306317fa9a867b3b2e07a1e7f1a6f7d497b7` — feat(model-profiles): add shared capability validation port and strict validator use case
@@ -50,25 +51,26 @@ All nine known predecessors on `feat/reasoning-effort-p4-capability`, full SHAs 
 7. `0dbab37c01b308ef0e4f07374042699ca3a75ee4` — docs(model-profiles): record final measured P4 implementation size and closure commits
 8. `1178a7c498468f3f461d4fe999b8444aa6cdee0f` — docs(model-profiles): align implementation result with the 11-section handoff contract
 9. `917aa7d642721a5f0973471fb8574b20461e19d2` — fix(model-profiles): make bulk acknowledgement intent a top-level operation and harden verdict provenance
+10. `88facf1dc6ec756175d8d51a3cc80ea7638c77da` — docs(model-profiles): record the review-correction round evidence and current anchors (the prior report with the accuracy warning corrected here)
 
-The final documentation-closure commit (this RESULT evidence update) is the branch HEAD at handoff time; its exact SHA is returned in the implementation handoff and is deliberately NOT embedded self-referentially here. No amend, no force, no history rewrite.
+The additional RESULT-only accuracy correction is HEAD at handoff; its exact SHA is reported externally, never embedded self-referentially. Complete range: `git log --format="%H %s" 80e3974..HEAD`; review `git diff 80e3974 HEAD`. Code/tests remain byte-identical to `917aa7d`; only this report changes after `88facf1`. No amend, force, or history rewrite.
 
 ## Files Changed
 
-20 files vs base B at the current code/test anchor `917aa7d` (authoritative per-file table in `## Measured Size` supplementary section): 2 new domain modules, 2 new application modules, 3 new infrastructure modules, additive edits to `profile-lifecycle-use-case.ts` / `profile-resolution.ts` / `profile-composition.ts`, 2 new test suites, 1 new DATA fixture, updates to `model-profiles-architecture.test.ts` / `model-profiles-lifecycle.test.ts` / `model-profiles-resolution.test.ts`, `.github/workflows/windows-launcher.yml`, `scripts/lib/model-profiles/README.md`, PLAN.md, RESULT.md. Source, tests, package.json and pnpm-lock.yaml remain byte-identical to `917aa7d` in this docs-only closure (verified with `git diff --quiet` before handoff).
+The complete P4 change touches20 files vs base B (named-anchor per-file table below): 2 new domain modules, 2 new application modules, 3 new infrastructure modules, additive lifecycle/resolution/composition edits, 2 new suites, 1 DATA fixture, existing architecture/lifecycle/resolution tests, Windows list, vertical README, PLAN and RESULT. This final correction touches only RESULT; scripts, tests, workflow, PLAN, README, manifest and lockfile remain identical to `88facf1`, with application code/tests identical to `917aa7d`.
 
 ## Verification Results
 
-- Step-level checks: passed — focused suites **50 passed** (exit 0) at the current tip; P3 regression set **665 passed | 1 skipped** (exit 0); per-unit RED/GREEN exits recorded contemporaneously in the supplementary TDD Log (including the correction round's Units G–K).
+- Step-level checks at the unchanged code/test anchor, independently reproduced by the reviewer at `88facf1`: focused **50 passed**; P3 regression set **665 passed | 1 skipped**, exit0. Per-unit evidence is preserved in the historical TDD Log (including correction-round Units G–K); no new application run is claimed for this documentation-only correction.
 - Final checks at the current source/test tip (commit `917aa7d` content; the docs-only closure commit changes no source/test bytes — proven by `git diff --quiet 917aa7d..HEAD -- scripts tests package.json pnpm-lock.yaml`):
-  - Tests: passed — full `pnpm test` → **1257 passed | 9 skipped (1266)**, 40 files passed | 3 skipped (43), exit 0 (154.43s). Historical anchors, clearly labeled: baseline before any P4 change in this tree 1205 passed | 9 skipped (37 files); after the initial P4 round 1250 passed | 9 skipped (39 files); the correction round adds **+7 tests** (bulk top-level intent ×3, verdict provenance copy ×1, reviewer pins ×3).
+  - Tests: passed — full `pnpm test` → **1257 passed | 9 skipped (1266)**, **39 files passed | 3 skipped (42)**, exit0, independently reproduced by the reviewer at `88facf1`. Historical baseline:1205 passed/9 skipped with37 passed files; initial P4:1250 passed/9 skipped with39 passed files. The correction adds7 tests without adding a test file; complete P4 delta is52 passing tests and2 passed test files over baseline.
   - Build: passed — `pnpm build` exit 0; `pnpm typecheck` exit 0.
   - Additional Evidence: passed — `pnpm run health:runtime` (no remote telemetry), `pnpm run doctor:runtime` (no recorded failures), emitted/source API parity re-verified after the bulk-operation signature change (`tests/typescript-build.test.ts` 12 passed, including the emitted capability cold-import), saver-hash and two-callers guards intact, manifest/lockfile diff vs base empty, no `effect` references.
 - Docs-only closure commit: tests/build **not applicable** (no source/test/manifest bytes change — proven by `git diff --quiet`); diff check and content review apply and are the applicable evidence for this commit.
 
 ## Blockers or Deviations
 
-- No blocking blockers. Bounded deviations, disclosed exactly (history preserved, nothing erased, no tests changed or recreated):
+- No functional blocker found in the last canonical review. The remaining documentation-accuracy WARN prompted this authorized RESULT-only correction; exact-tip re-review is still pending. Bounded historical deviations remain disclosed (no tests recreated or history erased):
   - **Batch RED authoring** (more than one failing test authored in one cycle, contrary to the one-behavior-at-a-time rule): Unit A triangulation 3 (2 tests: unknown factory + immutability); Unit B B3+B4 (characterization + RED in one edit); Unit D D7–D9 (3 tests), D10–D12 (3 tests), D13–G13 (4 tests, one failing for a scaffold reason); Unit E E3 (2 tests). Each batch still went GREEN before the next batch was authored.
   - **Scaffold-vs-behavioral RED classification**: Unit B B7's first failure was a missing test import (`ReferenceError`) — scaffolding, not a behavioral RED; the behavioral assertions passed immediately after the import fix. Unit D D13–G13's single failure was likewise a missing helper import (scaffolding). Module-absence failures for F1 (`createProfileCapabilityLifecycleCapabilities` is not a function) are scaffolding-adjacent: the module existed, the factory behavior did not.
   - **TPP overstep (bounded)**: Unit C3's GREEN implemented the whole unknown-decision branch (policy → intent → reject) in one step because the single test asserted both the rejection and the intent-acknowledgement outcomes; Unit F1's GREEN built the complete factory because the test asserted the full additive keyset. Lower-index transformations were used everywhere else as logged.
@@ -82,7 +84,7 @@ The final documentation-closure commit (this RESULT evidence update) is the bran
 - The production seed contains exactly one positive record (pinned TEST CATALOG); no production negative is invented; known-unsupported is exercised only via clearly labeled unit negatives.
 - No Effect dependency, no new dependencies, `package.json`/`pnpm-lock.yaml` byte-identical to base, no copied executable OpenCode internals, no provider requests, no network in tests, no live-route activation.
 - Root `main` worktree state (unstaged `PROJECT-TASKS.md` 161+/1−, 41 untracked paths) was never staged, transferred, or modified; the 29 prunable worktree registrations were preserved (no prune, cause unknown).
-- Measurement caveat: per-component rows in the supplementary size table are exact at the named anchor `0dbab37`; the authoritative totals for any later documentation-closure tip are the reproducible `git diff --shortstat <base>..<tip>` returned in the handoff, not recursive self-measuring commits.
+- Measurement caveat: component rows are exact at their labeled historical anchors `0dbab37` and `917aa7d`. The additional `88facf1` total and this documentation-closure tree are recorded separately below. Verify final publication with `git diff --shortstat 80e3974..HEAD`; handoff/PR metadata identify the exact SHA. No own-commit SHA is embedded or recursive evidence-only commits required.
 
 ## Next Step
 
@@ -229,9 +231,9 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
 | G15 | Untested OpenCode version is not claimed compatible | capability: "identifies untested OpenCode versions as unverified…" |
 | G16 | Effort controls remain inactive at P4 | architecture: "S13 live entry routes never reach the P4 capability validation surface" (+ existing lifecycle live-route guard) |
 
-## Verification Evidence (supplementary detail)
+## Initial Verification Evidence (historical, before the approved correction round)
 
-All commands run in the implementation worktree; exits recorded contemporaneously.
+The following table preserves the INITIAL P4 result at the byte-identical initial code/test tip `0dbab37`:43 focused and1250 full passes. These are historical, not current figures. The approved correction round and independent review supersede them with50 focused and1257 full passes (see Verification Results above).
 
 | Check | Command | Result |
 | --- | --- | --- |
@@ -243,7 +245,7 @@ All commands run in the implementation worktree; exits recorded contemporaneousl
 | Runtime health | `pnpm run health:runtime` | passed, no remote telemetry, exit 0 |
 | Runtime doctor | `pnpm run doctor:runtime` | no recorded failures, exit 0 |
 
-Baseline before changes in this tree: 1205 passed \| 9 skipped (1214), 37 files — so P4 adds **+45 passing tests and +2 test files** with the skip set unchanged.
+Historical initial delta:1205→1250 added45 passing tests and2 passed test files. The CURRENT code/test result is1257 passed/9 skipped,39 passed files/3 skipped (42); complete P4 delta is **+52 passing tests and +2 passed test files**, with the skip set unchanged. No correction-round test file was added.
 
 Boundary evidence:
 - `git diff <base> -- package.json pnpm-lock.yaml` → empty (byte-identical manifest/lockfile).
@@ -255,14 +257,14 @@ Boundary evidence:
 
 ## Measured Size (supplementary; exact at named anchors, vs base B `80e3974d0a290060aca7c0d19a3e85b6f13f8022`)
 
-Named anchors: `0dbab37c01b308ef0e4f07374042699ca3a75ee4` (initial implementation tip, historical) and `917aa7d642721a5f0973471fb8574b20461e19d2` (post-correction code/test tip, current). Component rows are exact at the named anchor shown; they are historical anchors and do not substitute for the reproducible `git diff --shortstat <base>..<tip>` returned in the handoff.
+Named historical anchors: `0dbab37c01b308ef0e4f07374042699ca3a75ee4` (initial implementation), `917aa7d642721a5f0973471fb8574b20461e19d2` (final code/test content), and `88facf1dc6ec756175d8d51a3cc80ea7638c77da` (prior documentation tip). The component table covers the first two, not later closure sizes. Cells are additions/deletions; a single number means additions with zero deletions. The two final rows after the table distinguish the prior report from this correction's publication tree.
 
 | Component | @`0dbab37` | @`917aa7d` |
 | --- | ---: | ---: |
 | `tests/model-profiles-acknowledgement.test.ts` | 695 | 818 |
 | `tests/model-profiles-capability.test.ts` | 431 | 479 |
 | `application/profile-lifecycle-use-case.ts` (bridge) | 245/12 | 249/13 |
-| `openspec/results/.../RESULT.md` (this file) | 186 | measured at closure tip in handoff |
+| `openspec/results/.../RESULT.md` | 186 | 262 |
 | `domain/unknown-effort-acknowledgement.ts` | 137 | 137 |
 | `application/validate-profile-capability-use-case.ts` | 105 | 105 |
 | `infrastructure/opencode-capability-evidence.ts` | 59 | 59 |
@@ -273,16 +275,18 @@ Named anchors: `0dbab37c01b308ef0e4f07374042699ca3a75ee4` (initial implementatio
 | `tests/fixtures/opencode-pin-catalog/gpt-5.1.json` | 36 | 36 |
 | `infrastructure/opencode-compatibility-report.ts` | 35 | 35 |
 | `infrastructure/profile-composition.ts` | 29 | 29 |
-| `scripts/lib/model-profiles/README.md` | 15 | 30 |
+| `scripts/lib/model-profiles/README.md` | 15/0 | 15/0 |
 | `openspec/plans/.../PLAN.md` | 14/14 | 15/14 |
 | `domain/profile-resolution.ts` | 5 | 5 |
 | `.github/workflows/windows-launcher.yml` (13→15) | 2 | 2 |
 | emitted-test module-read allowlists (lifecycle, resolution) | 2 | 2 |
 | **Total (`git diff --shortstat`)** | **2182/28 = 2210** | **2450/29 = 2479** |
 
-Authoritative totals: implementation at the current code/test tip `917aa7d` = **2450 adds + 29 dels = 2479**; initial planning publication reported separately = 287 (unit A, PR141) + 226 (unit B, PR142) = **513**; planning + implementation combined = **2992**. The docs-only closure tip is measured reproducibly via `git diff --shortstat <base>..<HEAD>` in the handoff (no recursive fix commits, no self-embedded SHA).
+Historical totals: `917aa7d` =2450 additions/29 deletions,2479 combined; planning513, whole2992. Prior documentation tip `88facf1` = **2481 additions/29 deletions,2510 combined across20 files**; planning **513**, whole **3023**. Both totals are exact at their named anchors, not the new publication tip.
 
-Honest growth report: the measured implementation total (2,479 adds+dels) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,297 lines vs 430 forecast — the adversarial triangulation depth the plan requires plus the correction round) and the lifecycle bridge (262 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting).
+Current documentation-closure tree total, measured against base B before commit and rechecked after this same-line numeric update: **20 files,2485 additions/29 deletions =2514 implementation changed lines; plus513 planning =3027 whole-change lines**. The final commit contains this exact tree; its SHA is reported in handoff/PR metadata, not embedded here. Source and tests are unchanged.
+
+Honest growth report: the historical code/test anchor2479 and prior report2510 already exceeded the1,150–1,350 forecast; this final correction adds only documentation. The approved P4 exception has no numeric cap and no evidence was cut. Largest deltas remain the two suites1297lines versus430 forecast and lifecycle bridge262changed lines versus106 forecast. Current measured totals are distinguished above; no estimate or historical anchor is mislabeled final.
 
 ## Known Limits and Outstanding Gates
 
