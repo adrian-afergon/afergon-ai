@@ -94,6 +94,10 @@ export class UnknownEffortAcknowledgement {
     return JSON.stringify(this.data) === JSON.stringify(other.data);
   }
 
+  toData(): UnknownEffortAcknowledgementData {
+    return Object.freeze({ ...this.data });
+  }
+
   removeFrom(entry: Record<string, unknown>): boolean {
     const read = UnknownEffortAcknowledgement.readOwn(entry, "removeFrom");
     if (read.kind !== "owned") return false;

@@ -46,6 +46,19 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
   6. B7 policy: authorizes only `unknown` verdicts with exact stored match; matching ack never bypasses supported/known-unsupported; stale/absent authorizes nothing → RED (missing import surfaced, then green) → 7 passed. Refusal branches passed immediately after the minimal guard — honest characterizations.
 - Step verification: `pnpm typecheck` → exit 0.
 
+### Unit C — Application ports + shared validator (`application/capability-validation-port.ts`, `application/validate-profile-capability-use-case.ts`)
+
+- RED C1: use-case stub threw `not implemented`; supported pair → complete receipt asserted → 1 failed. GREEN TPP #5/#7 (map pairs, plain-data outcome objects) → 6 passed (suite total).
+- Triangulation:
+  1. C2 no-override outcome without consulting evidence (query-call counter) → RED → GREEN TPP #6 branch → 7 passed.
+  2. C3 runtime-default + effort stays unknown (G3); rejects without ack/intent; intent creates exact runtime-default metadata (null model state) → RED → GREEN unknown-decision branch (policy → intent → reject) → 8 passed.
+  3. C4/C5 stored exact ack authorizes without intent; changed model (G5)/changed effort (G6) invalidate; malformed stored payloads inert → characterization of the C3 branch (passed after message-regex alignment; labeled honestly) → 9 passed.
+  4. C6 known-unsupported rejects even with matching ack + intent (G8) — characterization of the throw-first branch → 10 passed.
+  5. C7 malformed effort (`""`, whitespace) rejects before acknowledgements apply (G7) → RED → GREEN guard (TPP #6) → 11 passed.
+  6. C8/C9 missing context → unknown reject; mismatched context identity (resolver describes a different model) → unknown, never supported → RED → GREEN identity-agreement check → 12 passed (one test-side regex alignment).
+  7. C10 pending-input mutation safety (mutating the caller array after invocation) + frozen receipt/outcomes — characterization of the entry snapshot + freeze built in C1 → 13 passed.
+- Step verification: `pnpm typecheck` → exit 0 (after typing test stored-ack fixtures); focused suites 20 passed.
+
 ## Gherkin → Test Mapping (16 active scenarios)
 
 (pending — filled as suites land)
