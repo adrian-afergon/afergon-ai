@@ -1,5 +1,6 @@
 import { AgentTargetPolicy, SUPPORTED_AGENTS } from "./agent-target-policy.js";
 import { StoredAssignment } from "./stored-assignment.js";
+import { UNKNOWN_EFFORT_ACK_KEY, UnknownEffortAcknowledgement } from "./unknown-effort-acknowledgement.js";
 
 export type ModelSource = "explicit-model" | "explicit-inherit" | "implicit-inherit" | "runtime-default";
 export type EffortSource = "explicit" | "no-override";
@@ -152,6 +153,10 @@ export class ProfileAssignments {
     if (typeof previous === "string" || !Object.hasOwn(previous as object, "reasoningEffort")) return this;
     const next = { ...(previous as Record<string, unknown>) };
     delete next.reasoningEffort;
+    // P4: clearing the effort also removes valid owned acknowledgement metadata
+    // bound to that effort; foreign or malformed payloads stay verbatim.
+    const ackPath = `${this.path}[${JSON.stringify(key)}].${UNKNOWN_EFFORT_ACK_KEY}`;
+    if (UnknownEffortAcknowledgement.readOwn(next, ackPath).kind === "owned") delete next[UNKNOWN_EFFORT_ACK_KEY];
     const entries = { ...this.entries };
     if (Object.keys(next).length === 0) delete entries[key];
     else entries[key] = next;

@@ -375,6 +375,7 @@ it("emitted resolution domain cold-imports without IO and resolves identically t
       vertical + "domain/profile-resolution.js",
       vertical + "domain/agent-target-policy.js",
       vertical + "domain/stored-assignment.js",
+      vertical + "domain/unknown-effort-acknowledgement.js",
     ];
     function guard() {
       for (const [object, method] of [[fs, "readFileSync"], [fs, "writeFileSync"], [fs, "statSync"]]) {

@@ -91,15 +91,15 @@ Proposed implementation branch `feat/reasoning-effort-p4-capability`, worktree `
 
 ## Implementation Steps
 
-- [ ] Verify/publish the five allowlisted planning artifacts only after explicit authorization; fresh five-category Git audit and new isolation from the accepted unit-B artifact head. Size-only task004 alignment is already produced with an exact preserved original.
-- [ ] Per behavior: minimal compilable surface, ONE assertion producing genuine behavioral RED, minimum TPP GREEN, at least two sequential adversarial cases/characterizations, then refactor green. Exact commands/exits captured contemporaneously; module/type failures are scaffolding, not RED.
-- [ ] Verdict and acknowledgement domain classes/policy: identity, stale replay, runtime-default scope, raw malformed values, owned/foreign payloads, collisions and prototype-safe reads/application/clear.
-- [ ] Query/context/receipt contracts and shared validator: supported provenance, explicit-negative rejection, conservative unknown, exact acknowledgement, allowance separation, per-child transport context and projection-consumer equivalence.
-- [ ] Additive lifecycle bridge: capture independent candidate context, await one validation, verify/apply whole receipt, final document validation/rechecks, ORIGINAL snapshot completion before v2, exactly one existing atomic commit. Ordinary unchanged patches stay no-op with[]coverage/refreshIntent:false. Explicit acknowledgement-only intent runs fresh validation; metadata writes use normal active/inactive intent, already-identical acknowledgement after validation causes no write/refresh.
-- [ ] Infrastructure exact-tuple evidence adapter, minimal immutable catalog DATA extract and source-evidence report; no executable upstream files, runtime invocation, dependency or manifest/lockfile edit.
-- [ ] Additive composition wiring with explicit per-pair resolver, original keysets/live routes stable. Update actual domain/application module counts and preserve the two-callers/negative-fixture/saver guards.
-- [ ] Capability and acknowledgement suites; existing P3 callback/source/emitted regressions; pending-input mutation, forged/incomplete receipts, parent-change acknowledgement mismatch unless explicitly acknowledged as a new exact set, known-negative rejection despite matching acknowledgement, metadata collisions, ack-only migration and real atomic-save-failure preservation.
-- [ ] Add both new test files to the explicit native Windows list without removing baseline suites. Cold import/construction no IO; direct source/emitted parity; no whole fault-suite skips.
+- [x] Verify/publish the five allowlisted planning artifacts only after explicit authorization; fresh five-category Git audit and new isolation from the accepted unit-B artifact head. Size-only task004 alignment is already produced with an exact preserved original.
+- [x] Per behavior: minimal compilable surface, ONE assertion producing genuine behavioral RED, minimum TPP GREEN, at least two sequential adversarial cases/characterizations, then refactor green. Exact commands/exits captured contemporaneously; module/type failures are scaffolding, not RED.
+- [x] Verdict and acknowledgement domain classes/policy: identity, stale replay, runtime-default scope, raw malformed values, owned/foreign payloads, collisions and prototype-safe reads/application/clear.
+- [x] Query/context/receipt contracts and shared validator: supported provenance, explicit-negative rejection, conservative unknown, exact acknowledgement, allowance separation, per-child transport context and projection-consumer equivalence.
+- [x] Additive lifecycle bridge: capture independent candidate context, await one validation, verify/apply whole receipt, final document validation/rechecks, ORIGINAL snapshot completion before v2, exactly one existing atomic commit. Ordinary unchanged patches stay no-op with[]coverage/refreshIntent:false. Explicit acknowledgement-only intent runs fresh validation; metadata writes use normal active/inactive intent, already-identical acknowledgement after validation causes no write/refresh.
+- [x] Infrastructure exact-tuple evidence adapter, minimal immutable catalog DATA extract and source-evidence report; no executable upstream files, runtime invocation, dependency or manifest/lockfile edit.
+- [x] Additive composition wiring with explicit per-pair resolver, original keysets/live routes stable. Update actual domain/application module counts and preserve the two-callers/negative-fixture/saver guards.
+- [x] Capability and acknowledgement suites; existing P3 callback/source/emitted regressions; pending-input mutation, forged/incomplete receipts, parent-change acknowledgement mismatch unless explicitly acknowledged as a new exact set, known-negative rejection despite matching acknowledgement, metadata collisions, ack-only migration and real atomic-save-failure preservation.
+- [x] Add both new test files to the explicit native Windows list without removing baseline suites. Cold import/construction no IO; direct source/emitted parity; no whole fault-suite skips.
 - [ ] Limitations guidance in the existing README model-profiles area, no new global documentation directory; RESULT authored during implementation before independent review; local/full gates, exact-head review and actual native CI before acceptance. No P5 activation or merges.
 
 ## Interfaces and Technical Contracts
@@ -133,11 +133,11 @@ Measure real totals and report growth without compression. Focused artifact unit
 
 ## Acceptance Criteria
 
-- [ ] All16active scenarios pass with the revised source-only G14 and unchanged other15 behaviors.
-- [ ] Exact provider/model/transport provenance; unknown context and resemblance remain unknown; no negative inference from menu absence; unsupported/malformed cannot be acknowledged around.
-- [ ] Exact-pair persisted acknowledgement/invalidation, runtime-default scope, parent-child revalidation, idempotent ack-only writes and same-commit failure atomicity proven; no global permission or foreign-data loss.
-- [ ] Existing required P3 void callbacks, no-op/cleanup semantics, source/emitted behavior and keysets remain compatible; one awaited production validation, no default acceptance.
-- [ ] No Effect/new dependencies, executable upstream code, OpenCode/provider execution, live UI/host effects or manifest/lockfile changes. Source evidence stays distinct from P6 proof/P11 matrix.
+- [x] All16active scenarios pass with the revised source-only G14 and unchanged other15 behaviors.
+- [x] Exact provider/model/transport provenance; unknown context and resemblance remain unknown; no negative inference from menu absence; unsupported/malformed cannot be acknowledged around.
+- [x] Exact-pair persisted acknowledgement/invalidation, runtime-default scope, parent-child revalidation, idempotent ack-only writes and same-commit failure atomicity proven; no global permission or foreign-data loss.
+- [x] Existing required P3 void callbacks, no-op/cleanup semantics, source/emitted behavior and keysets remain compatible; one awaited production validation, no default acceptance.
+- [x] No Effect/new dependencies, executable upstream code, OpenCode/provider execution, live UI/host effects or manifest/lockfile changes. Source evidence stays distinct from P6 proof/P11 matrix.
 - [ ] Full relevant tests/build/architecture/saver preservation, independent review, actual native CI and measured size/provenance recorded accurately.
 
 ## Verification
@@ -147,6 +147,7 @@ Measure real totals and report growth without compression. Focused artifact unit
 - No network or provider credentials; fixture DATA contains commit/blob/JSON-pointer provenance. Source reporting never counts as an executed upstream test or production-provider result.
 - Emitted API parity, cold imports/no IO, transitive live-route negatives and unchanged sentinels. Append both new test files to the explicit Windows list (13→15), removing nothing; use platform AND filesystem guards only where relevant, no blanket skip or unguarded POSIX assertions. Actual exact-head logs required later.
 - Tests/build are not applicable to this Markdown-only draft. Record produced/not applicable/outstanding honestly; prior P3 counts are historical, not fresh P4 runs.
+- Bounded review-correction round (user-authorized 2026-10-29 at `1178a7c`): bulk acknowledgement intent made an explicit top-level operation (per-item flags fail closed), verdict provenance frozen as an independent copy, validator constants deduplicated, reviewer behavior pins added, emitted-test stderr check made warning-tolerant. This records correction evidence only; independent canonical review and actual native CI remain outstanding external gates.
 
 ## Git State and Disposition
 

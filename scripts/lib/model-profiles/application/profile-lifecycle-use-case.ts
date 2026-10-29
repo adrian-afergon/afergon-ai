@@ -5,18 +5,31 @@ import type { RawProfileDocumentCloner } from "../domain/raw-profile-document-cl
 import { AgentTargetPolicy } from "../domain/agent-target-policy.js";
 import { ProfileAssignments, ProfileDesiredState } from "../domain/profile-resolution.js";
 import type { AffectedPair } from "../domain/profile-resolution.js";
+import { UNKNOWN_EFFORT_ACK_KEY, UnknownEffortAcknowledgement } from "../domain/unknown-effort-acknowledgement.js";
+import type { CapabilityOperationContext, CapabilityValidationReceipt } from "./capability-validation-port.js";
 import type { ReadProfileDocumentUseCase } from "./read-profile-document-use-case.js";
 import type { ProfileStoragePort } from "./profile-storage-port.js";
 import type { SnapshotPort } from "./snapshot-port.js";
 
+/**
+ * P4 additive evolution of the P3 required port: the same readonly pairs
+ * argument, plus an optional immutable per-request context. Implementations
+ * return void (trusted P3 callbacks: no acknowledgement effects) or one
+ * complete plain-data receipt.
+ */
 export interface ValidateAffectedPairs {
-  validateAffectedPairs(pairs: readonly AffectedPair[]): Promise<void>;
+  validateAffectedPairs(
+    pairs: readonly AffectedPair[],
+    context?: CapabilityOperationContext,
+  ): Promise<void | CapabilityValidationReceipt>;
 }
 
 export interface LifecycleAssignmentInput {
   profileName: string;
   agentName: string;
   patch: AssignmentPatch;
+  /** Explicit per-operation acknowledgement intent for currently unknown pairs. */
+  acknowledgeUnknownEffort?: boolean;
 }
 
 /** Per-item shape for bulk saves: one outer profile target, items carry only agent and patch. */
@@ -49,6 +62,8 @@ interface CommitMutation {
   migrationRequired: boolean;
   desiredState: ProfileDesiredState;
   refreshIntent: boolean;
+  /** Owning profile of the requested pairs; used for receipt verification. */
+  profileName: string;
 }
 
 interface PreparedEdit {
@@ -72,6 +87,7 @@ export class ProfileLifecycleUseCase {
   ) {}
 
   async saveAssignment(input: LifecycleAssignmentInput): Promise<LifecycleResult> {
+    const acknowledgeUnknownEffort = input.acknowledgeUnknownEffort === true;
     return this.commit((candidate) => {
       const edit = this.prepareEdit(candidate, input.profileName, (assignments) =>
         assignments.withAssignment(input.agentName, input.patch));
@@ -81,7 +97,11 @@ export class ProfileLifecycleUseCase {
       return {
         changed: edit.changed,
         version: edit.version,
-        pairs: edit.changed ? edit.previous.affectedPairs(edit.next) : [],
+        pairs: edit.changed
+          ? edit.previous.affectedPairs(edit.next)
+          : acknowledgeUnknownEffort
+            ? this.resolvedPairsFor(edit.next, [input.agentName])
+            : [],
         migrationRequired: edit.changed && edit.version === 1 && typeof written === "object" && written !== null,
         desiredState: this.desiredStateFor(
           edit.models,
@@ -90,18 +110,23 @@ export class ProfileLifecycleUseCase {
           edit.changed && editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
         ),
         refreshIntent: editedIsActive,
+        profileName: input.profileName,
       };
-    });
+    }, acknowledgeUnknownEffort);
   }
 
   /**
    * Shared lifecycle commit sequence: retain the original source and document,
    * gate the version, build an independent candidate, mutate and collect, await
-   * the required affected-pair validation, validate and recheck, snapshot the
-   * original source before any version-2 promotion, validate and recheck again,
-   * then persist the candidate with exactly one atomic write.
+   * the required affected-pair validation, verify and apply the whole receipt,
+   * validate and recheck, snapshot the original source before any version-2
+   * promotion, validate and recheck again, then persist the candidate with
+   * exactly one atomic write.
    */
-  private async commit(mutate: (candidate: RawProfileDocument) => CommitMutation): Promise<LifecycleResult> {
+  private async commit(
+    mutate: (candidate: RawProfileDocument) => CommitMutation,
+    acknowledgeUnknownEffort = false,
+  ): Promise<LifecycleResult> {
     const loaded = this.reader.execute();
     if (!loaded.source.exists) {
       throw new Error(`Model profile config does not exist at ${loaded.source.sourceIdentity}.`);
@@ -109,7 +134,7 @@ export class ProfileLifecycleUseCase {
     this.validator.requireSupportedVersion(loaded.document, "prepare");
     const candidate = this.cloner.clone(loaded.document);
     const mutation = mutate(candidate);
-    if (!mutation.changed) {
+    if (!mutation.changed && !acknowledgeUnknownEffort) {
       return {
         desiredState: mutation.desiredState,
         refreshIntent: false,
@@ -117,11 +142,27 @@ export class ProfileLifecycleUseCase {
         version: mutation.version,
       };
     }
-    await this.validateAffectedPairs.validateAffectedPairs(mutation.pairs);
+    // P4: capture the independent per-request context BEFORE the await. The
+    // validator receives plain frozen data only — never mutable candidate
+    // references.
+    const operationContext = this.captureOperationContext(candidate, mutation, acknowledgeUnknownEffort);
+    const receipt = await this.validateAffectedPairs.validateAffectedPairs(mutation.pairs, operationContext);
+    const acknowledgements = receipt ? this.verifyReceipt(mutation, receipt, candidate) : [];
+    const acknowledgementWritten = this.applyAcknowledgements(candidate, mutation, acknowledgements);
+    if (!mutation.changed && !acknowledgementWritten) {
+      // Identical acknowledgement after fresh validation: no write, no refresh.
+      return {
+        desiredState: mutation.desiredState,
+        refreshIntent: false,
+        configPath: loaded.source.sourceIdentity,
+        version: mutation.version,
+      };
+    }
     this.validator.validate(candidate, loaded.source.sourceIdentity);
     let snapshotPath: string | undefined;
     this.storage.recheck(loaded.source);
-    if (mutation.migrationRequired) {
+    const migrationRequired = mutation.version === 1 && (mutation.migrationRequired || acknowledgementWritten);
+    if (migrationRequired) {
       const receipt = this.snapshots.acquire({ source: loaded.source, recoveryDocument: loaded.document });
       if (receipt.complete !== true) throw new Error("Migration snapshot is incomplete");
       candidate.version = 2;
@@ -137,6 +178,166 @@ export class ProfileLifecycleUseCase {
       version: (candidate.version as number | undefined) ?? 1,
       ...(snapshotPath ? { snapshotPath } : {}),
     };
+  }
+
+  /** Reads stored owned acknowledgements for the requested agents off the candidate (own-key guarded). */
+  private captureOperationContext(
+    candidate: RawProfileDocument,
+    mutation: CommitMutation,
+    acknowledgeUnknownEffort: boolean,
+  ): CapabilityOperationContext {
+    const storedAcknowledgements: ReturnType<UnknownEffortAcknowledgement["toData"]>[] = [];
+    const profiles = (candidate.models as { profiles?: Record<string, unknown> } | undefined)?.profiles;
+    const profile = mutation.profileName && profiles && Object.hasOwn(profiles, mutation.profileName)
+      ? profiles[mutation.profileName]
+      : undefined;
+    if (profile && typeof profile === "object" && !Array.isArray(profile)) {
+      const entries = profile as Record<string, unknown>;
+      const seen = new Set<string>();
+      for (const pair of mutation.pairs) {
+        if (seen.has(pair.agent)) continue;
+        seen.add(pair.agent);
+        let key: string;
+        try {
+          key = this.agents.select(entries, pair.agent);
+        } catch {
+          continue;
+        }
+        if (!Object.hasOwn(entries, key)) continue;
+        const entry = entries[key];
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+        const read = UnknownEffortAcknowledgement.readOwn(
+          entry as Record<string, unknown>,
+          `${mutation.profileName}.${pair.agent}.${UNKNOWN_EFFORT_ACK_KEY}`,
+        );
+        if (read.kind === "owned") storedAcknowledgements.push(read.ack.toData());
+      }
+    }
+    return Object.freeze({
+      profileName: mutation.profileName,
+      acknowledgeUnknownEffort,
+      storedAcknowledgements: Object.freeze(storedAcknowledgements),
+    });
+  }
+
+  /** Actual post-resolution pairs read back off the candidate, keyed by canonical agent. */
+  private actualPostPairs(candidate: RawProfileDocument, mutation: CommitMutation): Map<string, AffectedPair> {
+    const pairs = new Map<string, AffectedPair>();
+    const profiles = (candidate.models as { profiles?: Record<string, unknown> } | undefined)?.profiles;
+    const profile = mutation.profileName && profiles && Object.hasOwn(profiles, mutation.profileName)
+      ? profiles[mutation.profileName]
+      : undefined;
+    if (!profile || typeof profile !== "object" || Array.isArray(profile)) return pairs;
+    const assignments = ProfileAssignments.create(
+      profile,
+      `models.profiles[${JSON.stringify(mutation.profileName)}]`,
+      this.agents,
+    );
+    for (const pair of mutation.pairs) {
+      const resolution = assignments.resolve(pair.agent);
+      pairs.set(pair.agent, { agent: pair.agent, model: resolution.resolvedModel, effort: resolution.configuredEffort });
+    }
+    return pairs;
+  }
+
+  /**
+   * Verifies the WHOLE receipt against the requested set and the candidate's
+   * actual post-resolution state before any metadata application. One forged,
+   * duplicate, unrequested, or missing entry rejects the batch without partial
+   * mutation.
+   */
+  private verifyReceipt(
+    mutation: CommitMutation,
+    receipt: CapabilityValidationReceipt,
+    candidate: RawProfileDocument,
+  ): readonly { agent: string; ack: UnknownEffortAcknowledgement }[] {
+    if (receipt.profileName !== mutation.profileName) {
+      throw new Error(`Capability receipt targets profile '${receipt.profileName}' instead of '${mutation.profileName}'.`);
+    }
+    const outcomes = receipt.outcomes;
+    if (!Array.isArray(outcomes) || outcomes.length !== mutation.pairs.length) {
+      throw new Error("Capability receipt outcome count does not match the requested affected set.");
+    }
+    const actualPairs = this.actualPostPairs(candidate, mutation);
+    const seenAgents = new Set<string>();
+    const acknowledgements: { agent: string; ack: UnknownEffortAcknowledgement }[] = [];
+    for (const outcome of outcomes) {
+      if (!outcome || typeof outcome !== "object" || Array.isArray(outcome)) {
+        throw new Error("Capability receipt carries a malformed outcome entry.");
+      }
+      if (seenAgents.has(outcome.agent)) {
+        throw new Error(`Capability receipt carries a duplicate outcome for agent '${outcome.agent}'.`);
+      }
+      seenAgents.add(outcome.agent);
+      const requested = mutation.pairs.find((pair) => pair.agent === outcome.agent);
+      if (!requested) {
+        throw new Error(`Capability receipt carries unrequested agent '${outcome.agent}'.`);
+      }
+      const actual = actualPairs.get(outcome.agent);
+      if (!actual || actual.model !== outcome.model || actual.effort !== outcome.effort) {
+        throw new Error(`Capability receipt identity for agent '${outcome.agent}' does not match the candidate's actual post-resolution pair.`);
+      }
+      if (outcome.outcome === "supported") {
+        if (!outcome.provenance) throw new Error(`Capability receipt outcome for agent '${outcome.agent}' lacks supported provenance.`);
+        continue;
+      }
+      if (outcome.outcome === "no-override") {
+        if (outcome.effort !== null) throw new Error(`Capability receipt no-override outcome for agent '${outcome.agent}' carries an effort.`);
+        continue;
+      }
+      if (outcome.outcome === "acknowledged-unknown") {
+        if (!outcome.acknowledgement) {
+          throw new Error(`Capability receipt acknowledged-unknown outcome for agent '${outcome.agent}' lacks exact acknowledgement metadata.`);
+        }
+        const ack = UnknownEffortAcknowledgement.create(
+          outcome.acknowledgement,
+          `${mutation.profileName}.${outcome.agent}.${UNKNOWN_EFFORT_ACK_KEY}`,
+        );
+        if (!ack.matches({ model: outcome.model, effort: outcome.effort })) {
+          throw new Error(`Capability receipt acknowledgement for agent '${outcome.agent}' does not bind the exact resolved pair.`);
+        }
+        acknowledgements.push({ agent: outcome.agent, ack });
+        continue;
+      }
+      throw new Error(`Capability receipt carries unresolved outcome '${String(outcome.outcome)}' for agent '${outcome.agent}'.`);
+    }
+    for (const pair of mutation.pairs) {
+      if (!seenAgents.has(pair.agent)) {
+        throw new Error(`Capability receipt is missing an outcome for agent '${pair.agent}'.`);
+      }
+    }
+    return acknowledgements;
+  }
+
+  /** Applies verified acknowledgements to the candidate with collision refusal. Returns whether any byte changed. */
+  private applyAcknowledgements(
+    candidate: RawProfileDocument,
+    mutation: CommitMutation,
+    acknowledgements: readonly { agent: string; ack: UnknownEffortAcknowledgement }[],
+  ): boolean {
+    if (acknowledgements.length === 0) return false;
+    const profiles = (candidate.models as { profiles?: Record<string, unknown> } | undefined)?.profiles;
+    if (!profiles || !Object.hasOwn(profiles, mutation.profileName)) {
+      throw new Error(`Profile '${mutation.profileName}' disappeared before acknowledgement application.`);
+    }
+    const entries = profiles[mutation.profileName] as Record<string, unknown>;
+    let applied = false;
+    for (const { agent, ack } of acknowledgements) {
+      const key = this.agents.select(entries, agent);
+      if (!Object.hasOwn(entries, key)) {
+        throw new Error(`Agent '${agent}' has no own assignment to acknowledge.`);
+      }
+      const entry = entries[key];
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        throw new Error(`Agent '${agent}' assignment cannot carry acknowledgement metadata.`);
+      }
+      const written = ack.applyTo(
+        entry as Record<string, unknown>,
+        `models.profiles[${JSON.stringify(mutation.profileName)}][${JSON.stringify(key)}].${UNKNOWN_EFFORT_ACK_KEY}`,
+      );
+      applied = applied || written;
+    }
+    return applied;
   }
 
   async clearEffort(input: LifecycleProfileInput & { agentName: string }): Promise<LifecycleResult> {
@@ -156,6 +357,7 @@ export class ProfileLifecycleUseCase {
           edit.changed && editedIsActive ? edit.previous.cleanupCoverageFor(edit.next) : [],
         ),
         refreshIntent: editedIsActive,
+        profileName: input.profileName,
       };
     });
   }
@@ -210,13 +412,25 @@ export class ProfileLifecycleUseCase {
     return ProfileDesiredState.active(activeName, this.activeEntries(models), cleanupCoverage);
   }
 
-  async saveAssignments(input: LifecycleProfileInput & { assignments: LifecycleAssignmentItem[] }): Promise<LifecycleResult> {
+  async saveAssignments(
+    input: LifecycleProfileInput & { assignments: LifecycleAssignmentItem[]; acknowledgeUnknownEffort?: boolean },
+  ): Promise<LifecycleResult> {
     for (const item of input.assignments) {
       const raw = item as unknown as Record<string, unknown>;
       if (Object.hasOwn(raw, "profileName") && raw.profileName !== input.profileName) {
         throw new Error(`Bulk assignment item targets profile '${String(raw.profileName)}' but the operation targets '${input.profileName}'.`);
       }
+      // Acknowledgement intent is an OPERATION-WIDE decision. A per-item flag is
+      // a misplaced legacy input: fail closed with a clear diagnostic instead of
+      // silently broadening (or silently dropping) permission for that item.
+      if (Object.hasOwn(raw, "acknowledgeUnknownEffort")) {
+        throw new Error(
+          `Bulk assignment item '${item.agentName}' carries a misplaced acknowledgeUnknownEffort flag; declare it once on the saveAssignments operation.`,
+        );
+      }
     }
+    const acknowledgeUnknownEffort = input.acknowledgeUnknownEffort === true;
+    const itemAgentNames = input.assignments.map((item) => item.agentName);
     return this.commit((candidate) => {
       const edit = this.prepareEdit(candidate, input.profileName, (assignments) =>
         input.assignments.reduce((current, item) => current.withAssignment(item.agentName, item.patch), assignments));
@@ -227,7 +441,11 @@ export class ProfileLifecycleUseCase {
       return {
         changed: edit.changed,
         version: edit.version,
-        pairs: edit.changed ? edit.previous.affectedPairs(edit.next) : [],
+        pairs: edit.changed
+          ? edit.previous.affectedPairs(edit.next)
+          : acknowledgeUnknownEffort
+            ? this.resolvedPairsFor(edit.next, itemAgentNames)
+            : [],
         migrationRequired,
         desiredState: this.desiredStateFor(
           edit.models,
@@ -236,8 +454,9 @@ export class ProfileLifecycleUseCase {
             : [],
         ),
         refreshIntent: edit.activeName === input.profileName,
+        profileName: input.profileName,
       };
-    });
+    }, acknowledgeUnknownEffort);
   }
 
   async cloneProfile(input: LifecycleCloneInput): Promise<LifecycleResult> {
@@ -280,6 +499,7 @@ export class ProfileLifecycleUseCase {
           }),
         desiredState: this.desiredStateFor(models, []),
         refreshIntent: false,
+        profileName: input.sourceProfileName,
       };
     });
   }
@@ -326,6 +546,7 @@ export class ProfileLifecycleUseCase {
           changed ? (previousActive ?? this.emptyAssignments()).cleanupCoverageFor(target) : [],
         ),
         refreshIntent: changed,
+        profileName: input.profileName,
       };
     });
   }
@@ -368,7 +589,22 @@ export class ProfileLifecycleUseCase {
         migrationRequired: false,
         desiredState,
         refreshIntent: wasActive,
+        profileName: selectedName ?? input.profileName,
       };
     });
+  }
+
+  /** Current resolved pairs for the targeted agents (acknowledgement-only scope). */
+  private resolvedPairsFor(assignments: ProfileAssignments, agentNames: readonly string[]): AffectedPair[] {
+    const pairs: AffectedPair[] = [];
+    const seen = new Set<string>();
+    for (const name of agentNames) {
+      const canonical = this.agents.normalize(name);
+      if (seen.has(canonical)) continue;
+      seen.add(canonical);
+      const resolution = assignments.resolve(canonical);
+      pairs.push({ agent: canonical, model: resolution.resolvedModel, effort: resolution.configuredEffort });
+    }
+    return pairs;
   }
 }

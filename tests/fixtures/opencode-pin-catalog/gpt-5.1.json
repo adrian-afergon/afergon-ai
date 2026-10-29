@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "claimKind": "source-declared-test-catalog",
+    "note": "Read-only extract of the pinned OpenCode TEST CATALOG. This is source-declared mapping, not a production-release catalog and not live-provider acceptance. P4 records inspected pin material as source evidence only.",
+    "pin": {
+      "version": "1.18.34",
+      "commit": "e9f8a210b9e2b1e13d375b84906069886eb3b767",
+      "sourceRoot": "packages/opencode"
+    },
+    "blobs": {
+      "catalog": "8ead8c2a9ab7b2758137f4b20299f8b8be97026d",
+      "preload": "16b4789b0725b50cd9056f0ff9b9885bcb9139b3",
+      "provider": "97f83bb51d1c6ffb6eca2605b40fcfd6116fb774",
+      "transform": "8ae8b4d9f16b73aa5fad0da2a19c48d59958a737"
+    },
+    "sources": [
+      "test/tool/fixtures/models-api.json",
+      "test/preload.ts",
+      "src/provider/provider.ts",
+      "src/provider/transform.ts"
+    ]
+  },
+  "catalog": {
+    "openai": {
+      "models": {
+        "gpt-5.1": {
+          "reasoning": true,
+          "reasoning_options": ["none", "low", "medium", "high"],
+          "transport": "@ai-sdk/openai",
+          "model_override": null
+        }
+      },
+      "npm": "@ai-sdk/openai"
+    }
+  }
+}

@@ -161,8 +161,8 @@ it("S12 actual repository graph retains all domain and application boundaries", 
       modules.push(module(id, layer, dependencies, text));
     }
   }
-  expect(modules.filter(item => item.layer === "domain")).toHaveLength(9);
-  expect(modules.filter(item => item.layer === "application")).toHaveLength(11);
+  expect(modules.filter(item => item.layer === "domain")).toHaveLength(11);
+  expect(modules.filter(item => item.layer === "application")).toHaveLength(13);
   expect(modules.some(item => item.id.endsWith("update-profile-assignment-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("export-model-profiles-use-case.ts"))).toBe(true);
   expect(modules.some(item => item.id.endsWith("model-only-export-policy.ts"))).toBe(true);
@@ -186,6 +186,23 @@ it("S13 lifecycle composition is additive with unchanged original keyset and no 
   for (const operation of ["saveAssignment", "clearEffort", "saveAssignments", "cloneProfile", "switchProfile", "deleteProfile"]) {
     expect(typeof lifecycleCapabilities.lifecycle[operation]).toBe("function");
   }
+  expect(fs.existsSync(path.join(root, "config.json"))).toBe(false);
+});
+
+it("S13 P4 capability composition injects exactly one strict validator and stays additive", async () => {
+  const composition = await import("../scripts/lib/model-profiles/infrastructure/profile-composition.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afergon-p4-composition-"));
+  const env = { AFERGON_AI_CONFIG_DIR: root } as NodeJS.ProcessEnv;
+  const resolver = { resolve: () => null };
+  const capabilities = composition.createProfileCapabilityLifecycleCapabilities(env, resolver);
+  const baseKeys = ["configPath", "exportProfiles", "inspector", "preparer", "reader", "snapshots", "storage", "update", "validator"];
+  expect(Object.keys(capabilities).sort()).toEqual([...baseKeys, "capabilityEvidence", "capabilityQuery", "capabilityReport", "capabilityValidator", "lifecycle"].sort());
+  expect(typeof capabilities.capabilityValidator.validateAffectedPairs).toBe("function");
+  expect(capabilities.capabilityQuery).toBeInstanceOf(composition.OpencodeCapabilityAdapter);
+  expect(capabilities.capabilityReport).toBeInstanceOf(composition.OpencodeCompatibilityReport);
+  expect(capabilities.capabilityEvidence.length).toBeGreaterThan(0);
+  // The injected lifecycle validator IS the strict capability validator (one validator, not two).
+  expect(capabilities.lifecycle["validateAffectedPairs"]).toBe(capabilities.capabilityValidator);
   expect(fs.existsSync(path.join(root, "config.json"))).toBe(false);
 });
 
@@ -247,5 +264,25 @@ it("S13 live entry routes never reach the lifecycle capability", () => {
     expect(text).not.toContain("createProfileLifecycleCapabilities");
     expect(text).not.toContain("profile-lifecycle-use-case");
     expect(text).not.toContain("profile-resolution");
+  }
+});
+
+it("S13 live entry routes never reach the P4 capability validation surface", () => {
+  const liveRoutes = [
+    "scripts/lib/model-profiles.ts",
+    "scripts/models.ts",
+    "scripts/cli-dispatch.ts",
+    "scripts/tui.ts",
+    "scripts/lib/tui/model-profiles-adapter.ts",
+    "scripts/lib/tui/model-profiles-controller.ts",
+  ];
+  for (const route of liveRoutes) {
+    const text = fs.readFileSync(path.resolve(route), "utf8");
+    expect(text).not.toContain("createProfileCapabilityLifecycleCapabilities");
+    expect(text).not.toContain("capability-validation-port");
+    expect(text).not.toContain("validate-profile-capability-use-case");
+    expect(text).not.toContain("opencode-capability-adapter");
+    expect(text).not.toContain("unknownEffortAck");
+    expect(text).not.toContain("acknowledgeUnknownEffort");
   }
 });
