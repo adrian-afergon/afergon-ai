@@ -163,9 +163,9 @@ Boundary evidence:
 | `domain/profile-resolution.ts` | 5 | 0 |
 | `.github/workflows/windows-launcher.yml` (13→15) | 2 | 0 |
 | emitted-test module-read allowlists (lifecycle, resolution) | 2 | 0 |
-| **Total (19 files)** | **~2104+** | **14** |
+| **Total (20 files, final vs base B)** | **2180** | **28** |
 
-Honest growth report: the measured implementation total (~2,118 adds+dels at the pre-final-docs measurement, final number in the handoff) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,126 lines vs 430 forecast — the adversarial triangulation depth the plan requires: forged/incomplete/duplicate/unrequested receipts, pending-input mutation, collision refusal, parent/child staleness, void compatibility, ack-only idempotence, atomic failure preservation) and the lifecycle bridge (257 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting). Initial planning publication is reported separately: unit A 287 changed lines (PR141), unit B 226 lines (PR142); planning + implementation combined is the sum.
+Honest growth report: the measured implementation total (2,208 adds+dels) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,126 lines vs 430 forecast — the adversarial triangulation depth the plan requires: forged/incomplete/duplicate/unrequested receipts, pending-input mutation, collision refusal, parent/child staleness, void compatibility, ack-only idempotence, atomic failure preservation) and the lifecycle bridge (257 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting). Initial planning publication is reported separately: unit A 287 changed lines (PR141), unit B 226 lines (PR142); planning + implementation combined is the sum.
 
 ## Commits Created (this branch, in order)
 
@@ -173,7 +173,9 @@ Honest growth report: the measured implementation total (~2,118 adds+dels at the
 2. `658a306` feat(model-profiles): add shared capability validation port and strict validator use case
 3. `1c9696c` feat(model-profiles): bridge capability validation into the lifecycle with pair-bound acknowledgements
 4. `1bedb25` feat(model-profiles): add pinned evidence adapter, compatibility report, and capability composition
-5. (final docs/RESULT commit — see handoff for the exact closure SHA; never embedded self-referentially here)
+5. `ee1846c` docs(model-profiles): record P4 capability limitations guidance and implementation result
+6. `d257792` docs(models): mark produced P4 plan steps and acceptance criteria
+7. (final RESULT measurement commit — the exact closure HEAD is returned in the implementation handoff, never embedded self-referentially here)
 
 ## Known Limits and Outstanding Gates
 
