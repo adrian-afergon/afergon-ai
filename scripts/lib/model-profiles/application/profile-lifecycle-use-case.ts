@@ -36,7 +36,6 @@ export interface LifecycleAssignmentInput {
 export interface LifecycleAssignmentItem {
   agentName: string;
   patch: AssignmentPatch;
-  acknowledgeUnknownEffort?: boolean;
 }
 
 export interface LifecycleProfileInput {
@@ -65,8 +64,6 @@ interface CommitMutation {
   refreshIntent: boolean;
   /** Owning profile of the requested pairs; used for receipt verification. */
   profileName: string;
-  /** Targeted agents when an explicit acknowledgement-only intent is present. */
-  ackAgentNames?: readonly string[];
 }
 
 interface PreparedEdit {
@@ -114,7 +111,6 @@ export class ProfileLifecycleUseCase {
         ),
         refreshIntent: editedIsActive,
         profileName: input.profileName,
-        ackAgentNames: acknowledgeUnknownEffort ? [input.agentName] : [],
       };
     }, acknowledgeUnknownEffort);
   }
@@ -416,17 +412,25 @@ export class ProfileLifecycleUseCase {
     return ProfileDesiredState.active(activeName, this.activeEntries(models), cleanupCoverage);
   }
 
-  async saveAssignments(input: LifecycleProfileInput & { assignments: LifecycleAssignmentItem[] }): Promise<LifecycleResult> {
+  async saveAssignments(
+    input: LifecycleProfileInput & { assignments: LifecycleAssignmentItem[]; acknowledgeUnknownEffort?: boolean },
+  ): Promise<LifecycleResult> {
     for (const item of input.assignments) {
       const raw = item as unknown as Record<string, unknown>;
       if (Object.hasOwn(raw, "profileName") && raw.profileName !== input.profileName) {
         throw new Error(`Bulk assignment item targets profile '${String(raw.profileName)}' but the operation targets '${input.profileName}'.`);
       }
+      // Acknowledgement intent is an OPERATION-WIDE decision. A per-item flag is
+      // a misplaced legacy input: fail closed with a clear diagnostic instead of
+      // silently broadening (or silently dropping) permission for that item.
+      if (Object.hasOwn(raw, "acknowledgeUnknownEffort")) {
+        throw new Error(
+          `Bulk assignment item '${item.agentName}' carries a misplaced acknowledgeUnknownEffort flag; declare it once on the saveAssignments operation.`,
+        );
+      }
     }
-    const acknowledgeUnknownEffort = input.assignments.some((item) => item.acknowledgeUnknownEffort === true);
-    const intentAgents = input.assignments
-      .filter((item) => item.acknowledgeUnknownEffort === true)
-      .map((item) => item.agentName);
+    const acknowledgeUnknownEffort = input.acknowledgeUnknownEffort === true;
+    const itemAgentNames = input.assignments.map((item) => item.agentName);
     return this.commit((candidate) => {
       const edit = this.prepareEdit(candidate, input.profileName, (assignments) =>
         input.assignments.reduce((current, item) => current.withAssignment(item.agentName, item.patch), assignments));
@@ -440,7 +444,7 @@ export class ProfileLifecycleUseCase {
         pairs: edit.changed
           ? edit.previous.affectedPairs(edit.next)
           : acknowledgeUnknownEffort
-            ? this.resolvedPairsFor(edit.next, intentAgents)
+            ? this.resolvedPairsFor(edit.next, itemAgentNames)
             : [],
         migrationRequired,
         desiredState: this.desiredStateFor(
@@ -451,7 +455,6 @@ export class ProfileLifecycleUseCase {
         ),
         refreshIntent: edit.activeName === input.profileName,
         profileName: input.profileName,
-        ackAgentNames: acknowledgeUnknownEffort ? intentAgents : [],
       };
     }, acknowledgeUnknownEffort);
   }

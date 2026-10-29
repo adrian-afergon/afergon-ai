@@ -7,7 +7,7 @@ import type {
 } from "./capability-validation-port.js";
 import type { AffectedPair } from "../domain/profile-resolution.js";
 import { CapabilityVerdict } from "../domain/capability-verdict.js";
-import { UnknownEffortAcknowledgement, UnknownEffortAcknowledgementPolicy } from "../domain/unknown-effort-acknowledgement.js";
+import { UnknownEffortAcknowledgement, UnknownEffortAcknowledgementPolicy, UNKNOWN_EFFORT_ACK_MARKER, UNKNOWN_EFFORT_ACK_VERSION } from "../domain/unknown-effort-acknowledgement.js";
 
 /**
  * Shared strict capability validator: one awaited pass over the requested
@@ -81,8 +81,8 @@ export class ValidateProfileCapabilityUseCase {
       // null model state.
       const acknowledgement = UnknownEffortAcknowledgement.create(
         {
-          ackKind: "afergon-ai.unknown-effort-acknowledgement",
-          ackVersion: 1,
+          ackKind: UNKNOWN_EFFORT_ACK_MARKER,
+          ackVersion: UNKNOWN_EFFORT_ACK_VERSION,
           scope: pair.model === null ? "runtime-default" : "resolved-pair",
           provider: resolvedContext?.provider ?? null,
           model: pair.model,

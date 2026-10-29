@@ -355,9 +355,10 @@ it("rejects forged receipts without partial acknowledgement application", async 
   await expect(
     f.lifecycle.saveAssignments({
       profileName: "work",
+      acknowledgeUnknownEffort: true,
       assignments: [
-        { agentName: "afg-review", patch: { reasoningEffort: "high" }, acknowledgeUnknownEffort: true },
-        { agentName: "afg-design", patch: { reasoningEffort: "high" }, acknowledgeUnknownEffort: true },
+        { agentName: "afg-review", patch: { reasoningEffort: "high" } },
+        { agentName: "afg-design", patch: { reasoningEffort: "high" } },
       ],
     }),
   ).rejects.toThrow(/does not match the candidate's actual post-resolution pair/);
@@ -400,9 +401,10 @@ it("rejects incomplete and duplicate receipts atomically", async () => {
   };
   const bulk = {
     profileName: "work",
+    acknowledgeUnknownEffort: true,
     assignments: [
-      { agentName: "afg-review", patch: { reasoningEffort: "high" }, acknowledgeUnknownEffort: true },
-      { agentName: "afg-design", patch: { reasoningEffort: "high" }, acknowledgeUnknownEffort: true },
+      { agentName: "afg-review", patch: { reasoningEffort: "high" } },
+      { agentName: "afg-design", patch: { reasoningEffort: "high" } },
     ],
   };
   // Missing outcome for the second requested agent.
@@ -562,6 +564,127 @@ it("revalidates inheriting children on parent change and refuses stale acknowled
   const child = (f2.storage.saved?.models as { profiles: { work: { "afg-design": Record<string, unknown> } } }).profiles.work["afg-design"];
   expect((child.unknownEffortAck as { model: string; effort: string }).model).toBe("openai/gpt-5.9");
   expect((child.unknownEffortAck as { model: string; effort: string }).effort).toBe("high");
+});
+
+it("rejects misplaced per-item acknowledgement flags instead of silently broadening permission", async () => {
+  const document = {
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { "afg-review": "openai/gpt-5.1", "afg-design": "openai/gpt-5.1" } } },
+  };
+  const f = ackLifecycle(document);
+  // Legacy per-item JS input: the flag belongs on the OPERATION, never on an item.
+  await expect(
+    f.lifecycle.saveAssignments({
+      profileName: "work",
+      assignments: [
+        { agentName: "afg-review", patch: { reasoningEffort: "high" }, acknowledgeUnknownEffort: true },
+        { agentName: "afg-design", patch: { reasoningEffort: "high" } },
+      ] as never,
+    }),
+  ).rejects.toThrow(/acknowledgeUnknownEffort/);
+  expect(f.persist).not.toHaveBeenCalled();
+  expect(f.storage.saved).toBeUndefined();
+  expect(f.snapshots.acquired).toHaveLength(0);
+});
+
+it("acknowledges the operation-wide affected set exactly under a top-level bulk intent", async () => {
+  const document = {
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { "afg-review": "openai/gpt-5.1", "afg-design": "openai/gpt-5.1" } } },
+  };
+  const f = ackLifecycle(document);
+  const result = await f.lifecycle.saveAssignments({
+    profileName: "work",
+    acknowledgeUnknownEffort: true,
+    assignments: [
+      { agentName: "afg-review", patch: { reasoningEffort: "high" } },
+      { agentName: "afg-design", patch: { reasoningEffort: "high" } },
+    ],
+  });
+  expect(f.persist).toHaveBeenCalledOnce();
+  expect(result.refreshIntent).toBe(true);
+  const saved = f.storage.saved?.models as { profiles: { work: Record<string, Record<string, unknown>> } };
+  for (const agent of ["afg-review", "afg-design"]) {
+    const ack = saved.profiles.work[agent].unknownEffortAck as { model: string; effort: string; scope: string };
+    expect(ack.scope).toBe("resolved-pair");
+    expect(ack.model).toBe("openai/gpt-5.1");
+    expect(ack.effort).toBe("high");
+  }
+});
+
+it("rejects unknown bulk pairs before any snapshot commit when the operation flag is absent or false", async () => {
+  const document = {
+    version: 1,
+    models: { activeProfile: "work", profiles: { work: { "afg-review": "openai/gpt-5.1", "afg-design": "openai/gpt-5.1" } } },
+  };
+  for (const acknowledgeUnknownEffort of [undefined, false]) {
+    const f = ackLifecycle(document);
+    await expect(
+      f.lifecycle.saveAssignments({
+        profileName: "work",
+        ...(acknowledgeUnknownEffort === undefined ? {} : { acknowledgeUnknownEffort }),
+        assignments: [
+          { agentName: "afg-review", patch: { reasoningEffort: "high" } },
+          { agentName: "afg-design", patch: { reasoningEffort: "high" } },
+        ],
+      }),
+    ).rejects.toThrow(/No capability evidence/);
+    // Rejection happens before ANY snapshot commit: no ORIGINAL snapshot, no write.
+    expect(f.snapshots.acquired).toHaveLength(0);
+    expect(f.persist).not.toHaveBeenCalled();
+    expect(f.storage.saved).toBeUndefined();
+  }
+});
+
+it("rejects a receipt naming a different profile atomically without metadata, snapshot, or write", () => {
+  const document = {
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { review: "openai/gpt-5.1" } } },
+  };
+  const f = ackLifecycle(document, {
+    validator: receiptValidator({ profileName: "other", outcomes: [acknowledgedOutcome("afg-review", "high")] }),
+  });
+  return expect(
+    f.lifecycle.saveAssignment({
+      profileName: "work",
+      agentName: "review",
+      patch: { reasoningEffort: "high" },
+      acknowledgeUnknownEffort: true,
+    }),
+  ).rejects.toThrow(/targets profile 'other'/).then(() => {
+    expect(f.persist).not.toHaveBeenCalled();
+    expect(f.storage.saved).toBeUndefined();
+    expect(f.snapshots.acquired).toHaveLength(0);
+  });
+});
+
+it("runs fresh validation for acknowledgement intent on a supported unchanged pair and writes nothing", async () => {
+  const supported = ackLifecycle({
+    version: 2,
+    models: { activeProfile: "work", profiles: { work: { review: { model: "openai/gpt-5.1", reasoningEffort: "high" } } } },
+  }, {
+    query: { classify: () => CapabilityVerdict.supported({
+      provider: "openai",
+      model: "openai/gpt-5.1",
+      transport: "@ai-sdk/openai",
+      evidenceId: "evidence:pin",
+      claimKind: "source-declared-test-catalog",
+      pin: { version: "1.18.34", commit: "e9f8a210b9e2b1e13d375b84906069886eb3b767" },
+    }) },
+  });
+  const result = await supported.lifecycle.saveAssignment({
+    profileName: "work",
+    agentName: "review",
+    patch: { reasoningEffort: "high" },
+    acknowledgeUnknownEffort: true,
+  });
+  // Fresh validation ran (the supported verdict came from the query), but a
+  // supported pair produces no acknowledgement metadata, no write, no refresh.
+  expect(supported.persist).not.toHaveBeenCalled();
+  expect(supported.storage.saved).toBeUndefined();
+  expect(result.refreshIntent).toBe(false);
+  const observed = supported.storage.observation.document as { models: { profiles: { work: { review: Record<string, unknown> } } } };
+  expect(Object.hasOwn(observed.models.profiles.work.review, "unknownEffortAck")).toBe(false);
 });
 
 it("refuses acknowledgement writes over foreign payloads and preserves bytes", async () => {

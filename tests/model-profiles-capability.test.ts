@@ -76,6 +76,29 @@ it("keeps verdicts immutable", () => {
   expect(Object.isFrozen(verdict.provenance)).toBe(true);
 });
 
+it("never freezes or adopts the caller's provenance object", () => {
+  const callerProvenance: CapabilityProvenance = {
+    ...pinnedProvenance,
+    pin: { ...pinnedProvenance.pin },
+  };
+  const verdict = CapabilityVerdict.supported(callerProvenance);
+  // The caller's object stays unfrozen and mutable: freezing it was an input side effect.
+  expect(Object.isFrozen(callerProvenance)).toBe(false);
+  expect(Object.isFrozen(callerProvenance.pin)).toBe(false);
+  // The verdict carries an independent immutable copy.
+  expect(Object.isFrozen(verdict.provenance)).toBe(true);
+  expect(verdict.provenance).toEqual(pinnedProvenance);
+  // Mutating the caller afterwards cannot change the verdict.
+  const mutableCaller = callerProvenance as {
+    provider: string; model: string; transport: string; evidenceId: string; claimKind: string;
+    pin: { version: string; commit: string };
+  };
+  mutableCaller.evidenceId = "tampered";
+  mutableCaller.pin.commit = "tampered";
+  expect(verdict.provenance?.evidenceId).toBe(pinnedProvenance.evidenceId);
+  expect(verdict.provenance?.pin.commit).toBe(pinnedProvenance.pin.commit);
+});
+
 export function stubQuery(
   classify: (context: { model: string }, effort: string) => CapabilityVerdict,
 ): EffortCapabilityQuery {
@@ -198,6 +221,28 @@ it("accepts unknown pairs through exact stored acknowledgements without new inte
       operationContext({ storedAcknowledgements: [{ intruder: true } as unknown as (typeof stored)[number]] }),
     ),
   ).rejects.toThrow(/No capability evidence/);
+});
+
+it("replays stored runtime-default acknowledgements only against the exact null model state", async () => {
+  const useCase = new ValidateProfileCapabilityUseCase(
+    stubQuery(() => CapabilityVerdict.unknown("No capability evidence for the requested pair.")),
+    mapResolver({}),
+  );
+  const stored = [storedAck({ scope: "runtime-default", provider: null, model: null, transport: null, effort: "low" })];
+  // Exact null state + effort: accepted as acknowledged-unknown.
+  const accepted = await useCase.validateAffectedPairs(
+    [{ agent: "review", model: null, effort: "low" }],
+    operationContext({ storedAcknowledgements: stored }),
+  );
+  expect(accepted?.outcomes[0]?.outcome).toBe("acknowledged-unknown");
+  expect(accepted?.outcomes[0]?.acknowledgement?.scope).toBe("runtime-default");
+  // The same stored acknowledgement never authorizes a later concrete model.
+  await expect(
+    useCase.validateAffectedPairs(
+      [{ agent: "review", model: "openai/gpt-5.1", effort: "low" }],
+      operationContext({ storedAcknowledgements: stored }),
+    ),
+  ).rejects.toThrow(/validation stays unknown/);
 });
 
 it("rejects known-unsupported pairs even with matching acknowledgement and intent", async () => {
@@ -423,8 +468,11 @@ it("emitted capability surface cold-imports without IO and executes the strict v
     );
   `], { encoding: "utf8" });
   try {
+    // Non-zero status is the genuine child-failure gate; stderr must not carry
+    // real error output, but incidental Node diagnostics (e.g. warnings) on an
+    // otherwise successful run do not fail this check.
     expect(child.status).toBe(0);
-    expect(child.stderr).toBe("");
+    expect(child.stderr).not.toMatch(/AssertionError|Error:|Cannot find module/);
   } catch (error) {
     throw new Error(`emitted capability child failed: ${child.stderr || error}`);
   }

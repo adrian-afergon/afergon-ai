@@ -147,6 +147,7 @@ Measure real totals and report growth without compression. Focused artifact unit
 - No network or provider credentials; fixture DATA contains commit/blob/JSON-pointer provenance. Source reporting never counts as an executed upstream test or production-provider result.
 - Emitted API parity, cold imports/no IO, transitive live-route negatives and unchanged sentinels. Append both new test files to the explicit Windows list (13→15), removing nothing; use platform AND filesystem guards only where relevant, no blanket skip or unguarded POSIX assertions. Actual exact-head logs required later.
 - Tests/build are not applicable to this Markdown-only draft. Record produced/not applicable/outstanding honestly; prior P3 counts are historical, not fresh P4 runs.
+- Bounded review-correction round (user-authorized 2026-10-29 at `1178a7c`): bulk acknowledgement intent made an explicit top-level operation (per-item flags fail closed), verdict provenance frozen as an independent copy, validator constants deduplicated, reviewer behavior pins added, emitted-test stderr check made warning-tolerant. This records correction evidence only; independent canonical review and actual native CI remain outstanding external gates.
 
 ## Git State and Disposition
 

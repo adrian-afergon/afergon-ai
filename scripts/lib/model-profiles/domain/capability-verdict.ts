@@ -16,13 +16,29 @@ function requireFeedback(feedback: string, kind: string): string {
   return feedback;
 }
 
+/** Copies the known provenance layout (flat identity fields plus the nested pin) into a frozen independent value. */
+function freezeProvenanceCopy(provenance: CapabilityProvenance): CapabilityProvenance {
+  return Object.freeze({
+    provider: provenance.provider,
+    model: provenance.model,
+    transport: provenance.transport,
+    evidenceId: provenance.evidenceId,
+    claimKind: provenance.claimKind,
+    pin: Object.freeze({ version: provenance.pin.version, commit: provenance.pin.commit }),
+  });
+}
+
 export class CapabilityVerdict {
+  readonly provenance: CapabilityProvenance | null;
+
   private constructor(
     readonly kind: CapabilityOutcomeKind,
-    readonly provenance: CapabilityProvenance | null,
+    provenance: CapabilityProvenance | null,
     readonly feedback: string,
   ) {
-    Object.freeze(provenance ?? {});
+    // Store an independent frozen deep copy of the caller's provenance:
+    // adopting or freezing the caller's object would be an input side effect.
+    this.provenance = provenance === null ? null : freezeProvenanceCopy(provenance);
     Object.freeze(this);
   }
 
