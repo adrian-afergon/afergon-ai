@@ -871,6 +871,7 @@ it("emitted lifecycle cold-imports without IO and executes real saves and refusa
       vertical + "domain/profile-resolution.js",
       vertical + "domain/agent-target-policy.js",
       vertical + "domain/stored-assignment.js",
+      vertical + "domain/unknown-effort-acknowledgement.js",
     ];
     function guard() {
       for (const [object, method] of [[fs, "readFileSync"], [fs, "writeFileSync"], [fs, "renameSync"], [fs, "mkdirSync"]]) {

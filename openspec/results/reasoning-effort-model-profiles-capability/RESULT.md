@@ -3,7 +3,7 @@
 - **Plan**: `openspec/plans/reasoning-effort-model-profiles-capability/PLAN.md` (ready-with-assumptions, 226 lines)
 - **Spec**: `openspec/specs/reasoning-effort-model-profiles-capability/spec-01-capability-validation.md` (ready, 117 lines, 16 Gherkin scenarios)
 - **Execution Mode**: sequential, strict TDD/TPP, new isolation
-- **Status**: in progress (contemporaneous log)
+- **Status**: implementation complete locally; independent review, native Windows CI and publication remain outstanding external gates
 
 ## Isolation and Git Audit (five categories, verified 2026-10-29 before worktree creation)
 
@@ -98,8 +98,87 @@ New isolation: branch `feat/reasoning-effort-p4-capability` created at exact bas
 
 ## Gherkin → Test Mapping (16 active scenarios)
 
-(pending — filled as suites land)
+| # | Scenario | Proving test(s) |
+| --- | --- | --- |
+| G1 | Happy path — evidence supports a resolved pair | capability: "classifies the pinned catalog pair as supported with scoped provenance" + emitted strict-validator receipt |
+| G2 | Availability is not capability evidence | capability: "never infers capability from transport variance, resemblance, or menu absence" (unknown without a record) |
+| G3 | Runtime-default model has explicit effort | capability: "keeps runtime-default pairs unknown and acknowledges only the exact null state" |
+| G4 | Exact unknown pair is acknowledged | capability: stored/intent acceptance; acknowledgement: "persists an exact-pair acknowledgement with the assignment in one atomic commit" |
+| G5 | Changed model invalidates acknowledgement | capability: "accepts unknown pairs through exact stored acknowledgements…" (changed-model rejection) |
+| G6 | Changed effort invalidates acknowledgement | capability: same test (changed-effort rejection) |
+| G7 | Malformed effort is rejected | capability: "rejects malformed effort values before any acknowledgement can apply" (+ StoredAssignment guard upstream) |
+| G8 | Known unsupported cannot be acknowledged | capability: "rejects known-unsupported pairs even with matching acknowledgement and intent"; acknowledgement lifecycle variant |
+| G9 | Model-name resemblance does not establish support | capability: "never infers capability from transport variance, resemblance, or menu absence" |
+| G10 | Rejected save preserves state | acknowledgement: "rejects unknown pairs without intent before any write and preserves state" + collision/allowance/failure preservation tests |
+| G11 | Rejected switch preserves host state | acknowledgement: "honors stored acknowledgements on switch and preserves host state on rejection" |
+| G12 | Parent change revalidates inheriting child | acknowledgement: "revalidates inheriting children on parent change and refuses stale acknowledgements" |
+| G13 | Projection validation uses shared semantics | acknowledgement: "gives projection validation the same verdicts as save validation through the shared use case" |
+| G14 | Pinned source evidence reported without execution claims | capability: "reports the pinned source evidence without execution claims" |
+| G15 | Untested OpenCode version is not claimed compatible | capability: "identifies untested OpenCode versions as unverified…" |
+| G16 | Effort controls remain inactive at P4 | architecture: "S13 live entry routes never reach the P4 capability validation surface" (+ existing lifecycle live-route guard) |
 
 ## Verification
 
-(pending)
+All commands run in the implementation worktree; exits recorded contemporaneously.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Focused | `pnpm exec vitest run tests/model-profiles-capability.test.ts tests/model-profiles-acknowledgement.test.ts --no-file-parallelism` | 43 passed, exit 0 |
+| Regressions | `pnpm exec vitest run tests/model-profiles-{lifecycle,resolution,architecture,persistence,export}.test.ts --no-file-parallelism` | 665 passed \| 1 skipped, exit 0 |
+| Full suite | `pnpm test` (builds first) | **1250 passed \| 9 skipped (1259)**, 39 files passed \| 3 skipped (42), exit 0 (164.92s) |
+| Typecheck | `pnpm typecheck` | exit 0 |
+| Build | `pnpm build` | exit 0 |
+| Runtime health | `pnpm run health:runtime` | passed, no remote telemetry, exit 0 |
+| Runtime doctor | `pnpm run doctor:runtime` | no recorded failures, exit 0 |
+
+Baseline before changes in this tree: 1205 passed \| 9 skipped (1214), 37 files — so P4 adds **+45 passing tests and +2 test files** with the skip set unchanged.
+
+Boundary evidence:
+- `git diff <base> -- package.json pnpm-lock.yaml` → empty (byte-identical manifest/lockfile).
+- No `effect` dependency in package.json; no `effect` imports anywhere under `scripts/` or `tests/`.
+- Fixture DATA carries commit/blob/JSON-pointer provenance; production seed asserted in exact agreement with the fixture.
+- Emitted/source parity: dist cold-import with fs guard (module-read allowlist) — no IO during import; strict validator executes against the emitted adapter.
+- Live-route inactivity (G16) asserted for the capability surface; existing P3 live-route guard untouched and passing.
+- No network or provider credentials used; all tests offline by construction.
+
+## Measured Size (actual, vs base B `80e3974d`)
+
+| Component | Adds | Dels |
+| --- | ---: | ---: |
+| `tests/model-profiles-acknowledgement.test.ts` | 695 | 0 |
+| `tests/model-profiles-capability.test.ts` | 431 | 0 |
+| `application/profile-lifecycle-use-case.ts` (bridge) | 245 | 12 |
+| `domain/unknown-effort-acknowledgement.ts` | 137 | 0 |
+| `openspec/results/.../RESULT.md` (this file) | 122+ | 0 |
+| `application/validate-profile-capability-use-case.ts` | 105 | 0 |
+| `infrastructure/opencode-capability-evidence.ts` | 59 | 0 |
+| `domain/capability-verdict.ts` | 52 | 0 |
+| `application/capability-validation-port.ts` | 48 | 0 |
+| `infrastructure/opencode-capability-adapter.ts` | 47 | 0 |
+| `tests/model-profiles-architecture.test.ts` | 39 | 2 |
+| `tests/fixtures/opencode-pin-catalog/gpt-5.1.json` | 36 | 0 |
+| `infrastructure/opencode-compatibility-report.ts` | 35 | 0 |
+| `infrastructure/profile-composition.ts` | 29 | 0 |
+| `scripts/lib/model-profiles/README.md` | 15 | 0 |
+| `domain/profile-resolution.ts` | 5 | 0 |
+| `.github/workflows/windows-launcher.yml` (13→15) | 2 | 0 |
+| emitted-test module-read allowlists (lifecycle, resolution) | 2 | 0 |
+| **Total (19 files)** | **~2104+** | **14** |
+
+Honest growth report: the measured implementation total (~2,118 adds+dels at the pre-final-docs measurement, final number in the handoff) exceeds the 1,150–1,350 provisional forecast. The plan explicitly states forecasts are not measured implementation, the size exception has no numeric cap, and no evidence was compressed or cut to approach the forecast. The largest deltas are the two behavior suites (1,126 lines vs 430 forecast — the adversarial triangulation depth the plan requires: forged/incomplete/duplicate/unrequested receipts, pending-input mutation, collision refusal, parent/child staleness, void compatibility, ack-only idempotence, atomic failure preservation) and the lifecycle bridge (257 changed lines vs 106 forecast — whole-receipt verification against actual post-resolution pairs plus ack-only/migration accounting). Initial planning publication is reported separately: unit A 287 changed lines (PR141), unit B 226 lines (PR142); planning + implementation combined is the sum.
+
+## Commits Created (this branch, in order)
+
+1. `519ba0e` feat(model-profiles): add capability verdict and pair-bound acknowledgement domain classes
+2. `658a306` feat(model-profiles): add shared capability validation port and strict validator use case
+3. `1c9696c` feat(model-profiles): bridge capability validation into the lifecycle with pair-bound acknowledgements
+4. `1bedb25` feat(model-profiles): add pinned evidence adapter, compatibility report, and capability composition
+5. (final docs/RESULT commit — see handoff for the exact closure SHA; never embedded self-referentially here)
+
+## Known Limits and Outstanding Gates
+
+- Independent review, actual native Windows CI on the exact head, and publication are OUTSTANDING — not claimed here. The Windows list extension (13→15) is produced; native execution evidence belongs to the external gate.
+- P6 owns real public-boundary configuration acceptance and instrumented request proof; P11 owns the tested/unverified matrix. P4 claims neither.
+- The production seed covers exactly one positive record (pinned TEST CATALOG); no production negative is invented.
+- The 29 prunable worktree registrations were preserved untouched (cause unknown, no prune).
+- Root `main` worktree state (unstaged PROJECT-TASKS.md, 41 untracked paths) was never staged, transferred, or modified.
